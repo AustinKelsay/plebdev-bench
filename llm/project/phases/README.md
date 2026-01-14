@@ -15,4 +15,4 @@ This folder contains the phased roadmap. Each phase is a short, shippable plan t
 - `setup-phase.md`
 - `mvp-phase.md`
 - `review-and-hardening-phase.md` (optional)
-- `[additional-phase].md` (optional)
+- `scale-and-polish-phase.md` (optional)
