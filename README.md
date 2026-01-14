@@ -22,7 +22,7 @@ Built-ins:
 
 ## Status
 
-This repo is currently **docs-first** (bootstrapping the spec and conventions before implementation).
+**Setup phase complete.** The CLI skeleton is working and can run benchmarks against Ollama.
 Authoritative docs live in `llm/project/`.
 
 ## Tech stack (MVP)
@@ -67,17 +67,42 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 - `results/` — runtime output (ignored by git)
 - `llm/` — planning docs (project overview, user flow, tech stack, design rules, phases)
 
-## Quickstart (when implementation lands)
+## Quickstart
 
-Prereqs:
-- Install Bun: `https://bun.sh`
-- Local model runtime: Ollama (local HTTP)
-- Optional: OpenRouter API key for frontier eval
+### Prerequisites
 
-Common commands (planned):
-- `bun run bench run` — run the full matrix (non-interactive)
-- `bun run bench compare <run-a> <run-b>` — diff two runs
-- `bun test` — run tests
+1. Install Bun: https://bun.sh
+2. Install Ollama: https://ollama.ai
+3. Pull a model: `ollama pull llama3.2:3b`
+4. Start Ollama: `ollama serve`
+
+### Install & Run
+
+```bash
+# Install dependencies
+bun install
+
+# Run benchmarks (auto-discovers models and tests)
+bun pb
+
+# Run with specific options
+bun pb --models llama3.2:3b --tests smoke --pass-types blind
+
+# Compare two runs (stub - not yet implemented)
+bun run bench compare <run-a> <run-b>
+
+# Run tests
+bun test
+
+# Type check
+bun run typecheck
+```
+
+### Output
+
+Each run creates:
+- `results/<run-id>/plan.json` — expanded matrix plan
+- `results/<run-id>/run.json` — execution results
 
 ## Docs
 
