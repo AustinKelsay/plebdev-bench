@@ -31,3 +31,35 @@ export const ItemStatusSchema = z.enum(itemStatusTypes);
 
 /** Status of a matrix item during/after execution. */
 export type ItemStatus = z.infer<typeof ItemStatusSchema>;
+
+/** Valid generation failure types. */
+export const generationFailureTypes = [
+	"timeout",
+	"api_error",
+	"harness_error",
+	"prompt_not_found",
+	"unknown",
+] as const;
+
+/** Zod schema for generation failure types. */
+export const GenerationFailureTypeSchema = z.enum(generationFailureTypes);
+
+/** Generation failure type. */
+export type GenerationFailureType = z.infer<typeof GenerationFailureTypeSchema>;
+
+/** Valid scoring failure types. */
+export const scoringFailureTypes = [
+	"extraction",
+	"import",
+	"export_validation",
+	"test_execution",
+	"spec_load",
+	"no_spec",
+	"unknown",
+] as const;
+
+/** Zod schema for scoring failure types. */
+export const ScoringFailureTypeSchema = z.enum(scoringFailureTypes);
+
+/** Scoring failure type. */
+export type ScoringFailureType = z.infer<typeof ScoringFailureTypeSchema>;
