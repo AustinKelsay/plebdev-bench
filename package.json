@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "description": "Local LLM benchmark runner",
   "type": "module",
+  "workspaces": ["apps/*"],
   "bin": {
     "bench": "./src/index.ts"
   },
   "scripts": {
+    "dashboard": "bun run --cwd apps/dashboard dev",
+    "dashboard:build": "bun run --cwd apps/dashboard build",
+    "dashboard:index": "bun run apps/dashboard/scripts/build-index.ts",
     "pb": "bun run src/index.ts run",
     "bench": "bun run src/index.ts",
     "test": "vitest run",

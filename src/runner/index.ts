@@ -19,7 +19,7 @@ import { writePlan, writeResult } from "../results/writer.js";
 import { logger } from "../lib/logger.js";
 import { createHarness } from "../harnesses/index.js";
 import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
-import { stopServer as stopOpenCodeServer } from "../harnesses/opencode-server.js";
+import { ensureServerRunning, stopServer as stopOpenCodeServer } from "../harnesses/opencode-server.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
 
@@ -38,6 +38,18 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Build plan
 	const plan = await buildRunPlan(config);
 	const log = logger.child({ runId: plan.runId });
+
+	// Pre-warm OpenCode server if it will be used (B.5 optimization)
+	// Start in background while we do other setup tasks
+	const hasOpenCode = plan.items.some((item) => item.harness === "opencode");
+	let serverWarmPromise: Promise<string> | null = null;
+	if (hasOpenCode) {
+		log.info("Pre-warming OpenCode server...");
+		serverWarmPromise = ensureServerRunning().catch((err) => {
+			log.warn({ error: err }, "OpenCode server pre-warm failed (will retry on first use)");
+			return "";
+		});
+	}
 
 	// Check frontier eval availability
 	const frontierEvalEnabled = hasOpenRouterKey();
@@ -59,17 +71,25 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		defaultTimeoutMs: config.generateTimeoutMs,
 	});
 
+	// Fetch model info in parallel (B.5 optimization)
 	log.info("Fetching model info for dynamic timeouts...");
-	for (const model of uniqueModels) {
-		try {
-			const info = await ollamaHarness.getModelInfo(model);
-			modelInfoCache.set(model, info);
-			log.debug({ model, parametersBillions: info.parametersBillions.toFixed(1) }, "Model info fetched");
-		} catch (error) {
-			// Default to 7B if we can't get model info
-			log.warn({ model, error }, "Failed to get model info, using default 7B");
-			modelInfoCache.set(model, { name: model, sizeBytes: 0, parametersBillions: 7 });
-		}
+	const modelInfoResults = await Promise.all(
+		uniqueModels.map(async (model) => {
+			try {
+				const info = await ollamaHarness.getModelInfo(model);
+				log.debug({ model, parametersBillions: info.parametersBillions.toFixed(1) }, "Model info fetched");
+				return { model, info };
+			} catch (error) {
+				// Default to 7B if we can't get model info
+				log.warn({ model, error }, "Failed to get model info, using default 7B");
+				return { model, info: { name: model, sizeBytes: 0, parametersBillions: 7 } as ModelInfo };
+			}
+		}),
+	);
+
+	// Build cache from results
+	for (const { model, info } of modelInfoResults) {
+		modelInfoCache.set(model, info);
 	}
 
 	// Write plan.json
@@ -79,6 +99,11 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Execute items
 	const results: MatrixItemResult[] = [];
 	const total = plan.items.length;
+
+	// Ensure server is ready before starting items (if pre-warming)
+	if (serverWarmPromise) {
+		await serverWarmPromise;
+	}
 
 	for (let i = 0; i < plan.items.length; i++) {
 		const item = plan.items[i];

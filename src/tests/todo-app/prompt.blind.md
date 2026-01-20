@@ -1,10 +1,10 @@
-Build a todo list manager in TypeScript.
+Output only TypeScript code for a single module. No explanations or tool/file usage.
+The harness imports your output and calls the exported functions directly.
 
-The manager should:
-- Export a factory function that creates todo app instances
-- Each todo should have a unique auto-incrementing ID, text, and completion status
-- Support adding, retrieving, toggling, and deleting todos
-- Support filtering todos (all, completed, pending)
-- Support clearing all completed todos
-- Ensure IDs are never reused after deletion
-- Return copies of todos, not direct references to internal state
+Export a factory `createTodoApp()` that returns an object with:
+- `addTodo`, `getTodo`, `toggleTodo`, `deleteTodo`
+- `listTodos`, `listCompleted`, `listPending`, `clearCompleted`
+
+Todos are `{ id: number, text: string, completed: boolean }` with auto-incrementing IDs.
+IDs are never reused after deletion. `clearCompleted` removes only completed todos.
+Must export `createTodoApp` (no classes).

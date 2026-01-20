@@ -5,7 +5,7 @@
  * This adapter runs OpenCode via CLI using execa with --attach mode
  * to connect to a persistent server, avoiding cold boot overhead.
  *
- * Command: opencode run "<prompt>" --model ollama/<model> --attach <serverUrl>
+ * Command: opencode run "<prompt>" --model ollama/<model> --attach <serverUrl> --format json
  *
  * Invariants:
  * - Uses Ollama as the backend provider
@@ -32,16 +32,86 @@ const MIN_OUTPUT_LENGTH = 10;
  * the Edit tool. This prefix instructs it to output code directly in the
  * response instead, which allows the harness to capture the generated code.
  */
-const OPENCODE_PROMPT_PREFIX = `IMPORTANT: You are being used as a code generation tool for benchmarking.
-- Do NOT use any file tools (Edit, Write, Bash) to create or modify files
-- Do NOT create, read, or modify any files on disk
-- Output your complete code solution directly in your response
-- Use a markdown code block with the appropriate language tag (e.g., \`\`\`typescript)
-- Include ONLY the code that solves the task - no extra examples or imports that aren't needed
+const OPENCODE_PROMPT_PREFIX = `You are generating code for an automated benchmark.
+- Do not use tools or read/write files.
+- Output only a single TypeScript module as plain text (optionally one \`\`\`ts\`\`\` block).
+- No explanations.
 
-Here is the task:
+Task:
 
 `;
+
+/**
+ * Normalize OpenCode JSON/JSONL output into plain assistant text.
+ *
+ * @param raw - Raw stdout/stderr from OpenCode
+ * @returns Normalized output and method indicator
+ */
+function normalizeOpenCodeOutput(raw: string): { output: string; method: "raw" | "json" } {
+	const trimmed = raw.trim();
+	if (!trimmed) {
+		return { output: raw, method: "raw" };
+	}
+
+	const textParts: string[] = [];
+	let parsedLines = 0;
+
+	const lines = trimmed.split(/\r?\n/).filter((line) => line.trim().length > 0);
+	for (const line of lines) {
+		try {
+			const obj = JSON.parse(line) as {
+				type?: string;
+				text?: string;
+				part?: { type?: string; text?: string; delta?: { text?: string } };
+			};
+
+			parsedLines += 1;
+
+			const part = obj.part ?? obj;
+			const text =
+				typeof part.text === "string"
+					? part.text
+					: typeof part.delta?.text === "string"
+						? part.delta.text
+						: typeof obj.text === "string"
+							? obj.text
+							: undefined;
+
+			if (typeof text === "string" && text.length > 0) {
+				textParts.push(text);
+			}
+		} catch {
+			// Ignore non-JSON lines
+		}
+	}
+
+	if (parsedLines > 0 && textParts.length > 0) {
+		return { output: textParts.join(""), method: "json" };
+	}
+
+	// Fallback: try parsing as a single JSON object
+	try {
+		const obj = JSON.parse(trimmed) as {
+			text?: string;
+			part?: { text?: string; delta?: { text?: string } };
+		};
+		const text =
+			typeof obj.part?.text === "string"
+				? obj.part.text
+				: typeof obj.part?.delta?.text === "string"
+					? obj.part.delta.text
+					: typeof obj.text === "string"
+						? obj.text
+						: undefined;
+		if (typeof text === "string" && text.length > 0) {
+			return { output: text, method: "json" };
+		}
+	} catch {
+		// Ignore parse failures
+	}
+
+	return { output: raw, method: "raw" };
+}
 
 /** Configuration for the OpenCode adapter. */
 export interface OpenCodeAdapterConfig {
@@ -111,7 +181,14 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 			const fullPrompt = OPENCODE_PROMPT_PREFIX + opts.prompt;
 
 			// Use --attach to connect to running server (avoids cold boot)
-			const args = ["run", fullPrompt, "--model", modelArg, "--attach", serverUrl];
+			// --format json provides structured output for reliable parsing
+			const args = [
+				"run",
+				fullPrompt,
+				"--model", modelArg,
+				"--attach", serverUrl,
+				"--format", "json",
+			];
 			log.debug(
 				{ model: modelArg, serverUrl },
 				"Executing OpenCode command with --attach",
@@ -128,6 +205,9 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 					cwd: tmpDir,
 					// Prevent any stdin waiting/interaction
 					stdin: "ignore",
+					// Force kill with SIGKILL after 5s if SIGTERM doesn't work
+					// (OpenCode's --attach mode can hang waiting on server)
+					forceKillAfterDelay: 5000,
 				});
 
 				const durationMs = Math.round(performance.now() - startTime);
@@ -152,6 +232,15 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 						log.info({ stderrUsed: true, length: stderrContent.length }, "Using stderr output (stdout was empty)");
 						output = stderrContent;
 					}
+				}
+
+				const normalized = normalizeOpenCodeOutput(output);
+				if (normalized.method !== "raw") {
+					log.debug(
+						{ method: normalized.method, originalLength: output.length, normalizedLength: normalized.output.length },
+						"Normalized OpenCode output",
+					);
+					output = normalized.output;
 				}
 
 				// Validate output is not empty

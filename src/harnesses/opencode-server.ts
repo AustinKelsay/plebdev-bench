@@ -25,8 +25,14 @@ const DEFAULT_PORT = 4096;
 /** Maximum wait time for server startup (ms). */
 const SERVER_STARTUP_TIMEOUT_MS = 30_000;
 
-/** Interval between health check retries (ms). */
-const HEALTH_CHECK_INTERVAL_MS = 500;
+/** Initial health check interval for exponential backoff (ms). */
+const HEALTH_CHECK_INITIAL_MS = 100;
+
+/** Multiplier for exponential backoff. */
+const HEALTH_CHECK_BACKOFF_MULTIPLIER = 1.5;
+
+/** Maximum health check interval (ms). */
+const HEALTH_CHECK_MAX_MS = 500;
 
 /** Singleton server state. */
 let serverProcess: ResultPromise | null = null;
@@ -53,7 +59,11 @@ async function isServerHealthy(url: string): Promise<boolean> {
 }
 
 /**
- * Wait for the server to become ready.
+ * Wait for the server to become ready using exponential backoff.
+ *
+ * Starts with 100ms polling interval, multiplies by 1.5 each iteration,
+ * caps at 500ms. This reduces startup latency for fast-starting servers
+ * while still allowing time for slower starts.
  *
  * @param url - Server URL to poll
  * @param timeoutMs - Maximum wait time
@@ -64,13 +74,22 @@ async function waitForServerReady(
 	timeoutMs: number = SERVER_STARTUP_TIMEOUT_MS,
 ): Promise<void> {
 	const startTime = Date.now();
+	let currentInterval = HEALTH_CHECK_INITIAL_MS;
 
 	while (Date.now() - startTime < timeoutMs) {
 		if (await isServerHealthy(url)) {
-			log.debug({ url }, "OpenCode server is ready");
+			log.debug({ url, elapsedMs: Date.now() - startTime }, "OpenCode server is ready");
 			return;
 		}
-		await new Promise((resolve) => setTimeout(resolve, HEALTH_CHECK_INTERVAL_MS));
+
+		// Wait with exponential backoff
+		await new Promise((resolve) => setTimeout(resolve, currentInterval));
+
+		// Increase interval with backoff, cap at max
+		currentInterval = Math.min(
+			currentInterval * HEALTH_CHECK_BACKOFF_MULTIPLIER,
+			HEALTH_CHECK_MAX_MS,
+		);
 	}
 
 	throw new Error(`OpenCode server did not start within ${timeoutMs}ms`);

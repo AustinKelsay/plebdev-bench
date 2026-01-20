@@ -1,0 +1,87 @@
+/**
+ * Purpose: Global styles with terminal-native CSS variables.
+ * Implements ANSI-inspired color palette from design-rules.md.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Terminal-native palette from design-rules.md */
+    /* Background */
+    --background: 210 23% 5%;        /* #0B0E11 (near-black) */
+    --background-raised: 213 30% 8%; /* #0F141A (panels) */
+
+    /* Foreground */
+    --foreground: 210 30% 92%;       /* #E6EDF3 (primary text) */
+    --foreground-muted: 210 12% 63%; /* #9AA7B2 (secondary text) */
+    --foreground-faint: 210 10% 47%; /* #6B7785 (timestamps, hints) */
+
+    /* Border */
+    --border: 213 23% 15%;           /* #1E2630 */
+    --input: 213 23% 15%;
+
+    /* Semantic accents */
+    --success: 156 67% 55%;          /* #3DDC97 (PASS) */
+    --warning: 43 93% 63%;           /* #F7C948 (WARN) */
+    --danger: 0 100% 68%;            /* #FF5C5C (FAIL) */
+    --info: 212 100% 67%;            /* #58A6FF (links, selected) */
+
+    /* shadcn/ui semantic mappings */
+    --card: 213 30% 8%;
+    --card-foreground: 210 30% 92%;
+    --popover: 213 30% 8%;
+    --popover-foreground: 210 30% 92%;
+    --primary: 212 100% 67%;
+    --primary-foreground: 210 23% 5%;
+    --secondary: 213 30% 8%;
+    --secondary-foreground: 210 30% 92%;
+    --muted: 213 30% 8%;
+    --muted-foreground: 210 12% 63%;
+    --accent: 213 30% 12%;
+    --accent-foreground: 210 30% 92%;
+    --destructive: 0 100% 68%;
+    --destructive-foreground: 210 30% 92%;
+    --ring: 212 100% 67%;
+
+    /* Border radius - crisp terminal feel */
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-mono;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Terminal-native table styling */
+.matrix-table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar styling for terminal aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground-faint));
+}

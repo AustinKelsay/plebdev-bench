@@ -1,18 +1,6 @@
-# Task: Addition Function
+Output only TypeScript code for a single module. No explanations or tool/file usage.
+The harness imports your output and calls the exported functions directly.
 
-Write a TypeScript function called `add` that takes two numbers and returns their sum.
-
-## Requirements
-
-- Function name: `add`
-- Parameters: two numbers (use TypeScript types)
-- Return: the sum of the two numbers
-- Use proper TypeScript syntax with type annotations
-- Export the function using `export`
-
-## Example
-
-```typescript
-add(2, 3); // returns 5
-add(-1, 1); // returns 0
-```
+Requirements:
+- `export function add(a: number, b: number): number`
+- Return `a + b`

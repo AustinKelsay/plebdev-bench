@@ -3,7 +3,7 @@
  * Exports: spec
  *
  * Tests todo list CRUD operations and filtering.
- * Uses factoryFn with freshInstancePerTest.
+ * Uses a single instance to validate stateful behavior.
  */
 
 import type { ScoringSpec } from "../../schemas/index.js";
@@ -14,7 +14,6 @@ export const spec: ScoringSpec = {
 	expectedExports: [{ name: "createTodoApp", type: "function" }],
 
 	factoryFn: "createTodoApp",
-	freshInstancePerTest: true,
 
 	testCases: [
 		// Initial state
@@ -25,63 +24,87 @@ export const spec: ScoringSpec = {
 			description: "initial list is empty",
 		},
 
-		// Add todo returns correct shape
+		// Add two todos
 		{
 			fn: "addTodo",
-			args: ["Test todo"],
-			expected: { id: 1, text: "Test todo", completed: false },
-			description: "addTodo returns todo with id, text, completed",
+			args: ["Todo A"],
+			expected: { id: 1, text: "Todo A", completed: false },
+			description: "addTodo returns todo with id 1",
 		},
-
-		// List after add (fresh instance, so empty)
 		{
-			fn: "listTodos",
-			args: [],
-			expected: [],
-			description: "fresh instance has empty list",
+			fn: "addTodo",
+			args: ["Todo B"],
+			expected: { id: 2, text: "Todo B", completed: false },
+			description: "addTodo returns todo with id 2",
 		},
 
-		// List completed (empty)
+		// Toggle one to completed
+		{
+			fn: "toggleTodo",
+			args: [1],
+			expected: undefined,
+			description: "toggleTodo flips completion",
+		},
 		{
 			fn: "listCompleted",
 			args: [],
-			expected: [],
-			description: "listCompleted on empty list",
+			expected: [{ id: 1, text: "Todo A", completed: true }],
+			description: "listCompleted returns only completed",
 		},
-
-		// List pending (empty)
 		{
 			fn: "listPending",
 			args: [],
-			expected: [],
-			description: "listPending on empty list",
+			expected: [{ id: 2, text: "Todo B", completed: false }],
+			description: "listPending returns only pending",
 		},
 
-		// Delete non-existent
+		// Clear completed removes only completed
+		{
+			fn: "clearCompleted",
+			args: [],
+			expected: undefined,
+			description: "clearCompleted removes completed",
+		},
+		{
+			fn: "getTodo",
+			args: [1],
+			expected: undefined,
+			description: "completed todo removed after clearCompleted",
+		},
+		{
+			fn: "getTodo",
+			args: [2],
+			expected: { id: 2, text: "Todo B", completed: false },
+			description: "pending todo remains after clearCompleted",
+		},
+
+		// Delete and ID reuse edge case
 		{
 			fn: "deleteTodo",
-			args: [999],
+			args: [2],
+			expected: true,
+			description: "deleteTodo returns true when deleted",
+		},
+		{
+			fn: "deleteTodo",
+			args: [2],
 			expected: false,
-			description: "deleteTodo returns false for non-existent",
+			description: "deleteTodo returns false when already deleted",
+		},
+		{
+			fn: "addTodo",
+			args: ["Todo C"],
+			expected: { id: 3, text: "Todo C", completed: false },
+			description: "ids are not reused after deletion",
 		},
 
-		// Get non-existent
+		// Non-existent operations should not throw
 		{
 			fn: "getTodo",
 			args: [999],
 			expected: undefined,
 			description: "getTodo returns undefined for non-existent",
 		},
-
-		// clearCompleted on empty list (should not error)
-		{
-			fn: "clearCompleted",
-			args: [],
-			expected: undefined,
-			description: "clearCompleted on empty list",
-		},
-
-		// Toggle non-existent (should not error)
 		{
 			fn: "toggleTodo",
 			args: [999],

@@ -1,9 +1,9 @@
-Build a stateful calculator in TypeScript with method chaining and memory functions.
+Output only TypeScript code for a single module. No explanations or tool/file usage.
+The harness imports your output and calls the exported functions directly.
 
-The calculator should:
-- Export a factory function that creates calculator instances
-- Track a running total that starts at 0
-- Support basic operations (add, subtract, multiply, divide) that modify the total and enable chaining
-- Provide a way to get the current result
-- Include memory functions (store, recall, clear memory, add to memory) that are independent from the calculator's main value
-- Throw an error for division by zero
+Export a factory `createCalculator()` that returns an object with:
+- `add`, `subtract`, `multiply`, `divide`, `clear` (each returns the calculator for chaining)
+- `result()` returns the current value
+- `memoryStore`, `memoryRecall`, `memoryClear`, `memoryAdd` (memory starts at 0)
+
+The calculator starts at value 0. Memory is independent from the current value (clear does not change memory).
