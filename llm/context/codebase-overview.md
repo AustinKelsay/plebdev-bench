@@ -16,6 +16,11 @@ bun pb compare <runA> <runB>        # Compare two runs
 bun pb compare <runA> <runB> --json # Output raw JSON
 bun test                            # Run test suite
 bun run typecheck                   # Type check
+
+# Dashboard
+bun dashboard                       # Start dashboard dev server (localhost:5173)
+bun dashboard:build                 # Build dashboard for production
+bun dashboard:index                 # Generate results/index.json for dashboard
 ```
 
 ## Environment Variables
@@ -84,18 +89,21 @@ Discovery: `discoverHarnesses()` checks CLI availability and Ollama endpoint.
 
 ### Goose Headless Mode
 ```bash
-goose run --no-session --provider ollama --model <model> --max-turns 5 -q -t "<prompt>"
+goose run --no-session --provider ollama --model <model> -q --output-format json -i -
+# Prompt piped via stdin
 ```
 - `--provider ollama` and `--model` CLI flags **override config file** (critical)
-- `stdin: "ignore"` + `cwd: /tmp` to prevent hanging and codebase scanning
+- `--output-format json` for structured output
+- Prompt passed via stdin (`-i -`) to avoid shell escaping issues
+- `cwd: /tmp` to prevent codebase scanning
 
 ### OpenCode Server Mode
 ```bash
-# Server (started once, reused)
+# Server (started once, reused, pre-warmed during plan build)
 opencode serve --port 4096
 
 # Generation (connects to warm server)
-opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096
+opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096 --format json
 ```
 - Server mode bypasses 2+ min cold boot (32+ LSP servers, plugins)
 - `opencode-server.ts` manages lifecycle with health checks
@@ -129,7 +137,7 @@ Each run creates `results/<run-id>/`:
 - **Auto-discovery**: By default, discovers all models from Ollama, all harnesses available, and all tests in `src/tests/`
 - **Limiting flags**: Use `--models`, `--harnesses`, `--tests` to limit which items to run
 - **Sequential execution**: One item at a time
-- **Dynamic timeouts**: Timeout scales with model size and harness (60s base + 60s per 10B params + harness overhead: Goose 1min, OpenCode 4min)
+- **Dynamic timeouts**: Timeout scales with model size and harness (60s base + ceil(params/10) * 60s + harness overhead: Goose 1min, OpenCode dynamic 60s + params/10 * 30s)
 - **Smart model unloading**: Model stays loaded for consecutive same-model items (Ollama)
 - **Fail-fast validation**: Empty or very short output throws error immediately (catches silent failures)
 - **Stderr fallback**: If stdout is empty but stderr has meaningful content, uses stderr as output
@@ -153,7 +161,34 @@ Each run creates `results/<run-id>/`:
 }
 ```
 
+## Dashboard (`apps/dashboard/`)
+
+React-based visual dashboard for browsing and comparing benchmark results.
+
+```
+apps/dashboard/src/
+├── components/
+│   ├── ui/                    # shadcn/ui components
+│   ├── layout/                # Header, page containers
+│   ├── run-list/              # Run list view
+│   ├── run-detail/            # Run detail view + matrix table
+│   ├── compare/               # Compare view + delta badges
+│   └── charts/                # Recharts visualizations
+├── hooks/                     # Data fetching hooks
+├── lib/                       # Types, API, aggregations
+└── pages/                     # Route components
+```
+
+**Features:**
+- Run list with summary cards
+- Run detail with matrix table, scoring breakdown, timing stats
+- Compare view with delta badges and tabbed tables
+- Charts: pass rate bars, timing histogram, frontier scatter plot
+
+**Stack:** Vite + React + TypeScript + Tailwind + shadcn/ui + Recharts
+
 ## Current Status
 
 - Setup phase: Complete (multi-harness support added)
 - MVP phase: Complete (scoring, frontier eval, compare, enhanced stats)
+- Scale & Polish phase: Dashboard frontend complete

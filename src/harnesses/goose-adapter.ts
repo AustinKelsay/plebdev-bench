@@ -3,13 +3,14 @@
  * Exports: createGooseAdapter
  *
  * This adapter runs Goose via CLI using execa.
- * Command: goose run --no-session --max-turns 5 -q -t "<prompt>"
+ * Command: goose run --no-session --provider ollama --model <model> -q --output-format json -i -
+ * Prompt is passed via stdin.
  *
  * Optimizations:
  * - Runs in temp directory to avoid codebase scanning
- * - Uses --max-turns 5 to limit agentic loops
  * - Uses -q (quiet) mode to reduce output overhead
- * - Uses stdin: "ignore" to prevent hanging
+ * - Uses --output-format json for structured output
+ * - Uses stdin for prompts (avoids shell escaping issues)
  *
  * Invariants:
  * - Uses Ollama as the backend provider
@@ -25,6 +26,74 @@ import { logger } from "../lib/logger.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
+
+/**
+ * Extracts code from Goose tool-call markup if present.
+ *
+ * @param content - Assistant text content
+ * @returns Extracted code or null if not found
+ */
+function extractGooseFileText(content: string): string | null {
+	const matches = Array.from(
+		content.matchAll(/<parameter=file_text>\s*([\s\S]*?)\s*<\/parameter>/g),
+	);
+
+	if (matches.length === 0) {
+		return null;
+	}
+
+	const chunks = matches
+		.map((match) => match[1]?.trim())
+		.filter((chunk): chunk is string => Boolean(chunk));
+
+	return chunks.length > 0 ? chunks.join("\n\n") : null;
+}
+
+/**
+ * Normalizes Goose JSON output into plain assistant text or extracted code.
+ *
+ * @param raw - Raw stdout from Goose
+ * @returns Normalized output and method indicator
+ */
+function normalizeGooseOutput(raw: string): { output: string; method: "raw" | "json" | "file_text" } {
+	try {
+		const parsed = JSON.parse(raw) as {
+			messages?: Array<{
+				role?: string;
+				content?: Array<{ text?: string }>;
+			}>;
+		};
+
+		const messages = parsed.messages ?? [];
+		const assistantParts: string[] = [];
+
+		for (const message of messages) {
+			if (message.role !== "assistant") {
+				continue;
+			}
+			const parts = message.content ?? [];
+			for (const part of parts) {
+				if (typeof part.text === "string") {
+					assistantParts.push(part.text);
+				}
+			}
+		}
+
+		if (assistantParts.length === 0) {
+			return { output: raw, method: "raw" };
+		}
+
+		const assistantText = assistantParts.join("");
+		const fileText = extractGooseFileText(assistantText);
+		if (fileText) {
+			return { output: fileText, method: "file_text" };
+		}
+
+		return { output: assistantText, method: "json" };
+	} catch {
+		return { output: raw, method: "raw" };
+	}
+}
 
 /** Configuration for the Goose adapter. */
 export interface GooseAdapterConfig {
@@ -78,26 +147,24 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 			const startTime = performance.now();
 
 			// Set up environment for Goose (headless mode)
+			// Only documented env vars are kept (B.1 cleanup)
 			const env = {
 				...process.env,
-				GOOSE_MODE: "auto",
-				GOOSE_CONTEXT_STRATEGY: "summarize",
-				GOOSE_MAX_TURNS: "5", // Reduced from 50 - simple prompts don't need many turns
 				GOOSE_PROVIDER: "ollama",
 				GOOSE_MODEL: opts.model,
 				GOOSE_CLI_MIN_PRIORITY: "0.2",
 			};
 
-			// Optimized args: limit turns and use quiet mode
+			// Optimized args: use quiet mode and JSON output (B.1 cleanup)
 			// CRITICAL: Use --provider and --model flags to override Goose's config file
 			const args = [
 				"run",
 				"--no-session",
 				"--provider", "ollama",       // Override config - force Ollama
 				"--model", opts.model,        // Override config - use our model
-				"--max-turns", "5",           // Limit agentic loops
 				"-q",                         // Quiet mode - faster output
-				"-t", opts.prompt,
+				"--output-format", "json",    // Structured output for parsing
+				"-i", "-",                    // Read prompt from stdin
 			];
 			log.debug(
 				{ cmd: "goose", model: opts.model },
@@ -113,15 +180,35 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 					timeout: opts.timeoutMs,
 					reject: true,
 					cwd: tmpDir,
-					stdin: "ignore", // Prevent stdin hanging
+					input: opts.prompt, // Pass prompt via stdin (B.1 optimization)
+					// Force kill with SIGKILL after 5s if SIGTERM doesn't work
+					forceKillAfterDelay: 5000,
 				});
 
 				const durationMs = Math.round(performance.now() - startTime);
-				const output = result.stdout;
+				let output = result.stdout;
+				const stderr = result.stderr?.trim() || "";
 
 				// Log stderr if present (may contain warnings)
-				if (result.stderr && result.stderr.trim()) {
-					log.warn({ stderr: result.stderr.slice(0, 500) }, "Goose produced stderr");
+				if (stderr) {
+					log.warn({ stderr: stderr.slice(0, 500) }, "Goose produced stderr");
+				}
+
+				// Fallback to stderr if stdout empty (mirrors OpenCode behavior)
+				if (!output || output.trim().length === 0) {
+					if (stderr.length >= MIN_OUTPUT_LENGTH) {
+						log.info({ stderrUsed: true, length: stderr.length }, "Using stderr output (stdout was empty)");
+						output = stderr;
+					}
+				}
+
+				const normalized = normalizeGooseOutput(output);
+				if (normalized.method !== "raw") {
+					log.debug(
+						{ method: normalized.method, originalLength: output.length, normalizedLength: normalized.output.length },
+						"Normalized Goose output",
+					);
+					output = normalized.output;
 				}
 
 				log.debug(
@@ -131,7 +218,8 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 
 				// Validate output is not empty
 				if (!output || output.trim().length === 0) {
-					throw new Error("Goose returned empty output - model may not have run");
+					const stderrHint = stderr ? ` (stderr: ${stderr.slice(0, 500)})` : "";
+					throw new Error(`Goose returned empty output - model may not have run${stderrHint}`);
 				}
 
 				// Validate output is not too short

@@ -71,27 +71,26 @@ interface GenerateResult {
 
 - **CLI Command**:
   ```bash
-  goose run --no-session --provider ollama --model <model> --max-turns 5 -q -t "<prompt>"
+  goose run --no-session --provider ollama --model <model> -q --output-format json -i -
+  # Prompt piped via stdin
   ```
 
 - **Critical CLI Flags** (override config file):
   - `--provider ollama` - Force Ollama provider (ignores `~/.config/goose/config.yaml`)
   - `--model <model>` - Specify exact model (e.g., `llama3.2:3b`)
-  - `--max-turns 5` - Limit agentic loops (simple prompts don't need many turns)
   - `-q` - Quiet mode (faster output, less overhead)
+  - `--output-format json` - Structured output for reliable parsing
   - `--no-session` - Don't persist session state
+  - `-i -` - Read prompt from stdin (avoids shell escaping issues)
 
-- **Environment Variables** (backup configuration):
-  - `GOOSE_MODE=auto` - Non-interactive execution
-  - `GOOSE_CONTEXT_STRATEGY=summarize` - Auto-summarize when context limits reached
-  - `GOOSE_MAX_TURNS=5` - Reduced from 50 (env backup for CLI flag)
+- **Environment Variables** (documented only):
   - `GOOSE_PROVIDER=ollama` - Backend provider
   - `GOOSE_MODEL=<model>` - Model name
   - `GOOSE_CLI_MIN_PRIORITY=0.2` - Reduce verbose output
 
 - **Execution Optimizations**:
   - `cwd: process.env.TMPDIR || "/tmp"` - Run in temp directory to avoid codebase scanning
-  - `stdin: "ignore"` - Prevent hanging on stdin (critical for headless)
+  - `input: opts.prompt` - Pass prompt via stdin for robustness
 
 - **Output**: stdout (validated for non-empty, min 10 chars)
 - **Debug logging**: logs command execution, completion, and stderr
@@ -113,11 +112,11 @@ OpenCode has significant cold boot overhead (~2+ minutes) because each `opencode
 
 1. **Server Lifecycle** (`src/harnesses/opencode-server.ts`):
    ```typescript
-   // Start server once, reuse for all requests
+   // Server pre-warmed during plan build (B.5 optimization)
    const url = await ensureServerRunning(4096);  // Returns http://localhost:4096
 
    // Run generation against warm server
-   opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096
+   opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096 --format json
 
    // Cleanup at end of benchmark run
    await stopServer();
@@ -133,9 +132,10 @@ OpenCode has significant cold boot overhead (~2+ minutes) because each `opencode
 
 3. **Generation Command**:
    ```bash
-   opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096
+   opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096 --format json
    ```
    - `--attach <url>` - Connect to warm server (bypasses cold boot)
+   - `--format json` - Structured output for reliable parsing
    - `stdin: "ignore"` - Prevent hanging on stdin (critical for headless)
    - `cwd: /tmp` - Avoid codebase scanning
 
@@ -179,7 +179,8 @@ getServerUrl(): string | null                        // Current URL if running
 - Only one server instance runs at a time
 - Server auto-cleans up on process exit
 - Health checks before reusing existing server
-- 30s startup timeout with 500ms poll interval
+- 30s startup timeout with exponential backoff polling (100ms → 1.5x → 500ms cap)
+- Server pre-warmed during plan build for faster first item (B.5 optimization)
 
 ## Discovery
 
@@ -258,30 +259,30 @@ All harnesses share the same Ollama model pool:
 Timeouts scale with model size to handle large models gracefully:
 
 ```
-timeout = base + (paramsBillions / 10 * 60s) + harnessOverhead
+timeout = base + ceil(paramsBillions/10) * 60s + harnessOverhead
 ```
 
 | Component | Value |
 |-----------|-------|
 | Base | 60s |
-| Per 10B params | 60s |
+| Per 10B params | ceil(params/10) * 60s |
 | Goose overhead | 60s (1 min) |
-| OpenCode overhead | 240s (4 min) |
-| Minimum | 2 min |
+| OpenCode overhead | 60s + (params/10 * 30s) (dynamic, B.4 optimization) |
+| Minimum | 1 min |
 | Maximum | 20 min |
 
 **Harness-specific overhead rationale**:
 - **Goose (1 min)**: CLI startup, headless mode initialization
-- **OpenCode (4 min)**: Agentic behavior, tool calls, thinking loops (even with server mode, OpenCode runs multi-step reasoning)
+- **OpenCode (dynamic)**: Scales with model size: 60s base + 30s per 10B params (smaller models get shorter timeouts)
 
-**Examples:**
-- 3B model on Ollama: 60s + 6s = ~2 min (floor)
-- 30B model on Ollama: 60s + 180s = 4 min
-- 30B model on Goose: 60s + 180s + 60s = 5 min
-- 30B model on OpenCode: 60s + 180s + 240s = 8 min
-- 70B model on OpenCode: 60s + 420s + 240s = 12 min
+**Examples (base + sizeScaling + harnessOverhead):**
+- 3B model on Ollama: 60 + 60 + 0 = 120s (2 min)
+- 30B model on Ollama: 60 + 180 + 0 = 240s (4 min)
+- 30B model on Goose: 60 + 180 + 60 = 300s (5 min)
+- 3B model on OpenCode: 60 + 60 + 69 = 189s (~3 min)
+- 30B model on OpenCode: 60 + 180 + 150 = 390s (~6.5 min)
 
-Model info is fetched via `/api/show` before execution starts.
+Model info fetched in parallel via `/api/show` before execution starts (B.5 optimization).
 
 ## Performance Benchmarks
 

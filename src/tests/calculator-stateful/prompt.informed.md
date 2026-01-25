@@ -1,60 +1,28 @@
-Build a stateful calculator in TypeScript with method chaining and memory functions.
+Output only TypeScript code for a single module. No explanations or tool/file usage.
+The harness imports your output and calls the exported functions directly.
 
-## Requirements
-
-Export a `createCalculator` factory function:
-
-```typescript
+Export:
+```ts
 export function createCalculator(): Calculator
 ```
 
-The returned Calculator object should have these methods:
-
-```typescript
+Interface:
+```ts
 interface Calculator {
-  // Operations (return this for chaining)
   add(n: number): Calculator
   subtract(n: number): Calculator
   multiply(n: number): Calculator
   divide(n: number): Calculator
   clear(): Calculator
-
-  // Get result
   result(): number
-
-  // Memory functions
-  memoryStore(): Calculator    // Store current value in memory
-  memoryRecall(): number       // Return memory value
-  memoryClear(): Calculator    // Clear memory to 0
-  memoryAdd(): Calculator      // Add current value to memory
+  memoryStore(): Calculator
+  memoryRecall(): number
+  memoryClear(): Calculator
+  memoryAdd(): Calculator
 }
 ```
 
-## Behavior
-
-- Calculator starts with value 0 and memory 0
-- Operations modify the running total
-- Method chaining: `calc.add(5).multiply(2)` works
-- Memory is separate from calculator value
-
-## Example Usage
-
-```typescript
-const calc = createCalculator()
-
-// Basic operations with chaining
-calc.add(10).subtract(3).result()  // 7
-
-// Memory operations
-calc.clear().add(5).memoryStore()  // stores 5
-calc.clear().add(10).memoryAdd()   // memory now 15
-calc.memoryRecall()                // 15
-
-// Chained example
-calc.clear()
-    .add(100)
-    .divide(4)
-    .memoryStore()
-    .multiply(2)
-    .result()  // 50 (memory still holds 25)
-```
+Behavior:
+- Initial value is 0; memory is 0
+- Operations update the current value and return `this` for chaining
+- Memory is independent from the current value (clear does not change memory)
