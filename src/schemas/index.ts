@@ -11,6 +11,12 @@ export {
 	itemStatusTypes,
 	ItemStatusSchema,
 	type ItemStatus,
+	generationFailureTypes,
+	GenerationFailureTypeSchema,
+	type GenerationFailureType,
+	scoringFailureTypes,
+	ScoringFailureTypeSchema,
+	type ScoringFailureType,
 } from "./common.schema.js";
 
 export {
@@ -33,6 +39,8 @@ export {
 	type GenerationResult,
 	AutomatedScoreSchema,
 	type AutomatedScore,
+	ScoringMetricsSchema,
+	type ScoringMetrics,
 	FrontierEvalSchema,
 	type FrontierEval,
 	MatrixItemResultSchema,
@@ -40,3 +48,16 @@ export {
 	RunResultSchema,
 	type RunResult,
 } from "./result.schema.js";
+
+export {
+	ExpectedExportSchema,
+	type ExpectedExport,
+	TestCaseSchema,
+	type TestCase,
+	ScoringSpecSchema,
+	type ScoringSpec,
+	TestCaseResultSchema,
+	type TestCaseResult,
+	ScoringResultSchema,
+	type ScoringResult,
+} from "./scoring.schema.js";

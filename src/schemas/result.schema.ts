@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { ItemStatusSchema, PassTypeSchema, SCHEMA_VERSION } from "./common.schema.js";
+import { ItemStatusSchema, PassTypeSchema, SCHEMA_VERSION, GenerationFailureTypeSchema } from "./common.schema.js";
 
 /** Zod schema for generation output from a harness. */
 export const GenerationResultSchema = z.object({
@@ -20,6 +20,9 @@ export const GenerationResultSchema = z.object({
 
 	/** Error message if generation failed. */
 	error: z.string().optional(),
+
+	/** Failure type when success=false. */
+	failureType: GenerationFailureTypeSchema.optional(),
 
 	/** Generation duration in milliseconds. */
 	durationMs: z.number(),
@@ -49,7 +52,7 @@ export const AutomatedScoreSchema = z.object({
 /** Automated test score type. */
 export type AutomatedScore = z.infer<typeof AutomatedScoreSchema>;
 
-/** Zod schema for frontier evaluation (out of scope for setup phase). */
+/** Zod schema for frontier evaluation. */
 export const FrontierEvalSchema = z.object({
 	/** Score from 1-10. */
 	score: z.number().min(1).max(10),
@@ -59,10 +62,22 @@ export const FrontierEvalSchema = z.object({
 
 	/** Model used for evaluation. */
 	model: z.string(),
+
+	/** Evaluation latency in milliseconds. */
+	latencyMs: z.number().optional(),
 });
 
 /** Frontier evaluation result type. */
 export type FrontierEval = z.infer<typeof FrontierEvalSchema>;
+
+/** Zod schema for scoring metrics (timing). */
+export const ScoringMetricsSchema = z.object({
+	/** Scoring duration in milliseconds. */
+	durationMs: z.number(),
+});
+
+/** Scoring metrics type. */
+export type ScoringMetrics = z.infer<typeof ScoringMetricsSchema>;
 
 /** Zod schema for a single matrix item result. */
 export const MatrixItemResultSchema = z.object({
@@ -93,10 +108,13 @@ export const MatrixItemResultSchema = z.object({
 	/** Generation result from harness. */
 	generation: GenerationResultSchema.optional(),
 
-	/** Automated test scoring (placeholder for MVP). */
+	/** Automated test scoring. */
 	automatedScore: AutomatedScoreSchema.optional(),
 
-	/** Frontier evaluation (out of scope for setup). */
+	/** Scoring metrics (timing). */
+	scoringMetrics: ScoringMetricsSchema.optional(),
+
+	/** Frontier evaluation. */
 	frontierEval: FrontierEvalSchema.optional(),
 });
 

@@ -20,9 +20,28 @@ import type { Harness, GenerateOpts, GenerateResult, ModelInfo } from "./harness
 import { createOllamaAdapter } from "./ollama-adapter.js";
 import { logger } from "../lib/logger.js";
 import { ensureServerRunning } from "./opencode-server.js";
+import { extractCode } from "../lib/code-extractor.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
+
+/**
+ * Prompt prefix for OpenCode to ensure code is output directly.
+ *
+ * OpenCode runs in "agent mode" and by default writes code to files using
+ * the Edit tool. This prefix instructs it to output code directly in the
+ * response instead, which allows the harness to capture the generated code.
+ */
+const OPENCODE_PROMPT_PREFIX = `IMPORTANT: You are being used as a code generation tool for benchmarking.
+- Do NOT use any file tools (Edit, Write, Bash) to create or modify files
+- Do NOT create, read, or modify any files on disk
+- Output your complete code solution directly in your response
+- Use a markdown code block with the appropriate language tag (e.g., \`\`\`typescript)
+- Include ONLY the code that solves the task - no extra examples or imports that aren't needed
+
+Here is the task:
+
+`;
 
 /** Configuration for the OpenCode adapter. */
 export interface OpenCodeAdapterConfig {
@@ -87,8 +106,12 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 				OPENCODE_DISABLE_AUTOUPDATE: "true",
 			};
 
+			// Prepend instruction prefix to ensure code is output directly
+			// (OpenCode defaults to writing files via Edit tool)
+			const fullPrompt = OPENCODE_PROMPT_PREFIX + opts.prompt;
+
 			// Use --attach to connect to running server (avoids cold boot)
-			const args = ["run", opts.prompt, "--model", modelArg, "--attach", serverUrl];
+			const args = ["run", fullPrompt, "--model", modelArg, "--attach", serverUrl];
 			log.debug(
 				{ model: modelArg, serverUrl },
 				"Executing OpenCode command with --attach",
@@ -148,6 +171,18 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 					throw new Error(
 						`OpenCode output too short (${output.trim().length} chars) - may indicate failure`,
 					);
+				}
+
+				// OpenCode runs in "agent mode" and outputs tool interaction logs
+				// (Todo, Glob, Bash, Read, Edit, etc.) mixed with actual code.
+				// Extract the actual code blocks from the agent output.
+				const extracted = extractCode(output);
+				if (extracted.method !== "raw") {
+					log.debug(
+						{ method: extracted.method, originalLength: output.length, extractedLength: extracted.code.length },
+						"Extracted code from OpenCode agent output",
+					);
+					output = extracted.code;
 				}
 
 				return {

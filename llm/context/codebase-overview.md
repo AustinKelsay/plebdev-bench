@@ -12,9 +12,15 @@ bun pb --models llama3.2:3b         # Limit to specific model
 bun pb --tests smoke                # Limit to specific test
 bun pb --pass-types blind           # Limit to blind pass only
 bun pb --harnesses ollama           # Limit to ollama harness only
+bun pb compare <runA> <runB>        # Compare two runs
+bun pb compare <runA> <runB> --json # Output raw JSON
 bun test                            # Run test suite
 bun run typecheck                   # Type check
 ```
+
+## Environment Variables
+
+- `OPENROUTER_API_KEY` - Enables frontier eval via OpenRouter (GPT-5.2)
 
 ## Module Layout
 
@@ -40,18 +46,26 @@ src/
 ├── lib/
 │   ├── logger.ts         # Pino logger
 │   ├── run-id.ts         # ID generator
-│   └── timeout.ts        # Dynamic timeout calculation
+│   ├── timeout.ts        # Dynamic timeout calculation
+│   ├── code-extractor.ts # Extract code from LLM markdown output
+│   ├── scorer.ts         # Run automated scoring via dynamic import
+│   ├── scoring-spec.ts   # Scoring spec types + loader
+│   ├── openrouter-client.ts # Frontier eval via OpenRouter API
+│   ├── stats.ts          # Run statistics calculation + formatting
+│   └── failure-classifier.ts # Classify generation/scoring errors
 ├── runner/
 │   ├── index.ts          # Orchestration
 │   ├── plan-builder.ts   # Discovery + matrix expansion
 │   └── item-executor.ts  # Single item execution
 ├── results/
 │   ├── writer.ts         # Write plan.json + run.json
-│   └── reader.ts         # Stub
+│   ├── reader.ts         # Read run results
+│   └── compare.ts        # Compare two runs + delta computation
 └── tests/
-    └── smoke/            # First benchmark test
-        ├── prompt.blind.md
-        └── prompt.informed.md
+    ├── smoke/            # Basic add() function
+    ├── calculator-basic/ # Stateless arithmetic functions
+    ├── calculator-stateful/ # Calculator with memory
+    └── todo-app/         # CRUD todo manager
 ```
 
 ## Harnesses
@@ -86,6 +100,8 @@ opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096
 - Server mode bypasses 2+ min cold boot (32+ LSP servers, plugins)
 - `opencode-server.ts` manages lifecycle with health checks
 - **Important**: Models must be registered in `~/.config/opencode/opencode.json`
+- **Prompt prefix**: Adapter prepends instructions telling OpenCode to output code directly (not write to files via Edit tool)
+- **Code extraction**: Adapter applies `extractCode()` to capture code blocks from output
 
 ## Result Artifacts
 
@@ -101,7 +117,12 @@ Each run creates `results/<run-id>/`:
 | `RunPlan` | plan.schema.ts | Expanded matrix (plan.json) |
 | `RunResult` | result.schema.ts | Execution output (run.json) |
 | `MatrixItem` | plan.schema.ts | Single matrix entry |
-| `MatrixItemResult` | result.schema.ts | Item + generation result |
+| `MatrixItemResult` | result.schema.ts | Item + generation result + scores |
+| `ScoringSpec` | scoring.schema.ts | Data-driven test definitions |
+| `AutomatedScore` | result.schema.ts | Passed/failed/total counts |
+| `FrontierEval` | result.schema.ts | GPT-5.2 score + reasoning |
+| `GenerationFailureType` | common.schema.ts | Failure type enum (timeout, api_error, etc.) |
+| `ScoringFailureType` | common.schema.ts | Failure type enum (extraction, import, etc.) |
 
 ## Key Behaviors
 
@@ -114,6 +135,7 @@ Each run creates `results/<run-id>/`:
 - **Stderr fallback**: If stdout is empty but stderr has meaningful content, uses stderr as output
 - **Model recognition errors**: Fast empty responses (<2s) indicate model not recognized by OpenCode (check config)
 - **Failure handling**: Item failures recorded, don't crash run, exit 0
+- **Failure categorization**: Errors classified as generation failures (timeout, api_error, harness_error, prompt_not_found) or scoring failures (extraction, import, export_validation, test_execution, spec_load, no_spec)
 - **Debug logging**: Harness adapters log command execution and stderr for troubleshooting
 - **Progress output**: `item 01/08: harness=ollama model=X test=Y pass=blind timeout=5m`
 
@@ -134,4 +156,4 @@ Each run creates `results/<run-id>/`:
 ## Current Status
 
 - Setup phase: Complete (multi-harness support added)
-- MVP phase: Not started (scoring, frontier eval)
+- MVP phase: Complete (scoring, frontier eval, compare, enhanced stats)

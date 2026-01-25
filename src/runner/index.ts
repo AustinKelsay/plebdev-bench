@@ -20,6 +20,8 @@ import { logger } from "../lib/logger.js";
 import { createHarness } from "../harnesses/index.js";
 import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { stopServer as stopOpenCodeServer } from "../harnesses/opencode-server.js";
+import { hasOpenRouterKey } from "../lib/openrouter-client.js";
+import { calculateRunStats, formatRunStats } from "../lib/stats.js";
 
 /**
  * Runs the complete benchmark workflow.
@@ -37,12 +39,16 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const plan = await buildRunPlan(config);
 	const log = logger.child({ runId: plan.runId });
 
+	// Check frontier eval availability
+	const frontierEvalEnabled = hasOpenRouterKey();
+
 	// Print plan summary
 	console.log("");
 	console.log(`Run: ${plan.runId}`);
 	console.log(
 		`Items: ${plan.summary.totalItems} (models: ${plan.summary.models}, harnesses: ${plan.summary.harnesses}, tests: ${plan.summary.tests})`,
 	);
+	console.log(`Frontier eval: ${frontierEvalEnabled ? "enabled" : "disabled (no OPENROUTER_API_KEY)"}`);
 	console.log("");
 
 	// Fetch model info for dynamic timeouts
@@ -136,12 +142,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Cleanup: stop OpenCode server if it was started
 	await stopOpenCodeServer();
 
-	// Print summary
-	console.log("");
-	console.log(`Run complete: ${plan.runId}`);
-	console.log(`  Completed: ${completed}/${total}`);
-	console.log(`  Failed: ${failed}`);
-	console.log(`  Duration: ${(durationMs / 1000).toFixed(1)}s`);
-	console.log(`  Results: ${config.outputDir}/${plan.runId}/`);
-	console.log("");
+	// Calculate and print detailed stats
+	const stats = calculateRunStats(results);
+	console.log(formatRunStats(stats, plan.runId, completed, failed, total, durationMs, config.outputDir));
 }
