@@ -11,14 +11,21 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { MatrixItem, MatrixItemResult, GenerationResult, AutomatedScore, FrontierEval, ScoringMetrics } from "../schemas/index.js";
+import type {
+	MatrixItem,
+	MatrixItemResult,
+	GenerationResult,
+	AutomatedScore,
+	FrontierEval,
+	ScoringMetrics,
+} from "../schemas/index.js";
 import { createHarness, type HarnessName } from "../harnesses/index.js";
 import { logger } from "../lib/logger.js";
 import { scoreGeneration } from "../lib/scorer.js";
 import { extractCode } from "../lib/code-extractor.js";
 import { loadRubric } from "../lib/scoring-spec.js";
 import { evaluateWithFrontier, getOpenRouterKey } from "../lib/openrouter-client.js";
-import { classifyGenerationError } from "../lib/failure-classifier.js";
+import { classifyGenerationError, classifyScoringError } from "../lib/failure-classifier.js";
 
 /**
  * Loads a prompt file from the test directory.
@@ -74,6 +81,7 @@ export async function executeItem(
 	const startedAt = new Date().toISOString();
 
 	let generation: GenerationResult;
+	let generationFailure: MatrixItemResult["generationFailure"];
 
 	try {
 		// Load prompt
@@ -115,12 +123,18 @@ export async function executeItem(
 			durationMs: 0, // Duration tracked by harness, but we failed before getting it
 		};
 
+		generationFailure = {
+			type: failureType,
+			message: errorMessage,
+		};
+
 		log.warn({ error: errorMessage, failureType, harness: item.harness }, "Generation failed");
 	}
 
 	// Run automated scoring if generation succeeded
 	let automatedScore: AutomatedScore | undefined;
 	let scoringMetrics: ScoringMetrics | undefined;
+	let scoringFailure: MatrixItemResult["scoringFailure"];
 	if (generation.success && generation.output) {
 		try {
 			log.debug("Running automated scoring...");
@@ -138,12 +152,23 @@ export async function executeItem(
 				durationMs: scoringDurationMs,
 			};
 
+			if (scoringResult.failureType && scoringResult.error) {
+				scoringFailure = {
+					type: scoringResult.failureType,
+					message: scoringResult.error,
+				};
+			}
+
 			log.info(
 				{ passed: scoringResult.passed, total: scoringResult.total, durationMs: scoringDurationMs },
 				"Scoring completed",
 			);
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
+			scoringFailure = {
+				type: classifyScoringError(errorMessage),
+				message: errorMessage,
+			};
 			log.warn({ error: errorMessage }, "Scoring failed");
 			// Don't fail the item, just record no score
 		}
@@ -151,6 +176,7 @@ export async function executeItem(
 
 	// Run frontier eval if API key is present and generation succeeded
 	let frontierEval: FrontierEval | undefined;
+	let frontierEvalFailure: MatrixItemResult["frontierEvalFailure"];
 	const openRouterKey = getOpenRouterKey();
 	if (openRouterKey && generation.success && generation.output) {
 		const rubric = loadRubric(item.test);
@@ -168,16 +194,22 @@ export async function executeItem(
 					openRouterKey,
 				);
 
-				if (evalResult) {
+				if (evalResult.ok) {
 					frontierEval = {
-						score: evalResult.score,
-						reasoning: evalResult.reasoning,
-						model: evalResult.model,
-						latencyMs: evalResult.latencyMs,
+						score: evalResult.value.score,
+						reasoning: evalResult.value.reasoning,
+						model: evalResult.value.model,
+						latencyMs: evalResult.value.latencyMs,
 					};
+				} else {
+					frontierEvalFailure = evalResult.failure;
 				}
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
+				frontierEvalFailure = {
+					type: "unknown",
+					message: errorMessage,
+				};
 				log.warn({ error: errorMessage }, "Frontier eval failed");
 				// Don't fail the item, just record no eval
 			}
@@ -201,5 +233,8 @@ export async function executeItem(
 		automatedScore,
 		scoringMetrics,
 		frontierEval,
+		generationFailure,
+		scoringFailure,
+		frontierEvalFailure,
 	};
 }

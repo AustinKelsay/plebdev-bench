@@ -63,3 +63,21 @@ export const ScoringFailureTypeSchema = z.enum(scoringFailureTypes);
 
 /** Scoring failure type. */
 export type ScoringFailureType = z.infer<typeof ScoringFailureTypeSchema>;
+
+/** Valid frontier eval failure types. */
+export const frontierEvalFailureTypes = [
+	"timeout",
+	"auth_error",
+	"rate_limited",
+	"http_error",
+	"invalid_response",
+	"parse_error",
+	"truncated",
+	"unknown",
+] as const;
+
+/** Zod schema for frontier eval failure types. */
+export const FrontierEvalFailureTypeSchema = z.enum(frontierEvalFailureTypes);
+
+/** Frontier eval failure type. */
+export type FrontierEvalFailureType = z.infer<typeof FrontierEvalFailureTypeSchema>;

@@ -8,7 +8,14 @@
  */
 
 import { z } from "zod";
-import { ItemStatusSchema, PassTypeSchema, SCHEMA_VERSION, GenerationFailureTypeSchema } from "./common.schema.js";
+import {
+	ItemStatusSchema,
+	PassTypeSchema,
+	SCHEMA_VERSION,
+	GenerationFailureTypeSchema,
+	ScoringFailureTypeSchema,
+	FrontierEvalFailureTypeSchema,
+} from "./common.schema.js";
 
 /** Zod schema for generation output from a harness. */
 export const GenerationResultSchema = z.object({
@@ -79,6 +86,54 @@ export const ScoringMetricsSchema = z.object({
 /** Scoring metrics type. */
 export type ScoringMetrics = z.infer<typeof ScoringMetricsSchema>;
 
+/** Zod schema for a generation failure record. */
+export const GenerationFailureSchema = z.object({
+	/** Failure type. */
+	type: GenerationFailureTypeSchema,
+
+	/** Human-readable failure message. */
+	message: z.string(),
+});
+
+/** Generation failure record type. */
+export type GenerationFailure = z.infer<typeof GenerationFailureSchema>;
+
+/** Zod schema for a scoring failure record. */
+export const ScoringFailureSchema = z.object({
+	/** Failure type. */
+	type: ScoringFailureTypeSchema,
+
+	/** Human-readable failure message. */
+	message: z.string(),
+});
+
+/** Scoring failure record type. */
+export type ScoringFailure = z.infer<typeof ScoringFailureSchema>;
+
+/** Zod schema for a frontier eval failure record. */
+export const FrontierEvalFailureSchema = z.object({
+	/** Failure type. */
+	type: FrontierEvalFailureTypeSchema,
+
+	/** Human-readable failure message. */
+	message: z.string(),
+
+	/** HTTP status code (if available). */
+	status: z.number().optional(),
+
+	/** Latency in milliseconds (if available). */
+	latencyMs: z.number().optional(),
+
+	/** Model used for evaluation (if known). */
+	model: z.string().optional(),
+
+	/** Attempts used before failing. */
+	attempts: z.number().optional(),
+});
+
+/** Frontier eval failure record type. */
+export type FrontierEvalFailure = z.infer<typeof FrontierEvalFailureSchema>;
+
 /** Zod schema for a single matrix item result. */
 export const MatrixItemResultSchema = z.object({
 	/** Unique item ID (matches plan). */
@@ -108,14 +163,23 @@ export const MatrixItemResultSchema = z.object({
 	/** Generation result from harness. */
 	generation: GenerationResultSchema.optional(),
 
+	/** Structured generation failure record (when generation fails). */
+	generationFailure: GenerationFailureSchema.optional(),
+
 	/** Automated test scoring. */
 	automatedScore: AutomatedScoreSchema.optional(),
 
 	/** Scoring metrics (timing). */
 	scoringMetrics: ScoringMetricsSchema.optional(),
 
+	/** Structured scoring failure record (when scoring fails). */
+	scoringFailure: ScoringFailureSchema.optional(),
+
 	/** Frontier evaluation. */
 	frontierEval: FrontierEvalSchema.optional(),
+
+	/** Structured frontier eval failure record (when eval fails). */
+	frontierEvalFailure: FrontierEvalFailureSchema.optional(),
 });
 
 /** Result for a single matrix item execution. */

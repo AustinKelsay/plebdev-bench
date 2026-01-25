@@ -17,6 +17,9 @@ export {
 	scoringFailureTypes,
 	ScoringFailureTypeSchema,
 	type ScoringFailureType,
+	frontierEvalFailureTypes,
+	FrontierEvalFailureTypeSchema,
+	type FrontierEvalFailureType,
 } from "./common.schema.js";
 
 export {
@@ -43,6 +46,12 @@ export {
 	type ScoringMetrics,
 	FrontierEvalSchema,
 	type FrontierEval,
+	GenerationFailureSchema,
+	type GenerationFailure,
+	ScoringFailureSchema,
+	type ScoringFailure,
+	FrontierEvalFailureSchema,
+	type FrontierEvalFailure,
 	MatrixItemResultSchema,
 	type MatrixItemResult,
 	RunResultSchema,

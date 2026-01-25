@@ -1,0 +1,194 @@
+{
+  "schemaVersion": "0.1.0",
+  "runId": "20260125-105345-3c5293",
+  "createdAt": "2026-01-25T18:53:45.623Z",
+  "environment": {
+    "platform": "darwin",
+    "bunVersion": "1.3.3",
+    "hostname": "Mac.attlocal.net"
+  },
+  "config": {
+    "ollamaBaseUrl": "http://localhost:11434",
+    "generateTimeoutMs": 300000,
+    "passTypes": [
+      "blind",
+      "informed"
+    ]
+  },
+  "items": [
+    {
+      "id": "01",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "02",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "03",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "04",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "05",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "06",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "07",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "08",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "09",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "10",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "11",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "12",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "13",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "14",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "15",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "16",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "17",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "18",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "19",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "20",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "21",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "22",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "23",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "24",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    }
+  ],
+  "summary": {
+    "totalItems": 24,
+    "models": 1,
+    "harnesses": 3,
+    "tests": 4
+  }
+}

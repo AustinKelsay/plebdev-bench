@@ -12,6 +12,7 @@
  */
 
 import type { BenchConfig, RunResult, MatrixItemResult } from "../schemas/index.js";
+import { SCHEMA_VERSION } from "../schemas/index.js";
 import type { HarnessName, ModelInfo } from "../harnesses/harness.js";
 import { buildRunPlan } from "./plan-builder.js";
 import { executeItem } from "./item-executor.js";
@@ -22,6 +23,9 @@ import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { ensureServerRunning, stopServer as stopOpenCodeServer } from "../harnesses/opencode-server.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
+
+/** Warn if run.json exceeds this size (bytes). */
+const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
 
 /**
  * Runs the complete benchmark workflow.
@@ -147,7 +151,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 
 	// Build run result
 	const runResult: RunResult = {
-		schemaVersion: "0.1.0",
+		schemaVersion: SCHEMA_VERSION,
 		runId: plan.runId,
 		startedAt,
 		completedAt,
@@ -160,6 +164,19 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		},
 		items: results,
 	};
+
+	// Warn on very large run.json payloads (runaway output)
+	try {
+		const estimatedBytes = Buffer.byteLength(JSON.stringify(runResult));
+		if (estimatedBytes > RUN_JSON_WARN_BYTES) {
+			log.warn(
+				{ runId: plan.runId, sizeBytes: estimatedBytes },
+				"run.json is large; consider moving large outputs to artifacts in future runs",
+			);
+		}
+	} catch {
+		// Ignore estimation errors
+	}
 
 	// Write run.json
 	log.info("Writing run.json...");

@@ -28,6 +28,39 @@ export type ScoringFailureType =
   | "test_execution"
   | "unknown";
 
+/** Frontier eval failure types */
+export type FrontierEvalFailureType =
+  | "timeout"
+  | "auth_error"
+  | "rate_limited"
+  | "http_error"
+  | "invalid_response"
+  | "parse_error"
+  | "truncated"
+  | "unknown";
+
+/** Generation failure record */
+export interface GenerationFailure {
+  type: GenerationFailureType;
+  message: string;
+}
+
+/** Scoring failure record */
+export interface ScoringFailure {
+  type: ScoringFailureType;
+  message: string;
+}
+
+/** Frontier eval failure record */
+export interface FrontierEvalFailure {
+  type: FrontierEvalFailureType;
+  message: string;
+  status?: number;
+  latencyMs?: number;
+  model?: string;
+  attempts?: number;
+}
+
 /** Automated test scoring result */
 export interface AutomatedScore {
   passed: number;
@@ -74,9 +107,12 @@ export interface MatrixItemResult extends MatrixItem {
   startedAt?: string;
   completedAt?: string;
   generation?: GenerationResult;
+  generationFailure?: GenerationFailure;
   automatedScore?: AutomatedScore;
   scoringMetrics?: ScoringMetrics;
+  scoringFailure?: ScoringFailure;
   frontierEval?: FrontierEval;
+  frontierEvalFailure?: FrontierEvalFailure;
 }
 
 /** Run plan environment info */

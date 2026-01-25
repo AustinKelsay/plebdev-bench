@@ -142,8 +142,10 @@ if (openRouterKey && generation.success && generation.output) {
   const rubric = loadRubric(item.test);
   if (rubric) {
     const evalResult = await evaluateWithFrontier({ code, rubric, testSlug }, openRouterKey);
-    if (evalResult) {
+    if (evalResult.ok) {
       frontierEval = { score, reasoning, model };
+    } else {
+      frontierEvalFailure = evalResult.failure;
     }
   }
 }
@@ -335,11 +337,14 @@ For each matrix item:
    c. Run automated scoring (5s timeout)
    d. IF OPENROUTER_API_KEY present + rubric exists:
       - Call frontier eval (30s timeout)
-      - On failure: log warning, continue
+      - On failure: record `frontierEvalFailure`, continue
 4. Record result with:
    - generation (success/output/error/tokens)
+   - generationFailure (type/message when generation fails)
    - automatedScore (passed/failed/total)
+   - scoringFailure (type/message when scoring fails)
    - frontierEval (score/reasoning/model)
+   - frontierEvalFailure (type/message/status on eval failure)
 5. Continue to next item
 ```
 
@@ -351,8 +356,8 @@ For each matrix item:
 | Scoring import error | Records 0 passed, total = test case count |
 | Scoring timeout | Records as all-fail after 5s |
 | No scoring spec | Skips scoring, records 0/0/0 |
-| Frontier eval truncated | Detects via `finish_reason`, logs warning, sets frontierEval = null |
-| Frontier eval fails | Logs warning, sets frontierEval = null |
+| Frontier eval truncated | Detects via `finish_reason`, logs warning, records `frontierEvalFailure` |
+| Frontier eval fails | Logs warning, records `frontierEvalFailure` |
 | No rubric | Skips frontier eval |
 | Compare invalid run | Throws at read time |
 
@@ -377,7 +382,7 @@ All tests pass:
 
 Total: 43 tests with 120 assertions.
 
-Note: Some pre-existing TypeScript strictness issues exist in `openrouter-client.ts` and `scorer.ts` (type narrowing). Bun runs the code correctly; these can be addressed in the hardening phase.
+Note: TypeScript strictness issues in `openrouter-client.ts` and `scorer.ts` were resolved during hardening (structured failures + proper timeouts).
 
 ## Feature F: Failure Categorization
 

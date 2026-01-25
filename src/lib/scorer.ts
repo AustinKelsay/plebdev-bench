@@ -172,6 +172,8 @@ function createInstance(
  * @param fn - Function to execute with suppressed stdout
  * @returns Result of the function (supports both sync and async)
  */
+function suppressStdout<T>(fn: () => Promise<T>): Promise<T>;
+function suppressStdout<T>(fn: () => T): T;
 function suppressStdout<T>(fn: () => T | Promise<T>): T | Promise<T> {
 	const originalWrite = process.stdout.write.bind(process.stdout);
 	const originalLog = console.log;
@@ -209,6 +211,50 @@ function suppressStdout<T>(fn: () => T | Promise<T>): T | Promise<T> {
 }
 
 /**
+ * Suppresses stdout during async code execution and provides a manual restore hook.
+ *
+ * @param fn - Async function to execute with suppressed stdout
+ * @returns Promise and restore function for early cleanup
+ */
+function suppressStdoutAsync<T>(
+	fn: () => Promise<T>,
+): { promise: Promise<T>; restore: () => void } {
+	const originalWrite = process.stdout.write.bind(process.stdout);
+	const originalLog = console.log;
+	const originalError = console.error;
+	const originalWarn = console.warn;
+	let isRestored = false;
+
+	// Suppress stdout
+	const suppressedWrite = () => true;
+	process.stdout.write = suppressedWrite as typeof process.stdout.write;
+	console.log = () => {};
+	console.error = () => {};
+	console.warn = () => {};
+
+	const restore = () => {
+		if (isRestored) {
+			return;
+		}
+		isRestored = true;
+		process.stdout.write = originalWrite;
+		console.log = originalLog;
+		console.error = originalError;
+		console.warn = originalWarn;
+	};
+
+	const promise = (async () => {
+		try {
+			return await fn();
+		} finally {
+			restore();
+		}
+	})();
+
+	return { promise, restore };
+}
+
+/**
  * Imports a module with a timeout and suppressed stdout.
  *
  * @param filePath - Path to the file to import
@@ -219,19 +265,31 @@ async function importWithTimeout(
 	filePath: string,
 	timeoutMs: number,
 ): Promise<Record<string, unknown>> {
-	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
+	let timeoutId: ReturnType<typeof setTimeout> | null = null;
 	try {
 		// Add cache-busting query param
 		const cacheBuster = `?t=${Date.now()}`;
 		// Suppress stdout during import (module may have top-level console.log)
-		const module = await suppressStdout(async () => {
+		const { promise: importPromise, restore } = suppressStdoutAsync(async () => {
 			return await import(`${filePath}${cacheBuster}`);
 		});
+		// Prevent unhandled rejections if timeout wins the race.
+		void importPromise.catch(() => {});
+
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			timeoutId = setTimeout(() => {
+				restore();
+				reject(new Error(`Import timed out after ${timeoutMs}ms`));
+			}, timeoutMs);
+		});
+
+		const module = await Promise.race([importPromise, timeoutPromise]);
 		return module as Record<string, unknown>;
 	} finally {
-		clearTimeout(timeoutId);
+		// Best-effort cleanup for timeout
+		if (timeoutId !== null) {
+			clearTimeout(timeoutId);
+		}
 	}
 }
 

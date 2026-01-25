@@ -127,15 +127,15 @@ describe("OllamaAdapter", () => {
 			expect(result.promptTokens).toBe(50);
 			expect(result.completionTokens).toBe(25);
 
-			expect(mockFetch).toHaveBeenCalledWith(
-				`${baseUrl}/api/generate`,
-				expect.objectContaining({
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: expect.stringContaining('"stream":false'),
-				}),
-			);
-		});
+				expect(mockFetch).toHaveBeenCalledWith(
+					`${baseUrl}/api/generate`,
+					expect.objectContaining({
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: expect.stringContaining('"stream":true'),
+					}),
+				);
+			});
 
 		it("should throw on generation error", async () => {
 			mockFetch.mockResolvedValue(
