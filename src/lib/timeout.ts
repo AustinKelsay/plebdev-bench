@@ -1,18 +1,20 @@
 /**
- * Purpose: Calculate dynamic timeouts based on model size.
+ * Purpose: Calculate dynamic timeouts based on model size and precision.
  * Exports: calculateTimeout
  *
  * Timeout formula:
  * - Base: 60s (for small models and setup overhead)
  * - Per 10B params: ceil(params/10) * 60s (scales with model size)
  * - CLI overhead: Goose=60s, OpenCode=dynamic (60s + params/10 * 30s)
+ * - High-precision multiplier: 5x for bf16/fp16/f32 (slow cold start + generation)
  *
- * Examples (base + sizeScaling + harnessOverhead):
+ * Examples (base + sizeScaling + harnessOverhead + largeModelOverhead):
  * - 3B model on Ollama: 60 + 60 + 0 + 0 = 120s (2 min)
- * - 30B model on Ollama: 60 + 180 + 0 + 120 = 360s (6 min)
- * - 30B model on Goose: 60 + 180 + 60 + 120 = 420s (7 min)
- * - 3B model on OpenCode: 60 + 60 + 69 = 189s (~3 min)
- * - 30B model on OpenCode: 60 + 180 + 150 + 120 = 510s (~8.5 min)
+ * - 9B bf16 on Ollama: (60 + 60 + 0 + 0) * 5 = 600s (10 min)
+ * - 30B model on Ollama: 60 + 180 + 0 + 300 = 540s (9 min)
+ * - 30B model on Goose: 60 + 180 + 60 + 300 = 600s (10 min)
+ * - 3B model on OpenCode: 60 + 60 + 69 + 0 = 189s (~3 min)
+ * - 30B model on OpenCode: 60 + 180 + 150 + 300 = 690s (~11.5 min)
  */
 
 import type { HarnessName } from "../harnesses/harness.js";
@@ -26,8 +28,8 @@ const PER_10B_TIMEOUT_MS = 60_000;
 /** Additional overhead for Goose CLI in milliseconds (1 minute). */
 const GOOSE_OVERHEAD_MS = 60_000;
 
-/** Additional overhead for large models (>20B) in milliseconds (2 minutes). */
-const LARGE_MODEL_OVERHEAD_MS = 120_000;
+/** Additional overhead for large models (>20B) in milliseconds (5 minutes). */
+const LARGE_MODEL_OVERHEAD_MS = 300_000;
 
 /** Base overhead for OpenCode in milliseconds (1 minute). */
 const OPENCODE_BASE_OVERHEAD_MS = 60_000;
@@ -40,6 +42,20 @@ const MAX_TIMEOUT_MS = 20 * 60_000;
 
 /** Minimum timeout floor in milliseconds (1 minute). */
 const MIN_TIMEOUT_MS = 60_000;
+
+/** Multiplier for high-precision formats (bf16, fp16, f32) - accounts for cold start + slow generation. */
+const HIGH_PRECISION_MULTIPLIER = 5;
+
+/**
+ * Checks if model tag indicates high-precision format.
+ *
+ * @param modelTag - Model tag (e.g., "llama3:bf16", "qwen:fp16")
+ * @returns true if high-precision (bf16, fp16, f32)
+ */
+function isHighPrecisionModel(modelTag: string): boolean {
+	const tag = modelTag.toLowerCase();
+	return tag.includes("bf16") || tag.includes("fp16") || tag.includes("f32");
+}
 
 /**
  * Calculates OpenCode overhead based on model size.
@@ -66,12 +82,14 @@ function calculateOpenCodeOverhead(parametersBillions: number): number {
  * @param parametersBillions - Model size in billions of parameters
  * @param harness - Harness type (ollama, goose, opencode)
  * @param baseTimeoutMs - User-specified base timeout (overrides default)
+ * @param modelTag - Model tag for quantization detection (e.g., "llama3:bf16")
  * @returns Calculated timeout in milliseconds
  */
 export function calculateTimeout(
 	parametersBillions: number,
 	harness: HarnessName,
 	baseTimeoutMs?: number,
+	modelTag?: string,
 ): number {
 	// Use provided base or default
 	const base = baseTimeoutMs ?? BASE_TIMEOUT_MS;
@@ -93,6 +111,11 @@ export function calculateTimeout(
 
 	// Calculate total
 	let timeout = base + sizeScaling + harnessOverhead + largeModelOverhead;
+
+	// Apply high-precision multiplier for bf16/fp16/f32 models (slow cold start + generation)
+	if (modelTag && isHighPrecisionModel(modelTag)) {
+		timeout *= HIGH_PRECISION_MULTIPLIER;
+	}
 
 	// Apply floor and ceiling
 	timeout = Math.max(MIN_TIMEOUT_MS, Math.min(MAX_TIMEOUT_MS, timeout));

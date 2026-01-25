@@ -116,6 +116,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			paramsBillions,
 			item.harness as HarnessName,
 			config.generateTimeoutMs,
+			item.model,
 		);
 
 		// Progress counter (terminal-native UX)

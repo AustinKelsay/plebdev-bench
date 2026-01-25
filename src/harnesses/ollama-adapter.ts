@@ -6,12 +6,12 @@
  * Endpoints used:
  * - GET /api/version → health check
  * - GET /api/tags → list local models
- * - POST /api/generate → generate completion (non-streaming)
+ * - POST /api/generate → generate completion (streaming mode)
  *
  * Invariants:
  * - All requests have a timeout via AbortController
  * - Connection errors are thrown, not swallowed
- * - Non-streaming mode only for MVP
+ * - Streaming mode keeps connection alive during model loading (critical for bf16)
  */
 
 import type { Harness, GenerateOpts, GenerateResult, ModelInfo } from "./harness.js";
@@ -56,7 +56,9 @@ export function createOllamaAdapter(config: OllamaAdapterConfig): Harness {
 			});
 			return response;
 		} catch (error) {
-			if (timedOut) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			// Check both our flag AND error message (external timeouts won't set our flag)
+			if (timedOut || errorMessage.toLowerCase().includes("timed out")) {
 				throw new Error(
 					`Request timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout for large models.`,
 				);
@@ -165,46 +167,74 @@ export function createOllamaAdapter(config: OllamaAdapterConfig): Harness {
 			const startTime = performance.now();
 			const keepAlive = opts.unloadAfter ? 0 : "5m";
 
-			const response = await fetchWithTimeout(
-				`${baseUrl}/api/generate`,
-				opts.timeoutMs,
-				{
+			// Use streaming to keep connection alive during model loading (critical for bf16 cold starts)
+			const controller = new AbortController();
+			let timedOut = false;
+			const timeoutId = setTimeout(() => {
+				timedOut = true;
+				controller.abort();
+			}, opts.timeoutMs);
+
+			try {
+				const response = await fetch(`${baseUrl}/api/generate`, {
 					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
+					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						model: opts.model,
 						prompt: opts.prompt,
-						stream: false, // MVP: non-streaming only
+						stream: true, // Streaming keeps connection alive during model loading
 						keep_alive: keepAlive,
 					}),
-				},
-			);
+					signal: controller.signal,
+				});
 
-			if (!response.ok) {
-				throw new Error(
-					`Generation failed: ${response.status} ${response.statusText}`,
-				);
+				if (!response.ok) {
+					throw new Error(
+						`Generation failed: ${response.status} ${response.statusText}`,
+					);
+				}
+
+				// Accumulate streamed response
+				let output = "";
+				let promptTokens: number | undefined;
+				let completionTokens: number | undefined;
+
+				const reader = response.body?.getReader();
+				if (!reader) throw new Error("No response body");
+
+				const decoder = new TextDecoder();
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+
+					// Parse NDJSON chunks (Ollama streams newline-delimited JSON)
+					const chunk = decoder.decode(value, { stream: true });
+					for (const line of chunk.split("\n").filter(Boolean)) {
+						const data = JSON.parse(line) as {
+							response?: string;
+							done?: boolean;
+							prompt_eval_count?: number;
+							eval_count?: number;
+						};
+						if (data.response) output += data.response;
+						if (data.prompt_eval_count) promptTokens = data.prompt_eval_count;
+						if (data.eval_count) completionTokens = data.eval_count;
+					}
+				}
+
+				const durationMs = Math.round(performance.now() - startTime);
+				return { output, durationMs, promptTokens, completionTokens };
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				if (timedOut || errorMessage.toLowerCase().includes("timed out")) {
+					throw new Error(
+						`Request timed out after ${Math.round(opts.timeoutMs / 1000)}s. Try increasing --timeout for large models.`,
+					);
+				}
+				throw error;
+			} finally {
+				clearTimeout(timeoutId);
 			}
-
-			const data = (await response.json()) as {
-				model: string;
-				response: string;
-				done: boolean;
-				total_duration?: number;
-				prompt_eval_count?: number;
-				eval_count?: number;
-			};
-
-			const durationMs = Math.round(performance.now() - startTime);
-
-			return {
-				output: data.response,
-				durationMs,
-				promptTokens: data.prompt_eval_count,
-				completionTokens: data.eval_count,
-			};
 		},
 	};
 }
