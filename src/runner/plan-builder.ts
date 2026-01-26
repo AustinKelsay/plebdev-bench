@@ -173,7 +173,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		environment: {
 			platform: os.platform(),
 			bunVersion: getBunVersion(),
-			hostname: os.hostname(),
 		},
 		config: {
 			ollamaBaseUrl: config.ollamaBaseUrl,

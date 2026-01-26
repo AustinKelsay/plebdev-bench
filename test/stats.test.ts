@@ -303,6 +303,7 @@ describe("formatRunStats", () => {
 			tokens: null,
 			scoring: null,
 			frontier: null,
+			generationFailures: null,
 		};
 
 		const output = formatRunStats(stats, "test-run", 10, 2, 12, 60000, "results");
@@ -333,6 +334,7 @@ describe("formatRunStats", () => {
 			},
 			scoring: null,
 			frontier: null,
+			generationFailures: null,
 		};
 
 		const output = formatRunStats(stats, "test-run", 2, 0, 2, 10000, "results");
@@ -346,26 +348,27 @@ describe("formatRunStats", () => {
 		expect(output).toContain("250/item");
 	});
 
-	it("should include scoring stats when available", () => {
-		const stats: RunStats = {
-			timing: {
-				avgGenerationMs: 1000,
-				avgScoringMs: 100,
-				avgFrontierEvalMs: null,
-				minGenerationMs: 1000,
-				maxGenerationMs: 1000,
-			},
-			tokens: null,
-			scoring: {
-				passRate: 75,
-				totalPassed: 15,
-				totalTests: 20,
-				byTest: [{ name: "test-a", passed: 15, total: 20, passRate: 75 }],
-				byHarness: [{ name: "ollama", passed: 15, total: 20, passRate: 75 }],
-				byModel: [{ name: "llama3.2:3b", passed: 15, total: 20, passRate: 75 }],
-			},
-			frontier: null,
-		};
+		it("should include scoring stats when available", () => {
+			const stats: RunStats = {
+				timing: {
+					avgGenerationMs: 1000,
+					avgScoringMs: 100,
+					avgFrontierEvalMs: null,
+					minGenerationMs: 1000,
+					maxGenerationMs: 1000,
+				},
+				tokens: null,
+				scoring: {
+					passRate: 75,
+					totalPassed: 15,
+					totalTests: 20,
+					byTest: [{ name: "test-a", passed: 15, total: 20, passRate: 75 }],
+					byHarness: [{ name: "ollama", passed: 15, total: 20, passRate: 75 }],
+					byModel: [{ name: "llama3.2:3b", passed: 15, total: 20, passRate: 75 }],
+				},
+				frontier: null,
+				generationFailures: null,
+			};
 
 		const output = formatRunStats(stats, "test-run", 2, 0, 2, 10000, "results");
 
@@ -375,26 +378,27 @@ describe("formatRunStats", () => {
 		expect(output).toContain("Avg scoring:");
 	});
 
-	it("should include frontier stats when available", () => {
-		const stats: RunStats = {
-			timing: {
-				avgGenerationMs: 1000,
-				avgScoringMs: null,
-				avgFrontierEvalMs: 2000,
-				minGenerationMs: 1000,
-				maxGenerationMs: 1000,
-			},
-			tokens: null,
-			scoring: null,
-			frontier: {
-				avgScore: 7.5,
-				itemCount: 4,
-				minScore: 5,
-				maxScore: 10,
-				byHarness: [{ name: "ollama", avgScore: 7.5, count: 4 }],
-				byModel: [{ name: "llama3.2:3b", avgScore: 7.5, count: 4 }],
-			},
-		};
+		it("should include frontier stats when available", () => {
+			const stats: RunStats = {
+				timing: {
+					avgGenerationMs: 1000,
+					avgScoringMs: null,
+					avgFrontierEvalMs: 2000,
+					minGenerationMs: 1000,
+					maxGenerationMs: 1000,
+				},
+				tokens: null,
+				scoring: null,
+				frontier: {
+					avgScore: 7.5,
+					itemCount: 4,
+					minScore: 5,
+					maxScore: 10,
+					byHarness: [{ name: "ollama", avgScore: 7.5, count: 4 }],
+					byModel: [{ name: "llama3.2:3b", avgScore: 7.5, count: 4 }],
+				},
+				generationFailures: null,
+			};
 
 		const output = formatRunStats(stats, "test-run", 4, 0, 4, 10000, "results");
 
@@ -405,35 +409,36 @@ describe("formatRunStats", () => {
 		expect(output).toContain("Avg frontier eval:");
 	});
 
-	it("should show breakdowns when multiple dimensions", () => {
-		const stats: RunStats = {
-			timing: {
-				avgGenerationMs: 1000,
-				avgScoringMs: null,
-				avgFrontierEvalMs: null,
-				minGenerationMs: 1000,
-				maxGenerationMs: 1000,
-			},
-			tokens: null,
-			scoring: {
-				passRate: 50,
-				totalPassed: 10,
-				totalTests: 20,
-				byTest: [
-					{ name: "test-a", passed: 8, total: 10, passRate: 80 },
-					{ name: "test-b", passed: 2, total: 10, passRate: 20 },
-				],
-				byHarness: [
-					{ name: "ollama", passed: 6, total: 10, passRate: 60 },
-					{ name: "goose", passed: 4, total: 10, passRate: 40 },
-				],
-				byModel: [
-					{ name: "llama3.2:3b", passed: 5, total: 10, passRate: 50 },
-					{ name: "qwen2.5:7b", passed: 5, total: 10, passRate: 50 },
-				],
-			},
-			frontier: null,
-		};
+		it("should show breakdowns when multiple dimensions", () => {
+			const stats: RunStats = {
+				timing: {
+					avgGenerationMs: 1000,
+					avgScoringMs: null,
+					avgFrontierEvalMs: null,
+					minGenerationMs: 1000,
+					maxGenerationMs: 1000,
+				},
+				tokens: null,
+				scoring: {
+					passRate: 50,
+					totalPassed: 10,
+					totalTests: 20,
+					byTest: [
+						{ name: "test-a", passed: 8, total: 10, passRate: 80 },
+						{ name: "test-b", passed: 2, total: 10, passRate: 20 },
+					],
+					byHarness: [
+						{ name: "ollama", passed: 6, total: 10, passRate: 60 },
+						{ name: "goose", passed: 4, total: 10, passRate: 40 },
+					],
+					byModel: [
+						{ name: "llama3.2:3b", passed: 5, total: 10, passRate: 50 },
+						{ name: "qwen2.5:7b", passed: 5, total: 10, passRate: 50 },
+					],
+				},
+				frontier: null,
+				generationFailures: null,
+			};
 
 		const output = formatRunStats(stats, "test-run", 4, 0, 4, 10000, "results");
 
@@ -445,19 +450,20 @@ describe("formatRunStats", () => {
 		expect(output).toContain("By model:");
 	});
 
-	it("should include results path", () => {
-		const stats: RunStats = {
-			timing: {
-				avgGenerationMs: 1000,
-				avgScoringMs: null,
-				avgFrontierEvalMs: null,
-				minGenerationMs: 1000,
-				maxGenerationMs: 1000,
-			},
-			tokens: null,
-			scoring: null,
-			frontier: null,
-		};
+		it("should include results path", () => {
+			const stats: RunStats = {
+				timing: {
+					avgGenerationMs: 1000,
+					avgScoringMs: null,
+					avgFrontierEvalMs: null,
+					minGenerationMs: 1000,
+					maxGenerationMs: 1000,
+				},
+				tokens: null,
+				scoring: null,
+				frontier: null,
+				generationFailures: null,
+			};
 
 		const output = formatRunStats(stats, "my-run-id", 1, 0, 1, 1000, "output/dir");
 

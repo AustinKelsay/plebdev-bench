@@ -22,8 +22,8 @@ Built-ins:
 
 ## Status
 
-**Setup phase complete.** The CLI skeleton is working and can run benchmarks against Ollama.
-Authoritative docs live in `llm/project/`.
+**MVP complete + hardening applied.** Multi-harness runs, automated scoring, frontier eval, compare, and dashboard are implemented.
+Authoritative docs live in `llm/project/` and `llm/implementation/`.
 
 ## Tech stack (MVP)
 
@@ -44,6 +44,10 @@ See `llm/project/tech-stack.md` for best practices and pitfalls.
 - **Results are append-only facts**:
   - never silently “fix up” results after the run
   - record enough evidence to explain outcomes
+- **Secrets hygiene**:
+  - OpenRouter API key is read from env only
+  - redacted in logs
+  - never written to results
 - **Terminal-Native / ANSI-Inspired UX**:
   - table/diff oriented output
   - never rely on color alone (pair with labels/symbols like `PASS/FAIL`, `✓`, `✗`, `Δ`)
@@ -88,7 +92,7 @@ bun pb
 # Run with specific options
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
-# Compare two runs (stub - not yet implemented)
+# Compare two runs
 bun run bench compare <run-a> <run-b>
 
 # Run tests
@@ -111,4 +115,5 @@ Each run creates:
 - `llm/project/tech-stack.md` — stack + best practices
 - `llm/project/design-rules.md` — Terminal-Native design rules
 - `llm/project/project-rules.md` — engineering standards
-
+- `llm/implementation/review-and-hardening-implementation.md` — threat model + hardening notes
+- `llm/implementation/release-readiness-checklist.md` — release checklist and sign-off

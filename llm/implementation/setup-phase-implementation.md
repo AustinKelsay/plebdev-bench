@@ -18,7 +18,7 @@ src/
 ├── cli/
 │   ├── index.ts             # Commander program setup
 │   ├── run-command.ts       # `bench run` command
-│   └── compare-command.ts   # `bench compare` stub
+│   └── compare-command.ts   # `bench compare` command (implemented in MVP)
 ├── schemas/
 │   ├── index.ts             # Re-exports
 │   ├── common.schema.ts     # PassType, SCHEMA_VERSION
@@ -42,7 +42,7 @@ src/
 │   └── item-executor.ts     # Single item execution
 ├── results/
 │   ├── writer.ts            # Write plan.json + run.json
-│   └── reader.ts            # Read results (stub)
+│   └── reader.ts            # Read results (plan/run JSON)
 └── tests/
     └── smoke/               # First benchmark test
         ├── prompt.blind.md
@@ -105,7 +105,6 @@ bun run bench run [options]   # Full form
   environment: {
     platform: string         // darwin, linux, win32
     bunVersion: string
-    hostname: string
   }
   config: {
     ollamaBaseUrl: string
@@ -300,7 +299,7 @@ Error: No models found in Ollama. Pull a model first: ollama pull llama3.2:3b
 | `src/index.ts` | CLI entrypoint |
 | `src/cli/index.ts` | Commander program |
 | `src/cli/run-command.ts` | Run command options/action |
-| `src/cli/compare-command.ts` | Compare stub |
+| `src/cli/compare-command.ts` | Compare command (implemented) |
 | `src/schemas/*.ts` | Zod schemas (config, plan, result) |
 | `src/harnesses/harness.ts` | Common interface + types |
 | `src/harnesses/ollama-adapter.ts` | Ollama HTTP adapter |
@@ -329,4 +328,3 @@ Run with: `bun test`
 None for setup phase. Future phases will address:
 - Automated scoring (Vitest against generated code)
 - Frontier eval via OpenRouter
-- Compare command implementation

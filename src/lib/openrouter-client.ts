@@ -1,12 +1,14 @@
 /**
  * Purpose: OpenRouter API client for frontier model evaluation.
- * Exports: evaluateWithFrontier, FrontierEvalRequest, FrontierEvalResponse
+ * Exports: evaluateWithFrontier, FrontierEvalRequest, FrontierEvalResponse, FrontierEvalOutcome
  *
  * Uses OpenRouter to call frontier models (e.g., GPT-5.2) for code evaluation.
- * Failures are graceful - they return null rather than throwing.
+ * Failures return structured outcomes rather than throwing.
  */
 
+import type { Logger } from "pino";
 import { logger } from "./logger.js";
+import type { FrontierEvalFailure } from "../schemas/index.js";
 
 /** OpenRouter API endpoint. */
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -16,6 +18,34 @@ const DEFAULT_MODEL = "openai/gpt-5.2";
 
 /** Default timeout for API calls (30 seconds). */
 const DEFAULT_TIMEOUT_MS = 30_000;
+
+/** Default max attempts for frontier eval requests. */
+const DEFAULT_MAX_ATTEMPTS = 2;
+
+/** Max characters to include in log previews. */
+const LOG_PREVIEW_MAX_CHARS = 500;
+
+/**
+ * Truncates a string for safe logging.
+ */
+function truncateForLog(value: string, maxChars: number = LOG_PREVIEW_MAX_CHARS): string {
+	if (value.length <= maxChars) return value;
+	return `${value.slice(0, Math.max(0, maxChars - 1))}…`;
+}
+
+/**
+ * Sleep helper for bounded retries.
+ */
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Narrow unknown to a record.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
 
 /** Request for frontier evaluation. */
 export interface FrontierEvalRequest {
@@ -59,6 +89,13 @@ export interface FrontierEvalResponse {
 	latencyMs: number;
 }
 
+/** Result of a frontier eval attempt. */
+export type FrontierEvalOutcome =
+	| { ok: true; value: FrontierEvalResponse }
+	| { ok: false; failure: FrontierEvalFailure };
+
+type FrontierEvalFailureType = FrontierEvalFailure["type"];
+
 /**
  * Parses and validates the OpenRouter API response.
  *
@@ -67,40 +104,52 @@ export interface FrontierEvalResponse {
  * @param testSlug - Test slug for context
  * @returns Parsed response data or null on error
  */
+type OpenRouterParseResult =
+	| { ok: true; data: OpenRouterResponse }
+	| { ok: false; type: FrontierEvalFailureType; message: string };
+
 async function parseOpenRouterResponse(
 	response: Response,
-	log: ReturnType<typeof logger.child>,
+	log: Logger,
 	testSlug: string,
-): Promise<OpenRouterResponse | null> {
+): Promise<OpenRouterParseResult> {
 	try {
 		const responseText = await response.text();
 		if (!responseText || responseText.trim().length === 0) {
 			log.warn({ status: response.status }, "Empty response body from OpenRouter");
-			return null;
+			return { ok: false, type: "invalid_response", message: "Empty response body from OpenRouter" };
 		}
 
-		const json = JSON.parse(responseText) as unknown;
-
-		// Validate response structure
-		if (
-			typeof json !== "object" ||
-			json === null ||
-			!("choices" in json) ||
-			!Array.isArray(json.choices) ||
-			json.choices.length === 0
-		) {
+		let json: unknown;
+		try {
+			json = JSON.parse(responseText);
+		} catch (error) {
 			log.warn(
 				{
-					hasChoices: "choices" in json,
-					choicesLength: Array.isArray(json.choices) ? json.choices.length : 0,
+					error: error instanceof Error ? error.message : String(error),
+					status: response.status,
+					testSlug,
+					bodyPreview: truncateForLog(responseText),
+				},
+				"Failed to parse OpenRouter response JSON",
+			);
+			return { ok: false, type: "parse_error", message: "Failed to parse OpenRouter response JSON" };
+		}
+
+		const choices = isRecord(json) ? (json as { choices?: unknown }).choices : undefined;
+		if (!Array.isArray(choices) || choices.length === 0) {
+			log.warn(
+				{
+					hasChoices: Array.isArray(choices),
+					choicesLength: Array.isArray(choices) ? choices.length : 0,
 					testSlug,
 				},
 				"Invalid OpenRouter response structure",
 			);
-			return null;
+			return { ok: false, type: "invalid_response", message: "Invalid OpenRouter response structure" };
 		}
 
-		return json as OpenRouterResponse;
+		return { ok: true, data: json as OpenRouterResponse };
 	} catch (error) {
 		log.warn(
 			{
@@ -110,7 +159,7 @@ async function parseOpenRouterResponse(
 			},
 			"Failed to parse OpenRouter response JSON",
 		);
-		return null;
+		return { ok: false, type: "parse_error", message: "Failed to parse OpenRouter response JSON" };
 	}
 }
 
@@ -180,12 +229,29 @@ function parseEvalResponse(responseText: string): { score: number; reasoning: st
 }
 
 /**
+ * Classifies HTTP status codes into failure types.
+ */
+function classifyHttpStatus(status: number): { type: FrontierEvalFailureType; retryable: boolean } {
+	if (status === 401 || status === 403) {
+		return { type: "auth_error", retryable: false };
+	}
+	if (status === 429) {
+		return { type: "rate_limited", retryable: true };
+	}
+	if (status >= 500) {
+		return { type: "http_error", retryable: true };
+	}
+	return { type: "http_error", retryable: false };
+}
+
+/**
  * Evaluates generated code using a frontier model via OpenRouter.
  *
  * @param request - The evaluation request
  * @param apiKey - OpenRouter API key
  * @param timeoutMs - Timeout in milliseconds (default: 30s)
- * @returns Evaluation response or null on failure
+ * @param maxAttempts - Max attempts for bounded retries (default: 2)
+ * @returns Evaluation outcome (success or structured failure)
  *
  * @example
  * ```typescript
@@ -193,8 +259,8 @@ function parseEvalResponse(responseText: string): { score: number; reasoning: st
  *   { code, rubric, testSlug },
  *   process.env.OPENROUTER_API_KEY!,
  * );
- * if (result) {
- *   console.log(`Score: ${result.score}/10`);
+ * if (result.ok) {
+ *   console.log(`Score: ${result.value.score}/10`);
  * }
  * ```
  */
@@ -202,14 +268,18 @@ export async function evaluateWithFrontier(
 	request: FrontierEvalRequest,
 	apiKey: string,
 	timeoutMs: number = DEFAULT_TIMEOUT_MS,
-): Promise<FrontierEvalResponse | null> {
+	maxAttempts: number = DEFAULT_MAX_ATTEMPTS,
+): Promise<FrontierEvalOutcome> {
 	const log = logger.child({ testSlug: request.testSlug, operation: "frontier-eval" });
 	const model = request.model || DEFAULT_MODEL;
+	const prompt = buildEvalPrompt(request);
 
-	const startTime = Date.now();
+	let lastFailure: FrontierEvalFailure | null = null;
 
-	try {
-		const prompt = buildEvalPrompt(request);
+	const attemptLimit = Math.max(1, maxAttempts);
+
+	for (let attempt = 1; attempt <= attemptLimit; attempt++) {
+		const startTime = Date.now();
 
 		// Set up abort controller for timeout
 		const controller = new AbortController();
@@ -237,25 +307,72 @@ export async function evaluateWithFrontier(
 
 			// Check HTTP status
 			if (!response.ok) {
-				const errorText = await response.text();
+				const errorText = await response.text().catch(() => "");
+				const { type, retryable } = classifyHttpStatus(response.status);
+				const latencyMs = Date.now() - startTime;
+				const message = errorText
+					? `OpenRouter API error: ${response.status} ${response.statusText} - ${truncateForLog(errorText)}`
+					: `OpenRouter API error: ${response.status} ${response.statusText}`;
+				const failure: FrontierEvalFailure = {
+					type,
+					message,
+					status: response.status,
+					latencyMs,
+					model,
+					attempts: attempt,
+				};
+
+				lastFailure = failure;
+				if (retryable && attempt < attemptLimit) {
+					log.warn(
+						{ status: response.status, attempt, maxAttempts: attemptLimit },
+						"OpenRouter API error (retrying)",
+					);
+					await sleep(500 * attempt);
+					continue;
+				}
+
 				log.warn(
-					{ status: response.status, error: errorText },
+					{ status: response.status, attempt, maxAttempts: attemptLimit },
 					"OpenRouter API error",
 				);
-				return null;
+				return { ok: false, failure };
 			}
 
 			// Parse and validate response
-			const responseData = await parseOpenRouterResponse(response, log, request.testSlug);
-			if (!responseData) {
-				return null;
+			const parsedResponse = await parseOpenRouterResponse(response, log, request.testSlug);
+			if (!parsedResponse.ok) {
+				const latencyMs = Date.now() - startTime;
+				const failure: FrontierEvalFailure = {
+					type: parsedResponse.type,
+					message: parsedResponse.message,
+					status: response.status,
+					latencyMs,
+					model,
+					attempts: attempt,
+				};
+
+				lastFailure = failure;
+				log.warn({ attempt, maxAttempts: attemptLimit }, "OpenRouter response invalid");
+				return { ok: false, failure };
 			}
 
-			const content = responseData.choices[0]?.message?.content;
-			const finishReason = responseData.choices[0]?.finish_reason;
+			const responseData = parsedResponse.data;
+			const content = responseData.choices?.[0]?.message?.content;
+			const finishReason = responseData.choices?.[0]?.finish_reason;
 
 			if (!content) {
-				const hasReasoning = !!responseData.choices[0]?.message?.reasoning;
+				const hasReasoning = !!responseData.choices?.[0]?.message?.reasoning;
+				const latencyMs = Date.now() - startTime;
+				const failure: FrontierEvalFailure = {
+					type: "invalid_response",
+					message: "No content in OpenRouter response",
+					latencyMs,
+					model: responseData.model ?? model,
+					attempts: attempt,
+				};
+
+				lastFailure = failure;
 				log.warn(
 					{
 						finishReason,
@@ -265,22 +382,31 @@ export async function evaluateWithFrontier(
 					},
 					"No content in OpenRouter response",
 				);
-				return null;
+				return { ok: false, failure };
 			}
 
 			// Detect truncated responses before attempting JSON parse
 			if (finishReason === "length") {
 				const latencyMs = Date.now() - startTime;
+				const failure: FrontierEvalFailure = {
+					type: "truncated",
+					message: "Frontier eval response truncated (hit max_tokens limit)",
+					latencyMs,
+					model: responseData.model ?? model,
+					attempts: attempt,
+				};
+
+				lastFailure = failure;
 				log.warn(
 					{
 						finishReason,
-						contentPreview: content.slice(0, 200),
+						contentPreview: truncateForLog(content, 200),
 						contentLength: content.length,
 						latencyMs,
 					},
 					"Frontier eval response truncated (hit max_tokens limit)",
 				);
-				return null;
+				return { ok: false, failure };
 			}
 
 			// Parse evaluation result
@@ -292,15 +418,24 @@ export async function evaluateWithFrontier(
 				reasoning = parsed.reasoning;
 			} catch (error) {
 				const latencyMs = Date.now() - startTime;
+				const failure: FrontierEvalFailure = {
+					type: "parse_error",
+					message: error instanceof Error ? error.message : String(error),
+					latencyMs,
+					model: responseData.model ?? model,
+					attempts: attempt,
+				};
+
+				lastFailure = failure;
 				log.warn(
 					{
-						error: error instanceof Error ? error.message : String(error),
-						contentPreview: content.slice(0, 200),
+						error: failure.message,
+						contentPreview: truncateForLog(content, 200),
 						latencyMs,
 					},
 					"Failed to parse frontier eval response",
 				);
-				return null;
+				return { ok: false, failure };
 			}
 
 			const latencyMs = Date.now() - startTime;
@@ -308,41 +443,60 @@ export async function evaluateWithFrontier(
 			log.info({ score, latencyMs, model, testSlug: request.testSlug }, "Frontier eval completed");
 
 			return {
-				score,
-				reasoning,
-				model,
-				latencyMs,
+				ok: true,
+				value: {
+					score,
+					reasoning,
+					model,
+					latencyMs,
+				},
 			};
+		} catch (error) {
+			const latencyMs = Date.now() - startTime;
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			const isTimeout = error instanceof Error && error.name === "AbortError";
+			const retryable = isTimeout || errorMessage.toLowerCase().includes("fetch");
+
+			const failure: FrontierEvalFailure = {
+				type: isTimeout ? "timeout" : "unknown",
+				message: isTimeout
+					? `Frontier eval timed out after ${Math.round(timeoutMs / 1000)}s`
+					: `Frontier eval failed: ${errorMessage}`,
+				latencyMs,
+				model,
+				attempts: attempt,
+			};
+
+			lastFailure = failure;
+			if (retryable && attempt < attemptLimit) {
+				log.warn(
+					{ attempt, maxAttempts: attemptLimit, error: failure.message },
+					"Frontier eval failed (retrying)",
+				);
+				await sleep(500 * attempt);
+				continue;
+			}
+
+			log.warn(
+				{ attempt, maxAttempts: attemptLimit, error: failure.message },
+				"Frontier eval failed",
+			);
+
+			return { ok: false, failure };
 		} finally {
 			clearTimeout(timeoutId);
 		}
-	} catch (error) {
-		const latencyMs = Date.now() - startTime;
-
-		if (error instanceof Error && error.name === "AbortError") {
-			log.warn({ timeoutMs, latencyMs }, "Frontier eval timed out");
-		} else if (error instanceof SyntaxError) {
-			log.warn(
-				{
-					error: error.message,
-					latencyMs,
-					testSlug: request.testSlug,
-				},
-				"Frontier eval JSON parse error",
-			);
-		} else {
-			log.warn(
-				{
-					error: error instanceof Error ? error.message : String(error),
-					latencyMs,
-					testSlug: request.testSlug,
-				},
-				"Frontier eval failed",
-			);
-		}
-
-		return null;
 	}
+
+	return {
+		ok: false,
+		failure: lastFailure ?? {
+			type: "unknown",
+			message: "Frontier eval failed",
+			model,
+			attempts: attemptLimit,
+		},
+	};
 }
 
 /**

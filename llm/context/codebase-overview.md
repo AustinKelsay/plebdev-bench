@@ -12,8 +12,8 @@ bun pb --models llama3.2:3b         # Limit to specific model
 bun pb --tests smoke                # Limit to specific test
 bun pb --pass-types blind           # Limit to blind pass only
 bun pb --harnesses ollama           # Limit to ollama harness only
-bun pb compare <runA> <runB>        # Compare two runs
-bun pb compare <runA> <runB> --json # Output raw JSON
+bun run bench compare <runA> <runB>        # Compare two runs
+bun run bench compare <runA> <runB> --json # Output raw JSON
 bun test                            # Run test suite
 bun run typecheck                   # Type check
 
@@ -35,7 +35,7 @@ src/
 ├── cli/
 │   ├── index.ts          # Commander program
 │   ├── run-command.ts    # `bench run` implementation
-│   └── compare-command.ts # Stub
+│   └── compare-command.ts # Compare command
 ├── schemas/              # Zod schemas (source of truth)
 │   ├── config.schema.ts  # BenchConfig
 │   ├── plan.schema.ts    # RunPlan, MatrixItem
@@ -131,6 +131,7 @@ Each run creates `results/<run-id>/`:
 | `FrontierEval` | result.schema.ts | GPT-5.2 score + reasoning |
 | `GenerationFailureType` | common.schema.ts | Failure type enum (timeout, api_error, etc.) |
 | `ScoringFailureType` | common.schema.ts | Failure type enum (extraction, import, etc.) |
+| `FrontierEvalFailureType` | common.schema.ts | Failure type enum (timeout, rate_limited, etc.) |
 
 ## Key Behaviors
 
@@ -144,6 +145,7 @@ Each run creates `results/<run-id>/`:
 - **Model recognition errors**: Fast empty responses (<2s) indicate model not recognized by OpenCode (check config)
 - **Failure handling**: Item failures recorded, don't crash run, exit 0
 - **Failure categorization**: Errors classified as generation failures (timeout, api_error, harness_error, prompt_not_found) or scoring failures (extraction, import, export_validation, test_execution, spec_load, no_spec)
+- **Frontier eval failures**: Recorded per-item in `frontierEvalFailure` with type/message/status when OpenRouter calls fail
 - **Debug logging**: Harness adapters log command execution and stderr for troubleshooting
 - **Progress output**: `item 01/08: harness=ollama model=X test=Y pass=blind timeout=5m`
 

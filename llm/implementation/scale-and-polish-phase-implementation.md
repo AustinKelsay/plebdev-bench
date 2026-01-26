@@ -456,7 +456,7 @@ bun test v1.3.3
 Ran 58 tests across 9 files. [25.00ms]
 ```
 
-Pre-existing type errors in `openrouter-client.ts` and `scorer.ts` remain (documented in MVP phase).
+Pre-existing type errors in `openrouter-client.ts` and `scorer.ts` were resolved during the review-and-hardening phase.
 
 ## Performance Impact
 

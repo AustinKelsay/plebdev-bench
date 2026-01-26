@@ -8,6 +8,7 @@ import {
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
+	FrontierEvalFailureTypeSchema,
 	RunPlanSchema,
 	RunResultSchema,
 	SCHEMA_VERSION,
@@ -23,6 +24,11 @@ describe("common schemas", () => {
 
 	it("should export schema version", () => {
 		expect(SCHEMA_VERSION).toBe("0.1.0");
+	});
+
+	it("should validate frontier eval failure types", () => {
+		expect(FrontierEvalFailureTypeSchema.parse("timeout")).toBe("timeout");
+		expect(() => FrontierEvalFailureTypeSchema.parse("not-a-type")).toThrow();
 	});
 });
 
@@ -151,10 +157,37 @@ describe("MatrixItemResultSchema", () => {
 				error: "Connection timeout",
 				durationMs: 3000,
 			},
+			generationFailure: {
+				type: "timeout",
+				message: "Connection timeout",
+			},
 		});
 		expect(result.status).toBe("failed");
 		expect(result.generation?.success).toBe(false);
 		expect(result.generation?.error).toBe("Connection timeout");
+	});
+
+	it("should validate a frontier eval failure record", () => {
+		const result = MatrixItemResultSchema.parse({
+			id: "03",
+			model: "llama3.2:3b",
+			harness: "ollama",
+			test: "smoke",
+			passType: "blind",
+			status: "completed",
+			generation: {
+				success: true,
+				output: "code here",
+				durationMs: 5000,
+			},
+			frontierEvalFailure: {
+				type: "rate_limited",
+				message: "OpenRouter rate limit hit",
+				status: 429,
+				attempts: 2,
+			},
+		});
+		expect(result.frontierEvalFailure?.type).toBe("rate_limited");
 	});
 });
 

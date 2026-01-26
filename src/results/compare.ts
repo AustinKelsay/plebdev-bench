@@ -279,6 +279,8 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 
 	// Sort matched by key for deterministic output
 	matched.sort((a, b) => a.key.localeCompare(b.key));
+	onlyInA.sort((a, b) => buildCompareKey(a).localeCompare(buildCompareKey(b)));
+	onlyInB.sort((a, b) => buildCompareKey(a).localeCompare(buildCompareKey(b)));
 
 	// Compute summary
 	const summary = computeSummary(matched, onlyInA, onlyInB);

@@ -13,6 +13,21 @@ import pino from "pino";
  * Uses pino-pretty for human-readable formatting.
  */
 export const logger = pino({
+	redact: {
+		paths: [
+			"apiKey",
+			"openRouterKey",
+			"OPENROUTER_API_KEY",
+			"authorization",
+			"Authorization",
+			"headers.authorization",
+			"headers.Authorization",
+			"request.headers.authorization",
+			"request.headers.Authorization",
+		],
+		censor: "[redacted]",
+		remove: false,
+	},
 	transport: {
 		target: "pino-pretty",
 		options: {

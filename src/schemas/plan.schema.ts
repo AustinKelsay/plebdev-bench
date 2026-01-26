@@ -36,9 +36,6 @@ export const EnvironmentSchema = z.object({
 
 	/** Bun version. */
 	bunVersion: z.string(),
-
-	/** Machine hostname. */
-	hostname: z.string(),
 });
 
 /** Environment metadata type. */

@@ -67,12 +67,11 @@ function normalizeOpenCodeOutput(raw: string): { output: string; method: "raw" |
 
 			parsedLines += 1;
 
-			const part = obj.part ?? obj;
 			const text =
-				typeof part.text === "string"
-					? part.text
-					: typeof part.delta?.text === "string"
-						? part.delta.text
+				typeof obj.part?.text === "string"
+					? obj.part.text
+					: typeof obj.part?.delta?.text === "string"
+						? obj.part.delta.text
 						: typeof obj.text === "string"
 							? obj.text
 							: undefined;

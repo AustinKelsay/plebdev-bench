@@ -31,6 +31,10 @@ export function ItemDetailDialog({
   if (!item) return null;
 
   const { generation, automatedScore, frontierEval } = item;
+  const hasFailures =
+    !!item.generationFailure ||
+    !!item.scoringFailure ||
+    !!item.frontierEvalFailure;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -156,6 +160,40 @@ export function ItemDetailDialog({
                   <div className="p-3 bg-background-raised rounded border border-border text-sm">
                     <p className="text-foreground-faint text-xs mb-1">Reasoning</p>
                     <p>{frontierEval.reasoning}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {hasFailures && (
+            <section>
+              <h4 className="text-sm font-medium text-foreground-muted mb-2">
+                Failures
+              </h4>
+              <div className="space-y-2 text-sm">
+                {item.generationFailure && (
+                  <div className="p-3 bg-background-raised rounded border border-border">
+                    <p className="text-foreground-faint text-xs mb-1">
+                      Generation ({item.generationFailure.type})
+                    </p>
+                    <p className="text-danger">{item.generationFailure.message}</p>
+                  </div>
+                )}
+                {item.scoringFailure && (
+                  <div className="p-3 bg-background-raised rounded border border-border">
+                    <p className="text-foreground-faint text-xs mb-1">
+                      Scoring ({item.scoringFailure.type})
+                    </p>
+                    <p className="text-warning">{item.scoringFailure.message}</p>
+                  </div>
+                )}
+                {item.frontierEvalFailure && (
+                  <div className="p-3 bg-background-raised rounded border border-border">
+                    <p className="text-foreground-faint text-xs mb-1">
+                      Frontier Eval ({item.frontierEvalFailure.type})
+                    </p>
+                    <p className="text-warning">{item.frontierEvalFailure.message}</p>
                   </div>
                 )}
               </div>

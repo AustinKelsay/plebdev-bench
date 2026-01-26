@@ -1,0 +1,2881 @@
+{
+  "schemaVersion": "0.1.0",
+  "runId": "20260125-121851-fbba6f",
+  "createdAt": "2026-01-25T20:18:51.574Z",
+  "environment": {
+    "platform": "darwin",
+    "bunVersion": "1.3.3"
+  },
+  "config": {
+    "ollamaBaseUrl": "http://localhost:11434",
+    "generateTimeoutMs": 300000,
+    "passTypes": [
+      "blind",
+      "informed"
+    ]
+  },
+  "items": [
+    {
+      "id": "01",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "02",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "03",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "04",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "05",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "06",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "07",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "08",
+      "model": "glm-4.7-flash:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "09",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "10",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "11",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "12",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "13",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "14",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "15",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "16",
+      "model": "glm-4.7-flash:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "17",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "18",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "19",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "20",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "21",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "22",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "23",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "24",
+      "model": "glm-4.7-flash:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "25",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "26",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "27",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "28",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "29",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "30",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "31",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "32",
+      "model": "olmo-3.1:32b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "33",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "34",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "35",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "36",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "37",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "38",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "39",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "40",
+      "model": "olmo-3.1:32b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "41",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "42",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "43",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "44",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "45",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "46",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "47",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "48",
+      "model": "olmo-3.1:32b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "49",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "50",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "51",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "52",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "53",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "54",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "55",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "56",
+      "model": "qwen3-coder:30b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "57",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "58",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "59",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "60",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "61",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "62",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "63",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "64",
+      "model": "qwen3-coder:30b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "65",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "66",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "67",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "68",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "69",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "70",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "71",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "72",
+      "model": "qwen3-coder:30b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "73",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "74",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "75",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "76",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "77",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "78",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "79",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "80",
+      "model": "rnj-1:8b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "81",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "82",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "83",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "84",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "85",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "86",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "87",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "88",
+      "model": "rnj-1:8b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "89",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "90",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "91",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "92",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "93",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "94",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "95",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "96",
+      "model": "rnj-1:8b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "97",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "98",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "99",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "100",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "101",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "102",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "103",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "104",
+      "model": "qwen3:1.7b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "105",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "106",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "107",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "108",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "109",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "110",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "111",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "112",
+      "model": "qwen3:1.7b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "113",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "114",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "115",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "116",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "117",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "118",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "119",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "120",
+      "model": "qwen3:1.7b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "121",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "122",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "123",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "124",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "125",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "126",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "127",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "128",
+      "model": "ministral-3:3b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "129",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "130",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "131",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "132",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "133",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "134",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "135",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "136",
+      "model": "ministral-3:3b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "137",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "138",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "139",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "140",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "141",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "142",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "143",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "144",
+      "model": "ministral-3:3b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "145",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "146",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "147",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "148",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "149",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "150",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "151",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "152",
+      "model": "functiongemma:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "153",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "154",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "155",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "156",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "157",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "158",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "159",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "160",
+      "model": "functiongemma:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "161",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "162",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "163",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "164",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "165",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "166",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "167",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "168",
+      "model": "functiongemma:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "169",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "170",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "171",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "172",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "173",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "174",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "175",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "176",
+      "model": "llama3.2:3b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "177",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "178",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "179",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "180",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "181",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "182",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "183",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "184",
+      "model": "llama3.2:3b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "185",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "186",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "187",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "188",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "189",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "190",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "191",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "192",
+      "model": "llama3.2:3b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "193",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "194",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "195",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "196",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "197",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "198",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "199",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "200",
+      "model": "qwen3:4b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "201",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "202",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "203",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "204",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "205",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "206",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "207",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "208",
+      "model": "qwen3:4b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "209",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "210",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "211",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "212",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "213",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "214",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "215",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "216",
+      "model": "qwen3:4b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "217",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "218",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "219",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "220",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "221",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "222",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "223",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "224",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "225",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "226",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "227",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "228",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "229",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "230",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "231",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "232",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "233",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "234",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "235",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "236",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "237",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "238",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "239",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "240",
+      "model": "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "241",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "242",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "243",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "244",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "245",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "246",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "247",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "248",
+      "model": "devstral-small-2:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "249",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "250",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "251",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "252",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "253",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "254",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "255",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "256",
+      "model": "devstral-small-2:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "257",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "258",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "259",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "260",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "261",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "262",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "263",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "264",
+      "model": "devstral-small-2:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "265",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "266",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "267",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "268",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "269",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "270",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "271",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "272",
+      "model": "nemotron-3-nano:latest",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "273",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "274",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "275",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "276",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "277",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "278",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "279",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "280",
+      "model": "nemotron-3-nano:latest",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "281",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "282",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "283",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "284",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "285",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "286",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "287",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "288",
+      "model": "nemotron-3-nano:latest",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "289",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "290",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "291",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "292",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "293",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "294",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "295",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "296",
+      "model": "ministral-3:14b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "297",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "298",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "299",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "300",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "301",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "302",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "303",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "304",
+      "model": "ministral-3:14b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "305",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "306",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "307",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "308",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "309",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "310",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "311",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "312",
+      "model": "ministral-3:14b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "313",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "314",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "315",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "316",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "317",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "318",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "319",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "320",
+      "model": "qwen2.5-coder:7b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "321",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "322",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "323",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "324",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "325",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "326",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "327",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "328",
+      "model": "qwen2.5-coder:7b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "329",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "330",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "331",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "332",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "333",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "334",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "335",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "336",
+      "model": "qwen2.5-coder:7b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "337",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "338",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "339",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "340",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "341",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "342",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "343",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "344",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "345",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "346",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "347",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "348",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "349",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "350",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "351",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "352",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "353",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "354",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "355",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "356",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "357",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "358",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "359",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "360",
+      "model": "Omoeba/gpt-oss-coder:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "361",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "362",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "363",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "364",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "365",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "366",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "367",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "368",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "369",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "370",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "371",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "372",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "373",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "374",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "375",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "376",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "377",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "378",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "379",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "380",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "381",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "382",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "383",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "384",
+      "model": "okamototk/gpt-oss-reasoning-high:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "385",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "386",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "387",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "388",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "389",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "390",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "391",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "392",
+      "model": "gpt-oss:20b",
+      "harness": "ollama",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "393",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "394",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "395",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "396",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "397",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "398",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "399",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "400",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "passType": "informed"
+    },
+    {
+      "id": "401",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind"
+    },
+    {
+      "id": "402",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "informed"
+    },
+    {
+      "id": "403",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "blind"
+    },
+    {
+      "id": "404",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "passType": "informed"
+    },
+    {
+      "id": "405",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "blind"
+    },
+    {
+      "id": "406",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "passType": "informed"
+    },
+    {
+      "id": "407",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "blind"
+    },
+    {
+      "id": "408",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "passType": "informed"
+    }
+  ],
+  "summary": {
+    "totalItems": 408,
+    "models": 17,
+    "harnesses": 3,
+    "tests": 4
+  }
+}

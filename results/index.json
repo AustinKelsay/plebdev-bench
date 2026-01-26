@@ -1,0 +1,26 @@
+[
+  {
+    "runId": "20260126-071122-245508",
+    "startedAt": "2026-01-26T15:11:22.691Z",
+    "completedAt": "2026-01-26T18:46:30.963Z",
+    "durationMs": 12908316,
+    "summary": {
+      "total": 408,
+      "completed": 398,
+      "failed": 10,
+      "pending": 0
+    }
+  },
+  {
+    "runId": "20260125-121851-fbba6f",
+    "startedAt": "2026-01-25T20:18:51.550Z",
+    "completedAt": "2026-01-26T00:07:18.028Z",
+    "durationMs": 13706525,
+    "summary": {
+      "total": 408,
+      "completed": 395,
+      "failed": 13,
+      "pending": 0
+    }
+  }
+]
