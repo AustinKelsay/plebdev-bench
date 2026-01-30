@@ -299,6 +299,7 @@ async function importWithTimeout(
  * @param testSlug - Test directory name
  * @param rawOutput - Raw output from LLM generation
  * @param timeoutMs - Timeout for scoring (default: 5s)
+ * @param codeFilePath - Optional path to code file written by tool-calling harness
  * @returns Scoring result with pass/fail counts
  *
  * @example
@@ -311,6 +312,7 @@ export async function scoreGeneration(
 	testSlug: string,
 	rawOutput: string,
 	timeoutMs: number = DEFAULT_SCORING_TIMEOUT_MS,
+	codeFilePath?: string,
 ): Promise<ScoringResult> {
 	const log = logger.child({ testSlug, operation: "scoring" });
 
@@ -326,11 +328,17 @@ export async function scoreGeneration(
 		};
 	}
 
-	// Extract code
+	// Extract code - prioritize file if provided by tool-calling harness
 	let extracted: ExtractedCode;
 	try {
-		extracted = extractCode(rawOutput);
-		log.debug({ method: extracted.method, codeLength: extracted.code.length }, "Code extracted");
+		if (codeFilePath && fs.existsSync(codeFilePath)) {
+			const code = await fs.promises.readFile(codeFilePath, "utf-8");
+			extracted = { code, method: "file" };
+			log.debug({ method: "file", codeLength: code.length, codeFilePath }, "Code read from file");
+		} else {
+			extracted = extractCode(rawOutput);
+			log.debug({ method: extracted.method, codeLength: extracted.code.length }, "Code extracted from text");
+		}
 	} catch (error) {
 		return {
 			passed: 0,

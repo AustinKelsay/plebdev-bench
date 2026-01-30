@@ -10,10 +10,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { StatusBadge } from "./status-badge";
 import type { MatrixItemResult } from "@/lib/types";
 import { formatDuration } from "@/lib/utils";
 import { useState } from "react";
+import { itemDetail as itemDetailTooltips } from "@/lib/tooltip-content";
 
 interface ItemDetailDialogProps {
   item: MatrixItemResult | null;
@@ -55,23 +57,37 @@ export function ItemDetailDialog({
           {generation && (
             <section>
               <h4 className="text-sm font-medium text-foreground-muted mb-2">
-                Generation
+                <WithInfoTooltip tooltip={itemDetailTooltips.generation}>Generation</WithInfoTooltip>
               </h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-foreground-faint">Duration</span>
+                  <span className="text-foreground-faint">
+                    <WithInfoTooltip tooltip={itemDetailTooltips.duration} side="right">Duration</WithInfoTooltip>
+                  </span>
                   <p>{formatDuration(generation.durationMs)}</p>
                 </div>
                 {generation.promptTokens !== undefined && (
                   <div>
-                    <span className="text-foreground-faint">Prompt Tokens</span>
+                    <span className="text-foreground-faint">
+                      <WithInfoTooltip tooltip={itemDetailTooltips.promptTokens} side="right">Prompt Tokens</WithInfoTooltip>
+                    </span>
                     <p>{generation.promptTokens.toLocaleString()}</p>
                   </div>
                 )}
                 {generation.completionTokens !== undefined && (
                   <div>
-                    <span className="text-foreground-faint">Completion Tokens</span>
+                    <span className="text-foreground-faint">
+                      <WithInfoTooltip tooltip={itemDetailTooltips.completionTokens} side="right">Completion Tokens</WithInfoTooltip>
+                    </span>
                     <p>{generation.completionTokens.toLocaleString()}</p>
+                  </div>
+                )}
+                {generation.codeFilePath && (
+                  <div className="col-span-2">
+                    <span className="text-foreground-faint">Code Source</span>
+                    <p className="text-info font-mono text-xs truncate" title={generation.codeFilePath}>
+                      File: {generation.codeFilePath.split('/').pop()}
+                    </p>
                   </div>
                 )}
                 {generation.error && (
@@ -104,7 +120,7 @@ export function ItemDetailDialog({
           {automatedScore && (
             <section>
               <h4 className="text-sm font-medium text-foreground-muted mb-2">
-                Automated Tests
+                <WithInfoTooltip tooltip={itemDetailTooltips.automatedTests}>Automated Tests</WithInfoTooltip>
               </h4>
               <div className="flex items-center gap-4">
                 <div className="text-2xl font-bold tabular-nums">
@@ -134,7 +150,7 @@ export function ItemDetailDialog({
           {frontierEval && (
             <section>
               <h4 className="text-sm font-medium text-foreground-muted mb-2">
-                Frontier Evaluation
+                <WithInfoTooltip tooltip={itemDetailTooltips.frontierEval}>Frontier Evaluation</WithInfoTooltip>
               </h4>
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
@@ -169,13 +185,16 @@ export function ItemDetailDialog({
           {hasFailures && (
             <section>
               <h4 className="text-sm font-medium text-foreground-muted mb-2">
-                Failures
+                <WithInfoTooltip tooltip={itemDetailTooltips.failures}>Failures</WithInfoTooltip>
               </h4>
               <div className="space-y-2 text-sm">
                 {item.generationFailure && (
                   <div className="p-3 bg-background-raised rounded border border-border">
                     <p className="text-foreground-faint text-xs mb-1">
                       Generation ({item.generationFailure.type})
+                      {item.generationFailure.type === "tool_missing" && (
+                        <span className="ml-2 text-warning">[Tool Usage Required]</span>
+                      )}
                     </p>
                     <p className="text-danger">{item.generationFailure.message}</p>
                   </div>

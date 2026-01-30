@@ -14,15 +14,16 @@
 import type { BenchConfig, RunResult, MatrixItemResult } from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
 import type { HarnessName, ModelInfo } from "../harnesses/harness.js";
+import { TOOL_CALLING_HARNESS_NAMES } from "../harnesses/harness.js";
 import { buildRunPlan } from "./plan-builder.js";
 import { executeItem } from "./item-executor.js";
 import { writePlan, writeResult } from "../results/writer.js";
 import { logger } from "../lib/logger.js";
 import { createHarness } from "../harnesses/index.js";
 import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
-import { ensureServerRunning, stopServer as stopOpenCodeServer } from "../harnesses/opencode-server.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
+import { isToolSmokeTest, TOOL_SMOKE_TEST_SLUG } from "../lib/tool-smoke.js";
 
 /** Warn if run.json exceeds this size (bytes). */
 const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
@@ -42,18 +43,6 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Build plan
 	const plan = await buildRunPlan(config);
 	const log = logger.child({ runId: plan.runId });
-
-	// Pre-warm OpenCode server if it will be used (B.5 optimization)
-	// Start in background while we do other setup tasks
-	const hasOpenCode = plan.items.some((item) => item.harness === "opencode");
-	let serverWarmPromise: Promise<string> | null = null;
-	if (hasOpenCode) {
-		log.info("Pre-warming OpenCode server...");
-		serverWarmPromise = ensureServerRunning().catch((err) => {
-			log.warn({ error: err }, "OpenCode server pre-warm failed (will retry on first use)");
-			return "";
-		});
-	}
 
 	// Check frontier eval availability
 	const frontierEvalEnabled = hasOpenRouterKey();
@@ -103,10 +92,16 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Execute items
 	const results: MatrixItemResult[] = [];
 	const total = plan.items.length;
+	const toolCallingHarnesses = new Set(TOOL_CALLING_HARNESS_NAMES);
+	const toolSmokeStatus = new Map<
+		string,
+		{ status: "passed" | "failed"; skip: boolean; message?: string }
+	>();
 
-	// Ensure server is ready before starting items (if pre-warming)
-	if (serverWarmPromise) {
-		await serverWarmPromise;
+	if (!plan.items.some((item) => item.test === TOOL_SMOKE_TEST_SLUG)) {
+		log.warn(
+			"tool-smoke test not present in plan; tool preflight is disabled",
+		);
 	}
 
 	for (let i = 0; i < plan.items.length; i++) {
@@ -128,6 +123,45 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			`item ${itemNum}/${String(total).padStart(2, "0")}: harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 		);
 
+		const toolSmokeKey = `${item.harness}::${item.model}`;
+		const isToolHarness = toolCallingHarnesses.has(item.harness as HarnessName);
+		const isToolSmoke = isToolSmokeTest(item.test);
+
+		if (isToolHarness && !isToolSmoke) {
+			const status = toolSmokeStatus.get(toolSmokeKey);
+			if (status?.skip) {
+				const now = new Date().toISOString();
+				const message =
+					status.message ??
+					"tool-smoke failed; skipping remaining items for this harness/model";
+				log.warn(
+					{ harness: item.harness, model: item.model, test: item.test },
+					"Skipping item due to tool-smoke failure",
+				);
+				results.push({
+					id: item.id,
+					model: item.model,
+					harness: item.harness,
+					test: item.test,
+					passType: item.passType,
+					status: "failed",
+					startedAt: now,
+					completedAt: now,
+					generation: {
+						success: false,
+						error: `Skipped: ${message}`,
+						failureType: "tool_missing",
+						durationMs: 0,
+					},
+					generationFailure: {
+						type: "tool_missing",
+						message: `Skipped: ${message}`,
+					},
+				});
+				continue;
+			}
+		}
+
 		// Unload model only when switching to a different model (or last item)
 		const nextItem = plan.items[i + 1];
 		const isLastForModel = !nextItem || nextItem.model !== item.model;
@@ -139,6 +173,40 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			isLastForModel,
 		);
 		results.push(result);
+
+		if (isToolHarness && isToolSmoke) {
+			const failureMessage =
+				result.generation?.error ?? result.generationFailure?.message;
+			const passed = result.generation?.success === true;
+			const shouldSkip =
+				result.generation?.success === false &&
+				result.generation?.failureType === "tool_missing";
+			toolSmokeStatus.set(toolSmokeKey, {
+				status: passed ? "passed" : "failed",
+				skip: shouldSkip,
+				message: failureMessage,
+			});
+		}
+
+		if (
+			isToolHarness &&
+			!isToolSmoke &&
+			result.generation?.success === false &&
+			result.generation?.failureType === "tool_missing"
+		) {
+			toolSmokeStatus.set(toolSmokeKey, {
+				status: "failed",
+				skip: true,
+				message:
+					result.generation?.error ??
+					result.generationFailure?.message ??
+					"tool_missing detected; skipping remaining items",
+			});
+			log.warn(
+				{ harness: item.harness, model: item.model },
+				"tool_missing detected; skipping remaining items for this harness/model",
+			);
+		}
 	}
 
 	// Calculate summary
@@ -181,9 +249,6 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Write run.json
 	log.info("Writing run.json...");
 	await writeResult(config.outputDir, runResult);
-
-	// Cleanup: stop OpenCode server if it was started
-	await stopOpenCodeServer();
 
 	// Calculate and print detailed stats
 	const stats = calculateRunStats(results);

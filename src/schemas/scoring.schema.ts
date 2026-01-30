@@ -116,9 +116,9 @@ export const ScoringResultSchema = z.object({
 	/** Detailed results per test case. */
 	details: z.array(TestCaseResultSchema).optional(),
 
-	/** Code extraction method used. */
+	/** Code extraction method used. 'file' indicates code was read from a file written by tool-calling harness. */
 	extractionMethod: z
-		.enum(["markdown-ts", "markdown-any", "heuristic", "raw"])
+		.enum(["markdown-ts", "markdown-any", "heuristic", "raw", "file"])
 		.optional(),
 
 	/** Error if scoring failed entirely. */

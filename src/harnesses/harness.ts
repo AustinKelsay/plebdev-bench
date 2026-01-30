@@ -12,6 +12,10 @@
 export const HARNESS_NAMES = ["ollama", "goose", "opencode"] as const;
 export type HarnessName = (typeof HARNESS_NAMES)[number];
 
+/** Harnesses that require tool-calling to produce output files. */
+export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
+export type ToolCallingHarnessName = (typeof TOOL_CALLING_HARNESS_NAMES)[number];
+
 /** Options for generating a completion. */
 export interface GenerateOpts {
 	/** Model name in Ollama format (e.g., "llama3.2:3b"). */
@@ -34,6 +38,8 @@ export interface GenerateResult {
 	promptTokens?: number;
 	/** Number of completion tokens (if available). */
 	completionTokens?: number;
+	/** Path to code file written by tool-calling harness (e.g., Goose developer extension). */
+	codeFilePath?: string;
 }
 
 /** Model information from Ollama. */

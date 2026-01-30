@@ -44,8 +44,9 @@ src/
 │   ├── harness.ts        # Common interface
 │   ├── ollama-adapter.ts # Direct HTTP to Ollama
 │   ├── goose-adapter.ts  # CLI via Goose (headless mode)
-│   ├── opencode-adapter.ts # CLI via OpenCode (server mode)
-│   ├── opencode-server.ts  # OpenCode server lifecycle management
+│   ├── opencode-adapter.ts # CLI via OpenCode (direct mode)
+│   ├── opencode-server.ts  # OpenCode server lifecycle (deprecated, kept for reference)
+│   ├── tool-prompt.ts    # Tool-calling prompt builder
 │   ├── discovery.ts      # Detect available harnesses
 │   └── index.ts          # Factory + exports
 ├── lib/
@@ -57,7 +58,8 @@ src/
 │   ├── scoring-spec.ts   # Scoring spec types + loader
 │   ├── openrouter-client.ts # Frontier eval via OpenRouter API
 │   ├── stats.ts          # Run statistics calculation + formatting
-│   └── failure-classifier.ts # Classify generation/scoring errors
+│   ├── failure-classifier.ts # Classify generation/scoring errors
+│   └── tool-smoke.ts     # Tool-smoke test generation + scoring
 ├── runner/
 │   ├── index.ts          # Orchestration
 │   ├── plan-builder.ts   # Discovery + matrix expansion
@@ -70,7 +72,8 @@ src/
     ├── smoke/            # Basic add() function
     ├── calculator-basic/ # Stateless arithmetic functions
     ├── calculator-stateful/ # Calculator with memory
-    └── todo-app/         # CRUD todo manager
+    ├── todo-app/         # CRUD todo manager
+    └── tool-smoke/       # Tool-calling preflight test
 ```
 
 ## Harnesses
@@ -81,7 +84,7 @@ All harnesses use Ollama as the backend provider:
 |---------|--------|-------------|
 | `ollama` | HTTP | Direct API calls to Ollama |
 | `goose` | CLI | Headless mode with `--provider ollama --model` CLI flags |
-| `opencode` | CLI | Server mode with `opencode serve` + `--attach` |
+| `opencode` | CLI | Direct mode with `opencode run` (tool-calling) |
 
 Discovery: `discoverHarnesses()` checks CLI availability and Ollama endpoint.
 
@@ -97,19 +100,17 @@ goose run --no-session --provider ollama --model <model> -q --output-format json
 - Prompt passed via stdin (`-i -`) to avoid shell escaping issues
 - `cwd: /tmp` to prevent codebase scanning
 
-### OpenCode Server Mode
+### OpenCode Direct Mode
 ```bash
-# Server (started once, reused, pre-warmed during plan build)
-opencode serve --port 4096
-
-# Generation (connects to warm server)
-opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096 --format json
+# Direct execution with tool-calling
+opencode run "<prompt>" --model ollama/<model> --agent build --format json
 ```
-- Server mode bypasses 2+ min cold boot (32+ LSP servers, plugins)
-- `opencode-server.ts` manages lifecycle with health checks
-- **Important**: Models must be registered in `~/.config/opencode/opencode.json`
-- **Prompt prefix**: Adapter prepends instructions telling OpenCode to output code directly (not write to files via Edit tool)
-- **Code extraction**: Adapter applies `extractCode()` to capture code blocks from output
+- Runs directly in a temporary work directory (no server mode)
+- Uses `edit` or `write` tool to create `solution.ts`
+- Local `opencode.json` config enables tools and sets permissions
+- Code read from file after execution (tool-calling mode)
+- Falls back to tool call extraction from JSON output if needed
+- **Tool-smoke preflight**: Runs tool-smoke test first to verify tool support
 
 ## Result Artifacts
 
@@ -129,20 +130,26 @@ Each run creates `results/<run-id>/`:
 | `ScoringSpec` | scoring.schema.ts | Data-driven test definitions |
 | `AutomatedScore` | result.schema.ts | Passed/failed/total counts |
 | `FrontierEval` | result.schema.ts | GPT-5.2 score + reasoning |
-| `GenerationFailureType` | common.schema.ts | Failure type enum (timeout, api_error, etc.) |
-| `ScoringFailureType` | common.schema.ts | Failure type enum (extraction, import, etc.) |
-| `FrontierEvalFailureType` | common.schema.ts | Failure type enum (timeout, rate_limited, etc.) |
+| `GenerationFailureType` | common.schema.ts | 6 types: timeout, api_error, tool_missing, harness_error, prompt_not_found, unknown |
+| `ScoringFailureType` | common.schema.ts | 7 types: extraction, import, export_validation, test_execution, spec_load, no_spec, unknown |
+| `FrontierEvalFailureType` | common.schema.ts | 8 types: timeout, auth_error, rate_limited, http_error, invalid_response, parse_error, truncated, unknown |
 
 ## Key Behaviors
 
 - **Auto-discovery**: By default, discovers all models from Ollama, all harnesses available, and all tests in `src/tests/`
 - **Limiting flags**: Use `--models`, `--harnesses`, `--tests` to limit which items to run
 - **Sequential execution**: One item at a time
-- **Dynamic timeouts**: Timeout scales with model size and harness (60s base + ceil(params/10) * 60s + harness overhead: Goose 1min, OpenCode dynamic 60s + params/10 * 30s)
+- **Dynamic timeouts**: Timeout scales with model size and harness:
+  - Base: 60s + ceil(params/10) * 60s
+  - Harness overhead: Goose +60s, OpenCode +60s + (params/10 * 30s)
+  - High-precision multiplier: 5x for bf16/fp16/f32 models
+  - Large model overhead: +300s for >20B params
+  - Floor: 60s, Ceiling: 20 min
 - **Smart model unloading**: Model stays loaded for consecutive same-model items (Ollama)
 - **Fail-fast validation**: Empty or very short output throws error immediately (catches silent failures)
 - **Stderr fallback**: If stdout is empty but stderr has meaningful content, uses stderr as output
 - **Model recognition errors**: Fast empty responses (<2s) indicate model not recognized by OpenCode (check config)
+- **Tool-smoke preflight**: If `tool-smoke` is present, it runs first per model/harness; failures skip remaining items for that model/harness as tool failures
 - **Failure handling**: Item failures recorded, don't crash run, exit 0
 - **Failure categorization**: Errors classified as generation failures (timeout, api_error, harness_error, prompt_not_found) or scoring failures (extraction, import, export_validation, test_execution, spec_load, no_spec)
 - **Frontier eval failures**: Recorded per-item in `frontierEvalFailure` with type/message/status when OpenRouter calls fail
@@ -170,14 +177,37 @@ React-based visual dashboard for browsing and comparing benchmark results.
 ```
 apps/dashboard/src/
 ├── components/
-│   ├── ui/                    # shadcn/ui components
+│   ├── ui/                    # shadcn/ui components (badge, button, card, dialog, select, skeleton, table, tabs, info-tooltip)
 │   ├── layout/                # Header, page containers
-│   ├── run-list/              # Run list view
-│   ├── run-detail/            # Run detail view + matrix table
-│   ├── compare/               # Compare view + delta badges
-│   └── charts/                # Recharts visualizations
+│   ├── run-list/              # Run list view (run-card, run-list-page)
+│   ├── run-detail/            # Run detail view (9 components)
+│   │   ├── run-detail-page.tsx
+│   │   ├── matrix-table.tsx
+│   │   ├── status-badge.tsx
+│   │   ├── scoring-breakdown.tsx
+│   │   ├── timing-stats.tsx
+│   │   ├── item-detail-dialog.tsx
+│   │   ├── dimension-detail-dialog.tsx
+│   │   ├── failure-breakdown.tsx
+│   │   └── tooling-breakdown.tsx
+│   ├── compare/               # Compare view (5 components)
+│   │   ├── compare-page.tsx
+│   │   ├── compare-summary.tsx
+│   │   ├── compare-table.tsx
+│   │   ├── delta-badge.tsx
+│   │   └── run-selector.tsx
+│   └── charts/                # Recharts visualizations (5 charts)
+│       ├── composite-score-chart.tsx   # Effective score + pass rate + tool success
+│       ├── blind-vs-informed-chart.tsx # Paired bar comparison
+│       ├── pass-rate-chart.tsx         # Pass rate by dimension
+│       ├── timing-distribution.tsx     # Histogram with p50/p90
+│       └── frontier-eval-scatter.tsx   # Pass rate vs frontier score
 ├── hooks/                     # Data fetching hooks
 ├── lib/                       # Types, API, aggregations
+│   ├── types.ts               # TypeScript types
+│   ├── api.ts                 # Data fetching
+│   ├── aggregations.ts        # Statistics computation
+│   └── tooltip-content.ts     # Chart tooltip helpers
 └── pages/                     # Route components
 ```
 
@@ -185,12 +215,42 @@ apps/dashboard/src/
 - Run list with summary cards
 - Run detail with matrix table, scoring breakdown, timing stats
 - Compare view with delta badges and tabbed tables
-- Charts: pass rate bars, timing histogram, frontier scatter plot
+- Drill-down dialogs for items and dimensions
+- Failure and tooling breakdown panels
+
+**Charts:**
+- **CompositeScoreChart**: Multi-bar showing effective score (gold), pass rate (green), tool success (blue), frontier (purple)
+- **BlindVsInformedChart**: Paired bars comparing blind (amber) vs informed (green) pass rates
+- **PassRateChart**: Pass rate by dimension (model/harness/test)
+- **TimingDistribution**: Histogram with p50/p90 markers
+- **FrontierEvalScatter**: Scatter plot of pass rate vs frontier score
+
+**Aggregation Functions** (`apps/dashboard/src/lib/aggregations.ts`):
+- `computePassRate(items)` - Calculate overall pass rate
+- `computeCompositeMetrics(items, groupFn)` - Effective score with weights
+- `computeBlindInformedBreakdown(items, groupFn)` - Blind vs informed delta
+- `computeFailureStats(items)` - Failure counts by type
+- `computeToolScoreBreakdown(items, groupFn)` - Tool usage vs scoring
+- `inferToolHarnesses(items)` - Detect tool-calling harnesses
+- `partitionToolSmoke(items)` - Separate tool-smoke from regular items
+- `compareRuns(runA, runB)` - Full comparison with deltas
+
+**Effective Score Formula:**
+```
+effectiveScore = passRate × 0.4 + completionRate × 0.3 + toolSuccessRate × 0.3
+```
 
 **Stack:** Vite + React + TypeScript + Tailwind + shadcn/ui + Recharts
+
+### Tool-Calling Harnesses
+
+Tool-calling harnesses (Goose, OpenCode) use `buildToolPrompt()` to wrap task prompts:
+- `TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"]`
+- Tool success tracked via `tool_missing` failure type
+- Tool-smoke test runs first per model/harness to verify tool support
 
 ## Current Status
 
 - Setup phase: Complete (multi-harness support added)
 - MVP phase: Complete (scoring, frontier eval, compare, enhanced stats)
-- Scale & Polish phase: Dashboard frontend complete
+- Scale & Polish phase: Complete (dashboard frontend, harness optimizations, tool-smoke tests)

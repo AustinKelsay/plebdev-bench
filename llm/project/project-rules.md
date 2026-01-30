@@ -10,14 +10,21 @@ They are optimized for:
 
 ## Directory Structure
 
-### Top-level (target)
+### Top-level
 
 - `src/` — application code (runner, harness adapters, schemas, utilities)
-- `src/harnesses/` — harness adapters (Ollama HTTP, Goose/OpenCode CLI, etc.)
-- `src/tests/` — benchmark test catalog (prompts + scoring tests + rubric metadata)
+- `src/harnesses/` — harness adapters (Ollama HTTP, Goose/OpenCode CLI) + tool-prompt builder
+- `src/tests/` — benchmark test catalog (5 tests: smoke, calculator-basic, calculator-stateful, todo-app, tool-smoke)
 - `src/results/` — result schema + read/write helpers + compare logic
 - `src/cli/` — CLI entrypoint(s) and argument parsing
-- `src/lib/` — reusable helpers (fetch clients, execa wrappers, logging, timing)
+- `src/lib/` — reusable helpers (scoring, code extraction, failure classification, logging, timing)
+- `src/runner/` — orchestration, plan building, item execution
+- `src/schemas/` — Zod schemas (config, plan, result, scoring, common)
+- `apps/dashboard/` — React dashboard for browsing results
+  - `src/components/` — UI components (charts, run-detail, compare, layout, ui)
+  - `src/lib/` — types, API client, aggregations
+  - `src/pages/` — route pages
+  - `src/hooks/` — data fetching hooks
 - `results/` — runtime output (timestamped directories containing `run.json` + `plan.json`)
 - `llm/` — planning docs (this folder)
 
@@ -45,7 +52,7 @@ Each benchmark test lives in its own directory:
 ### General
 - **kebab-case** for directories and markdown files: `user-flow.md`, `todo-app/`
 - **camelCase** for variables and functions: `hasApiKey`, `computeRunId`
-- **PascalCase** only for types/interfaces and (rare) exported constants that represent “entities”
+- **PascalCase** for types/interfaces and React components: `MatrixItem`, `CompositeScoreChart.tsx`
 - Avoid enums; use **maps/objects** with `as const` and Zod where appropriate.
 
 ### File names

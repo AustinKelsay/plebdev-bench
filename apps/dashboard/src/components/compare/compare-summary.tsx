@@ -3,8 +3,10 @@
  * Mirrors the CLI `bench compare` summary output.
  */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { DeltaBadge, DeltaPercentBadge } from "./delta-badge";
 import type { CompareSummary } from "@/lib/types";
+import { compare as compareTooltips } from "@/lib/tooltip-content";
 
 interface CompareSummaryCardProps {
   summary: CompareSummary;
@@ -25,7 +27,9 @@ export function CompareSummaryCard({ summary }: CompareSummaryCardProps) {
       {/* Matched Items */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-foreground-muted">Matched Items</CardTitle>
+          <CardTitle className="text-sm text-foreground-muted">
+            <WithInfoTooltip tooltip={compareTooltips.matchedItems}>Matched Items</WithInfoTooltip>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tabular-nums">{totalMatched}</div>
@@ -42,7 +46,9 @@ export function CompareSummaryCard({ summary }: CompareSummaryCardProps) {
       {/* Status Changes */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-foreground-muted">Status Changes</CardTitle>
+          <CardTitle className="text-sm text-foreground-muted">
+            <WithInfoTooltip tooltip={compareTooltips.statusChanges}>Status Changes</WithInfoTooltip>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -50,13 +56,17 @@ export function CompareSummaryCard({ summary }: CompareSummaryCardProps) {
               <span className="text-success text-2xl font-bold tabular-nums">
                 {statusChanges.improved}
               </span>
-              <p className="text-xs text-foreground-faint">improved</p>
+              <p className="text-xs text-foreground-faint">
+                <WithInfoTooltip tooltip={compareTooltips.improved} side="bottom">improved</WithInfoTooltip>
+              </p>
             </div>
             <div>
               <span className="text-danger text-2xl font-bold tabular-nums">
                 {statusChanges.regressed}
               </span>
-              <p className="text-xs text-foreground-faint">regressed</p>
+              <p className="text-xs text-foreground-faint">
+                <WithInfoTooltip tooltip={compareTooltips.regressed} side="bottom">regressed</WithInfoTooltip>
+              </p>
             </div>
           </div>
         </CardContent>
@@ -65,7 +75,9 @@ export function CompareSummaryCard({ summary }: CompareSummaryCardProps) {
       {/* Pass Rate Delta */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-foreground-muted">Pass Rate</CardTitle>
+          <CardTitle className="text-sm text-foreground-muted">
+            <WithInfoTooltip tooltip={compareTooltips.passRateDelta}>Pass Rate</WithInfoTooltip>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {scoringDelta ? (
@@ -79,7 +91,9 @@ export function CompareSummaryCard({ summary }: CompareSummaryCardProps) {
       {/* Frontier Eval Delta */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-foreground-muted">Frontier Eval</CardTitle>
+          <CardTitle className="text-sm text-foreground-muted">
+            <WithInfoTooltip tooltip={compareTooltips.frontierDelta}>Frontier Eval</WithInfoTooltip>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {frontierEvalDelta ? (

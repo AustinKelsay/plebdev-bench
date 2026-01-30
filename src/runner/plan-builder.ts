@@ -15,6 +15,11 @@ import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
 import { createHarness, discoverHarnesses, type HarnessName } from "../harnesses/index.js";
 import { generateRunId } from "../lib/run-id.js";
 import { logger } from "../lib/logger.js";
+import {
+	TOOL_SMOKE_TEST_SLUG,
+	isToolSmokeTest,
+	selectToolSmokePassType,
+} from "../lib/tool-smoke.js";
 
 /**
  * Discovers available models from Ollama.
@@ -76,6 +81,22 @@ function discoverTests(): string[] {
 }
 
 /**
+ * Ensures tool-smoke runs first if present.
+ *
+ * @param tests - Discovered or configured test list
+ * @returns Ordered test list
+ */
+function orderTests(tests: string[]): string[] {
+	if (!tests.includes(TOOL_SMOKE_TEST_SLUG)) {
+		return tests;
+	}
+	return [
+		TOOL_SMOKE_TEST_SLUG,
+		...tests.filter((test) => test !== TOOL_SMOKE_TEST_SLUG),
+	];
+}
+
+/**
  * Gets the current Bun version.
  */
 function getBunVersion(): string {
@@ -110,7 +131,10 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	if (tests.length === 0) {
 		log.info("Auto-discovering tests from src/tests/...");
 		tests = discoverTests();
+		tests = orderTests(tests);
 		log.info({ tests }, `Found ${tests.length} test(s)`);
+	} else {
+		tests = orderTests(tests);
 	}
 
 	// Discover available harnesses
@@ -146,7 +170,11 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	for (const model of models) {
 		for (const harness of harnesses) {
 			for (const test of tests) {
-				for (const passType of config.passTypes) {
+				const passTypes = isToolSmokeTest(test)
+					? [selectToolSmokePassType(config.passTypes)]
+					: config.passTypes;
+
+				for (const passType of passTypes) {
 					itemIndex++;
 					items.push({
 						id: String(itemIndex).padStart(2, "0"),

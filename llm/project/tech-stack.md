@@ -28,6 +28,7 @@ This project is a **CLI-driven local benchmark runner** (single command, non-int
 - OpenRouter via **direct `fetch`** (auto-enabled when API key present)
 - Results written to `results/<run-id>/run.json` + `results/<run-id>/plan.json`
 - `compare` implemented as a built-in CLI path that reads two run files and prints deltas
+- **Dashboard** for visual result browsing (Vite + React + shadcn/ui + Recharts)
 
 ## Best Practices, Pitfalls, and Usage Conventions
 
@@ -125,6 +126,38 @@ This section captures “how we use the stack” so the codebase stays consisten
 - **Conventions**:
   - Exit code is non-zero **only on crashes**; failures are recorded in results.
   - Compare operates on `run.json` inputs and outputs deltas deterministically.
+
+## Dashboard Stack (`apps/dashboard/`)
+
+The dashboard provides a visual interface for browsing and comparing benchmark results.
+
+- **Vite** - Build tool with React plugin, hot module replacement
+- **React 18** - UI framework with hooks
+- **TypeScript** - Type safety
+- **React Router** - Client-side routing (`/runs`, `/runs/:id`, `/compare/:a/:b`)
+- **Tailwind CSS** - Utility-first styling
+- **Custom components built on Radix UI primitives** (following shadcn/ui patterns, dark theme, terminal-inspired palette)
+- **Recharts** - Chart library for visualizations
+- **lucide-react** - Icon library
+- **tailwind-merge** - Class name merging utility
+- **class-variance-authority** - Component variant management
+
+**Key shadcn/ui Components:**
+- Card, Table, Badge, Tabs, Select, Button
+- Dialog for drill-down details
+- Skeleton for loading states
+
+**Custom Components:**
+- StatusBadge (✓ PASS / ✗ FAIL with semantic colors)
+- DeltaBadge (Δ +5% with directional coloring)
+- InfoTooltip (hover explanations)
+
+**Charts:**
+- CompositeScoreChart (multi-bar with effective score)
+- BlindVsInformedChart (paired bar comparison)
+- PassRateChart (dimension breakdowns)
+- TimingDistribution (histogram with p50/p90)
+- FrontierEvalScatter (pass rate vs score)
 
 ## Open Decisions (Small, MVP-Safe)
 - **Config file name**: `bench.config.json` vs `plebdev-bench.config.json`

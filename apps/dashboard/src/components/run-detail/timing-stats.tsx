@@ -2,9 +2,11 @@
  * Purpose: Timing statistics component showing generation duration metrics.
  */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import type { MatrixItemResult } from "@/lib/types";
 import { computeTimingStats } from "@/lib/aggregations";
 import { formatDuration } from "@/lib/utils";
+import { timing as timingTooltips } from "@/lib/tooltip-content";
 
 interface TimingStatsProps {
   items: MatrixItemResult[];
@@ -29,36 +31,50 @@ export function TimingStats({ items }: TimingStatsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Timing</CardTitle>
+        <CardTitle className="text-base">
+          <WithInfoTooltip tooltip={timingTooltips.title}>Timing</WithInfoTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-foreground-muted">Average</span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingTooltips.average} side="right">Average</WithInfoTooltip>
+            </span>
             <p className="text-lg font-medium tabular-nums">
               {formatDuration(stats.mean)}
             </p>
           </div>
           <div>
-            <span className="text-foreground-muted">Median</span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingTooltips.median} side="right">Median</WithInfoTooltip>
+            </span>
             <p className="text-lg font-medium tabular-nums">
               {formatDuration(stats.median)}
             </p>
           </div>
           <div>
-            <span className="text-foreground-muted">Min</span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingTooltips.min} side="right">Min</WithInfoTooltip>
+            </span>
             <p className="tabular-nums">{formatDuration(stats.min)}</p>
           </div>
           <div>
-            <span className="text-foreground-muted">Max</span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingTooltips.max} side="right">Max</WithInfoTooltip>
+            </span>
             <p className="tabular-nums">{formatDuration(stats.max)}</p>
           </div>
           <div>
-            <span className="text-foreground-muted">p90</span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingTooltips.p90} side="right">p90</WithInfoTooltip>
+            </span>
             <p className="tabular-nums">{formatDuration(stats.p90)}</p>
           </div>
           <div>
-            <span className="text-foreground-muted">Items</span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingTooltips.items} side="right">Items</WithInfoTooltip>
+            </span>
             <p className="tabular-nums">{stats.count}</p>
           </div>
         </div>

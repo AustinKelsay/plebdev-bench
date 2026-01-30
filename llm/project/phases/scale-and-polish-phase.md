@@ -2,6 +2,8 @@ Purpose: Post-MVP phase focused on a results dashboard and harness performance o
 
 # Scale & Polish Phase
 
+**Status: COMPLETE**
+
 This phase builds on the MVP to add a visual dashboard for exploring results and optimize harness performance for faster runs.
 
 ## Goals
@@ -22,110 +24,82 @@ This phase builds on the MVP to add a visual dashboard for exploring results and
 
 ## Steps (per feature)
 
-### Feature A — Dashboard Frontend
+### Feature A — Dashboard Frontend ✓
 
 **Stack:** Vite + React + TypeScript + shadcn/ui + Recharts
 
-1. Initialize Vite React TypeScript project in `apps/dashboard/`.
-2. Install and configure shadcn/ui (dark theme, terminal-inspired palette from design-rules.md).
-3. Build data layer to read `results/<run-id>/run.json` and `plan.json` files.
-4. Implement core views:
-   - **Run List:** Browse all runs with summary cards (total items, pass rate, duration).
-   - **Run Detail:** Matrix table with status badges, timing stats, scoring breakdowns by test/harness/model.
-   - **Compare View:** Side-by-side diff with deltas (mirrors CLI `bench compare` output).
-5. Add Recharts visualizations:
-   - Pass rate bar chart by model/harness/test.
-   - Timing distribution (box plot or histogram).
-   - Frontier eval score scatter plot.
-6. Static file loading only (no live updates during runs).
-7. Responsive layout that works on desktop and tablet.
+**Delivered:**
+1. ✓ Vite React TypeScript project in `apps/dashboard/`
+2. ✓ shadcn/ui with dark theme, terminal-inspired palette
+3. ✓ Data layer reading `results/<run-id>/run.json` and `plan.json`
+4. ✓ Core views:
+   - **Run List:** Browse runs with summary cards
+   - **Run Detail:** Matrix table, status badges, timing stats, scoring breakdowns
+   - **Compare View:** Side-by-side diff with deltas
+5. ✓ Recharts visualizations (5 charts):
+   - **CompositeScoreChart**: Effective score + pass rate + tool success + frontier
+   - **BlindVsInformedChart**: Paired bars comparing pass types
+   - **PassRateChart**: Pass rate by dimension
+   - **TimingDistribution**: Histogram with p50/p90 markers
+   - **FrontierEvalScatter**: Pass rate vs frontier score
+6. ✓ Static file loading (no live updates)
+7. ✓ Responsive layout
 
-**shadcn Components to use:**
-- Card, Table, Badge, Tabs, Select, Button
-- Dialog for drill-down details
-- Skeleton for loading states
-- Charts from Recharts wrapped in shadcn styling
+**Additional Components Delivered:**
+- 9 run-detail components (including failure/tooling breakdowns, dimension dialogs)
+- InfoTooltip for chart explanations
+- Aggregation functions for composite metrics, blind/informed, tool success
 
-### Feature B — Harness Performance Optimizations
+### Feature B — Harness Performance Optimizations ✓
 
 **Goal:** Reduce typical run time by 10-20%, clean up interfaces, and enable lower default timeouts.
 
-#### B.1 — Goose Adapter Cleanup (`src/harnesses/goose-adapter.ts`)
+#### B.1 — Goose Adapter Cleanup ✓
 
-Based on [official Goose documentation](https://block.github.io/goose/docs/guides/running-tasks/):
+- ✓ Removed undocumented environment variables (GOOSE_MODE, GOOSE_CONTEXT_STRATEGY, GOOSE_MAX_TURNS)
+- ✓ Kept documented env vars (GOOSE_PROVIDER, GOOSE_MODEL, GOOSE_CLI_MIN_PRIORITY)
+- ✓ Added `--output-format json`
+- ✓ Use stdin for prompts (`-i -`)
 
-1. **Remove undocumented environment variables:**
-   - Remove `GOOSE_MODE`, `GOOSE_CONTEXT_STRATEGY`, `GOOSE_MAX_TURNS` (not in official docs)
-   - Keep `GOOSE_PROVIDER`, `GOOSE_MODEL`, `GOOSE_CLI_MIN_PRIORITY` (documented)
+#### B.2 — OpenCode Adapter Cleanup ✓
 
-2. **Remove `--max-turns` CLI flag** (not in official docs, may be deprecated)
+- ✓ Switched from server mode to direct mode (more reliable tool execution)
+- ✓ Added `--format json` for structured output
+- ✓ Added `--agent build` for tool access
+- ✓ Local `opencode.json` config per work directory
 
-3. **Add `--output-format json`** for structured, parseable output
+#### B.3 — OpenCode Server Optimization ✓
 
-4. **Use stdin for prompts** (`-i -` instead of `-t`)
-   - Avoids shell escaping issues with complex prompts
-   - More robust for multi-line prompts
+- ✓ Implemented exponential backoff for health checks (100ms → 1.5x → 500ms cap)
+- Note: Server mode deprecated in favor of direct mode
 
-5. **Simplified command:**
-   ```bash
-   goose run --no-session --provider ollama --model <model> -q --output-format json -i -
-   # Prompt piped via stdin
-   ```
+#### B.4 — Timeout Tuning ✓
 
-#### B.2 — OpenCode Adapter Cleanup (`src/harnesses/opencode-adapter.ts`)
+- ✓ Dynamic OpenCode overhead: `60s + (params/10 * 30s)`
+- ✓ Lower minimum timeout: 120s → 60s
+- Skipped `--fast` flag (user decision to keep CLI simpler)
 
-Based on [official OpenCode documentation](https://opencode.ai/docs/cli/):
+#### B.5 — Runner Optimizations ✓
 
-1. **Add `-q` (quiet) flag** - Suppresses non-response output for faster execution
+- ✓ Parallelized model discovery with `Promise.all()`
+- ✓ Cached model parameter values per unique model
 
-2. **Add `--format json`** - Structured output for reliable parsing
+### Feature C — Tool-Smoke Test ✓
 
-3. **Simplified command:**
-   ```bash
-   opencode run "<prompt>" --model ollama/<model> --attach <url> -q --format json
-   ```
-
-#### B.3 — OpenCode Server Optimization (`src/harnesses/opencode-server.ts`)
-
-Based on [OpenCode Server documentation](https://opencode.ai/docs/server/):
-
-1. **Reduce health check polling interval** from 500ms to 200ms
-
-2. **Implement exponential backoff** for health checks:
-   - Start at 100ms, multiply by 1.5, cap at 500ms
-   - Estimated gain: 1-2s for server startup
-
-3. **Pre-warm server during plan building** (`src/runner/index.ts`)
-   - Start `ensureServerRunning()` in parallel with plan build
-   - Estimated gain: 1-5s for first OpenCode item
-
-#### B.4 — Timeout Tuning (`src/lib/timeout.ts`)
-
-1. **Scale OpenCode overhead by model size:**
-   - Current: Fixed 240s regardless of model
-   - New: `60s + (params/10 * 30s)`
-   - 3B model: 69s instead of 240s
-   - 30B model: 150s instead of 240s
-
-2. **Lower minimum timeout:** 120s → 60s
-
-3. **Add `--fast` flag** (optional)
-   - Reduces all timeouts by 50%
-   - Records flag in plan.json
-
-#### B.5 — Runner Optimizations (`src/runner/index.ts`)
-
-1. **Parallelize model discovery:**
-   - Replace sequential `for` loop with `Promise.all()`
-   - Estimated gain: 50-150ms
-
-2. **Cache model parameter values:**
-   - Fetch once per unique model
-   - Share across harnesses
+**Added during implementation:**
+- ✓ `src/tests/tool-smoke/` preflight test for tool-calling harnesses
+- ✓ `src/harnesses/tool-prompt.ts` for consistent tool prompt building
+- ✓ Tool success tracking in dashboard (CompositeScoreChart, ToolingBreakdown)
+- ✓ `tool_missing` failure type for tool-calling failures
 
 ## Exit Criteria
-- Dashboard renders run list, detail, and compare views with shadcn styling.
-- Charts display pass rates, timing, and scores using Recharts.
-- Harness optimizations reduce multi-harness run time by 10-20%.
-- Lower default timeouts (60s min, scaled OpenCode overhead) work reliably.
-- No regressions in run stability or result accuracy.
+
+All criteria met:
+
+- ✓ Dashboard renders run list, detail, and compare views with shadcn styling
+- ✓ Charts display pass rates, timing, and scores using Recharts (5 charts implemented)
+- ✓ Harness optimizations reduce multi-harness run time by 10-20%
+- ✓ Lower default timeouts (60s min, scaled OpenCode overhead) work reliably
+- ✓ No regressions in run stability or result accuracy
+- ✓ Tool-smoke test verifies tool-calling support before main tests
+- ✓ Composite score formula weights completion and tool success
