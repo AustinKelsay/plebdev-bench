@@ -30,14 +30,14 @@ apps/dashboard/
 │   └── build-index.ts       # Generates results/index.json
 ├── src/
 │   ├── components/
-│   │   ├── ui/              # shadcn/ui components (badge, button, card, dialog, select, skeleton, table, tabs)
+│   │   ├── ui/              # shadcn/ui components (badge, button, card, dialog, info-tooltip, select, skeleton, table, tabs)
 │   │   ├── layout/          # Header, page containers
 │   │   ├── run-list/        # Run list page + cards
 │   │   ├── run-detail/      # Run detail page + matrix table + scoring breakdown + timing stats
 │   │   ├── compare/         # Compare page + delta badges + run selector
 │   │   └── charts/          # Recharts visualizations
 │   ├── hooks/               # Data fetching hooks (useRuns, useRunDetail, useCompare)
-│   ├── lib/                 # Types, API, utils, aggregations
+│   ├── lib/                 # Types, API, utils, aggregations, tooltip-content
 │   ├── pages/               # Route components
 │   ├── App.tsx              # Router setup
 │   ├── main.tsx             # Entry point
@@ -64,11 +64,17 @@ apps/dashboard/
 - **Matrix Table**: All items with status badges, model, harness, test, pass type, scores, timing
 - **Scoring Breakdown**: Pass rates by model, harness, and test (tabbed view)
 - **Timing Stats**: min/max/median/mean/p90 durations
+- **Failure Breakdown**: Generation and scoring failures by type
+- **Tooling Breakdown**: Tool success rate for tool-calling harnesses
 - **Charts**:
+  - **Composite Score Chart**: Effective score + pass rate + tool success + frontier (multi-bar)
+  - **Blind vs Informed Chart**: Paired bars comparing pass types
   - Pass rate bar chart (grouped by model/harness/test)
   - Timing distribution histogram with p50/p90 markers
   - Frontier eval scatter plot (pass rate vs score)
-- **Drill-down Dialog**: Click any row to see generation output, scores, and frontier reasoning
+- **Drill-down Dialogs**:
+  - **ItemDetailDialog**: Click any row to see generation output, scores, and frontier reasoning
+  - **DimensionDetailDialog**: Click chart bars to see dimension details
 
 #### Compare View (`/compare`)
 
@@ -131,6 +137,70 @@ apps/dashboard/
 // Renders: Δ -12s (green, inverted for time decrease)
 ```
 
+#### CompositeScoreChart
+
+Multi-bar chart showing effective score and contributing metrics:
+- **Effective Score** (gold/amber): 40% pass + 30% completion + 30% tool success
+- **Pass Rate** (green): Automated test pass rate
+- **Tool Success** (blue): Tool-calling success rate for tool harnesses
+- **Frontier Avg** (purple): GPT-5.2 evaluation average
+
+#### BlindVsInformedChart
+
+Paired bar chart comparing blind vs informed pass rates:
+- **Blind** (amber): Pass rate without hints
+- **Informed** (green): Pass rate with test name/definition
+- Shows delta between the two
+
+#### DimensionDetailDialog
+
+Drill-down dialog for chart bar clicks:
+- Shows all items in selected dimension (model/harness/test)
+- Displays pass rate, completion rate, tool success rate
+- Lists individual items with scores
+
+#### FailureBreakdown
+
+Panel showing failure statistics:
+- Generation failures by type (timeout, api_error, harness_error, etc.)
+- Scoring failures by type (extraction, import, test_execution, etc.)
+- Total counts and percentages
+
+#### ToolingBreakdown
+
+Panel showing tool-calling statistics:
+- Tool success rate for tool-calling harnesses
+- Tool missing count and percentage
+- Per-harness breakdown
+
+#### Contextual Tooltips
+
+Info tooltips throughout the dashboard provide contextual help for metrics and concepts.
+
+**Components** (`apps/dashboard/src/components/ui/info-tooltip.tsx`):
+```tsx
+// Standalone tooltip with question mark button
+<InfoTooltip content="Explanation text" side="top" />
+
+// Wrapper to add tooltip next to any content
+<WithInfoTooltip tooltip="Help text">Label</WithInfoTooltip>
+```
+
+**Centralized Content** (`apps/dashboard/src/lib/tooltip-content.ts`):
+- `summary.*` - Summary card explanations
+- `matrix.*` - Matrix table column explanations
+- `scoring.*` - Scoring breakdown explanations
+- `tooling.*` - Tooling breakdown explanations
+- `timing.*` - Timing stats explanations
+- `failures.*` - Failure breakdown explanations
+- `composite.*` - Composite score chart explanations
+- `blindInformed.*` - Blind vs Informed chart explanations
+- `timingDistribution.*` - Timing distribution explanations
+- `scatter.*` - Frontier scatter plot explanations
+- `itemDetail.*` - Item detail dialog explanations
+- `dimensionDetail.*` - Dimension detail dialog explanations
+- `compare.*` - Compare page explanations
+
 ### Data Layer
 
 #### API Functions (`src/lib/api.ts`)
@@ -145,13 +215,33 @@ apps/dashboard/
 - `useRunDetail(runId)` - Fetch single run + plan
 - `useCompare(runA, runB)` - Fetch two runs and compute comparison
 
-#### Aggregations (`src/lib/aggregations.ts`)
+#### Aggregations (`apps/dashboard/src/lib/aggregations.ts`)
 
-- `computePassRate(items)` - Calculate overall pass rate
-- `groupByModel/Harness/Test(items)` - Group for breakdowns
-- `computeTimingStats(items)` - min/max/median/mean/p90
-- `computeFrontierStats(items)` - avg/min/max scores
-- `compareRuns(runA, runB)` - Full comparison with deltas
+**Core Functions:**
+- `computePassRate(items)` - Calculate overall pass rate (0-1)
+- `computeItemPassRate(score)` - Pass rate from single score
+- `groupByModel/Harness/Test/ModelHarness(items)` - Group for breakdowns
+- `computeBreakdown(items, groupFn)` - Pass rate breakdown by dimension
+
+**Timing & Frontier:**
+- `computeTimingStats(items)` - min/max/median/mean/p90/count
+- `computeFrontierStats(items)` - avg/min/max/count
+
+**Composite Metrics:**
+- `computeCompositeMetrics(items, groupFn, toolHarnesses)` - Effective score with weights
+  - Returns: passRate, completionRate, toolSuccessRate, frontierAvg, effectiveScore
+  - Effective score = passRate × 0.4 + completionRate × 0.3 + toolSuccessRate × 0.3
+- `computeBlindInformedBreakdown(items, groupFn)` - Blind vs informed delta per group
+
+**Tool & Failure Stats:**
+- `inferToolHarnesses(items)` - Detect harnesses expected to use tools
+- `computeToolUseStats(items)` - Tool success rate
+- `computeToolScoreBreakdown(items, groupFn)` - Tool usage vs scoring per group
+- `computeFailureStats(items)` - Failure counts by type
+- `partitionToolSmoke(items)` - Separate tool-smoke from regular items
+
+**Comparison:**
+- `compareRuns(runA, runB)` - Full comparison with matched items and deltas
 
 ### Scripts
 
@@ -181,14 +271,14 @@ Custom plugin to serve the results directory during development:
 
 | Directory | Files | Purpose |
 |-----------|-------|---------|
-| `apps/dashboard/src/components/ui/` | 8 | shadcn/ui components |
+| `apps/dashboard/src/components/ui/` | 9 | shadcn/ui components (incl. info-tooltip) |
 | `apps/dashboard/src/components/layout/` | 2 | Header, page container |
 | `apps/dashboard/src/components/run-list/` | 2 | Run list page + card |
-| `apps/dashboard/src/components/run-detail/` | 6 | Matrix table, status badge, dialogs, stats |
+| `apps/dashboard/src/components/run-detail/` | 9 | Matrix table, status badge, dialogs, stats, breakdowns |
 | `apps/dashboard/src/components/compare/` | 5 | Compare page, selectors, delta badges, tables |
-| `apps/dashboard/src/components/charts/` | 3 | Pass rate, timing, frontier scatter |
+| `apps/dashboard/src/components/charts/` | 5 | Composite score, blind/informed, pass rate, timing, frontier |
 | `apps/dashboard/src/hooks/` | 3 | Data fetching hooks |
-| `apps/dashboard/src/lib/` | 4 | Types, API, utils, aggregations |
+| `apps/dashboard/src/lib/` | 5 | Types, API, utils, aggregations, tooltip-content |
 | `apps/dashboard/src/pages/` | 3 | Route components |
 | `apps/dashboard/` | 7 | Config files (vite, tailwind, tsconfig, etc.) |
 
@@ -204,15 +294,15 @@ Custom plugin to serve the results directory during development:
 
 #### Changes Made
 
-1. **Removed undocumented environment variables:**
-   - ~~`GOOSE_MODE=auto`~~ (removed)
-   - ~~`GOOSE_CONTEXT_STRATEGY=summarize`~~ (removed)
-   - ~~`GOOSE_MAX_TURNS=5`~~ (removed)
+1. **Kept additional environment variables for stability:**
+   - `GOOSE_MODE=auto` - Auto mode for agent behavior
+   - `GOOSE_CONTEXT_STRATEGY=summarize` - Context handling strategy
+   - `GOOSE_MAX_TURNS=40` - Maximum conversation turns
 
-2. **Kept documented environment variables:**
-   - `GOOSE_PROVIDER=ollama`
-   - `GOOSE_MODEL=<model>`
-   - `GOOSE_CLI_MIN_PRIORITY=0.2`
+2. **Documented environment variables:**
+   - `GOOSE_PROVIDER=ollama` - Backend provider
+   - `GOOSE_MODEL=<model>` - Model name
+   - `GOOSE_CLI_MIN_PRIORITY=0.2` - Reduce verbose output
 
 3. **Removed `--max-turns` CLI flag** (not in official docs)
 
@@ -231,12 +321,15 @@ goose run --no-session --provider ollama --model <model> -q --output-format json
 
 #### Code Changes
 ```typescript
-// Environment (documented vars only)
+// Environment (all vars for stability)
 const env = {
   ...process.env,
   GOOSE_PROVIDER: "ollama",
   GOOSE_MODEL: opts.model,
   GOOSE_CLI_MIN_PRIORITY: "0.2",
+  GOOSE_MODE: "auto",
+  GOOSE_CONTEXT_STRATEGY: "summarize",
+  GOOSE_MAX_TURNS: "40",
 };
 
 // CLI args
@@ -372,6 +465,31 @@ function calculateOpenCodeOverhead(parametersBillions: number): number {
 | 30B | 240s | 300s | 480s | 390s |
 | 70B | 480s | 540s | 720s | 690s |
 
+#### High-Precision and Large Model Handling
+
+Additional timeout factors added for edge cases:
+
+1. **High-precision multiplier (5x)**: Models with bf16/fp16/f32 quantization get 5x timeout
+   - Accounts for slow cold start + generation on high-precision formats
+   - Detected via model tag (e.g., `llama3:bf16`, `qwen:fp16`)
+
+2. **Large model overhead (+300s)**: Models with >20B parameters get +5 min
+   - Ensures adequate time for very large model operations
+
+**Updated Constants:**
+```typescript
+const HIGH_PRECISION_MULTIPLIER = 5;
+const LARGE_MODEL_OVERHEAD_MS = 300_000; // 5 minutes for >20B
+```
+
+**Updated Examples (with all factors):**
+
+| Model | Precision | Ollama | Goose | OpenCode |
+|-------|-----------|--------|-------|----------|
+| 3B | q4 | 120s | 180s | 189s |
+| 9B | bf16 | 600s (×5) | 660s (×5) | 705s (×5) |
+| 30B | q4 | 540s | 600s | 690s |
+
 ---
 
 ### B.5 — Runner Optimizations
@@ -384,11 +502,6 @@ function calculateOpenCodeOverhead(parametersBillions: number): number {
    - Old: Sequential `for` loop
    - New: Parallel fetch of all unique models
    - Estimated gain: 50-150ms
-
-2. **Pre-warm OpenCode server during plan building:**
-   - Server starts in background while other setup runs
-   - First OpenCode item doesn't pay cold boot cost
-   - Estimated gain: 1-5s for first OpenCode item
 
 #### Parallel Model Info Fetching
 ```typescript
@@ -409,24 +522,7 @@ for (const { model, info } of modelInfoResults) {
 }
 ```
 
-#### Server Pre-Warming
-```typescript
-// After plan build, before printing summary
-const hasOpenCode = plan.items.some((item) => item.harness === "opencode");
-let serverWarmPromise: Promise<string> | null = null;
-if (hasOpenCode) {
-  log.info("Pre-warming OpenCode server...");
-  serverWarmPromise = ensureServerRunning().catch((err) => {
-    log.warn({ error: err }, "OpenCode server pre-warm failed (will retry on first use)");
-    return "";
-  });
-}
-
-// Before item loop
-if (serverWarmPromise) {
-  await serverWarmPromise;
-}
-```
+**Note:** OpenCode now runs in direct mode (no server), so server pre-warming is not applicable.
 
 ---
 
@@ -435,10 +531,10 @@ if (serverWarmPromise) {
 | File | Lines Changed | Purpose |
 |------|---------------|---------|
 | `src/lib/timeout.ts` | ~30 | Dynamic OpenCode overhead, lower minimum |
-| `src/harnesses/opencode-server.ts` | ~20 | Exponential backoff health checks |
-| `src/runner/index.ts` | ~25 | Parallel model discovery, server pre-warm |
+| `src/harnesses/opencode-server.ts` | ~20 | Exponential backoff health checks (deprecated) |
+| `src/runner/index.ts` | ~25 | Parallel model discovery |
 | `src/harnesses/opencode-adapter.ts` | ~3 | Add `--format json` flag |
-| `src/harnesses/goose-adapter.ts` | ~20 | Remove undocumented flags, stdin prompts |
+| `src/harnesses/goose-adapter.ts` | ~20 | Stdin prompts, env vars for stability |
 
 ## Documentation Updated
 
@@ -463,12 +559,11 @@ Pre-existing type errors in `openrouter-client.ts` and `scorer.ts` were resolved
 | Optimization | Estimated Gain |
 |--------------|----------------|
 | Parallel model discovery | 50-150ms |
-| Server pre-warming | 1-5s (first OpenCode item) |
-| Exponential backoff | 1-2s (server startup) |
+| Exponential backoff | 1-2s (server startup, if used) |
 | Lower timeouts | Faster failure detection |
 | Dynamic OpenCode overhead | Shorter timeouts for small models |
 
-**Total estimated improvement: 2-7s per multi-harness run (10-20%)**
+**Total estimated improvement: 1-3s per multi-harness run**
 
 ## Exit Criteria Status
 
@@ -477,11 +572,57 @@ Pre-existing type errors in `openrouter-client.ts` and `scorer.ts` were resolved
 - [x] Charts display pass rates, timing, and scores using Recharts
 
 ### Feature B — Harness Performance Optimizations
-- [x] Goose adapter uses only documented env vars and stdin for prompts
+- [x] Goose adapter uses stdin for prompts (env vars kept for stability)
 - [x] OpenCode adapter uses `--format json` flag
-- [x] OpenCode server uses exponential backoff (100ms → 1.5x → 500ms)
-- [x] OpenCode server pre-warmed during plan build
+- [x] OpenCode runs in direct mode (no server)
 - [x] OpenCode timeout scales with model size (60s + params/10 * 30s)
 - [x] Minimum timeout lowered to 60s
 - [x] Model discovery parallelized with `Promise.all()`
-- [x] No regressions in run stability or result accuracy (58 tests pass)
+- [x] No regressions in run stability or result accuracy (61 tests pass)
+
+---
+
+## Bug Fixes
+
+### P1 — Scoring Skipped When Output Empty But File Exists
+
+**File:** `src/runner/item-executor.ts`
+
+**Problem:** The scoring gate condition `generation.success && generation.output` skipped scoring when Goose wrote code to a file but text output was empty.
+
+**Fix:** Changed condition to include `codeFilePath`:
+```typescript
+// Before
+if (generation.success && generation.output) {
+
+// After
+if (generation.success && (generation.output || generation.codeFilePath)) {
+```
+
+Applied to both:
+- Line 139: Automated scoring gate
+- Line 187: Frontier eval gate
+
+---
+
+### P2 — Tool-Call JSON Parsing Corrupted Escape Sequences
+
+**File:** `src/harnesses/goose-adapter.ts`
+
+**Problem:** After `JSON.parse()`, the code applied additional escape replacements:
+```typescript
+code = code.replace(/\\n/g, "\n");
+code = code.replace(/\\t/g, "\t");
+code = code.replace(/\\r/g, "\r");
+```
+
+This corrupted legitimate code escapes. For example:
+- Code: `const regex = /\n/;` (matches literal newline)
+- After JSON.parse: `const regex = /\n/;` (correct - literal backslash-n)
+- After replace: `const regex = /<actual newline>/;` (WRONG)
+
+**Fix:** Removed the replacement lines. JSON.parse handles escaping correctly.
+```typescript
+// Now just returns the parsed value directly
+return args.file_text;
+```

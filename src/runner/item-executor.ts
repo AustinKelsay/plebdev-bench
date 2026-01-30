@@ -82,6 +82,7 @@ export async function executeItem(
 
 	let generation: GenerationResult;
 	let generationFailure: MatrixItemResult["generationFailure"];
+	let generationStartTime: number | undefined;
 
 	try {
 		// Load prompt
@@ -95,6 +96,7 @@ export async function executeItem(
 			defaultTimeoutMs: timeoutMs,
 		});
 
+		generationStartTime = performance.now();
 		const result = await harness.generate({
 			model: item.model,
 			prompt,
@@ -108,19 +110,38 @@ export async function executeItem(
 			durationMs: result.durationMs,
 			promptTokens: result.promptTokens,
 			completionTokens: result.completionTokens,
+			codeFilePath: result.codeFilePath,
 		};
 
-		log.info({ durationMs: result.durationMs, harness: item.harness }, "Generation completed");
+		log.info({ durationMs: result.durationMs, harness: item.harness, codeFilePath: result.codeFilePath }, "Generation completed");
 	} catch (error) {
 		const errorMessage =
 			error instanceof Error ? error.message : String(error);
+		const errorDetails = error as {
+			output?: string;
+			durationMs?: number;
+		};
 		const failureType = classifyGenerationError(errorMessage);
+		const fallbackDurationMs =
+			typeof generationStartTime === "number"
+				? Math.round(performance.now() - generationStartTime)
+				: 0;
+		const durationMs =
+			typeof errorDetails.durationMs === "number"
+				? errorDetails.durationMs
+				: fallbackDurationMs;
+		const output =
+			typeof errorDetails.output === "string" &&
+			errorDetails.output.trim().length > 0
+				? errorDetails.output
+				: undefined;
 
 		generation = {
 			success: false,
 			error: errorMessage,
 			failureType,
-			durationMs: 0, // Duration tracked by harness, but we failed before getting it
+			durationMs,
+			output,
 		};
 
 		generationFailure = {
@@ -135,11 +156,16 @@ export async function executeItem(
 	let automatedScore: AutomatedScore | undefined;
 	let scoringMetrics: ScoringMetrics | undefined;
 	let scoringFailure: MatrixItemResult["scoringFailure"];
-	if (generation.success && generation.output) {
+	if (generation.success && (generation.output || generation.codeFilePath)) {
 		try {
 			log.debug("Running automated scoring...");
 			const scoringStartTime = performance.now();
-			const scoringResult = await scoreGeneration(item.test, generation.output);
+			const scoringResult = await scoreGeneration(
+				item.test,
+				generation.output ?? "", // empty string OK when codeFilePath is set
+				undefined, // use default timeout
+				generation.codeFilePath, // pass file path from tool-calling harness
+			);
 			const scoringDurationMs = Math.round(performance.now() - scoringStartTime);
 
 			automatedScore = {
@@ -178,16 +204,25 @@ export async function executeItem(
 	let frontierEval: FrontierEval | undefined;
 	let frontierEvalFailure: MatrixItemResult["frontierEvalFailure"];
 	const openRouterKey = getOpenRouterKey();
-	if (openRouterKey && generation.success && generation.output) {
+	if (openRouterKey && generation.success && (generation.output || generation.codeFilePath)) {
 		const rubric = loadRubric(item.test);
 		if (rubric) {
 			try {
 				log.debug("Running frontier eval...");
-				const extracted = extractCode(generation.output);
+				// Use file if available from tool-calling harness, else extract from text
+				let code: string;
+				if (generation.codeFilePath) {
+					const fs = await import("node:fs");
+					code = fs.readFileSync(generation.codeFilePath, "utf-8");
+				} else {
+					// output must be truthy here (else branch + outer condition)
+					const extracted = extractCode(generation.output!);
+					code = extracted.code;
+				}
 
 				const evalResult = await evaluateWithFrontier(
 					{
-						code: extracted.code,
+						code,
 						rubric,
 						testSlug: item.test,
 					},

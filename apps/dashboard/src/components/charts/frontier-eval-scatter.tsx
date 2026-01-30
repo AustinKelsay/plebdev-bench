@@ -13,8 +13,10 @@ import {
   ZAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import type { MatrixItemResult } from "@/lib/types";
 import { computeItemPassRate } from "@/lib/aggregations";
+import { scatter as scatterTooltips } from "@/lib/tooltip-content";
 
 interface FrontierEvalScatterProps {
   items: MatrixItemResult[];
@@ -99,7 +101,9 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Frontier Eval vs Pass Rate</CardTitle>
+        <CardTitle className="text-base">
+          <WithInfoTooltip tooltip={scatterTooltips.title}>Frontier Eval vs Pass Rate</WithInfoTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {/* Legend */}
@@ -163,8 +167,9 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 
         {/* Correlation note */}
         <p className="text-xs text-foreground-faint mt-2 text-center">
-          Points show correlation between automated test pass rate and frontier
-          model evaluation score.
+          <WithInfoTooltip tooltip={scatterTooltips.correlation} side="top">
+            Points show correlation between automated test pass rate and frontier model evaluation score.
+          </WithInfoTooltip>
         </p>
       </CardContent>
     </Card>

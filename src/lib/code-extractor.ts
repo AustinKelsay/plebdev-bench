@@ -16,8 +16,8 @@
 export interface ExtractedCode {
 	/** The extracted code. */
 	code: string;
-	/** Method used for extraction. */
-	method: "markdown-ts" | "markdown-any" | "heuristic" | "raw";
+	/** Method used for extraction. 'file' indicates code was read from a file written by tool-calling harness. */
+	method: "markdown-ts" | "markdown-any" | "heuristic" | "raw" | "file";
 }
 
 /**
@@ -36,6 +36,19 @@ const GOOSE_PREFIXES = [
 ];
 
 /**
+ * XML-like tags to strip from output.
+ * These may appear when prompt instructions include XML format examples,
+ * causing models to output XML tags that pollute the extracted code.
+ */
+const XML_TAGS_TO_STRIP = [
+	/<edit>\s*/gi,
+	/<\/edit>\s*/gi,
+	/<path>[^<]*<\/path>\s*/gi,
+	/<content>\s*/gi,
+	/<\/content>\s*/gi,
+];
+
+/**
  * Heuristic patterns that indicate code content.
  * Used when no markdown blocks are found.
  */
@@ -46,7 +59,7 @@ const CODE_PATTERNS = [
 ];
 
 /**
- * Strips known harness-specific prefixes from output.
+ * Strips known harness-specific prefixes and XML tags from output.
  *
  * @param output - Raw LLM output
  * @returns Cleaned output
@@ -55,6 +68,10 @@ function stripHarnessPrefixes(output: string): string {
 	let cleaned = output;
 	for (const prefix of GOOSE_PREFIXES) {
 		cleaned = cleaned.replace(prefix, "");
+	}
+	// Strip XML-like tags that may have been added by prompt instructions
+	for (const tag of XML_TAGS_TO_STRIP) {
+		cleaned = cleaned.replace(tag, "");
 	}
 	return cleaned.trim();
 }
@@ -87,6 +104,15 @@ function extractMarkdownBlocks(
 }
 
 /**
+ * Patterns that indicate end of code block.
+ * Used by heuristic extraction to avoid including trailing XML/markdown markers.
+ */
+const CODE_END_PATTERNS = [
+	/^<\/\w+>\s*$/, // Closing XML tag on its own line
+	/^```\s*$/, // Markdown code block end
+];
+
+/**
  * Attempts to extract code using heuristic pattern matching.
  * Looks for function/const/class declarations.
  *
@@ -104,6 +130,7 @@ function extractByHeuristic(content: string): string | null {
 	// Try to find the start of code (skip leading prose)
 	const lines = content.split("\n");
 	let codeStartIndex = 0;
+	let codeEndIndex = lines.length;
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i];
@@ -121,7 +148,15 @@ function extractByHeuristic(content: string): string | null {
 		}
 	}
 
-	return lines.slice(codeStartIndex).join("\n").trim();
+	// Find code end (look for closing tags/markers after code starts)
+	for (let i = codeStartIndex + 1; i < lines.length; i++) {
+		if (CODE_END_PATTERNS.some((pattern) => pattern.test(lines[i]))) {
+			codeEndIndex = i;
+			break;
+		}
+	}
+
+	return lines.slice(codeStartIndex, codeEndIndex).join("\n").trim();
 }
 
 /**

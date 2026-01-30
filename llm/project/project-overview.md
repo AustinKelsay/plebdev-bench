@@ -20,8 +20,13 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - **Tooling developers** evaluating harness quality and reliability
 - **Experimenters** tracking progress over time
 
-## What It Tests (Initial Scope)
-- **Coding tasks** starting with a todo app using state management
+## What It Tests
+- **5 benchmark tests:**
+  - `smoke` - Basic add() function (simplest possible test)
+  - `calculator-basic` - Stateless arithmetic functions
+  - `calculator-stateful` - Calculator with memory operations
+  - `todo-app` - CRUD todo manager with state management
+  - `tool-smoke` - Tool-calling preflight test for Goose/OpenCode
 - Expandable test catalog over time
 
 ## Scoring & Evaluation
@@ -34,19 +39,23 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - **Results:** JSON files per run
 - **Runner:** orchestrates generation + automated tests + frontier eval
 
-## File Structure (Target)
-- `src/harnesses/` — `ollama.ts`, `goose.ts`, `opencode.ts`
-- `src/tests/{test-name}/` — prompts, blind/informed variants, spec tests, rubric
-- `src/scorer.ts` — orchestration + OpenRouter call
-- `results/` — timestamped JSON runs
+## File Structure
+- `src/harnesses/` — Harness adapters (ollama, goose, opencode) + tool-prompt builder
+- `src/tests/{test-name}/` — Benchmark tests (prompts, scoring specs, rubrics)
+- `src/runner/` — Orchestration, plan building, item execution
+- `src/lib/` — Scoring, code extraction, failure classification, utilities
+- `src/schemas/` — Zod schemas (config, plan, result, scoring)
+- `src/results/` — Result reading, writing, comparison
+- `apps/dashboard/` — React dashboard for browsing results
+- `results/` — Timestamped JSON runs (plan.json + run.json per run)
 
 ## Result Captures (per run)
 - Model, harness, test name, pass type (blind/informed)
-- Generated code
+- Generated code (or codeFilePath for tool-calling)
 - Automated score (passed/failed/total)
 - Frontier eval (score, reasoning, model used)
 - Duration, tokens generated
-- **Local resource usage:** memory and energy usage during the run
+- Failure tracking (generationFailure, scoringFailure, frontierEvalFailure)
 
 ## Guardrails & Constraints
 - Single-machine focus (M4 Pro Mac mini, 64GB) until expanded
@@ -54,7 +63,31 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - Results must include full metadata for reproducibility
 
 ## Success Criteria
-- One test (todo app) runs end-to-end across all harnesses
+- All 5 tests run end-to-end across all harnesses
 - Both blind and informed passes captured per model/harness/test
 - Automated tests run and score correctly
 - Frontier eval returns score + reasoning and is logged
+- Dashboard displays runs with full scoring and comparison
+
+## Dashboard
+
+React-based visual dashboard at `apps/dashboard/` for browsing and comparing benchmark results.
+
+**Views:**
+- **Run List** - Browse all runs with summary cards
+- **Run Detail** - Matrix table, scoring breakdown, timing stats, failure/tooling analysis
+- **Compare** - Side-by-side diff with deltas
+
+**Charts:**
+- Composite score (effective score + pass rate + tool success + frontier)
+- Blind vs informed comparison
+- Pass rate by dimension (model/harness/test)
+- Timing distribution histogram
+- Frontier eval scatter plot
+
+**Composite Score Formula:**
+```
+effectiveScore = passRate × 0.4 + completionRate × 0.3 + toolSuccessRate × 0.3
+```
+
+This weights models that complete all items and successfully use tools higher than models that only pass easy tests on simple harnesses.

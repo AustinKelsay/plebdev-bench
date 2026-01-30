@@ -36,6 +36,7 @@ export type ItemStatus = z.infer<typeof ItemStatusSchema>;
 export const generationFailureTypes = [
 	"timeout",
 	"api_error",
+	"tool_missing",
 	"harness_error",
 	"prompt_not_found",
 	"unknown",

@@ -28,6 +28,15 @@ export function classifyGenerationError(errorMessage: string): GenerationFailure
 		return "timeout";
 	}
 
+	// Tool-calling failures
+	if (
+		lower.includes("tool_missing") ||
+		lower.includes("solution.ts was not created") ||
+		lower.includes("did not write solution.ts")
+	) {
+		return "tool_missing";
+	}
+
 	// Prompt file not found
 	if (lower.includes("prompt file not found") || lower.includes("prompt not found")) {
 		return "prompt_not_found";

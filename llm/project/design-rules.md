@@ -160,14 +160,32 @@ Even without a UI, these conventions guide how data is shaped and displayed.
   - Always actionable: state missing dependency, missing API key, invalid config key, etc.
   - Crash-only non-zero exit codes (MVP); otherwise record failures in `run.json`.
 
-### Interaction Patterns (Future UI)
+### Interaction Patterns (Dashboard - Implemented)
 
-- **Drill-down** from a matrix row into a detail view (generated code, tests, logs, eval).
-- **Compare** is a first-class route/view; users should be able to pick two runs and see deltas immediately.
-- **Copy-first**: provide “copy run id”, “copy file path”, “copy JSON pointer” affordances.
+- **Drill-down** from matrix rows into detail dialogs (ItemDetailDialog for items, DimensionDetailDialog for chart bars)
+- **Compare** is a first-class route (`/compare/:runA/:runB`); users pick two runs and see deltas immediately
+- **Copy-first**: run IDs and file paths are easily selectable
 
-## Non-Goals (MVP)
+### Chart Components (Dashboard)
 
-- No heavy visualization (charts) until we have enough stable data to justify it.
-- No interactive TUI in MVP; keep the CLI script-friendly and deterministic.
+The dashboard includes 5 chart components using Recharts:
+
+- **CompositeScoreChart**: Multi-bar chart showing effective score (gold), pass rate (green), tool success (blue), frontier (purple)
+- **BlindVsInformedChart**: Paired bars comparing blind (amber) vs informed (green) pass rates
+- **PassRateChart**: Pass rate by dimension (model/harness/test)
+- **TimingDistribution**: Histogram with p50/p90 markers
+- **FrontierEvalScatter**: Scatter plot of pass rate vs frontier score
+
+**Chart Color Semantics:**
+- Effective score: `#F7C948` (gold/amber) - primary ranking metric
+- Pass rate: `#3DDC97` (success green)
+- Tool success: `#58A6FF` (info blue)
+- Frontier: purple tones
+- Blind pass: `#F7C948` (amber)
+- Informed pass: `#3DDC97` (green)
+
+## Non-Goals (Current)
+
+- No interactive TUI; CLI remains script-friendly and deterministic
+- No live updates during runs; dashboard reads static result files
 

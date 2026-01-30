@@ -9,11 +9,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
+import { summary as summaryTooltips } from "@/lib/tooltip-content";
 import { MatrixTable } from "./matrix-table";
 import { ScoringBreakdown } from "./scoring-breakdown";
+import { ToolingBreakdown } from "./tooling-breakdown";
 import { TimingStats } from "./timing-stats";
 import { ItemDetailDialog } from "./item-detail-dialog";
-import { PassRateChart } from "@/components/charts/pass-rate-chart";
+import { DimensionDetailDialog, type DimensionType } from "./dimension-detail-dialog";
+import { FailureBreakdown } from "./failure-breakdown";
+import { CompositeScoreChart } from "@/components/charts/composite-score-chart";
+import { BlindVsInformedChart } from "@/components/charts/blind-vs-informed-chart";
 import { TimingDistribution } from "@/components/charts/timing-distribution";
 import { FrontierEvalScatter } from "@/components/charts/frontier-eval-scatter";
 import type { RunResult, RunPlan, MatrixItemResult } from "@/lib/types";
@@ -27,6 +33,10 @@ interface RunDetailPageProps {
 
 export function RunDetailPage({ run, plan }: RunDetailPageProps) {
   const [selectedItem, setSelectedItem] = useState<MatrixItemResult | null>(null);
+  const [selectedDimension, setSelectedDimension] = useState<{
+    dimension: DimensionType;
+    name: string;
+  } | null>(null);
 
   const passRate = computePassRate(run.items);
   const frontierStats = computeFrontierStats(run.items);
@@ -48,7 +58,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-foreground-muted">Items</CardTitle>
+            <CardTitle className="text-sm text-foreground-muted">
+              <WithInfoTooltip tooltip={summaryTooltips.items}>Items</WithInfoTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tabular-nums">
@@ -65,7 +77,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-foreground-muted">Pass Rate</CardTitle>
+            <CardTitle className="text-sm text-foreground-muted">
+              <WithInfoTooltip tooltip={summaryTooltips.passRate}>Pass Rate</WithInfoTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div
@@ -87,7 +101,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-foreground-muted">Frontier Eval</CardTitle>
+            <CardTitle className="text-sm text-foreground-muted">
+              <WithInfoTooltip tooltip={summaryTooltips.frontierEval}>Frontier Eval</WithInfoTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {frontierStats ? (
@@ -116,7 +132,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-foreground-muted">Environment</CardTitle>
+            <CardTitle className="text-sm text-foreground-muted">
+              <WithInfoTooltip tooltip={summaryTooltips.environment}>Environment</WithInfoTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm">{plan.environment.platform}</p>
@@ -140,12 +158,23 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
       {/* Breakdowns */}
       <div className="grid gap-4 md:grid-cols-2">
         <ScoringBreakdown items={run.items} />
-        <TimingStats items={run.items} />
+        <ToolingBreakdown items={run.items} />
       </div>
 
-      {/* Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <TimingStats items={run.items} />
+        <FailureBreakdown items={run.items} />
+      </div>
+
+      {/* Primary Chart - Composite Scores */}
+      <CompositeScoreChart
+        items={run.items}
+        onDimensionClick={(dim, name) => setSelectedDimension({ dimension: dim, name })}
+      />
+
+      {/* Comparison Charts */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <PassRateChart items={run.items} />
+        <BlindVsInformedChart items={run.items} />
         <TimingDistribution items={run.items} />
       </div>
 
@@ -156,6 +185,15 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
         item={selectedItem}
         open={selectedItem !== null}
         onOpenChange={(open) => !open && setSelectedItem(null)}
+      />
+
+      {/* Dimension Detail Dialog */}
+      <DimensionDetailDialog
+        dimension={selectedDimension?.dimension ?? "model"}
+        name={selectedDimension?.name ?? null}
+        items={run.items}
+        open={selectedDimension !== null}
+        onOpenChange={(open) => !open && setSelectedDimension(null)}
       />
     </PageContainer>
   );

@@ -39,6 +39,9 @@ export const GenerationResultSchema = z.object({
 
 	/** Completion token count (if available from harness). */
 	completionTokens: z.number().optional(),
+
+	/** Path to code file written by tool-calling harness (e.g., Goose developer extension). */
+	codeFilePath: z.string().optional(),
 });
 
 /** Generation result from a harness call. */

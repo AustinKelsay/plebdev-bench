@@ -60,11 +60,17 @@ apps/dashboard/
 - **Matrix Table**: All items with status badges, model, harness, test, pass type, scores, timing
 - **Scoring Breakdown**: Pass rates by model, harness, and test (tabbed view)
 - **Timing Stats**: min/max/median/mean/p90 durations
+- **Failure Breakdown**: Generation and scoring failures by type
+- **Tooling Breakdown**: Tool success rate for tool-calling harnesses
 - **Charts**:
+  - Composite score chart (effective + pass rate + tool success + frontier)
+  - Blind vs informed chart (paired bars comparing pass types)
   - Pass rate bar chart (grouped by model/harness/test)
   - Timing distribution histogram with p50/p90 markers
   - Frontier eval scatter plot (pass rate vs score)
-- **Drill-down Dialog**: Click any row to see generation output, scores, and frontier reasoning
+- **Drill-down Dialogs**:
+  - ItemDetailDialog: Click any row to see generation output, scores, and frontier reasoning
+  - DimensionDetailDialog: Click chart bars to see dimension details
 
 ### Compare View (`/compare`)
 
@@ -126,6 +132,20 @@ apps/dashboard/
 // Renders: Δ -12s (green, inverted for time)
 ```
 
+### InfoTooltip
+
+Contextual help tooltips with question mark trigger:
+
+```tsx
+// Standalone tooltip
+<InfoTooltip content="Explanation text" side="top" />
+
+// Wrapper to add tooltip next to any content
+<WithInfoTooltip tooltip="Help text">Label</WithInfoTooltip>
+```
+
+Tooltip content strings are centralized in `apps/dashboard/src/lib/tooltip-content.ts` for easy maintenance.
+
 ## Data Layer
 
 ### API Functions (`src/lib/api.ts`)
@@ -140,13 +160,31 @@ apps/dashboard/
 - `useRunDetail(runId)` - Fetch single run + plan
 - `useCompare(runA, runB)` - Fetch two runs and compute comparison
 
-### Aggregations (`src/lib/aggregations.ts`)
+### Aggregations (`apps/dashboard/src/lib/aggregations.ts`)
 
-- `computePassRate(items)` - Calculate overall pass rate
-- `groupByModel/Harness/Test(items)` - Group for breakdowns
-- `computeTimingStats(items)` - min/max/median/mean/p90
-- `computeFrontierStats(items)` - avg/min/max scores
-- `compareRuns(runA, runB)` - Full comparison with deltas
+**Core Functions:**
+- `computePassRate(items)` - Calculate overall pass rate (0-1)
+- `computeItemPassRate(score)` - Pass rate from single score
+- `groupByModel/Harness/Test/ModelHarness(items)` - Group for breakdowns
+- `computeBreakdown(items, groupFn)` - Pass rate breakdown by dimension
+
+**Timing & Frontier:**
+- `computeTimingStats(items)` - min/max/median/mean/p90/count
+- `computeFrontierStats(items)` - avg/min/max/count
+
+**Composite Metrics:**
+- `computeCompositeMetrics(items, groupFn, toolHarnesses)` - Effective score with weights
+- `computeBlindInformedBreakdown(items, groupFn)` - Blind vs informed delta per group
+
+**Tool & Failure Stats:**
+- `inferToolHarnesses(items)` - Detect harnesses expected to use tools
+- `computeToolUseStats(items)` - Tool success rate
+- `computeToolScoreBreakdown(items, groupFn)` - Tool usage vs scoring per group
+- `computeFailureStats(items)` - Failure counts by type
+- `partitionToolSmoke(items)` - Separate tool-smoke from regular items
+
+**Comparison:**
+- `compareRuns(runA, runB)` - Full comparison with matched items and deltas
 
 ## Scripts
 

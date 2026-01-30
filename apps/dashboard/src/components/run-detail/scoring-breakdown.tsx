@@ -4,6 +4,7 @@
  */
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import type { MatrixItemResult } from "@/lib/types";
 import {
   computeBreakdown,
@@ -13,6 +14,7 @@ import {
   type DimensionBreakdown,
 } from "@/lib/aggregations";
 import { formatPercent } from "@/lib/utils";
+import { scoring as scoringTooltips } from "@/lib/tooltip-content";
 
 interface ScoringBreakdownProps {
   items: MatrixItemResult[];
@@ -62,7 +64,9 @@ export function ScoringBreakdown({ items }: ScoringBreakdownProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Scoring Breakdown</CardTitle>
+        <CardTitle className="text-base">
+          <WithInfoTooltip tooltip={scoringTooltips.title}>Scoring Breakdown</WithInfoTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="model">

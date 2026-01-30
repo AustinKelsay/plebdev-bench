@@ -3,6 +3,7 @@
  * Exports: computePassRate, groupByModel, groupByHarness, computeTimingStats, etc.
  */
 import type { MatrixItemResult, AutomatedScore, MatchedItem, CompareResult } from "./types";
+import { TOOL_SMOKE_TEST_SLUG } from "./types";
 
 /** Pass rate for a set of items (0-1 range) */
 export interface PassRateResult {
@@ -84,6 +85,23 @@ export function groupByTest(
     const group = map.get(item.test) || [];
     group.push(item);
     map.set(item.test, group);
+    return map;
+  }, new Map<string, MatrixItemResult[]>());
+}
+
+/**
+ * Groups items by combined model + harness name.
+ * @param items - Matrix items
+ * @returns Map keyed by "model · harness"
+ */
+export function groupByModelHarness(
+  items: MatrixItemResult[]
+): Map<string, MatrixItemResult[]> {
+  return items.reduce((map, item) => {
+    const key = `${item.model} / ${item.harness}`;
+    const group = map.get(key) || [];
+    group.push(item);
+    map.set(key, group);
     return map;
   }, new Map<string, MatrixItemResult[]>());
 }
@@ -188,6 +206,308 @@ export function computeBreakdown(
   }
 
   return breakdowns.sort((a, b) => b.passRate - a.passRate);
+}
+
+/** Failure counts by type */
+export interface FailureStats {
+  generationFailures: Map<string, number>;
+  scoringFailures: Map<string, number>;
+  totalGenerationFailures: number;
+  totalScoringFailures: number;
+}
+
+/** Tool usage statistics */
+export interface ToolUseStats {
+  totalItems: number;
+  toolMissing: number;
+  toolSuccessRate: number;
+}
+
+/**
+ * Infers which harnesses are expected to use tools.
+ * Uses tool-smoke presence and tool_missing failures as signals.
+ * @param items - Matrix items
+ * @returns Set of harness names with expected tool usage
+ */
+export function inferToolHarnesses(items: MatrixItemResult[]): Set<string> {
+  const toolHarnesses = new Set<string>();
+
+  for (const item of items) {
+    const failureType = item.generationFailure?.type ?? item.generation?.failureType;
+    if (item.test === TOOL_SMOKE_TEST_SLUG || failureType === "tool_missing") {
+      toolHarnesses.add(item.harness);
+    }
+  }
+
+  return toolHarnesses;
+}
+
+/**
+ * Computes tool usage statistics for a set of tool-expected items.
+ * @param items - Matrix items expected to use tools
+ * @returns Tool usage stats
+ */
+export function computeToolUseStats(items: MatrixItemResult[]): ToolUseStats {
+  const totalItems = items.length;
+  const toolMissing = items.reduce((acc, item) => {
+    const failureType = item.generationFailure?.type ?? item.generation?.failureType;
+    return failureType === "tool_missing" ? acc + 1 : acc;
+  }, 0);
+  const toolSuccessRate =
+    totalItems > 0 ? (totalItems - toolMissing) / totalItems : 0;
+
+  return { totalItems, toolMissing, toolSuccessRate };
+}
+
+/** Tool vs score breakdown row */
+export interface ToolScoreBreakdown {
+  name: string;
+  toolMissing: number;
+  toolTotal: number;
+  toolSuccessRate: number;
+  scorePassRate: number;
+  scorePassed: number;
+  scoreTotal: number;
+}
+
+/**
+ * Computes tool-usage and score breakdown for grouped items.
+ * Tool usage is calculated on tool-expected harnesses; scoring excludes tool-smoke.
+ * @param items - Matrix items
+ * @param groupFn - Grouping function
+ * @param toolHarnesses - Optional set of tool-expected harnesses
+ * @returns Breakdown rows
+ */
+export function computeToolScoreBreakdown(
+  items: MatrixItemResult[],
+  groupFn: (items: MatrixItemResult[]) => Map<string, MatrixItemResult[]>,
+  toolHarnesses: Set<string> = inferToolHarnesses(items)
+): ToolScoreBreakdown[] {
+  const groups = groupFn(items);
+  const breakdowns: ToolScoreBreakdown[] = [];
+
+  for (const [name, groupItems] of groups) {
+    const toolItems = groupItems.filter((item) => toolHarnesses.has(item.harness));
+    const toolMissing = toolItems.reduce((acc, item) => {
+      const failureType = item.generationFailure?.type ?? item.generation?.failureType;
+      return failureType === "tool_missing" ? acc + 1 : acc;
+    }, 0);
+    const toolTotal = toolItems.length;
+    const toolSuccessRate =
+      toolTotal > 0 ? (toolTotal - toolMissing) / toolTotal : 0;
+
+    const nonToolSmoke = groupItems.filter((item) => item.test !== TOOL_SMOKE_TEST_SLUG);
+    const { passRate, passed, total } = computePassRate(nonToolSmoke);
+
+    breakdowns.push({
+      name,
+      toolMissing,
+      toolTotal,
+      toolSuccessRate,
+      scorePassRate: passRate,
+      scorePassed: passed,
+      scoreTotal: total,
+    });
+  }
+
+  return breakdowns;
+}
+
+/**
+ * Computes failure statistics from items.
+ * @param items - Matrix items
+ * @returns Failure counts grouped by type
+ */
+export function computeFailureStats(items: MatrixItemResult[]): FailureStats {
+  const generationFailures = new Map<string, number>();
+  const scoringFailures = new Map<string, number>();
+
+  for (const item of items) {
+    if (item.generationFailure) {
+      const count = generationFailures.get(item.generationFailure.type) || 0;
+      generationFailures.set(item.generationFailure.type, count + 1);
+    }
+    if (item.scoringFailure) {
+      const count = scoringFailures.get(item.scoringFailure.type) || 0;
+      scoringFailures.set(item.scoringFailure.type, count + 1);
+    }
+  }
+
+  return {
+    generationFailures,
+    scoringFailures,
+    totalGenerationFailures: Array.from(generationFailures.values()).reduce(
+      (a, b) => a + b,
+      0
+    ),
+    totalScoringFailures: Array.from(scoringFailures.values()).reduce(
+      (a, b) => a + b,
+      0
+    ),
+  };
+}
+
+/**
+ * Separates tool-smoke items from regular items for separate analysis.
+ * @param items - Matrix items
+ * @returns Object with toolSmoke and regular item arrays
+ */
+export function partitionToolSmoke(items: MatrixItemResult[]): {
+  toolSmoke: MatrixItemResult[];
+  regular: MatrixItemResult[];
+} {
+  const toolSmoke: MatrixItemResult[] = [];
+  const regular: MatrixItemResult[] = [];
+
+  for (const item of items) {
+    if (item.test === "tool-smoke") {
+      toolSmoke.push(item);
+    } else {
+      regular.push(item);
+    }
+  }
+
+  return { toolSmoke, regular };
+}
+
+/** Composite metrics for a group (pass rate + tool success + frontier) */
+export interface CompositeMetrics {
+  name: string;
+  passRate: number;
+  passed: number;
+  total: number;
+  completionRate: number;
+  completedItems: number;
+  totalItems: number;
+  toolSuccessRate: number;
+  toolTotal: number;
+  frontierAvg: number | null;
+  frontierCount: number;
+  effectiveScore: number;
+}
+
+/**
+ * Computes composite metrics (pass rate + tool success + frontier avg) for grouped items.
+ * Sorts by effectiveScore which weights: passRate (40%), completionRate (30%), toolSuccessRate (30%).
+ * This prevents models that only complete easy items from ranking above comprehensive performers.
+ * @param items - Matrix items
+ * @param groupFn - Grouping function
+ * @param toolHarnesses - Set of harness names expected to use tools
+ * @returns Composite metrics per group sorted by effectiveScore
+ */
+export function computeCompositeMetrics(
+  items: MatrixItemResult[],
+  groupFn: (items: MatrixItemResult[]) => Map<string, MatrixItemResult[]>,
+  toolHarnesses: Set<string> = inferToolHarnesses(items)
+): CompositeMetrics[] {
+  const groups = groupFn(items);
+  const metrics: CompositeMetrics[] = [];
+
+  for (const [name, groupItems] of groups) {
+    // Pass rate (exclude tool-smoke, unless we're specifically viewing tool-smoke)
+    const nonToolSmoke = name === TOOL_SMOKE_TEST_SLUG
+      ? groupItems  // Don't filter when viewing tool-smoke itself
+      : groupItems.filter((item) => item.test !== TOOL_SMOKE_TEST_SLUG);
+    const { passRate, passed, total } = computePassRate(nonToolSmoke);
+
+    // Completion rate: how many items actually ran successfully
+    const totalItems = groupItems.length;
+    const completedItems = groupItems.filter((i) => i.status === "completed").length;
+    const completionRate = totalItems > 0 ? completedItems / totalItems : 0;
+
+    // Tool success (only for tool-expected harnesses)
+    const toolItems = groupItems.filter((item) => toolHarnesses.has(item.harness));
+    const toolMissing = toolItems.reduce((acc, item) => {
+      const failureType = item.generationFailure?.type ?? item.generation?.failureType;
+      return failureType === "tool_missing" ? acc + 1 : acc;
+    }, 0);
+    const toolTotal = toolItems.length;
+    const toolSuccessRate = toolTotal > 0 ? (toolTotal - toolMissing) / toolTotal : 0;
+
+    // Frontier avg
+    const frontierScores = groupItems
+      .map((i) => i.frontierEval?.score)
+      .filter((s): s is number => s !== undefined);
+    const frontierAvg =
+      frontierScores.length > 0
+        ? frontierScores.reduce((a, b) => a + b, 0) / frontierScores.length
+        : null;
+
+    // Weighted effective score: passRate (40%) + completionRate (30%) + toolSuccessRate (30%)
+    // This ensures models that complete all items and use tools rank higher than
+    // models with high pass rates but low completion (e.g., only work on easy harnesses)
+    const effectiveScore =
+      passRate * 0.4 + completionRate * 0.3 + toolSuccessRate * 0.3;
+
+    metrics.push({
+      name,
+      passRate,
+      passed,
+      total,
+      completionRate,
+      completedItems,
+      totalItems,
+      toolSuccessRate,
+      toolTotal,
+      frontierAvg,
+      frontierCount: frontierScores.length,
+      effectiveScore,
+    });
+  }
+
+  return metrics.sort((a, b) => b.effectiveScore - a.effectiveScore);
+}
+
+/** Blind vs informed breakdown for a group */
+export interface BlindInformedBreakdown {
+  name: string;
+  blindPassRate: number;
+  blindPassed: number;
+  blindTotal: number;
+  informedPassRate: number;
+  informedPassed: number;
+  informedTotal: number;
+  delta: number; // informed - blind
+}
+
+/**
+ * Computes blind vs informed breakdown by a dimension.
+ * @param items - Matrix items
+ * @param groupFn - Grouping function
+ * @returns Breakdown per group with delta
+ */
+export function computeBlindInformedBreakdown(
+  items: MatrixItemResult[],
+  groupFn: (items: MatrixItemResult[]) => Map<string, MatrixItemResult[]>
+): BlindInformedBreakdown[] {
+  const groups = groupFn(items);
+  const breakdowns: BlindInformedBreakdown[] = [];
+
+  for (const [name, groupItems] of groups) {
+    // Exclude tool-smoke from analysis
+    const nonToolSmoke = groupItems.filter((item) => item.test !== TOOL_SMOKE_TEST_SLUG);
+    const blind = nonToolSmoke.filter((item) => item.passType === "blind");
+    const informed = nonToolSmoke.filter((item) => item.passType === "informed");
+
+    const blindStats = computePassRate(blind);
+    const informedStats = computePassRate(informed);
+
+    // Only include groups that have both blind and informed data
+    if (blindStats.total > 0 || informedStats.total > 0) {
+      breakdowns.push({
+        name,
+        blindPassRate: blindStats.passRate,
+        blindPassed: blindStats.passed,
+        blindTotal: blindStats.total,
+        informedPassRate: informedStats.passRate,
+        informedPassed: informedStats.passed,
+        informedTotal: informedStats.total,
+        delta: informedStats.passRate - blindStats.passRate,
+      });
+    }
+  }
+
+  return breakdowns.sort((a, b) => b.delta - a.delta);
 }
 
 /**

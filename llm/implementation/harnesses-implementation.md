@@ -19,8 +19,9 @@ src/harnesses/
 ├── harness.ts           # Common interface + types
 ├── ollama-adapter.ts    # Direct HTTP to Ollama API
 ├── goose-adapter.ts     # CLI via execa (headless mode)
-├── opencode-adapter.ts  # CLI via execa (server + attach mode)
-├── opencode-server.ts   # OpenCode server lifecycle management
+├── opencode-adapter.ts  # CLI via execa (direct mode with tool-calling)
+├── opencode-server.ts   # OpenCode server lifecycle (deprecated, kept for reference)
+├── tool-prompt.ts       # Tool-calling prompt builder
 ├── discovery.ts         # Detect available harnesses
 └── index.ts             # Factory + re-exports
 ```
@@ -83,10 +84,13 @@ interface GenerateResult {
   - `--no-session` - Don't persist session state
   - `-i -` - Read prompt from stdin (avoids shell escaping issues)
 
-- **Environment Variables** (documented only):
+- **Environment Variables**:
   - `GOOSE_PROVIDER=ollama` - Backend provider
   - `GOOSE_MODEL=<model>` - Model name
   - `GOOSE_CLI_MIN_PRIORITY=0.2` - Reduce verbose output
+  - `GOOSE_MODE=auto` - Auto mode for agent behavior
+  - `GOOSE_CONTEXT_STRATEGY=summarize` - Context handling strategy
+  - `GOOSE_MAX_TURNS=40` - Maximum conversation turns
 
 - **Execution Optimizations**:
   - `cwd: process.env.TMPDIR || "/tmp"` - Run in temp directory to avoid codebase scanning
@@ -98,46 +102,93 @@ interface GenerateResult {
 
 **Why `--provider` and `--model` flags are critical**: Without explicit CLI flags, Goose reads from its config file (`~/.config/goose/config.yaml`) which may specify a different provider (e.g., OpenAI). The CLI flags override the config file, ensuring Ollama is always used.
 
+### Tool-Calling Mode (Goose)
+
+When running with `--with-builtin developer`, Goose can write code directly to files using the `text_editor` tool instead of outputting text.
+
+**File-Based Code Extraction:**
+
+1. **Prompt instructs Goose** to write code to `solution.ts`:
+   ```
+   Use the text_editor tool to write your code to "solution.ts" in the current directory.
+   ```
+
+2. **Execution creates temp directory** per generation:
+   ```typescript
+   const workDir = path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
+   ```
+
+3. **After execution**, adapter checks for file:
+   - If `solution.ts` exists and has ≥10 chars, `codeFilePath` is set
+   - Otherwise falls back to text extraction from output
+
+4. **GenerateResult includes both**:
+   ```typescript
+   return {
+     output,        // May be empty for tool-call mode
+     codeFilePath,  // Path to solution.ts if created
+     durationMs,
+   };
+   ```
+
+5. **Scorer prioritizes file** (`src/lib/scorer.ts:334-340`):
+   ```typescript
+   if (codeFilePath && fs.existsSync(codeFilePath)) {
+     const code = await fs.promises.readFile(codeFilePath, "utf-8");
+     extracted = { code, method: "file" };
+   } else {
+     extracted = extractCode(rawOutput);
+   }
+   ```
+
+**JSON Escape Sequence Handling:**
+
+When extracting code from tool-call JSON responses, `JSON.parse()` already correctly decodes escape sequences:
+- `\"` → `"`
+- `\n` → newline
+- `\\n` → literal `\n`
+
+**Important:** Do NOT post-process escape sequences after JSON.parse. Additional replacements like `.replace(/\\n/g, '\n')` would corrupt legitimate code escapes (e.g., regex `/\n/` or string literals `"\n"`).
+
 ### OpenCode Adapter
 
-**Server Mode Optimizations** (reduced timeout from 7+ min to ~28-77s):
+**Direct Mode with Tool-Calling** (current implementation):
 
-OpenCode has significant cold boot overhead (~2+ minutes) because each `opencode run` starts:
-- 32+ LSP servers
-- MCP connections
-- Plugin initialization
-- Full codebase analysis
+OpenCode now runs directly in a unique work directory per generation, using tool-calling to write code to `solution.ts`.
 
-**Solution**: Use persistent server mode with `--attach`:
+1. **Command Structure**:
+   ```bash
+   opencode run "<prompt>" --model ollama/<model> --agent build --format json --log-level ERROR
+   ```
+   - `--agent build` - Uses build agent with all tools allowed
+   - `--format json` - Structured JSONL output for reliable parsing
+   - `--log-level ERROR` - Reduces noise in output
+   - No `--attach` flag - runs directly without server
 
-1. **Server Lifecycle** (`src/harnesses/opencode-server.ts`):
+2. **Work Directory Setup**:
    ```typescript
-   // Server pre-warmed during plan build (B.5 optimization)
-   const url = await ensureServerRunning(4096);  // Returns http://localhost:4096
-
-   // Run generation against warm server
-   opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096 --format json
-
-   // Cleanup at end of benchmark run
-   await stopServer();
+   // Create unique temp directory in OpenCode's tool-output root
+   const toolOutputRoot = resolveOpenCodeToolOutputRoot(); // ~/.local/share/opencode/tool-output
+   const workDir = path.join(toolOutputRoot, `plebdev-bench-opencode-${runId}`);
    ```
+   - Uses XDG_DATA_HOME location to avoid permission prompts
+   - Initializes as git repo (OpenCode expects git context)
+   - Creates local `opencode.json` config to enable tools
 
-2. **Server Startup**:
-   ```bash
-   opencode serve --port 4096
+3. **Local Config File** (`opencode.json` in workDir):
+   ```json
+   {
+     "provider": {
+       "ollama": {
+         "npm": "@ai-sdk/openai-compatible",
+         "options": { "baseURL": "http://localhost:11434/v1" },
+         "models": { "model:tag": { "name": "model:tag", "tools": true } }
+       }
+     },
+     "permission": { "edit": "allow", "write": "allow", "read": "allow", "bash": "deny" },
+     "tools": { "edit": true, "write": true, "read": false, "bash": false }
+   }
    ```
-   - Runs in temp directory (`cwd: /tmp`) to avoid codebase scanning
-   - `stdio: "ignore"` - Runs silently in background
-   - Health check polls `http://localhost:4096` until ready (max 30s)
-
-3. **Generation Command**:
-   ```bash
-   opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096 --format json
-   ```
-   - `--attach <url>` - Connect to warm server (bypasses cold boot)
-   - `--format json` - Structured output for reliable parsing
-   - `stdin: "ignore"` - Prevent hanging on stdin (critical for headless)
-   - `cwd: /tmp` - Avoid codebase scanning
 
 4. **Environment Variables** (headless optimization):
    - `OPENCODE_DISABLE_AUTOUPDATE=true`
@@ -146,41 +197,130 @@ OpenCode has significant cold boot overhead (~2+ minutes) because each `opencode
    - `OPENCODE_DISABLE_AUTOCOMPACT=true`
    - `OPENCODE_DISABLE_PRUNE=true`
    - `OPENCODE_DISABLE_TERMINAL_TITLE=true`
-   - `OPENCODE_DISABLE_CLAUDE_CODE=true` (prevents .claude file reads)
-   - `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=true`
-   - `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=true`
+   - `OPENCODE_DISABLE_WEBSEARCH=true`
+   - `OPENCODE_DISABLE_WEBFETCH=true`
+   - `OPENCODE_DISABLE_CLAUDE_CODE=true`
 
-5. **Server Crash Prevention**:
-   - `ensureServerRunning()` always checks if port is healthy FIRST
-   - Handles: reusing our server, externally started servers, orphaned servers from crashes
-   - Only starts new server if no healthy server exists on the port
+5. **Tool-Calling Flow**:
+   - Prompt uses `buildToolPrompt()` to instruct tool usage
+   - OpenCode writes code to `solution.ts` via edit/write tool
+   - Code read from file after execution
+   - Fallback: extract tool call from JSON output if file not created
+   - Fails with `tool_missing` if no code produced
 
-- **Output**: raw stdout (validated for non-empty, min 10 chars)
+6. **Stale Output Detection**:
+   - Monitors stdout/stderr for activity
+   - Kills hung processes after 2 minutes of no output (scales with timeout)
+   - Uses process tree kill (pkill + kill) for reliable cleanup
+
 - **Debug logging**: logs command execution, completion, and stderr
-- **Timeout**: via execa with 4 minute overhead (agentic behavior)
+- **Timeout**: via AbortController with stale output detection
 
-### OpenCode Server Module
+### Tool-Calling Mode (OpenCode)
 
-`src/harnesses/opencode-server.ts` manages the singleton server:
+OpenCode uses its built-in `write` tool to write code directly to files instead of outputting text.
 
-```typescript
-// Exported functions:
-ensureServerRunning(port?: number): Promise<string>  // Returns server URL
-stopServer(): Promise<void>                          // Cleanup
-getServerUrl(): string | null                        // Current URL if running
+**File-Based Code Extraction:**
 
-// Automatic cleanup on:
-// - process.exit
-// - SIGINT (Ctrl+C)
-// - SIGTERM
+1. **Prompt instructs OpenCode** to write code to `solution.ts`:
+   ```
+   Use the write tool to write your code to "solution.ts" in the current directory.
+   ```
+
+2. **Execution creates temp directory** per generation:
+   ```typescript
+   const workDir = path.join(os.tmpdir(), `plebdev-bench-opencode-${runId}`);
+   ```
+
+3. **After execution**, adapter checks for file:
+   - If `solution.ts` exists and has ≥10 chars, `codeFilePath` is set
+   - Otherwise falls back to text extraction from output
+
+4. **GenerateResult includes both**:
+   ```typescript
+   return {
+     output,        // May be empty for tool-call mode
+     codeFilePath,  // Path to solution.ts if created
+     durationMs,
+   };
+   ```
+
+5. **Scorer prioritizes file** (`src/lib/scorer.ts:331-340`):
+   ```typescript
+   if (codeFilePath && fs.existsSync(codeFilePath)) {
+     const code = await fs.promises.readFile(codeFilePath, "utf-8");
+     extracted = { code, method: "file" };
+   } else {
+     extracted = extractCode(rawOutput);
+   }
+   ```
+
+### OpenCode Tool Calling Requirements
+
+**CRITICAL**: Unlike Goose (which uses `--with-builtin developer` CLI flag), OpenCode requires explicit tool enablement in the config file for **EACH model**.
+
+| Harness | Tool Enabling Method |
+|---------|---------------------|
+| Goose | CLI flag: `--with-builtin developer` |
+| OpenCode | Config file: `"tools": true` per model |
+
+**Configuration** (`~/.config/opencode/opencode.json`):
+```json
+{
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "your-model:tag": {
+          "name": "your-model:tag",
+          "tools": true
+        }
+      }
+    }
+  }
+}
 ```
 
-**Key invariants**:
-- Only one server instance runs at a time
-- Server auto-cleans up on process exit
-- Health checks before reusing existing server
-- 30s startup timeout with exponential backoff polling (100ms → 1.5x → 500ms cap)
-- Server pre-warmed during plan build for faster first item (B.5 optimization)
+Without `"tools": true`, OpenCode will NOT pass tool calls to the model, and `solution.ts` will never be created.
+
+**Troubleshooting:**
+- If "solution.ts not created" appears in logs, check model config has `tools: true`
+- If tools still don't work, try increasing `num_ctx` in Ollama (16k-32k minimum recommended)
+- Verify the model supports tool/function calling (not all models do)
+
+### OpenCode Server Module (Deprecated)
+
+`src/harnesses/opencode-server.ts` was used for server mode with `--attach`. Now deprecated in favor of direct mode, but kept for reference.
+
+The current implementation runs OpenCode directly without a server, which provides:
+- Simpler architecture (no server lifecycle management)
+- Reliable tool execution (server mode had tool call issues)
+- Per-generation isolation (unique work directory)
+
+### Tool Prompt Builder
+
+`src/harnesses/tool-prompt.ts` provides `buildToolPrompt()` for tool-calling harnesses:
+
+```typescript
+interface ToolPromptOptions {
+  toolNames: string[];      // e.g., ["edit", "write"]
+  solutionFilename: string; // e.g., "solution.ts"
+  taskPrompt: string;       // Original task prompt
+  toolUsageHint?: string;   // e.g., 'path = "solution.ts", content = "..."'
+}
+
+function buildToolPrompt(options: ToolPromptOptions): string;
+```
+
+The prompt instructs models to:
+1. Use specified tools to write code to file
+2. Output complete, working TypeScript
+3. Not use markdown code blocks or explain code
+
+Used by both Goose and OpenCode adapters for consistent tool-calling behavior.
 
 ## Discovery
 
@@ -230,6 +370,7 @@ Example with 2 models, 2 harnesses, 1 test, 2 passTypes = 8 items.
 - **Generation failures**: Recorded in result, run continues
 - **Timeouts**: Clear error message with suggestion to increase `--timeout`
 - **Stderr capture**: Always logged (warns if non-empty on success path)
+- **Scoring with file output**: Scoring/frontier eval runs when `codeFilePath` exists, even if text `output` is empty (supports Goose and OpenCode tool-calling modes)
 
 ## Model Strategy
 
@@ -268,6 +409,8 @@ timeout = base + ceil(paramsBillions/10) * 60s + harnessOverhead
 | Per 10B params | ceil(params/10) * 60s |
 | Goose overhead | 60s (1 min) |
 | OpenCode overhead | 60s + (params/10 * 30s) (dynamic, B.4 optimization) |
+| High-precision multiplier | 5x (bf16/fp16/f32) |
+| Large model overhead | +300s (>20B params) |
 | Minimum | 1 min |
 | Maximum | 20 min |
 
@@ -275,12 +418,13 @@ timeout = base + ceil(paramsBillions/10) * 60s + harnessOverhead
 - **Goose (1 min)**: CLI startup, headless mode initialization
 - **OpenCode (dynamic)**: Scales with model size: 60s base + 30s per 10B params (smaller models get shorter timeouts)
 
-**Examples (base + sizeScaling + harnessOverhead):**
-- 3B model on Ollama: 60 + 60 + 0 = 120s (2 min)
-- 30B model on Ollama: 60 + 180 + 0 = 240s (4 min)
-- 30B model on Goose: 60 + 180 + 60 = 300s (5 min)
-- 3B model on OpenCode: 60 + 60 + 69 = 189s (~3 min)
-- 30B model on OpenCode: 60 + 180 + 150 = 390s (~6.5 min)
+**Examples (base + sizeScaling + harnessOverhead + largeModelOverhead):**
+- 3B model on Ollama: 60 + 60 + 0 + 0 = 120s (2 min)
+- 9B bf16 on Ollama: (60 + 60 + 0 + 0) × 5 = 600s (10 min)
+- 30B model on Ollama: 60 + 180 + 0 + 300 = 540s (9 min)
+- 30B model on Goose: 60 + 180 + 60 + 300 = 600s (10 min)
+- 3B model on OpenCode: 60 + 60 + 69 + 0 = 189s (~3 min)
+- 30B model on OpenCode: 60 + 180 + 150 + 300 = 690s (~11.5 min)
 
 Model info fetched in parallel via `/api/show` before execution starts (B.5 optimization).
 
@@ -293,3 +437,27 @@ After optimizations, typical execution times for a 3B model:
 | Ollama | 5-8s | 5-8s | (baseline) |
 | Goose | 14+ min (timeout) | 34-49s | ~20x faster |
 | OpenCode | 7+ min (timeout) | 28-77s | ~10x faster |
+
+## Tool-Smoke Test
+
+`src/tests/tool-smoke/` provides a preflight test for tool-calling harnesses.
+
+**Purpose:**
+- Verify that a model/harness combination can successfully use tools
+- Run before other tests to detect tool failures early
+- Skip remaining items for model/harness if tool-smoke fails
+
+**Test Design:**
+- Simple task: write an `add(a, b)` function that returns the sum
+- Minimal complexity to isolate tool-calling from code generation
+- Pass criteria: file created with valid TypeScript function
+
+**Runner Integration** (`src/runner/item-executor.ts`):
+- Tool-smoke items run first per model/harness
+- Failures recorded as `tool_missing` generation failure type
+- Subsequent items for same model/harness marked as tool failures
+
+**Dashboard Integration:**
+- Tool success rate displayed in CompositeScoreChart
+- Tooling breakdown panel shows per-model/harness stats
+- Tool-smoke items excluded from pass rate calculations

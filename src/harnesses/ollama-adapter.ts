@@ -16,6 +16,14 @@
 
 import type { Harness, GenerateOpts, GenerateResult, ModelInfo } from "./harness.js";
 
+/** Prompt prefix instructing Ollama to output code in markdown blocks. */
+const OLLAMA_PROMPT_PREFIX = `Output only TypeScript code as a single markdown code block (\`\`\`typescript).
+No explanations, just the code.
+
+Task:
+
+`;
+
 /** Configuration for the Ollama adapter. */
 export interface OllamaAdapterConfig {
 	/** Ollama API base URL (e.g., "http://localhost:11434"). */
@@ -167,6 +175,9 @@ export function createOllamaAdapter(config: OllamaAdapterConfig): Harness {
 			const startTime = performance.now();
 			const keepAlive = opts.unloadAfter ? 0 : "5m";
 
+			// Prepend prompt prefix for markdown code block output
+			const fullPrompt = OLLAMA_PROMPT_PREFIX + opts.prompt;
+
 			// Use streaming to keep connection alive during model loading (critical for bf16 cold starts)
 			const controller = new AbortController();
 			let timedOut = false;
@@ -181,7 +192,7 @@ export function createOllamaAdapter(config: OllamaAdapterConfig): Harness {
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						model: opts.model,
-						prompt: opts.prompt,
+						prompt: fullPrompt,
 						stream: true, // Streaming keeps connection alive during model loading
 						keep_alive: keepAlive,
 					}),

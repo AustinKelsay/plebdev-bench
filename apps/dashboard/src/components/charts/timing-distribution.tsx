@@ -13,8 +13,10 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import type { MatrixItemResult } from "@/lib/types";
 import { formatDuration } from "@/lib/utils";
+import { timingDistribution as timingDistributionTooltips } from "@/lib/tooltip-content";
 
 interface TimingDistributionProps {
   items: MatrixItemResult[];
@@ -112,20 +114,28 @@ export function TimingDistribution({ items }: TimingDistributionProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Timing Distribution</CardTitle>
+        <CardTitle className="text-base">
+          <WithInfoTooltip tooltip={timingDistributionTooltips.title}>Timing Distribution</WithInfoTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex gap-4 mb-4 text-sm">
           <div>
-            <span className="text-foreground-muted">p50: </span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingDistributionTooltips.p50} side="bottom">p50</WithInfoTooltip>:{" "}
+            </span>
             <span className="font-medium">{formatDuration(p50)}</span>
           </div>
           <div>
-            <span className="text-foreground-muted">p90: </span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingDistributionTooltips.p90} side="bottom">p90</WithInfoTooltip>:{" "}
+            </span>
             <span className="font-medium">{formatDuration(p90)}</span>
           </div>
           <div>
-            <span className="text-foreground-muted">Items: </span>
+            <span className="text-foreground-muted">
+              <WithInfoTooltip tooltip={timingDistributionTooltips.items} side="bottom">Items</WithInfoTooltip>:{" "}
+            </span>
             <span className="font-medium">{durations.length}</span>
           </div>
         </div>

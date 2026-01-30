@@ -14,6 +14,7 @@ export type ItemStatus = "pending" | "running" | "completed" | "failed";
 export type GenerationFailureType =
   | "timeout"
   | "api_error"
+  | "tool_missing"
   | "harness_error"
   | "prompt_not_found"
   | "unknown";
@@ -85,6 +86,7 @@ export interface GenerationResult {
   durationMs: number;
   promptTokens?: number;
   completionTokens?: number;
+  codeFilePath?: string;
 }
 
 /** Scoring execution metrics */
@@ -236,4 +238,24 @@ export interface CompareResult {
   matched: MatchedItem[];
   onlyInA: MatrixItemResult[];
   onlyInB: MatrixItemResult[];
+}
+
+// ============================================================
+// Code extraction and tool-smoke types
+// ============================================================
+
+/** Code extraction methods used by the scorer */
+export type ExtractionMethod =
+  | "markdown-ts"
+  | "markdown-any"
+  | "heuristic"
+  | "raw"
+  | "file";
+
+/** Test slug used for tool-smoke preflight tests */
+export const TOOL_SMOKE_TEST_SLUG = "tool-smoke";
+
+/** Checks if an item is a tool-smoke test */
+export function isToolSmokeItem(item: { test: string }): boolean {
+  return item.test === TOOL_SMOKE_TEST_SLUG;
 }
