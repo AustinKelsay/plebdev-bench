@@ -3,24 +3,15 @@
  * Exports: discoverHarnesses, isHarnessAvailable
  *
  * Checks for:
- * - Ollama: HTTP endpoint reachable
- * - Goose: CLI available via `which goose`
- * - OpenCode: CLI available via `which opencode`
+ * - direct: Always available (runtime availability checked separately)
+ * - goose: CLI available via `which goose`
+ * - opencode: CLI available via `which opencode`
  *
- * All harnesses require Ollama as the backend provider.
+ * Note: Runtime availability (e.g., Ollama) is checked separately.
  */
 
 import { execa } from "execa";
 import type { HarnessName } from "./harness.js";
-import { createOllamaAdapter } from "./ollama-adapter.js";
-
-/** Configuration for harness discovery. */
-export interface DiscoveryConfig {
-	/** Ollama API base URL. */
-	ollamaBaseUrl: string;
-	/** Timeout for discovery checks in milliseconds. */
-	timeoutMs: number;
-}
 
 /**
  * Check if a specific CLI is available on the system.
@@ -41,32 +32,19 @@ async function isCliAvailable(cli: string): Promise<boolean> {
  * Check if a specific harness is available.
  *
  * @param name - Harness name to check
- * @param config - Discovery configuration
  * @returns true if the harness is available
  */
 export async function isHarnessAvailable(
 	name: HarnessName,
-	config: DiscoveryConfig,
 ): Promise<boolean> {
-	const ollamaAdapter = createOllamaAdapter({
-		baseUrl: config.ollamaBaseUrl,
-		defaultTimeoutMs: config.timeoutMs,
-	});
-
-	// All harnesses require Ollama as backend
-	const ollamaAvailable = await ollamaAdapter.ping();
-	if (!ollamaAvailable && name !== "ollama") {
-		// CLI harnesses need Ollama running
-		return false;
-	}
-
 	switch (name) {
-		case "ollama":
-			return ollamaAvailable;
+		case "direct":
+			// Direct harness is always available - runtime availability is checked separately
+			return true;
 		case "goose":
-			return ollamaAvailable && (await isCliAvailable("goose"));
+			return isCliAvailable("goose");
 		case "opencode":
-			return ollamaAvailable && (await isCliAvailable("opencode"));
+			return isCliAvailable("opencode");
 		default:
 			return false;
 	}
@@ -75,27 +53,13 @@ export async function isHarnessAvailable(
 /**
  * Discover all available harnesses on the system.
  *
- * @param config - Discovery configuration
  * @returns Array of available harness names
  */
-export async function discoverHarnesses(
-	config: DiscoveryConfig,
-): Promise<HarnessName[]> {
+export async function discoverHarnesses(): Promise<HarnessName[]> {
 	const available: HarnessName[] = [];
 
-	// Check Ollama first (required for all)
-	const ollamaAdapter = createOllamaAdapter({
-		baseUrl: config.ollamaBaseUrl,
-		defaultTimeoutMs: config.timeoutMs,
-	});
-
-	const ollamaAvailable = await ollamaAdapter.ping();
-	if (!ollamaAvailable) {
-		// No Ollama = no harnesses available
-		return [];
-	}
-
-	available.push("ollama");
+	// Direct harness is always available
+	available.push("direct");
 
 	// Check CLI harnesses in parallel
 	const [gooseAvailable, opencodeAvailable] = await Promise.all([

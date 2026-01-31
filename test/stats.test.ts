@@ -10,8 +10,9 @@ import type { MatrixItemResult } from "../src/schemas/index.js";
 function createResult(overrides: Partial<MatrixItemResult> = {}): MatrixItemResult {
 	return {
 		id: "01",
+		runtime: "ollama",
 		model: "llama3.2:3b",
-		harness: "ollama",
+		harness: "direct",
 		test: "smoke",
 		passType: "blind",
 		status: "completed",
@@ -148,14 +149,14 @@ describe("calculateRunStats", () => {
 
 		it("should break down by harness", () => {
 			const results: MatrixItemResult[] = [
-				createResult({ harness: "ollama", automatedScore: { passed: 9, failed: 1, total: 10 } }),
+				createResult({ harness: "direct", automatedScore: { passed: 9, failed: 1, total: 10 } }),
 				createResult({ harness: "goose", automatedScore: { passed: 5, failed: 5, total: 10 } }),
 			];
 
 			const stats = calculateRunStats(results);
 
 			expect(stats.scoring?.byHarness).toHaveLength(2);
-			expect(stats.scoring?.byHarness[0].name).toBe("ollama");
+			expect(stats.scoring?.byHarness[0].name).toBe("direct");
 			expect(stats.scoring?.byHarness[0].passRate).toBe(90);
 		});
 
@@ -202,15 +203,15 @@ describe("calculateRunStats", () => {
 
 		it("should break down by harness", () => {
 			const results: MatrixItemResult[] = [
-				createResult({ harness: "ollama", frontierEval: { score: 9, reasoning: "x", model: "gpt-5.2" } }),
-				createResult({ harness: "ollama", frontierEval: { score: 7, reasoning: "x", model: "gpt-5.2" } }),
+				createResult({ harness: "direct", frontierEval: { score: 9, reasoning: "x", model: "gpt-5.2" } }),
+				createResult({ harness: "direct", frontierEval: { score: 7, reasoning: "x", model: "gpt-5.2" } }),
 				createResult({ harness: "goose", frontierEval: { score: 5, reasoning: "x", model: "gpt-5.2" } }),
 			];
 
 			const stats = calculateRunStats(results);
 
 			expect(stats.frontier?.byHarness).toHaveLength(2);
-			expect(stats.frontier?.byHarness[0].name).toBe("ollama");
+			expect(stats.frontier?.byHarness[0].name).toBe("direct");
 			expect(stats.frontier?.byHarness[0].avgScore).toBe(8);
 			expect(stats.frontier?.byHarness[0].count).toBe(2);
 		});
@@ -428,7 +429,7 @@ describe("formatRunStats", () => {
 						{ name: "test-b", passed: 2, total: 10, passRate: 20 },
 					],
 					byHarness: [
-						{ name: "ollama", passed: 6, total: 10, passRate: 60 },
+						{ name: "direct", passed: 6, total: 10, passRate: 60 },
 						{ name: "goose", passed: 4, total: 10, passRate: 40 },
 					],
 					byModel: [
@@ -446,7 +447,7 @@ describe("formatRunStats", () => {
 		expect(output).toContain("test-a");
 		expect(output).toContain("80.0%");
 		expect(output).toContain("By harness:");
-		expect(output).toContain("ollama");
+		expect(output).toContain("direct");
 		expect(output).toContain("By model:");
 	});
 

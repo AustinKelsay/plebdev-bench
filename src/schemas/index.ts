@@ -5,6 +5,9 @@
 
 export {
 	SCHEMA_VERSION,
+	runtimeNames,
+	RuntimeNameSchema,
+	type RuntimeName,
 	passTypes,
 	PassTypeSchema,
 	type PassType,

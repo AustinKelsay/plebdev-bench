@@ -12,8 +12,7 @@
  * - Fails with tool_missing if file not created (no text extraction fallback)
  *
  * Invariants:
- * - Uses Ollama as the backend provider
- * - Model discovery is delegated to Ollama adapter
+ * - Uses runtime.baseUrl for Ollama backend
  * - Timeout handled via execa options
  * - Tool use is required - models that don't use text_editor fail
  */
@@ -23,8 +22,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as crypto from "node:crypto";
-import type { Harness, GenerateOpts, GenerateResult, ModelInfo } from "./harness.js";
-import { createOllamaAdapter } from "./ollama-adapter.js";
+import type { Harness, GenerateOpts, GenerateResult } from "./harness.js";
 import { logger } from "../lib/logger.js";
 import { buildToolPrompt } from "./tool-prompt.js";
 
@@ -251,29 +249,12 @@ function normalizeGooseOutput(raw: string): { output: string; method: "raw" | "j
 	}
 }
 
-/** Configuration for the Goose adapter. */
-export interface GooseAdapterConfig {
-	/** Ollama API base URL for model discovery. */
-	ollamaBaseUrl: string;
-	/** Default timeout for requests in milliseconds. */
-	defaultTimeoutMs: number;
-}
-
 /**
  * Creates a Goose harness adapter.
  *
- * @param config - Adapter configuration
  * @returns Harness instance for Goose
  */
-export function createGooseAdapter(config: GooseAdapterConfig): Harness {
-	const { ollamaBaseUrl, defaultTimeoutMs } = config;
-
-	// Use Ollama adapter for model discovery and ping
-	const ollamaAdapter = createOllamaAdapter({
-		baseUrl: ollamaBaseUrl,
-		defaultTimeoutMs,
-	});
-
+export function createGooseAdapter(): Harness {
 	return {
 		name: "goose" as const,
 
@@ -281,25 +262,15 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 			try {
 				// Check if goose CLI is available
 				await execa("which", ["goose"], { timeout: 5000 });
-				// Also check if Ollama is available (required backend)
-				return await ollamaAdapter.ping();
+				return true;
 			} catch {
 				return false;
 			}
 		},
 
-		async listModels(): Promise<string[]> {
-			// All harnesses use Ollama models
-			return ollamaAdapter.listModels();
-		},
-
-		async getModelInfo(model: string): Promise<ModelInfo> {
-			// Delegate to Ollama adapter
-			return ollamaAdapter.getModelInfo(model);
-		},
-
 		async generate(opts: GenerateOpts): Promise<GenerateResult> {
-			const log = logger.child({ harness: "goose", model: opts.model });
+			const { runtime, model, prompt, timeoutMs } = opts;
+			const log = logger.child({ harness: "goose", model });
 			const startTime = performance.now();
 
 			// Create unique temp directory for this generation
@@ -314,7 +285,7 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 			const env = {
 				...process.env,
 				GOOSE_PROVIDER: "ollama",
-				GOOSE_MODEL: opts.model,
+				GOOSE_MODEL: model,
 				GOOSE_CLI_MIN_PRIORITY: "0.2",
 				GOOSE_MODE: "auto",
 				GOOSE_CONTEXT_STRATEGY: "summarize",
@@ -325,7 +296,7 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 			const fullPrompt = buildToolPrompt({
 				toolNames: GOOSE_TOOL_NAMES,
 				solutionFilename: SOLUTION_FILENAME,
-				taskPrompt: opts.prompt,
+				taskPrompt: prompt,
 				toolUsageHint: 'text_editor arguments: path = "solution.ts", file_text = "<TypeScript code>"',
 			});
 
@@ -335,21 +306,21 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 				"run",
 				"--no-session",
 				"--provider", "ollama",           // Override config - force Ollama
-				"--model", opts.model,            // Override config - use our model
+				"--model", model,            // Override config - use our model
 				"--with-builtin", "developer",   // Enable text_editor tool
 				"-q",                             // Quiet mode - faster output
 				"--output-format", "json",        // Structured output for parsing
 				"-i", "-",                        // Read prompt from stdin
 			];
 			log.debug(
-				{ cmd: "goose", model: opts.model, workDir },
+				{ cmd: "goose", model, workDir, runtimeBaseUrl: runtime.baseUrl },
 				"Executing Goose command with developer extension",
 			);
 
 			try {
 				const result = await execa("goose", args, {
 					env,
-					timeout: opts.timeoutMs,
+					timeout: timeoutMs,
 					reject: true,
 					cwd: workDir,  // Run in unique temp directory
 					input: fullPrompt,
@@ -430,7 +401,7 @@ export function createGooseAdapter(config: GooseAdapterConfig): Harness {
 					error.message.includes("timed out")
 				) {
 					throw new Error(
-						`Goose timed out after ${Math.round(opts.timeoutMs / 1000)}s. Try increasing --timeout.`,
+						`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
 					);
 				}
 

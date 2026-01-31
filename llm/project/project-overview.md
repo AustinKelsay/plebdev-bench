@@ -40,7 +40,8 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - **Runner:** orchestrates generation + automated tests + frontier eval
 
 ## File Structure
-- `src/harnesses/` — Harness adapters (ollama, goose, opencode) + tool-prompt builder
+- `src/runtimes/` — Runtime adapters (inference backends: Ollama)
+- `src/harnesses/` — Harness adapters (direct, goose, opencode) + tool-prompt builder
 - `src/tests/{test-name}/` — Benchmark tests (prompts, scoring specs, rubrics)
 - `src/runner/` — Orchestration, plan building, item execution
 - `src/lib/` — Scoring, code extraction, failure classification, utilities

@@ -9,12 +9,12 @@
  * - High-precision multiplier: 5x for bf16/fp16/f32 (slow cold start + generation)
  *
  * Examples (base + sizeScaling + harnessOverhead + largeModelOverhead):
- * - 3B model on Ollama: 60 + 60 + 0 + 0 = 120s (2 min)
- * - 9B bf16 on Ollama: (60 + 60 + 0 + 0) * 5 = 600s (10 min)
- * - 30B model on Ollama: 60 + 180 + 0 + 300 = 540s (9 min)
- * - 30B model on Goose: 60 + 180 + 60 + 300 = 600s (10 min)
- * - 3B model on OpenCode: 60 + 60 + 69 + 0 = 189s (~3 min)
- * - 30B model on OpenCode: 60 + 180 + 150 + 300 = 690s (~11.5 min)
+ * - 3B model on direct: 60 + 60 + 0 + 0 = 120s (2 min)
+ * - 9B bf16 on direct: (60 + 60 + 0 + 0) * 5 = 600s (10 min)
+ * - 30B model on direct: 60 + 180 + 0 + 300 = 540s (9 min)
+ * - 30B model on goose: 60 + 180 + 60 + 300 = 600s (10 min)
+ * - 3B model on opencode: 60 + 60 + 69 + 0 = 189s (~3 min)
+ * - 30B model on opencode: 60 + 180 + 150 + 300 = 690s (~11.5 min)
  */
 
 import type { HarnessName } from "../harnesses/harness.js";

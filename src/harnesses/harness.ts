@@ -4,13 +4,19 @@
  *
  * All harnesses implement this interface to provide a unified API for:
  * - Checking availability (ping)
- * - Listing models (from Ollama, shared across harnesses)
  * - Generating completions
+ *
+ * Model discovery is delegated to Runtime (not Harness).
  */
 
-/** Supported harness names. */
-export const HARNESS_NAMES = ["ollama", "goose", "opencode"] as const;
+import type { Runtime } from "../runtimes/index.js";
+
+/** Supported harness names. "direct" replaces "ollama" for clarity. */
+export const HARNESS_NAMES = ["direct", "goose", "opencode"] as const;
 export type HarnessName = (typeof HARNESS_NAMES)[number];
+
+/** Legacy harness name alias for backward compatibility. */
+export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 
 /** Harnesses that require tool-calling to produce output files. */
 export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
@@ -26,6 +32,8 @@ export interface GenerateOpts {
 	timeoutMs: number;
 	/** If true, unload model after generation (Ollama-specific, ignored by CLI harnesses). */
 	unloadAfter?: boolean;
+	/** Runtime to use for generation. */
+	runtime: Runtime;
 }
 
 /** Result from a generation request. */
@@ -42,52 +50,53 @@ export interface GenerateResult {
 	codeFilePath?: string;
 }
 
-/** Model information from Ollama. */
-export interface ModelInfo {
-	/** Model name. */
-	name: string;
-	/** Model size in bytes. */
-	sizeBytes: number;
-	/** Estimated parameter count in billions. */
-	parametersBillions: number;
-}
-
 /**
  * Common interface for all harness adapters.
  *
  * Each harness provides a way to generate completions from LLMs.
- * All harnesses use Ollama as the backend provider, but differ in
- * how they invoke the model (direct HTTP vs CLI wrapper).
+ * Harnesses use a Runtime for the actual inference backend.
  */
 export interface Harness {
-	/** Harness identifier (e.g., "ollama", "goose", "opencode"). */
+	/** Harness identifier (e.g., "direct", "goose", "opencode"). */
 	readonly name: HarnessName;
 
 	/**
-	 * Check if the harness is available and reachable.
+	 * Check if the harness is available.
+	 * For "direct", always returns true (availability depends on runtime).
+	 * For CLI harnesses, checks if the CLI is installed.
 	 * @returns true if the harness can be used
 	 */
 	ping(): Promise<boolean>;
 
 	/**
-	 * List available models.
-	 * All harnesses use Ollama models, so this queries Ollama.
-	 * @returns Array of model names
-	 */
-	listModels(): Promise<string[]>;
-
-	/**
-	 * Get information about a specific model.
-	 * @param model - Model name
-	 * @returns Model info including size
-	 */
-	getModelInfo(model: string): Promise<ModelInfo>;
-
-	/**
 	 * Generate a completion.
-	 * @param opts - Generation options
+	 * @param opts - Generation options (includes runtime)
 	 * @returns The generation result
 	 * @throws {Error} On timeout or execution failure
 	 */
 	generate(opts: GenerateOpts): Promise<GenerateResult>;
+}
+
+/**
+ * Normalizes a harness name, mapping legacy names to current ones.
+ * @param name - Harness name (may be legacy)
+ * @returns Normalized harness name
+ */
+export function normalizeHarnessName(name: string): HarnessName {
+	if (name === LEGACY_HARNESS_ALIAS) {
+		return "direct";
+	}
+	return name as HarnessName;
+}
+
+/**
+ * Checks if a harness name is valid (including legacy names).
+ * @param name - Harness name to check
+ * @returns true if valid
+ */
+export function isValidHarnessName(name: string): boolean {
+	return (
+		HARNESS_NAMES.includes(name as HarnessName) ||
+		name === LEGACY_HARNESS_ALIAS
+	);
 }

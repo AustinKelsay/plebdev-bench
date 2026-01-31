@@ -6,7 +6,9 @@ Local-first, CLI-driven benchmark runner for local LLMs.
 
 For each benchmark run, `plebdev-bench` executes a matrix:
 
-- **model × harness × test × passType**
+- **runtime × harness × model × test × passType**
+  - runtime: inference backend (e.g., Ollama)
+  - harness: interface adapter (direct HTTP, Goose CLI, OpenCode CLI)
   - passType: **blind** + **informed**
 
 Scoring:
@@ -64,7 +66,8 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 ## Project layout (target)
 
 - `src/cli/` — CLI entrypoint(s), command parsing
-- `src/harnesses/` — harness adapters (Ollama HTTP, Goose/OpenCode CLI, etc.)
+- `src/runtimes/` — runtime adapters (inference backends like Ollama)
+- `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI)
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
@@ -91,6 +94,9 @@ bun pb
 
 # Run with specific options
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
+
+# Run with specific runtime and harness
+bun pb --runtimes ollama --harnesses direct
 
 # Compare two runs
 bun run bench compare <run-a> <run-b>

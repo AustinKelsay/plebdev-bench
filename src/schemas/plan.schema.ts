@@ -8,15 +8,18 @@
 import { z } from "zod";
 import { PassTypeSchema, SCHEMA_VERSION } from "./common.schema.js";
 
-/** Zod schema for a single matrix item (one model/harness/test/passType combo). */
+/** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
 export const MatrixItemSchema = z.object({
 	/** Unique item ID within the run (e.g., '01', '02'). */
 	id: z.string(),
 
+	/** Runtime name (e.g., 'ollama'). */
+	runtime: z.string(),
+
 	/** Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),
 
-	/** Harness adapter name (e.g., 'ollama'). */
+	/** Harness adapter name (e.g., 'direct'). */
 	harness: z.string(),
 
 	/** Test slug (e.g., 'smoke'). */
@@ -68,6 +71,7 @@ export const RunPlanSchema = z.object({
 	/** Summary counts for display. */
 	summary: z.object({
 		totalItems: z.number(),
+		runtimes: z.number(),
 		models: z.number(),
 		harnesses: z.number(),
 		tests: z.number(),

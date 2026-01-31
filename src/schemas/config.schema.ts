@@ -3,8 +3,8 @@
  * Exports: BenchConfigSchema, BenchConfig, defaultConfig
  *
  * Invariants:
- * - Empty arrays mean "auto-discover all" for models/tests/harnesses
- * - Use flags to limit which models/tests/harnesses to run
+ * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes
+ * - Use flags to limit which models/tests/harnesses/runtimes to run
  */
 
 import { z } from "zod";
@@ -12,7 +12,10 @@ import { PassTypeSchema } from "./common.schema.js";
 
 /** Zod schema for benchmark configuration. */
 export const BenchConfigSchema = z.object({
-	/** Models to benchmark. Empty array triggers auto-discovery from Ollama. */
+	/** Runtimes to use. Empty array triggers auto-discovery. */
+	runtimes: z.array(z.string()).default([]),
+
+	/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
 	models: z.array(z.string()).default([]),
 
 	/** Harness adapters to use. Empty array triggers auto-discovery of all available. */

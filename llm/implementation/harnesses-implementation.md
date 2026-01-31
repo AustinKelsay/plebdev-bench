@@ -4,9 +4,13 @@ Purpose: Document the multi-harness architecture for running benchmarks through 
 
 ## Summary
 
-Harnesses are adapters that provide a unified interface for generating completions from LLMs. All harnesses use Ollama as the backend provider, but differ in how they invoke the model:
+The benchmark system separates **runtimes** (inference backends) from **harnesses** (interface adapters):
 
-- **ollama**: Direct HTTP API calls
+- **Runtime**: An inference backend that provides model discovery and metadata (e.g., Ollama)
+- **Harness**: An interface adapter that sends prompts to models via a runtime
+
+Available harnesses:
+- **direct**: Direct HTTP API calls to the runtime (was "ollama")
 - **goose**: CLI wrapper via Goose
 - **opencode**: CLI wrapper via OpenCode
 
@@ -15,26 +19,34 @@ This allows benchmarking the same models through different agent interfaces to c
 ## Architecture
 
 ```
-src/harnesses/
-├── harness.ts           # Common interface + types
-├── ollama-adapter.ts    # Direct HTTP to Ollama API
-├── goose-adapter.ts     # CLI via execa (headless mode)
-├── opencode-adapter.ts  # CLI via execa (direct mode with tool-calling)
-├── opencode-server.ts   # OpenCode server lifecycle (deprecated, kept for reference)
-├── tool-prompt.ts       # Tool-calling prompt builder
-├── discovery.ts         # Detect available harnesses
-└── index.ts             # Factory + re-exports
+src/runtimes/             # Runtime adapters (inference backends)
+├── runtime.ts            # Runtime interface + types
+├── ollama-runtime.ts     # Ollama HTTP implementation
+├── discovery.ts          # Detect available runtimes
+└── index.ts              # Factory + exports
+
+src/harnesses/            # Harness adapters (interface layer)
+├── harness.ts            # Common interface + types
+├── direct-adapter.ts     # Direct HTTP to runtime (was ollama-adapter)
+├── goose-adapter.ts      # CLI via execa (headless mode)
+├── opencode-adapter.ts   # CLI via execa (direct mode with tool-calling)
+├── opencode-server.ts    # OpenCode server lifecycle (deprecated, kept for reference)
+├── tool-prompt.ts        # Tool-calling prompt builder
+├── discovery.ts          # Detect available harnesses
+└── index.ts              # Factory + re-exports
 ```
 
-## Common Interface
+## Runtime Interface
+
+Runtimes are responsible for model discovery and metadata:
 
 ```typescript
-interface Harness {
-  readonly name: HarnessName;
+interface Runtime {
+  readonly name: RuntimeName;  // "ollama"
+  readonly baseUrl: string;
   ping(): Promise<boolean>;
   listModels(): Promise<string[]>;
-  getModelInfo(model: string): Promise<ModelInfo>;  // For dynamic timeouts
-  generate(opts: GenerateOpts): Promise<GenerateResult>;
+  getModelInfo(model: string): Promise<ModelInfo>;
 }
 
 interface ModelInfo {
@@ -42,12 +54,25 @@ interface ModelInfo {
   sizeBytes: number;
   parametersBillions: number;  // Used for timeout calculation
 }
+```
+
+## Harness Interface
+
+Harnesses use a Runtime for the actual inference:
+
+```typescript
+interface Harness {
+  readonly name: HarnessName;  // "direct", "goose", "opencode"
+  ping(): Promise<boolean>;
+  generate(opts: GenerateOpts): Promise<GenerateResult>;
+}
 
 interface GenerateOpts {
   model: string;      // Ollama model name (e.g., "llama3.2:3b")
   prompt: string;
   timeoutMs: number;
   unloadAfter?: boolean;  // Ollama-specific
+  runtime: Runtime;   // Runtime to use for generation
 }
 
 interface GenerateResult {
@@ -55,16 +80,28 @@ interface GenerateResult {
   durationMs: number;
   promptTokens?: number;
   completionTokens?: number;
+  codeFilePath?: string;  // Path to code file (tool-calling harnesses)
 }
 ```
 
+Note: `listModels()` and `getModelInfo()` have moved from Harness to Runtime.
+
+## Runtime Adapters
+
+### Ollama Runtime (`src/runtimes/ollama-runtime.ts`)
+- Direct HTTP calls to Ollama API
+- Endpoints: `/api/version`, `/api/tags`, `/api/show`
+- Provides model discovery and metadata
+- Timeout via AbortController
+
 ## Harness Adapters
 
-### Ollama Adapter
-- Direct HTTP calls to Ollama API
-- Endpoints: `/api/version`, `/api/tags`, `/api/generate`
+### Direct Adapter (`src/harnesses/direct-adapter.ts`)
+- Direct HTTP calls to the runtime's API (POST `/api/generate`)
+- Uses `runtime.baseUrl` for API calls
+- `ping()` always returns true (availability is determined by runtime)
+- Streaming mode keeps connection alive during model loading (critical for bf16)
 - Supports `keep_alive` for model memory management
-- Timeout via AbortController
 
 ### Goose Adapter
 
@@ -324,12 +361,19 @@ Used by both Goose and OpenCode adapters for consistent tool-calling behavior.
 
 ## Discovery
 
-`discoverHarnesses()` checks system availability:
-1. Ollama: HTTP ping to `/api/version`
-2. Goose: `which goose` + Ollama ping
-3. OpenCode: `which opencode` + Ollama ping
+### Runtime Discovery (`src/runtimes/discovery.ts`)
 
-All CLI harnesses require Ollama running since they use it as the backend.
+`discoverRuntimes()` checks which inference backends are available:
+1. Ollama: HTTP ping to `/api/version`
+
+### Harness Discovery (`src/harnesses/discovery.ts`)
+
+`discoverHarnesses()` checks system availability:
+1. Direct: Always available (runtime availability checked separately)
+2. Goose: `which goose` + runtime ping
+3. OpenCode: `which opencode` + runtime ping
+
+All CLI harnesses require a runtime to be available since they use it as the backend.
 
 ## Factory
 
@@ -343,22 +387,28 @@ const harness = createHarness("goose", {
 ## CLI Usage
 
 ```bash
-# Default: auto-discover all available harnesses
+# Default: auto-discover all available runtimes and harnesses
 bun pb
 
+# Limit to specific runtime(s)
+bun pb --runtimes ollama
+
 # Limit to specific harness(es)
-bun pb --harnesses ollama
-bun pb --harnesses ollama goose
+bun pb --harnesses direct
+bun pb --harnesses direct goose
+
+# Note: 'ollama' is accepted as a legacy alias for 'direct'
+bun pb --harnesses ollama  # same as --harnesses direct
 ```
 
 ## Matrix Expansion
 
-When multiple harnesses are specified, the matrix expands:
+When multiple runtimes and harnesses are specified, the matrix expands:
 ```
-models × harnesses × tests × passTypes
+runtimes × harnesses × models × tests × passTypes
 ```
 
-Example with 2 models, 2 harnesses, 1 test, 2 passTypes = 8 items.
+Example with 1 runtime, 2 harnesses, 2 models, 1 test, 2 passTypes = 8 items.
 
 ## Error Handling
 

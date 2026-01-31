@@ -26,8 +26,8 @@ Purpose: Define Terminal-Native / ANSI-Inspired design rules for `plebdev-bench`
 - Comparison output should prioritize deltas: pass-rate changes, rubric changes, time/energy changes.
 - Always preserve original evidence (logs, reasoning) so diffs can be explained.
 
-### Principle 5 — “Matrix thinking” should feel simple
-- Users are really running model × harness × test × pass-type.
+### Principle 5 — "Matrix thinking" should feel simple
+- Users are really running runtime × harness × model × test × pass-type.
 - The UX should make the matrix visible without overwhelming:
   - show counts and grouping
   - let users narrow dimensions easily
@@ -108,9 +108,9 @@ Even without a UI, these conventions guide how data is shaped and displayed.
   - Displays: counts (items total, passed, failed, skipped), plus “frontier eval enabled/disabled”.
   - Visual: one-line key/value grid; muted labels, bright values.
 
-- **Matrix Table (model × harness × test × passType)**
-  - Default view is a table; group rows by model, then harness, then test.
-  - Columns (minimum): status, model, harness, test, passType, tests (p/f/t), rubric score (if any), duration, energy/memory (best-effort).
+- **Matrix Table (runtime × harness × model × test × passType)**
+  - Default view is a table; group rows by runtime, then harness, then model, then test.
+  - Columns (minimum): status, runtime, harness, model, test, passType, tests (p/f/t), rubric score (if any), duration, energy/memory (best-effort).
   - Use monospace alignment; truncate long names with ellipsis but preserve full value on hover/copy (UI) or `--verbose` (CLI).
 
 - **Status Badge**

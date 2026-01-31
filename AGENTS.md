@@ -24,7 +24,7 @@ You specialize in clean, scalable architectures for complex codebases.
 ## Product Context (What We’re Building)
 
 `plebdev-bench` is a **local-first CLI benchmark runner** for local LLMs:
-- Runs **model × harness × test × passType** (blind + informed)
+- Runs **runtime × harness × model × test × passType** (5D matrix)
 - Scores via automated tests and optional **frontier eval** via OpenRouter
 - Writes **one `run.json` per run** plus a `plan.json` for reproducibility
 - Provides built-in **compare** across runs
@@ -50,7 +50,8 @@ Authoritative docs:
 ## Directory Structure (Target)
 
 - `src/cli/` — CLI entrypoint(s), command parsing
-- `src/harnesses/` — harness adapters (Ollama HTTP, Goose/OpenCode CLI, etc.)
+- `src/runtimes/` — runtime adapters (inference backends: Ollama)
+- `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI)
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)

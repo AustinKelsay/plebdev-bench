@@ -55,7 +55,7 @@ progress output, and generated artifacts on disk.
 
 ### State S3 — Run Plan (Matrix + Pass Types)
 - **User sees**: A concrete execution plan before running:
-  - All combinations of model × harness × test × pass type (blind/informed)
+  - All combinations of runtime × harness × model × test × pass type (blind/informed)
   - Estimated runtime and costs (if frontier eval is enabled)
 - **Artifacts**:
   - A saved “run plan” metadata blob (recommended) for reproducibility.

@@ -13,13 +13,13 @@
 
 import type { BenchConfig, RunResult, MatrixItemResult } from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
-import type { HarnessName, ModelInfo } from "../harnesses/harness.js";
+import type { HarnessName } from "../harnesses/harness.js";
 import { TOOL_CALLING_HARNESS_NAMES } from "../harnesses/harness.js";
 import { buildRunPlan } from "./plan-builder.js";
 import { executeItem } from "./item-executor.js";
 import { writePlan, writeResult } from "../results/writer.js";
 import { logger } from "../lib/logger.js";
-import { createHarness } from "../harnesses/index.js";
+import { createRuntime, type ModelInfo, type RuntimeName } from "../runtimes/index.js";
 import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
@@ -51,7 +51,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	console.log("");
 	console.log(`Run: ${plan.runId}`);
 	console.log(
-		`Items: ${plan.summary.totalItems} (models: ${plan.summary.models}, harnesses: ${plan.summary.harnesses}, tests: ${plan.summary.tests})`,
+		`Items: ${plan.summary.totalItems} (runtimes: ${plan.summary.runtimes}, models: ${plan.summary.models}, harnesses: ${plan.summary.harnesses}, tests: ${plan.summary.tests})`,
 	);
 	console.log(`Frontier eval: ${frontierEvalEnabled ? "enabled" : "disabled (no OPENROUTER_API_KEY)"}`);
 	console.log("");
@@ -59,7 +59,10 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Fetch model info for dynamic timeouts
 	const modelInfoCache = new Map<string, ModelInfo>();
 	const uniqueModels = [...new Set(plan.items.map((item) => item.model))];
-	const ollamaHarness = createHarness("ollama", {
+
+	// Get the first runtime for model info (all runtimes share models for now)
+	const uniqueRuntimes = [...new Set(plan.items.map((item) => item.runtime))];
+	const primaryRuntime = createRuntime(uniqueRuntimes[0] as RuntimeName, {
 		ollamaBaseUrl: config.ollamaBaseUrl,
 		defaultTimeoutMs: config.generateTimeoutMs,
 	});
@@ -69,7 +72,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const modelInfoResults = await Promise.all(
 		uniqueModels.map(async (model) => {
 			try {
-				const info = await ollamaHarness.getModelInfo(model);
+				const info = await primaryRuntime.getModelInfo(model);
 				log.debug({ model, parametersBillions: info.parametersBillions.toFixed(1) }, "Model info fetched");
 				return { model, info };
 			} catch (error) {
@@ -120,11 +123,11 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 
 		// Progress counter (terminal-native UX)
 		console.log(
-			`item ${itemNum}/${String(total).padStart(2, "0")}: harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
+			`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 		);
 
 		const toolSmokeKey = `${item.harness}::${item.model}`;
-		const isToolHarness = toolCallingHarnesses.has(item.harness as HarnessName);
+		const isToolHarness = toolCallingHarnesses.has(item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number]);
 		const isToolSmoke = isToolSmokeTest(item.test);
 
 		if (isToolHarness && !isToolSmoke) {
@@ -140,6 +143,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				);
 				results.push({
 					id: item.id,
+					runtime: item.runtime,
 					model: item.model,
 					harness: item.harness,
 					test: item.test,

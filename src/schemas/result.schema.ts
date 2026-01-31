@@ -142,6 +142,9 @@ export const MatrixItemResultSchema = z.object({
 	/** Unique item ID (matches plan). */
 	id: z.string(),
 
+	/** Runtime name. */
+	runtime: z.string(),
+
 	/** Model name. */
 	model: z.string(),
 

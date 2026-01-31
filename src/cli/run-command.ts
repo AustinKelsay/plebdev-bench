@@ -4,7 +4,7 @@
  *
  * This command orchestrates:
  * 1. Config parsing from CLI options
- * 2. Model/test discovery
+ * 2. Runtime/Model/Test discovery
  * 3. Matrix expansion and plan creation
  * 4. Item execution
  * 5. Result writing
@@ -19,8 +19,12 @@ import { logger } from "../lib/logger.js";
 export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
 	.option(
+		"-r, --runtimes <runtimes...>",
+		"Limit to specific runtimes: ollama (default: all available)",
+	)
+	.option(
 		"-m, --models <models...>",
-		"Limit to specific models (default: all from Ollama)",
+		"Limit to specific models (default: all from runtime)",
 	)
 	.option("-t, --tests <tests...>", "Limit to specific tests (default: all in src/tests/)")
 	.option(
@@ -29,7 +33,7 @@ export const runCommand = new Command("run")
 	)
 	.option(
 		"-H, --harnesses <harnesses...>",
-		"Limit to specific harnesses: ollama, goose, opencode (default: all available)",
+		"Limit to specific harnesses: direct, goose, opencode (default: all available). 'ollama' is accepted as alias for 'direct'.",
 	)
 	.option(
 		"--ollama-url <url>",
@@ -48,6 +52,9 @@ export const runCommand = new Command("run")
 			};
 
 			// Add optional arrays if provided
+			if (options.runtimes) {
+				configInput.runtimes = options.runtimes;
+			}
 			if (options.models) {
 				configInput.models = options.models;
 			}

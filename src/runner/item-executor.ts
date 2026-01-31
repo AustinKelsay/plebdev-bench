@@ -1,12 +1,13 @@
 /**
- * Purpose: Execute a single matrix item (one model/harness/test/passType combination).
+ * Purpose: Execute a single matrix item (one runtime/harness/model/test/passType combination).
  * Exports: executeItem
  *
  * Execution flow:
  * 1. Load prompt from src/tests/<test>/prompt.<passType>.md
- * 2. Create harness adapter and generate completion
- * 3. Run automated scoring against generated code
- * 4. Record result (success/failure, duration, output, scores)
+ * 2. Create runtime and harness adapter
+ * 3. Generate completion (passing runtime to harness)
+ * 4. Run automated scoring against generated code
+ * 5. Record result (success/failure, duration, output, scores)
  */
 
 import * as fs from "node:fs";
@@ -19,7 +20,8 @@ import type {
 	FrontierEval,
 	ScoringMetrics,
 } from "../schemas/index.js";
-import { createHarness, type HarnessName } from "../harnesses/index.js";
+import { createHarness } from "../harnesses/index.js";
+import { createRuntime, type RuntimeName } from "../runtimes/index.js";
 import { logger } from "../lib/logger.js";
 import { scoreGeneration } from "../lib/scorer.js";
 import { extractCode } from "../lib/code-extractor.js";
@@ -56,7 +58,7 @@ function loadPrompt(test: string, passType: string): string {
  * Executes a single matrix item.
  *
  * @param item - The matrix item to execute
- * @param ollamaBaseUrl - Ollama API base URL (used by all harnesses)
+ * @param ollamaBaseUrl - Ollama API base URL (used by runtimes)
  * @param timeoutMs - Generation timeout in milliseconds
  * @param unloadAfter - If true, unload model after generation (Ollama-specific)
  * @returns The execution result
@@ -72,6 +74,7 @@ export async function executeItem(
 ): Promise<MatrixItemResult> {
 	const log = logger.child({
 		itemId: item.id,
+		runtime: item.runtime,
 		model: item.model,
 		harness: item.harness,
 		test: item.test,
@@ -89,19 +92,24 @@ export async function executeItem(
 		log.debug("Loading prompt...");
 		const prompt = loadPrompt(item.test, item.passType);
 
-		// Create harness adapter and generate
-		log.debug({ harness: item.harness }, "Creating harness and generating...");
-		const harness = createHarness(item.harness as HarnessName, {
+		// Create runtime instance
+		const runtime = createRuntime(item.runtime as RuntimeName, {
 			ollamaBaseUrl,
 			defaultTimeoutMs: timeoutMs,
 		});
 
+		// Create harness adapter
+		log.debug({ harness: item.harness }, "Creating harness...");
+		const harness = createHarness(item.harness);
+
+		// Generate completion (pass runtime to harness)
 		generationStartTime = performance.now();
 		const result = await harness.generate({
 			model: item.model,
 			prompt,
 			timeoutMs,
 			unloadAfter,
+			runtime,
 		});
 
 		generation = {
@@ -257,6 +265,7 @@ export async function executeItem(
 
 	return {
 		id: item.id,
+		runtime: item.runtime,
 		model: item.model,
 		harness: item.harness,
 		test: item.test,

@@ -27,7 +27,7 @@ Assume the project uses:
 ## Product constraints (MVP)
 
 - CLI-first, **single-command**, **non-interactive**
-- Auto-discovery of models/harnesses by default
+- Auto-discovery of runtimes/models/harnesses by default
 - Write `results/<run-id>/plan.json` + **one** `results/<run-id>/run.json`
 - Frontier eval auto-enabled if OpenRouter API key is present; failures must not crash the run
 - Exit code **non-zero only on crashes**

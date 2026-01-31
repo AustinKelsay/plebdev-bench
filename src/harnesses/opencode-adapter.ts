@@ -11,8 +11,7 @@
  * - Fails with tool_missing if file not created (no text extraction fallback)
  *
  * Invariants:
- * - Uses Ollama as the backend provider
- * - Model discovery is delegated to Ollama adapter
+ * - Uses runtime.baseUrl for Ollama backend
  * - Runs directly in workDir (no server mode) for reliable tool execution
  * - Timeout handled via AbortController + process group kill for reliable cleanup
  * - Stale output detection kills hung processes (no output for 2 min)
@@ -31,9 +30,7 @@ import type {
 	GenerateOpts,
 	GenerateResult,
 	Harness,
-	ModelInfo,
 } from "./harness.js";
-import { createOllamaAdapter } from "./ollama-adapter.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
@@ -459,29 +456,12 @@ function computeStaleOutputTimeoutMs(timeoutMs: number): number {
 	);
 }
 
-/** Configuration for the OpenCode adapter. */
-export interface OpenCodeAdapterConfig {
-	/** Ollama API base URL for model discovery. */
-	ollamaBaseUrl: string;
-	/** Default timeout for requests in milliseconds. */
-	defaultTimeoutMs: number;
-}
-
 /**
  * Creates an OpenCode harness adapter.
  *
- * @param config - Adapter configuration
  * @returns Harness instance for OpenCode
  */
-export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
-	const { ollamaBaseUrl, defaultTimeoutMs } = config;
-
-	// Use Ollama adapter for model discovery and ping
-	const ollamaAdapter = createOllamaAdapter({
-		baseUrl: ollamaBaseUrl,
-		defaultTimeoutMs,
-	});
-
+export function createOpenCodeAdapter(): Harness {
 	return {
 		name: "opencode" as const,
 
@@ -508,25 +488,15 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 					}
 				}
 
-				// Also check if Ollama is available (required backend)
-				return await ollamaAdapter.ping();
+				return true;
 			} catch {
 				return false;
 			}
 		},
 
-		async listModels(): Promise<string[]> {
-			// All harnesses use Ollama models
-			return ollamaAdapter.listModels();
-		},
-
-		async getModelInfo(model: string): Promise<ModelInfo> {
-			// Delegate to Ollama adapter
-			return ollamaAdapter.getModelInfo(model);
-		},
-
 		async generate(opts: GenerateOpts): Promise<GenerateResult> {
-			const log = logger.child({ harness: "opencode", model: opts.model });
+			const { runtime, model, prompt, timeoutMs } = opts;
+			const log = logger.child({ harness: "opencode", model });
 			const startTime = performance.now();
 
 			// Create unique work directory for this generation in OpenCode tool-output root
@@ -562,7 +532,7 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 			// Create opencode.json config file to explicitly enable edit/write tools
 			// and disable distracting tools that confuse smaller models
 			const configPath = path.join(workDir, "opencode.json");
-			const openAiCompatBaseUrl = toOpenAiCompatBaseUrl(ollamaBaseUrl);
+			const openAiCompatBaseUrl = toOpenAiCompatBaseUrl(runtime.baseUrl);
 			const openCodeConfig = {
 				$schema: "https://opencode.ai/config.json",
 				provider: {
@@ -573,8 +543,8 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 							baseURL: openAiCompatBaseUrl,
 						},
 						models: {
-							[opts.model]: {
-								name: opts.model,
+							[model]: {
+								name: model,
 								tools: true,
 							},
 						},
@@ -612,12 +582,12 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 			}
 
 			log.debug(
-				{ workDir, toolOutputRoot },
+				{ workDir, toolOutputRoot, runtimeBaseUrl: runtime.baseUrl },
 				"Created OpenCode work directory",
 			);
 
 			// Model in ollama/model format
-			const modelArg = `ollama/${opts.model}`;
+			const modelArg = `ollama/${model}`;
 
 			// Environment optimized for headless/benchmark mode
 			// Disable features that might confuse the model or cause side effects
@@ -641,7 +611,7 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 			const fullPrompt = buildToolPrompt({
 				toolNames: OPENCODE_TOOL_NAMES,
 				solutionFilename: SOLUTION_FILENAME,
-				taskPrompt: opts.prompt,
+				taskPrompt: prompt,
 				toolUsageHint: 'edit/write arguments: path = "solution.ts", content = "<TypeScript code>"',
 			});
 
@@ -662,7 +632,7 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 				"ERROR",
 			];
 			log.debug(
-				{ cmd: "opencode", model: opts.model, workDir },
+				{ cmd: "opencode", model, workDir },
 				"Executing OpenCode command directly in workDir",
 			);
 
@@ -726,20 +696,20 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 					}
 
 					log.warn(
-						{ timeoutMs: opts.timeoutMs, pid },
+						{ timeoutMs, pid },
 						"OpenCode timed out, killing process",
 					);
 					void forceKillProcess(
 						proc,
 						pid,
 						log,
-						`timeout after ${opts.timeoutMs}ms`,
+						`timeout after ${timeoutMs}ms`,
 					);
 					controller.abort();
-				}, opts.timeoutMs);
+				}, timeoutMs);
 
 				// Set up stale output detection
-				const staleOutputTimeoutMs = computeStaleOutputTimeoutMs(opts.timeoutMs);
+				const staleOutputTimeoutMs = computeStaleOutputTimeoutMs(timeoutMs);
 
 				staleCheckId = setInterval(() => {
 					if (killAttempted) return;
@@ -788,7 +758,7 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 				// Check for abort/timeout errors
 				if (timedOut) {
 					throw new Error(
-						`OpenCode timed out after ${Math.round(opts.timeoutMs / 1000)}s. Try increasing --timeout.`,
+						`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
 					);
 				}
 				if (staleKilled) {
@@ -879,7 +849,7 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 					// Fast empty responses often indicate server-side errors (e.g., model not found)
 					if (durationMs < 2000 && (!output || output.trim().length < MIN_OUTPUT_LENGTH)) {
 						throw new Error(
-							`OpenCode returned empty output instantly (${durationMs}ms) - model "${opts.model}" may not be recognized by OpenCode`,
+							`OpenCode returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized by OpenCode`,
 						);
 					}
 
@@ -911,7 +881,7 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 				if (error instanceof Error && error.name === "AbortError") {
 					if (timedOut) {
 						throw new Error(
-							`OpenCode timed out after ${Math.round(opts.timeoutMs / 1000)}s. Try increasing --timeout.`,
+							`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
 						);
 					}
 					if (staleKilled) {
@@ -925,7 +895,7 @@ export function createOpenCodeAdapter(config: OpenCodeAdapterConfig): Harness {
 				// Check if it's a timeout error (from execa's built-in timeout)
 				if (error instanceof Error && error.message.includes("timed out")) {
 					throw new Error(
-						`OpenCode timed out after ${Math.round(opts.timeoutMs / 1000)}s. Try increasing --timeout.`,
+						`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
 					);
 				}
 
