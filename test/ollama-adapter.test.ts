@@ -130,6 +130,7 @@ describe("DirectAdapter", () => {
 		mockRuntime = {
 			name: "ollama",
 			baseUrl,
+			apiFormat: "ollama",
 			ping: vi.fn().mockResolvedValue(true),
 			listModels: vi.fn().mockResolvedValue(["llama3.2:3b"]),
 			getModelInfo: vi.fn().mockResolvedValue({
@@ -155,17 +156,16 @@ describe("DirectAdapter", () => {
 
 	describe("generate", () => {
 		it("should generate completion using runtime baseUrl", async () => {
-			const mockResponse = {
-				model: "llama3.2:3b",
-				response: "function add(a: number, b: number): number { return a + b; }",
-				done: true,
-				total_duration: 5000000000,
-				prompt_eval_count: 50,
-				eval_count: 25,
-			};
+			// Ollama uses NDJSON streaming format - multiple JSON lines
+			const mockNdjson = [
+				{ response: "function add(", done: false },
+				{ response: "a: number, b: number", done: false },
+				{ response: "): number { return a + b; }", done: false },
+				{ response: "", done: true, prompt_eval_count: 50, eval_count: 25 },
+			].map(obj => JSON.stringify(obj)).join("\n");
 
 			mockFetch.mockResolvedValue(
-				new Response(JSON.stringify(mockResponse), { status: 200 }),
+				new Response(mockNdjson, { status: 200 }),
 			);
 
 			const adapter = createDirectAdapter();
@@ -204,7 +204,7 @@ describe("DirectAdapter", () => {
 					timeoutMs,
 					runtime: mockRuntime,
 				}),
-			).rejects.toThrow("Generation failed");
+			).rejects.toThrow("Ollama generation failed");
 		});
 	});
 

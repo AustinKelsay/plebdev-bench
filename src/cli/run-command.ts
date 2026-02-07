@@ -11,20 +11,25 @@
  */
 
 import { Command } from "commander";
-import { BenchConfigSchema, type BenchConfig } from "../schemas/index.js";
+import { BenchConfigSchema, type BenchConfig, type ModelAliasMap } from "../schemas/index.js";
 import { runBenchmark } from "../runner/index.js";
 import { logger } from "../lib/logger.js";
+import {
+	loadModelAliases,
+	parseInlineAliases,
+	mergeAliases,
+} from "../lib/model-aliases.js";
 
 /** CLI run command. */
 export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
 	.option(
 		"-r, --runtimes <runtimes...>",
-		"Limit to specific runtimes: ollama (default: all available)",
+		"Limit to specific runtimes: ollama, vllm (default: all available)",
 	)
 	.option(
 		"-m, --models <models...>",
-		"Limit to specific models (default: all from runtime)",
+		"Limit to specific models or aliases (default: all from runtime)",
 	)
 	.option("-t, --tests <tests...>", "Limit to specific tests (default: all in src/tests/)")
 	.option(
@@ -40,15 +45,51 @@ export const runCommand = new Command("run")
 		"Ollama API base URL",
 		"http://localhost:11434",
 	)
+	.option(
+		"--vllm-url <url>",
+		"vLLM API base URL",
+		"http://localhost:8000",
+	)
 	.option("--timeout <ms>", "Generation timeout in milliseconds", "300000")
 	.option("-o, --output <dir>", "Output directory", "results")
+	.option(
+		"--model-config <file>",
+		"JSON file with model aliases for cross-runtime mapping",
+	)
+	.option(
+		"--model-alias <def...>",
+		'Inline model alias: "name=runtime:model,runtime:model" (repeatable)',
+	)
 	.action(async (options) => {
 		try {
+			// Build model aliases from file and/or inline definitions
+			let modelAliases: ModelAliasMap = {};
+
+			if (options.modelConfig) {
+				const fileAliases = loadModelAliases(options.modelConfig);
+				modelAliases = mergeAliases(modelAliases, fileAliases);
+				logger.info(
+					{ file: options.modelConfig, count: Object.keys(fileAliases).length },
+					"Loaded model aliases from file",
+				);
+			}
+
+			if (options.modelAlias) {
+				const inlineAliases = parseInlineAliases(options.modelAlias);
+				modelAliases = mergeAliases(modelAliases, inlineAliases);
+				logger.info(
+					{ count: Object.keys(inlineAliases).length },
+					"Parsed inline model aliases",
+				);
+			}
+
 			// Build config from CLI options
 			const configInput: Partial<BenchConfig> = {
 				ollamaBaseUrl: options.ollamaUrl,
+				vllmBaseUrl: options.vllmUrl,
 				generateTimeoutMs: Number.parseInt(options.timeout, 10),
 				outputDir: options.output,
+				modelAliases,
 			};
 
 			// Add optional arrays if provided

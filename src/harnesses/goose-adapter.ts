@@ -36,6 +36,30 @@ const SOLUTION_FILENAME = "solution.ts";
 const GOOSE_TOOL_NAMES = ["text_editor"];
 
 /**
+ * Normalizes an OpenAI-compatible base path for Goose.
+ *
+ * Goose expects OPENAI_HOST plus OPENAI_BASE_PATH that points to the API root,
+ * not a specific endpoint. Ensure we default to "v1" and strip any
+ * "/chat/completions" suffix if present.
+ *
+ * @param pathname - URL pathname (e.g., "/v1" or "/v1/chat/completions")
+ * @returns Normalized base path (e.g., "v1")
+ */
+function normalizeOpenAiBasePath(pathname: string): string {
+	const trimmed = pathname.replace(/^\/+/, "").replace(/\/+$/, "");
+	if (!trimmed) return "v1";
+
+	const suffix = "/chat/completions";
+	const lower = trimmed.toLowerCase();
+	if (lower.endsWith(suffix)) {
+		const without = trimmed.slice(0, -suffix.length);
+		return without.length > 0 ? without : "v1";
+	}
+
+	return trimmed;
+}
+
+/**
  * Extracts code from Goose tool-call markup if present.
  *
  * @param content - Assistant text content
@@ -281,15 +305,56 @@ export function createGooseAdapter(): Harness {
 			await fs.promises.mkdir(workDir, { recursive: true });
 			log.debug({ workDir }, "Created temp directory for Goose");
 
+			// Determine Goose provider and extra env based on runtime API format
+			let provider: string;
+			let extraEnv: Record<string, string> = {};
+
+			switch (runtime.apiFormat) {
+				case "ollama":
+					provider = "ollama";
+					break;
+				case "openai-compat": {
+					provider = "openai";
+
+					const apiKey =
+						process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
+					if (!apiKey) {
+						log.warn(
+							"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
+						);
+					}
+
+					const parsedBaseUrl = new URL(runtime.baseUrl);
+					const host = `${parsedBaseUrl.protocol}//${parsedBaseUrl.host}`;
+					let basePath = normalizeOpenAiBasePath(parsedBaseUrl.pathname);
+					// Goose's OpenAI provider sometimes hits /v1/completions by default.
+					// vLLM only supports chat completions, so force the chat endpoint path.
+					if (runtime.name === "vllm" && basePath === "v1") {
+						basePath = "v1/chat/completions";
+					}
+					const baseUrl = `${host}/${basePath}`;
+
+					extraEnv = {
+						OPENAI_API_KEY: apiKey ?? "dummy",
+						OPENAI_HOST: host,
+						OPENAI_BASE_PATH: basePath,
+						OPENAI_BASE_URL: baseUrl,
+						OPENAI_API_BASE: baseUrl,
+					};
+					break;
+				}
+			}
+
 			// Set up environment for Goose (headless mode)
 			const env = {
 				...process.env,
-				GOOSE_PROVIDER: "ollama",
+				GOOSE_PROVIDER: provider,
 				GOOSE_MODEL: model,
 				GOOSE_CLI_MIN_PRIORITY: "0.2",
 				GOOSE_MODE: "auto",
 				GOOSE_CONTEXT_STRATEGY: "summarize",
 				GOOSE_MAX_TURNS: "40",
+				...extraEnv,
 			};
 
 			// Tool-first prompt to enforce text_editor usage
@@ -305,9 +370,9 @@ export function createGooseAdapter(): Harness {
 			const args = [
 				"run",
 				"--no-session",
-				"--provider", "ollama",           // Override config - force Ollama
-				"--model", model,            // Override config - use our model
-				"--with-builtin", "developer",   // Enable text_editor tool
+				"--provider", provider,           // Override config - use determined provider
+				"--model", model,                 // Override config - use our model
+				"--with-builtin", "developer",    // Enable text_editor tool
 				"-q",                             // Quiet mode - faster output
 				"--output-format", "json",        // Structured output for parsing
 				"-i", "-",                        // Read prompt from stdin

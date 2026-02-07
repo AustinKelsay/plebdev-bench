@@ -86,6 +86,23 @@ function toOpenAiCompatBaseUrl(baseUrl: string): string {
 	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
+/**
+ * Builds a safe OpenCode model key for provider/model CLI usage.
+ *
+ * OpenCode expects --model in the form "provider/model". If the model name
+ * itself contains "/", some CLIs misparse it. Use a stable, slash-free key
+ * for the config entry and CLI argument, while keeping the actual model name
+ * in the provider config.
+ *
+ * @param model - Original model name (may include "/")
+ * @returns Stable model key without slashes
+ */
+function toOpenCodeModelKey(model: string): string {
+	const trimmed = model.trim();
+	if (!trimmed) return model;
+	return trimmed.includes("/") ? trimmed.replaceAll("/", "__") : trimmed;
+}
+
 /** Tool names OpenCode should use for file creation. */
 const OPENCODE_TOOL_NAMES = ["edit", "write"];
 
@@ -532,21 +549,38 @@ export function createOpenCodeAdapter(): Harness {
 			// Create opencode.json config file to explicitly enable edit/write tools
 			// and disable distracting tools that confuse smaller models
 			const configPath = path.join(workDir, "opencode.json");
-			const openAiCompatBaseUrl = toOpenAiCompatBaseUrl(runtime.baseUrl);
+
+			// Determine provider config based on runtime API format
+			const providerName = runtime.name; // "ollama" or "vllm"
+			const baseURL = toOpenAiCompatBaseUrl(runtime.baseUrl);
+
+			// Build provider options with optional API key for vLLM
+			const providerOptions: Record<string, string> = { baseURL };
+			if (runtime.apiFormat === "openai-compat") {
+				const apiKey =
+					process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
+				if (!apiKey) {
+					log.warn(
+						"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
+					);
+				}
+				providerOptions.apiKey = apiKey ?? "dummy";
+			}
+
+			const modelKey = toOpenCodeModelKey(model);
 			const openCodeConfig = {
 				$schema: "https://opencode.ai/config.json",
 				provider: {
-					ollama: {
+					[providerName]: {
 						npm: "@ai-sdk/openai-compatible",
-						name: "Ollama (local)",
-						options: {
-							baseURL: openAiCompatBaseUrl,
-						},
+						name: providerName === "ollama" ? "Ollama (local)" : "vLLM",
+						options: providerOptions,
 						models: {
-							[model]: {
-								name: model,
-								tools: true,
-							},
+							[model]: { name: model, tools: true },
+							// Include a safe, slash-free alias in case the CLI normalizes model IDs.
+							...(modelKey !== model
+								? { [modelKey]: { name: model, tools: true } }
+								: {}),
 						},
 					},
 				},
@@ -572,6 +606,7 @@ export function createOpenCodeAdapter(): Harness {
 					task: false,
 				},
 			};
+			const openCodeConfigJson = JSON.stringify(openCodeConfig);
 			try {
 				await fs.promises.writeFile(
 					configPath,
@@ -586,13 +621,17 @@ export function createOpenCodeAdapter(): Harness {
 				"Created OpenCode work directory",
 			);
 
-			// Model in ollama/model format
-			const modelArg = `ollama/${model}`;
+			// Model argument format: provider/model
+			const modelArg = `${providerName}/${model}`;
 
 			// Environment optimized for headless/benchmark mode
 			// Disable features that might confuse the model or cause side effects
+			// vLLM tool-calling requests can exceed context length if max_tokens is too high.
+			// Cap output tokens to keep requests within the model context window.
 			const env = {
 				...process.env,
+				OPENCODE_CONFIG: configPath,
+				OPENCODE_CONFIG_CONTENT: openCodeConfigJson,
 				OPENCODE_DISABLE_AUTOUPDATE: "true",
 				OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
 				OPENCODE_DISABLE_DEFAULT_PLUGINS: "true",
@@ -605,6 +644,9 @@ export function createOpenCodeAdapter(): Harness {
 				OPENCODE_DISABLE_CLAUDE_CODE: "true",
 				OPENCODE_DISABLE_CLAUDE_CODE_PROMPT: "true",
 				OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: "true",
+				...(runtime.name === "vllm" && {
+					OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX: "1024",
+				}),
 			};
 
 			// Tool-first prompt to enforce edit/write usage.
@@ -767,19 +809,21 @@ export function createOpenCodeAdapter(): Harness {
 					);
 				}
 
+				// Collect output from chunks
+				const stdout = stdoutChunks.join("");
+				const stderr = stderrChunks.join("");
+
 				// Check for non-zero exit code
 				if (result.exitCode !== 0 && result.exitCode !== null) {
-					const stderr = stderrChunks.join("");
+					const stdoutPreview = stdout.trim().slice(0, 800);
+					const stderrPreview = stderr.trim().slice(0, 800);
 					throw new Error(
-						`OpenCode exited with code ${result.exitCode}: ${stderr.slice(0, 500) || "no stderr"}`,
+						`OpenCode exited with code ${result.exitCode}: ` +
+							`${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
 					);
 				}
 
 				const durationMs = Math.round(performance.now() - startTime);
-
-				// Collect output from chunks
-				const stdout = stdoutChunks.join("");
-				const stderr = stderrChunks.join("");
 
 				// Log stderr if present (may contain warnings)
 				if (stderr?.trim()) {

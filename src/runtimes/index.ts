@@ -7,8 +7,8 @@
  */
 
 // Re-export types
-export type { Runtime, RuntimeName, ModelInfo } from "./runtime.js";
-export { RUNTIME_NAMES } from "./runtime.js";
+export type { Runtime, RuntimeName, ModelInfo, ApiFormat } from "./runtime.js";
+export { RUNTIME_NAMES, API_FORMATS } from "./runtime.js";
 
 // Re-export discovery
 export { discoverRuntimes, isRuntimeAvailable } from "./discovery.js";
@@ -16,11 +16,14 @@ export { discoverRuntimes, isRuntimeAvailable } from "./discovery.js";
 // Import runtime factories
 import type { RuntimeName, Runtime } from "./runtime.js";
 import { createOllamaRuntime } from "./ollama-runtime.js";
+import { createVllmRuntime } from "./vllm-runtime.js";
 
 /** Configuration for creating a runtime. */
 export interface RuntimeConfig {
 	/** Ollama API base URL. */
 	ollamaBaseUrl: string;
+	/** vLLM API base URL. */
+	vllmBaseUrl: string;
 	/** Default timeout in milliseconds. */
 	defaultTimeoutMs: number;
 }
@@ -39,6 +42,13 @@ export function createRuntime(name: RuntimeName, config: RuntimeConfig): Runtime
 			return createOllamaRuntime({
 				baseUrl: config.ollamaBaseUrl,
 				defaultTimeoutMs: config.defaultTimeoutMs,
+			});
+
+		case "vllm":
+			return createVllmRuntime({
+				baseUrl: config.vllmBaseUrl,
+				defaultTimeoutMs: config.defaultTimeoutMs,
+				apiKey: process.env.VLLM_API_KEY,
 			});
 
 		default: {

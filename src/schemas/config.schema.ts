@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import { PassTypeSchema } from "./common.schema.js";
+import { ModelAliasMapSchema } from "./model-alias.schema.js";
 
 /** Zod schema for benchmark configuration. */
 export const BenchConfigSchema = z.object({
@@ -30,11 +31,17 @@ export const BenchConfigSchema = z.object({
 	/** Ollama API base URL. */
 	ollamaBaseUrl: z.string().url().default("http://localhost:11434"),
 
+	/** vLLM API base URL. */
+	vllmBaseUrl: z.string().url().default("http://localhost:8000"),
+
 	/** Generation timeout in milliseconds (5 min default for large models). */
 	generateTimeoutMs: z.number().positive().default(300_000),
 
 	/** Output directory for results. */
 	outputDir: z.string().default("results"),
+
+	/** Model aliases for cross-runtime mapping. */
+	modelAliases: ModelAliasMapSchema.default({}),
 });
 
 /** Benchmark configuration type. */

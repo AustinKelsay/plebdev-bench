@@ -12,8 +12,12 @@
  */
 
 /** Supported runtime names. */
-export const RUNTIME_NAMES = ["ollama"] as const;
+export const RUNTIME_NAMES = ["ollama", "vllm"] as const;
 export type RuntimeName = (typeof RUNTIME_NAMES)[number];
+
+/** API formats for generation requests. */
+export const API_FORMATS = ["ollama", "openai-compat"] as const;
+export type ApiFormat = (typeof API_FORMATS)[number];
 
 /** Model information from a runtime. */
 export interface ModelInfo {
@@ -37,6 +41,9 @@ export interface Runtime {
 
 	/** Base URL for the runtime API. */
 	readonly baseUrl: string;
+
+	/** API format used by this runtime for generation requests. */
+	readonly apiFormat: ApiFormat;
 
 	/**
 	 * Check if the runtime is available and reachable.

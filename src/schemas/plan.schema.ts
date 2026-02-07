@@ -19,6 +19,9 @@ export const MatrixItemSchema = z.object({
 	/** Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),
 
+	/** Model alias if resolved from alias map (e.g., 'qwen3-8b'). Allows grouping across runtimes. */
+	modelAlias: z.string().optional(),
+
 	/** Harness adapter name (e.g., 'direct'). */
 	harness: z.string(),
 
@@ -61,6 +64,7 @@ export const RunPlanSchema = z.object({
 	/** Resolved configuration snapshot (subset relevant to reproducibility). */
 	config: z.object({
 		ollamaBaseUrl: z.string(),
+		vllmBaseUrl: z.string(),
 		generateTimeoutMs: z.number(),
 		passTypes: z.array(PassTypeSchema),
 	}),

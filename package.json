@@ -8,11 +8,15 @@
     "bench": "./src/index.ts"
   },
   "scripts": {
+    "pb": "bun run src/index.ts run",
+    "pb:ollama": "bun run src/index.ts run --runtimes ollama",
+    "pb:vllm": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run --runtimes vllm",
+    "pb:all": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run",
+    "bench": "bun run src/index.ts",
+    "compare": "bun run src/index.ts compare",
     "dashboard": "bun run --cwd apps/dashboard dev",
     "dashboard:build": "bun run --cwd apps/dashboard build",
     "dashboard:index": "bun run apps/dashboard/scripts/build-index.ts",
-    "pb": "bun run src/index.ts run",
-    "bench": "bun run src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "biome check .",

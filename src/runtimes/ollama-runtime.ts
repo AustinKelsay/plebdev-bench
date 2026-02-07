@@ -70,6 +70,7 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 	return {
 		name: "ollama" as const,
 		baseUrl,
+		apiFormat: "ollama" as const,
 
 		async ping(): Promise<boolean> {
 			try {

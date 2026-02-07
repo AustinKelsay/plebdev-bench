@@ -22,6 +22,41 @@ export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
 export type ToolCallingHarnessName = (typeof TOOL_CALLING_HARNESS_NAMES)[number];
 
+/**
+ * Runtime compatibility for each harness.
+ * Maps harness name to array of compatible runtime names.
+ *
+ * All harnesses now support multiple runtimes via API format abstraction:
+ * - direct: dispatches to ollama-client or openai-compat-client based on runtime.apiFormat
+ * - goose: maps runtime.apiFormat to --provider (ollama or openai)
+ * - opencode: dynamically configures provider in opencode.json based on runtime
+ */
+export const HARNESS_RUNTIME_COMPATIBILITY: Record<HarnessName, readonly string[]> = {
+	direct: ["ollama", "vllm"],
+	goose: ["ollama", "vllm"],
+	opencode: ["ollama", "vllm"],
+} as const;
+
+/**
+ * Checks if a harness is compatible with a given runtime.
+ * @param harness - Harness name
+ * @param runtime - Runtime name
+ * @returns true if the harness can be used with the runtime
+ */
+export function isHarnessCompatibleWithRuntime(harness: HarnessName, runtime: string): boolean {
+	const compatibleRuntimes = HARNESS_RUNTIME_COMPATIBILITY[harness];
+	return compatibleRuntimes.includes(runtime);
+}
+
+/**
+ * Gets harnesses compatible with a given runtime.
+ * @param runtime - Runtime name
+ * @returns Array of compatible harness names
+ */
+export function getCompatibleHarnesses(runtime: string): HarnessName[] {
+	return HARNESS_NAMES.filter((harness) => isHarnessCompatibleWithRuntime(harness, runtime));
+}
+
 /** Options for generating a completion. */
 export interface GenerateOpts {
 	/** Model name in Ollama format (e.g., "llama3.2:3b"). */

@@ -56,36 +56,45 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	console.log(`Frontier eval: ${frontierEvalEnabled ? "enabled" : "disabled (no OPENROUTER_API_KEY)"}`);
 	console.log("");
 
-	// Fetch model info for dynamic timeouts
+	// Fetch model info for dynamic timeouts (per-runtime)
 	const modelInfoCache = new Map<string, ModelInfo>();
-	const uniqueModels = [...new Set(plan.items.map((item) => item.model))];
 
-	// Get the first runtime for model info (all runtimes share models for now)
-	const uniqueRuntimes = [...new Set(plan.items.map((item) => item.runtime))];
-	const primaryRuntime = createRuntime(uniqueRuntimes[0] as RuntimeName, {
-		ollamaBaseUrl: config.ollamaBaseUrl,
-		defaultTimeoutMs: config.generateTimeoutMs,
-	});
+	// Build runtime -> models map from plan items
+	const runtimeModelSet = new Map<RuntimeName, Set<string>>();
+	for (const item of plan.items) {
+		const rt = item.runtime as RuntimeName;
+		if (!runtimeModelSet.has(rt)) runtimeModelSet.set(rt, new Set());
+		runtimeModelSet.get(rt)!.add(item.model);
+	}
 
-	// Fetch model info in parallel (B.5 optimization)
+	// Fetch model info from correct runtime
 	log.info("Fetching model info for dynamic timeouts...");
-	const modelInfoResults = await Promise.all(
-		uniqueModels.map(async (model) => {
-			try {
-				const info = await primaryRuntime.getModelInfo(model);
-				log.debug({ model, parametersBillions: info.parametersBillions.toFixed(1) }, "Model info fetched");
-				return { model, info };
-			} catch (error) {
-				// Default to 7B if we can't get model info
-				log.warn({ model, error }, "Failed to get model info, using default 7B");
-				return { model, info: { name: model, sizeBytes: 0, parametersBillions: 7 } as ModelInfo };
-			}
-		}),
-	);
+	for (const [runtimeName, models] of runtimeModelSet) {
+		const runtime = createRuntime(runtimeName, {
+			ollamaBaseUrl: config.ollamaBaseUrl,
+			vllmBaseUrl: config.vllmBaseUrl,
+			defaultTimeoutMs: config.generateTimeoutMs,
+		});
 
-	// Build cache from results
-	for (const { model, info } of modelInfoResults) {
-		modelInfoCache.set(model, info);
+		// Fetch model info in parallel per runtime
+		const modelInfoResults = await Promise.all(
+			[...models].map(async (model) => {
+				try {
+					const info = await runtime.getModelInfo(model);
+					log.debug({ runtime: runtimeName, model, parametersBillions: info.parametersBillions.toFixed(1) }, "Model info fetched");
+					return { model, info };
+				} catch (error) {
+					// Default to 7B if we can't get model info
+					log.warn({ runtime: runtimeName, model, error }, "Failed to get model info, using default 7B");
+					return { model, info: { name: model, sizeBytes: 0, parametersBillions: 7 } as ModelInfo };
+				}
+			}),
+		);
+
+		// Build cache from results (keyed by runtime:model to avoid collisions)
+		for (const { model, info } of modelInfoResults) {
+			modelInfoCache.set(`${runtimeName}:${model}`, info);
+		}
 	}
 
 	// Write plan.json
@@ -112,7 +121,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		const itemNum = String(i + 1).padStart(2, "0");
 
 		// Calculate dynamic timeout based on model size and harness
-		const modelInfo = modelInfoCache.get(item.model);
+		const modelInfo = modelInfoCache.get(`${item.runtime}:${item.model}`);
 		const paramsBillions = modelInfo?.parametersBillions ?? 7;
 		const dynamicTimeout = calculateTimeout(
 			paramsBillions,
@@ -166,13 +175,16 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			}
 		}
 
-		// Unload model only when switching to a different model (or last item)
+		// Unload model only when switching to a different model/runtime (or last item)
+		// Must check both: same model name on different runtimes should trigger unload
 		const nextItem = plan.items[i + 1];
-		const isLastForModel = !nextItem || nextItem.model !== item.model;
+		const isLastForModel = !nextItem ||
+			nextItem.model !== item.model ||
+			nextItem.runtime !== item.runtime;
 
 		const result = await executeItem(
 			item,
-			config.ollamaBaseUrl,
+			{ ollamaBaseUrl: config.ollamaBaseUrl, vllmBaseUrl: config.vllmBaseUrl },
 			dynamicTimeout,
 			isLastForModel,
 		);

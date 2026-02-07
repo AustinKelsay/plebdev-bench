@@ -1,0 +1,6 @@
+{
+  "qwen3-8b": {
+    "ollama": "qwen3:8b",
+    "vllm": "Qwen/Qwen2.5-14B-Instruct"
+  }
+}

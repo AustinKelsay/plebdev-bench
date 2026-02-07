@@ -18,6 +18,9 @@ export {
 	LEGACY_HARNESS_ALIAS,
 	normalizeHarnessName,
 	isValidHarnessName,
+	HARNESS_RUNTIME_COMPATIBILITY,
+	isHarnessCompatibleWithRuntime,
+	getCompatibleHarnesses,
 } from "./harness.js";
 
 // Re-export discovery

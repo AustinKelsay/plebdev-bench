@@ -4,15 +4,20 @@
  *
  * Checks for:
  * - Ollama: HTTP endpoint reachable at configured URL
+ * - vLLM: HTTP endpoint reachable at configured URL
  */
 
 import type { RuntimeName } from "./runtime.js";
 import { createOllamaRuntime } from "./ollama-runtime.js";
+import { createVllmRuntime } from "./vllm-runtime.js";
+import { logger } from "../lib/logger.js";
 
 /** Configuration for runtime discovery. */
 export interface RuntimeDiscoveryConfig {
 	/** Ollama API base URL. */
 	ollamaBaseUrl: string;
+	/** vLLM API base URL. */
+	vllmBaseUrl: string;
 	/** Timeout for discovery checks in milliseconds. */
 	timeoutMs: number;
 }
@@ -36,6 +41,14 @@ export async function isRuntimeAvailable(
 			});
 			return runtime.ping();
 		}
+		case "vllm": {
+			const runtime = createVllmRuntime({
+				baseUrl: config.vllmBaseUrl,
+				defaultTimeoutMs: config.timeoutMs,
+				apiKey: process.env.VLLM_API_KEY,
+			});
+			return runtime.ping();
+		}
 		default:
 			return false;
 	}
@@ -56,6 +69,16 @@ export async function discoverRuntimes(
 	const ollamaAvailable = await isRuntimeAvailable("ollama", config);
 	if (ollamaAvailable) {
 		available.push("ollama");
+	} else {
+		logger.debug({ baseUrl: config.ollamaBaseUrl }, "Ollama runtime not available");
+	}
+
+	// Check vLLM
+	const vllmAvailable = await isRuntimeAvailable("vllm", config);
+	if (vllmAvailable) {
+		available.push("vllm");
+	} else {
+		logger.debug({ baseUrl: config.vllmBaseUrl }, "vLLM runtime not available");
 	}
 
 	return available;

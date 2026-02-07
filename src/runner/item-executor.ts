@@ -54,11 +54,17 @@ function loadPrompt(test: string, passType: string): string {
 	return fs.readFileSync(promptPath, "utf-8");
 }
 
+/** Runtime configuration for creating runtime instances. */
+interface RuntimeUrls {
+	ollamaBaseUrl: string;
+	vllmBaseUrl: string;
+}
+
 /**
  * Executes a single matrix item.
  *
  * @param item - The matrix item to execute
- * @param ollamaBaseUrl - Ollama API base URL (used by runtimes)
+ * @param runtimeConfig - Runtime URLs for creating runtime instances
  * @param timeoutMs - Generation timeout in milliseconds
  * @param unloadAfter - If true, unload model after generation (Ollama-specific)
  * @returns The execution result
@@ -68,7 +74,7 @@ function loadPrompt(test: string, passType: string): string {
  */
 export async function executeItem(
 	item: MatrixItem,
-	ollamaBaseUrl: string,
+	runtimeConfig: RuntimeUrls,
 	timeoutMs: number,
 	unloadAfter = true,
 ): Promise<MatrixItemResult> {
@@ -94,7 +100,8 @@ export async function executeItem(
 
 		// Create runtime instance
 		const runtime = createRuntime(item.runtime as RuntimeName, {
-			ollamaBaseUrl,
+			ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
+			vllmBaseUrl: runtimeConfig.vllmBaseUrl,
 			defaultTimeoutMs: timeoutMs,
 		});
 

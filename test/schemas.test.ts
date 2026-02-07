@@ -105,6 +105,7 @@ describe("RunPlanSchema", () => {
 			},
 			config: {
 				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 120_000,
 				passTypes: ["blind", "informed"],
 			},

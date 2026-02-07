@@ -73,3 +73,10 @@ export {
 	ScoringResultSchema,
 	type ScoringResult,
 } from "./scoring.schema.js";
+
+export {
+	ModelAliasEntrySchema,
+	type ModelAliasEntry,
+	ModelAliasMapSchema,
+	type ModelAliasMap,
+} from "./model-alias.schema.js";

@@ -11,7 +11,7 @@ import { z } from "zod";
 export const SCHEMA_VERSION = "0.2.0";
 
 /** Valid runtime names (inference backends). */
-export const runtimeNames = ["ollama"] as const;
+export const runtimeNames = ["ollama", "vllm"] as const;
 
 /** Zod schema for runtime names. */
 export const RuntimeNameSchema = z.enum(runtimeNames);
