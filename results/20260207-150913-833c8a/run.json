@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "0.2.0",
+  "runId": "20260207-150913-833c8a",
+  "startedAt": "2026-02-07T23:09:13.738Z",
+  "completedAt": "2026-02-07T23:10:16.124Z",
+  "durationMs": 62386,
+  "summary": {
+    "total": 2,
+    "completed": 0,
+    "failed": 2,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "01",
+      "runtime": "ollama",
+      "model": "qwen2.5:14b",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-02-07T23:09:13.863Z",
+      "completedAt": "2026-02-07T23:10:14.697Z",
+      "generation": {
+        "success": false,
+        "error": "OpenCode tool_missing: solution.ts was not created by edit tool",
+        "failureType": "tool_missing",
+        "durationMs": 60830,
+        "output": "It seems there was an error with the `write` tool due to missing or invalid arguments. Could you provide me with the correct file path and content that you want to write? If you're unsure, let me know what you're trying to achieve, and I'll assist you further."
+      },
+      "generationFailure": {
+        "type": "tool_missing",
+        "message": "OpenCode tool_missing: solution.ts was not created by edit tool"
+      }
+    },
+    {
+      "id": "02",
+      "runtime": "vllm",
+      "model": "Qwen/Qwen2.5-14B-Instruct",
+      "harness": "opencode",
+      "test": "smoke",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-02-07T23:10:14.698Z",
+      "completedAt": "2026-02-07T23:10:16.124Z",
+      "generation": {
+        "success": false,
+        "error": "OpenCode exited with code 1: no stderr | stdout: {\"type\":\"error\",\"timestamp\":1770505816111,\"sessionID\":\"ses_3c5a13a89ffelDGbgEBtbUDTMG\",\"error\":{\"name\":\"APIError\",\"data\":{\"message\":\"The model `Qwen__Qwen2.5-14B-Instruct` does not exist.\",\"statusCode\":404,\"isRetryable\":false,\"responseHeaders\":{\"content-length\":\"128\",\"content-type\":\"application/json\",\"date\":\"Sat, 07 Feb 2026 23:10:15 GMT\",\"server\":\"uvicorn\"},\"responseBody\":\"{\\\"error\\\":{\\\"message\\\":\\\"The model `Qwen__Qwen2.5-14B-Instruct` does not exist.\\\",\\\"type\\\":\\\"NotFoundError\\\",\\\"param\\\":\\\"model\\\",\\\"code\\\":404}}\",\"metadata\":{\"url\":\"http://localhost:8000/v1/chat/completions\"}}}}",
+        "failureType": "api_error",
+        "durationMs": 1425
+      },
+      "generationFailure": {
+        "type": "api_error",
+        "message": "OpenCode exited with code 1: no stderr | stdout: {\"type\":\"error\",\"timestamp\":1770505816111,\"sessionID\":\"ses_3c5a13a89ffelDGbgEBtbUDTMG\",\"error\":{\"name\":\"APIError\",\"data\":{\"message\":\"The model `Qwen__Qwen2.5-14B-Instruct` does not exist.\",\"statusCode\":404,\"isRetryable\":false,\"responseHeaders\":{\"content-length\":\"128\",\"content-type\":\"application/json\",\"date\":\"Sat, 07 Feb 2026 23:10:15 GMT\",\"server\":\"uvicorn\"},\"responseBody\":\"{\\\"error\\\":{\\\"message\\\":\\\"The model `Qwen__Qwen2.5-14B-Instruct` does not exist.\\\",\\\"type\\\":\\\"NotFoundError\\\",\\\"param\\\":\\\"model\\\",\\\"code\\\":404}}\",\"metadata\":{\"url\":\"http://localhost:8000/v1/chat/completions\"}}}}"
+      }
+    }
+  ]
+}

@@ -3,19 +3,14 @@
  * Exports: createOpenCodeAdapter
  *
  * This adapter runs OpenCode via CLI using execa directly in the working directory.
- * Command: opencode run "<prompt>" --model ollama/<model> --format json
- *
- * Tool-calling mode:
- * - OpenCode writes code to solution.ts using edit tool
- * - Code is read from file after execution
- * - Fails with tool_missing if file not created (no text extraction fallback)
+ * Command: opencode run "<prompt>" --model <provider>/<model> --format json
  *
  * Invariants:
- * - Uses runtime.baseUrl for Ollama backend
+ * - Uses runtime.baseUrl for runtime-specific OpenAI-compatible provider config
  * - Runs directly in workDir (no server mode) for reliable tool execution
  * - Timeout handled via AbortController + process group kill for reliable cleanup
  * - Stale output detection kills hung processes (no output for 2 min)
- * - Tool use is required - models that don't use edit tool fail
+ * - Tool output is optional; plain assistant output is still scored
  */
 
 import * as crypto from "node:crypto";
@@ -24,8 +19,12 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { type ResultPromise, execa } from "execa";
 import type pino from "pino";
+import { extractCode } from "../lib/code-extractor.js";
 import { logger } from "../lib/logger.js";
-import { buildToolPrompt } from "./tool-prompt.js";
+import {
+	toOpenAiCompatBaseUrl,
+	toOpenCodeModelKey,
+} from "./opencode-model.js";
 import type {
 	GenerateOpts,
 	GenerateResult,
@@ -74,37 +73,6 @@ function resolveOpenCodeToolOutputRoot(): string {
 
 	return path.join(xdgDataHome, OPENCODE_TOOL_OUTPUT_SUBPATH);
 }
-
-/**
- * Normalizes an Ollama base URL to OpenAI-compatible baseURL (/v1).
- *
- * @param baseUrl - Ollama base URL (e.g., http://localhost:11434)
- * @returns OpenAI-compatible base URL ending with /v1
- */
-function toOpenAiCompatBaseUrl(baseUrl: string): string {
-	const trimmed = baseUrl.replace(/\/+$/, "");
-	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
-}
-
-/**
- * Builds a safe OpenCode model key for provider/model CLI usage.
- *
- * OpenCode expects --model in the form "provider/model". If the model name
- * itself contains "/", some CLIs misparse it. Use a stable, slash-free key
- * for the config entry and CLI argument, while keeping the actual model name
- * in the provider config.
- *
- * @param model - Original model name (may include "/")
- * @returns Stable model key without slashes
- */
-function toOpenCodeModelKey(model: string): string {
-	const trimmed = model.trim();
-	if (!trimmed) return model;
-	return trimmed.includes("/") ? trimmed.replaceAll("/", "__") : trimmed;
-}
-
-/** Tool names OpenCode should use for file creation. */
-const OPENCODE_TOOL_NAMES = ["edit", "write"];
 
 /**
  * Strips markdown code block wrappers from text.
@@ -621,7 +589,7 @@ export function createOpenCodeAdapter(): Harness {
 				"Created OpenCode work directory",
 			);
 
-			// Model argument format: provider/model
+			// Use runtime model identifier verbatim so provider receives the exact model ID.
 			const modelArg = `${providerName}/${model}`;
 
 			// Environment optimized for headless/benchmark mode
@@ -649,25 +617,17 @@ export function createOpenCodeAdapter(): Harness {
 				}),
 			};
 
-			// Tool-first prompt to enforce edit/write usage.
-			const fullPrompt = buildToolPrompt({
-				toolNames: OPENCODE_TOOL_NAMES,
-				solutionFilename: SOLUTION_FILENAME,
-				taskPrompt: prompt,
-				toolUsageHint: 'edit/write arguments: path = "solution.ts", content = "<TypeScript code>"',
-			});
+			// Prefer plain code responses even if the model internally uses tools.
+			const fullPrompt = `${prompt.trim()}\n\nReturn the final TypeScript code in your response. Do not return status-only messages.`;
 
-			// Run directly in workDir (no server) for reliable tool execution
+			// Run directly in workDir for deterministic local execution
 			// --format json provides structured output for reliable parsing
-			// --agent build uses the build agent which has all tools allowed by default
 			// --log-level ERROR reduces noise in output
 			const args = [
 				"run",
 				fullPrompt,
 				"--model",
 				modelArg,
-				"--agent",
-				"build",
 				"--format",
 				"json",
 				"--log-level",
@@ -888,26 +848,41 @@ export function createOpenCodeAdapter(): Harness {
 					}
 				}
 
-				// Tool-calling harness must produce solution.ts
+				// Fast empty responses often indicate server-side errors (e.g., model not found).
 				if (!codeFilePath) {
-					// Fast empty responses often indicate server-side errors (e.g., model not found)
 					if (durationMs < 2000 && (!output || output.trim().length < MIN_OUTPUT_LENGTH)) {
 						throw new Error(
 							`OpenCode returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized by OpenCode`,
 						);
 					}
 
-					const outputPreview = output.slice(0, 800);
-					log.warn(
-						{ toolCallDetected, outputLength: output.length, outputPreview },
-						"OpenCode finished without solution.ts",
-					);
-					const error = new Error(
-						`OpenCode tool_missing: solution.ts was not created by edit tool${toolCallDetected ? " (tool call text detected)" : ""}`,
-					);
-					(error as { output?: string; durationMs?: number }).output = output;
-					(error as { output?: string; durationMs?: number }).durationMs = durationMs;
-					throw error;
+					const extracted = extractCode(output);
+					const extractedCode = extracted.code.trim();
+					if (
+						extractedCode.length >= MIN_OUTPUT_LENGTH &&
+						extracted.method !== "raw"
+					) {
+						await fs.promises.writeFile(solutionPath, extractedCode, "utf-8");
+						codeFilePath = solutionPath;
+						log.info(
+							{
+								codeFilePath,
+								extractionMethod: extracted.method,
+								codeLength: extractedCode.length,
+								toolCallDetected,
+							},
+							"Persisted extracted code to solution.ts (tool output absent)",
+						);
+					} else {
+						log.warn(
+							{
+								toolCallDetected,
+								outputLength: output.length,
+								extractionMethod: extracted.method,
+							},
+							"OpenCode finished without usable code output",
+						);
+					}
 				}
 
 				return {
