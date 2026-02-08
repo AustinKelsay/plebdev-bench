@@ -19,6 +19,7 @@ import {
   computePassRate,
   computeCompositeMetrics,
   groupByModel,
+  groupByRuntime,
   groupByHarness,
   groupByTest,
   inferToolHarnesses,
@@ -27,7 +28,7 @@ import {
 } from "@/lib/aggregations";
 import { formatPercent } from "@/lib/utils";
 
-export type DimensionType = "model" | "harness" | "test";
+export type DimensionType = "model" | "runtime" | "harness" | "test";
 
 interface DimensionDetailDialogProps {
   dimension: DimensionType;
@@ -40,6 +41,7 @@ interface DimensionDetailDialogProps {
 /** Badge labels for dimension types */
 const DIMENSION_LABELS: Record<DimensionType, string> = {
   model: "Model",
+  runtime: "Runtime",
   harness: "Harness",
   test: "Test",
 };
@@ -53,6 +55,8 @@ function filterByDimension(
   switch (dimension) {
     case "model":
       return items.filter((i) => i.model === name);
+    case "runtime":
+      return items.filter((i) => i.runtime === name);
     case "harness":
       return items.filter((i) => i.harness === name);
     case "test":
@@ -292,6 +296,7 @@ function ItemsList({ items }: { items: MatrixItemResult[] }) {
               <th className="text-left py-2 pr-2">Status</th>
               <th className="text-left py-2 px-2">Test</th>
               <th className="text-left py-2 px-2">Harness</th>
+              <th className="text-left py-2 px-2">Runtime</th>
               <th className="text-left py-2 px-2">Type</th>
               <th className="text-right py-2 pl-2">Score</th>
             </tr>
@@ -307,6 +312,9 @@ function ItemsList({ items }: { items: MatrixItemResult[] }) {
                 </td>
                 <td className="py-1.5 px-2 font-mono text-xs truncate max-w-[80px]" title={item.harness}>
                   {item.harness}
+                </td>
+                <td className="py-1.5 px-2 font-mono text-xs truncate max-w-[80px]" title={item.runtime}>
+                  {item.runtime}
                 </td>
                 <td className="py-1.5 px-2">
                   <Badge variant="outline" className="text-xs">
@@ -358,6 +366,9 @@ export function DimensionDetailDialog({
 
   if (dimension !== "harness") {
     subDimensions.push({ groupFn: groupByHarness, label: "Harness" });
+  }
+  if (dimension !== "runtime") {
+    subDimensions.push({ groupFn: groupByRuntime, label: "Runtime" });
   }
   if (dimension !== "test") {
     subDimensions.push({ groupFn: groupByTest, label: "Test" });

@@ -16,6 +16,9 @@ services:
     command:
       - "--model"
       - "${VLLM_MODEL:-alexchen4ai/Qwen3-8B-Instruct}"
+      - "--served-model-name"
+      - "${VLLM_MODEL:-alexchen4ai/Qwen3-8B-Instruct}"
+      - "${VLLM_GOOSE_FALLBACK_MODEL:-gpt-4o-mini}"
       - "--enable-auto-tool-choice"
       - "--tool-call-parser"
       - "${VLLM_TOOL_CALL_PARSER:-hermes}"

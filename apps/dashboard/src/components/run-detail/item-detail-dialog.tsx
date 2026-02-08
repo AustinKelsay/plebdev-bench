@@ -48,7 +48,7 @@ export function ItemDetailDialog({
             <Badge variant="outline">{item.passType}</Badge>
           </DialogTitle>
           <DialogDescription>
-            {item.model} via {item.harness}
+            {item.runtime} · {item.model} via {item.harness}
           </DialogDescription>
         </DialogHeader>
 

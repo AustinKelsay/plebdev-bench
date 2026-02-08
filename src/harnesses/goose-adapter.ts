@@ -2,19 +2,14 @@
  * Purpose: Goose CLI adapter implementing the Harness interface.
  * Exports: createGooseAdapter
  *
- * This adapter runs Goose via CLI using execa with the developer extension.
- * Command: goose run --no-session --provider ollama --model <model> --with-builtin developer -q --output-format json -i -
- * Prompt is passed via stdin with instructions to use the text_editor tool.
- *
- * Tool-calling mode:
- * - Goose writes code to solution.ts using text_editor tool
- * - Code is read from file after execution
- * - Fails with tool_missing if file not created (no text extraction fallback)
+ * This adapter runs Goose via CLI using execa.
+ * Command: goose run --no-session --provider <provider> --model <model> -q --output-format json -i -
+ * Prompt is passed via stdin and asks for final TypeScript code output.
  *
  * Invariants:
- * - Uses runtime.baseUrl for Ollama backend
+ * - Uses runtime.baseUrl for provider-specific API routing
  * - Timeout handled via execa options
- * - Tool use is required - models that don't use text_editor fail
+ * - Tool output is optional; plain assistant output is still scored
  */
 
 import { execa } from "execa";
@@ -23,17 +18,14 @@ import * as path from "node:path";
 import * as os from "node:os";
 import * as crypto from "node:crypto";
 import type { Harness, GenerateOpts, GenerateResult } from "./harness.js";
+import { extractCode } from "../lib/code-extractor.js";
 import { logger } from "../lib/logger.js";
-import { buildToolPrompt } from "./tool-prompt.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
 
 /** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
-
-/** Tool names for Goose developer extension. */
-const GOOSE_TOOL_NAMES = ["text_editor"];
 
 /**
  * Normalizes an OpenAI-compatible base path for Goose.
@@ -216,6 +208,32 @@ function extractFromToolCall(text: string): string | null {
  * @param raw - Raw stdout from Goose
  * @returns Normalized output and method indicator
  */
+function parseGooseJsonPayload(raw: string): unknown | null {
+	const trimmed = raw.trim();
+	if (!trimmed) return null;
+
+	const candidates = new Set<string>([trimmed]);
+	const firstBrace = trimmed.indexOf("{");
+	const lastBrace = trimmed.lastIndexOf("}");
+
+	if (firstBrace >= 0) {
+		candidates.add(trimmed.slice(firstBrace));
+	}
+	if (firstBrace >= 0 && lastBrace > firstBrace) {
+		candidates.add(trimmed.slice(firstBrace, lastBrace + 1));
+	}
+
+	for (const candidate of candidates) {
+		try {
+			return JSON.parse(candidate) as unknown;
+		} catch {
+			// Continue trying other candidate slices.
+		}
+	}
+
+	return null;
+}
+
 function normalizeGooseOutput(raw: string): { output: string; method: "raw" | "json" | "file_text" | "tool_call" } {
 	// First, try direct tool call extraction (might be raw JSON or markdown-wrapped JSON)
 	const directToolCallCode = extractFromToolCall(raw);
@@ -223,8 +241,8 @@ function normalizeGooseOutput(raw: string): { output: string; method: "raw" | "j
 		return { output: directToolCallCode, method: "tool_call" };
 	}
 
-	try {
-		const parsed = JSON.parse(raw) as unknown;
+	const parsed = parseGooseJsonPayload(raw);
+	if (parsed !== null) {
 
 		// Check for standard Goose message format
 		const messagesObj = parsed as {
@@ -268,9 +286,9 @@ function normalizeGooseOutput(raw: string): { output: string; method: "raw" | "j
 		}
 
 		return { output: assistantText, method: "json" };
-	} catch {
-		return { output: raw, method: "raw" };
 	}
+
+	return { output: raw, method: "raw" };
 }
 
 /**
@@ -301,9 +319,10 @@ export function createGooseAdapter(): Harness {
 			const runId = crypto.randomBytes(8).toString("hex");
 			const workDir = path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
 			const solutionPath = path.join(workDir, SOLUTION_FILENAME);
+			const executionCwd = process.cwd();
 
 			await fs.promises.mkdir(workDir, { recursive: true });
-			log.debug({ workDir }, "Created temp directory for Goose");
+			log.debug({ workDir, executionCwd }, "Prepared Goose output directory");
 
 			// Determine Goose provider and extra env based on runtime API format
 			let provider: string;
@@ -340,6 +359,8 @@ export function createGooseAdapter(): Harness {
 						OPENAI_BASE_PATH: basePath,
 						OPENAI_BASE_URL: baseUrl,
 						OPENAI_API_BASE: baseUrl,
+						OPENAI_MODEL: model,
+						OPENAI_DEFAULT_MODEL: model,
 					};
 					break;
 				}
@@ -350,36 +371,25 @@ export function createGooseAdapter(): Harness {
 				...process.env,
 				GOOSE_PROVIDER: provider,
 				GOOSE_MODEL: model,
-				GOOSE_CLI_MIN_PRIORITY: "0.2",
-				GOOSE_MODE: "auto",
-				GOOSE_CONTEXT_STRATEGY: "summarize",
-				GOOSE_MAX_TURNS: "40",
 				...extraEnv,
 			};
 
-			// Tool-first prompt to enforce text_editor usage
-			const fullPrompt = buildToolPrompt({
-				toolNames: GOOSE_TOOL_NAMES,
-				solutionFilename: SOLUTION_FILENAME,
-				taskPrompt: prompt,
-				toolUsageHint: 'text_editor arguments: path = "solution.ts", file_text = "<TypeScript code>"',
-			});
+			// Keep prompt task-focused and require final code in response text.
+			const fullPrompt = `${prompt.trim()}\n\nReturn the final TypeScript code in your response. Do not return status-only messages.`;
 
-			// Args with developer extension enabled for tool calling
 			// CRITICAL: Use --provider and --model flags to override Goose's config file
 			const args = [
 				"run",
 				"--no-session",
+				"--max-turns", "1",              // Keep Goose on a single completion turn
 				"--provider", provider,           // Override config - use determined provider
 				"--model", model,                 // Override config - use our model
-				"--with-builtin", "developer",    // Enable text_editor tool
-				"-q",                             // Quiet mode - faster output
 				"--output-format", "json",        // Structured output for parsing
 				"-i", "-",                        // Read prompt from stdin
 			];
 			log.debug(
-				{ cmd: "goose", model, workDir, runtimeBaseUrl: runtime.baseUrl },
-				"Executing Goose command with developer extension",
+				{ cmd: "goose", model, executionCwd, runtimeBaseUrl: runtime.baseUrl },
+				"Executing Goose command",
 			);
 
 			try {
@@ -387,7 +397,7 @@ export function createGooseAdapter(): Harness {
 					env,
 					timeout: timeoutMs,
 					reject: true,
-					cwd: workDir,  // Run in unique temp directory
+					cwd: executionCwd,
 					input: fullPrompt,
 					// Force kill with SIGKILL after 5s if SIGTERM doesn't work
 					forceKillAfterDelay: 5000,
@@ -438,19 +448,46 @@ export function createGooseAdapter(): Harness {
 					}
 				}
 
-				// Tool-calling harness must produce solution.ts via text_editor tool
+				// Fast empty responses often indicate server-side errors (e.g., model mismatch).
 				if (!codeFilePath) {
-					const outputPreview = output.slice(0, 800);
-					log.warn(
-						{ toolCallDetected, outputLength: output.length, outputPreview },
-						"Goose finished without solution.ts",
-					);
-					const error = new Error(
-						`Goose tool_missing: solution.ts was not created by text_editor tool${toolCallDetected ? " (tool call text detected)" : ""}`,
-					);
-					(error as { output?: string; durationMs?: number }).output = output;
-					(error as { output?: string; durationMs?: number }).durationMs = durationMs;
-					throw error;
+					if (durationMs < 2000 && (!output || output.trim().length < MIN_OUTPUT_LENGTH)) {
+						throw new Error(
+							`Goose returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized`,
+						);
+					}
+
+					const extracted = extractCode(output);
+					const extractedCode = extracted.code.trim();
+					if (
+						extractedCode.length >= MIN_OUTPUT_LENGTH &&
+						extracted.method !== "raw"
+					) {
+						await fs.promises.writeFile(solutionPath, extractedCode, "utf-8");
+						codeFilePath = solutionPath;
+						log.info(
+							{
+								codeFilePath,
+								extractionMethod: extracted.method,
+								codeLength: extractedCode.length,
+								toolCallDetected,
+							},
+							"Persisted extracted code to solution.ts (tool output absent)",
+						);
+					} else {
+						log.warn(
+							{ toolCallDetected, outputLength: output.length, extractionMethod: extracted.method },
+							"Goose finished without usable code output",
+						);
+
+						if (output.trim().length < MIN_OUTPUT_LENGTH) {
+							const error = new Error(
+								"Goose returned no usable output and did not produce code",
+							);
+							(error as { output?: string; durationMs?: number }).output = output;
+							(error as { output?: string; durationMs?: number }).durationMs = durationMs;
+							throw error;
+						}
+					}
 				}
 
 				return {

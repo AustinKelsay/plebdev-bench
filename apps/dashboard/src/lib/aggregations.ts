@@ -62,6 +62,20 @@ export function groupByModel(
 }
 
 /**
+ * Groups items by runtime name.
+ */
+export function groupByRuntime(
+  items: MatrixItemResult[]
+): Map<string, MatrixItemResult[]> {
+  return items.reduce((map, item) => {
+    const group = map.get(item.runtime) || [];
+    group.push(item);
+    map.set(item.runtime, group);
+    return map;
+  }, new Map<string, MatrixItemResult[]>());
+}
+
+/**
  * Groups items by harness name.
  */
 export function groupByHarness(
@@ -98,7 +112,7 @@ export function groupByModelHarness(
   items: MatrixItemResult[]
 ): Map<string, MatrixItemResult[]> {
   return items.reduce((map, item) => {
-    const key = `${item.model} / ${item.harness}`;
+    const key = `${item.runtime} / ${item.model} / ${item.harness}`;
     const group = map.get(key) || [];
     group.push(item);
     map.set(key, group);
@@ -524,7 +538,7 @@ export function compareRuns(
   // Create lookup map for run A
   const mapA = new Map<string, MatrixItemResult>();
   for (const item of runA.items) {
-    const key = `${item.model}|${item.harness}|${item.test}|${item.passType}`;
+    const key = `${item.runtime}|${item.model}|${item.harness}|${item.test}|${item.passType}`;
     mapA.set(key, item);
   }
 
@@ -533,7 +547,7 @@ export function compareRuns(
 
   // Process run B items
   for (const itemB of runB.items) {
-    const key = `${itemB.model}|${itemB.harness}|${itemB.test}|${itemB.passType}`;
+    const key = `${itemB.runtime}|${itemB.model}|${itemB.harness}|${itemB.test}|${itemB.passType}`;
     const itemA = mapA.get(key);
 
     if (itemA) {
@@ -570,6 +584,7 @@ export function compareRuns(
 
       matched.push({
         key,
+        runtime: itemB.runtime,
         model: itemB.model,
         harness: itemB.harness,
         test: itemB.test,

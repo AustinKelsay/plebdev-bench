@@ -14,6 +14,7 @@ export const summary = {
 /** Matrix table column explanations */
 export const matrix = {
   status: "Item completion state: completed (ran successfully), failed (generation or scoring error).",
+  runtime: "Inference backend used for this item (for example ollama or vllm).",
   model: "The LLM model that generated the code for this item.",
   harness: "Execution adapter used: ollama (direct API), goose (CLI agent), opencode (CLI agent).",
   test: "The benchmark test being evaluated (e.g., calculator-basic, todo-app).",
@@ -133,7 +134,7 @@ export const dimensionDetail = {
 
 /** Compare page explanations */
 export const compare = {
-  matchedItems: "Items present in both runs (same model + harness + test + pass type).",
+  matchedItems: "Items present in both runs (same runtime + model + harness + test + pass type).",
   onlyInA: "Items that exist only in run A (not in run B).",
   onlyInB: "Items that exist only in run B (not in run A).",
   improved: "Items that failed in run A but completed in run B.",

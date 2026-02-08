@@ -141,6 +141,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
             <p className="text-sm text-foreground-faint">
               Bun {plan.environment.bunVersion}
             </p>
+            <p className="text-xs text-foreground-faint mt-1">
+              {plan.summary.runtimes} runtimes · {plan.summary.harnesses} harnesses · {plan.summary.tests} tests
+            </p>
           </CardContent>
         </Card>
       </div>

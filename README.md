@@ -27,6 +27,13 @@ Built-ins:
 **MVP complete + hardening applied.** Multi-harness runs, automated scoring, frontier eval, compare, and dashboard are implemented.
 Authoritative docs live in `llm/project/` and `llm/implementation/`.
 
+### Multi-Runtime MVP Checkpoint (2026-02-08)
+
+- Runtime matrix validated across `ollama` and `vllm` with harnesses `direct`, `goose`, and `opencode`.
+- Benchmark run `20260208-122510-cb6911` completed `53/54` items with `91.2%` overall pass rate.
+- Dashboard now renders and compares multi-runtime/multi-harness run data from `results/index.json`.
+- Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
+
 ## Tech stack (MVP)
 
 - **Bun + TypeScript**
@@ -71,7 +78,7 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
-- `results/` — runtime output (ignored by git)
+- `results/` — runtime output (including tracked MVP run snapshots in this branch)
 - `llm/` — planning docs (project overview, user flow, tech stack, design rules, phases)
 
 ## Quickstart
@@ -123,3 +130,4 @@ Each run creates:
 - `llm/project/project-rules.md` — engineering standards
 - `llm/implementation/review-and-hardening-implementation.md` — threat model + hardening notes
 - `llm/implementation/release-readiness-checklist.md` — release checklist and sign-off
+- `llm/implementation/multi-runtime-mvp-implementation.md` — detailed multi-runtime MVP implementation and validation notes

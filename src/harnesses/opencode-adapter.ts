@@ -686,7 +686,8 @@ export function createOpenCodeAdapter(): Harness {
 				});
 
 				// Set up main timeout
-				timeoutId = setTimeout(() => {
+				const timeoutPromise: Promise<never> = new Promise((_, reject) => {
+					timeoutId = setTimeout(() => {
 					if (killAttempted) return;
 					killAttempted = true;
 					timedOut = true;
@@ -708,48 +709,61 @@ export function createOpenCodeAdapter(): Harness {
 						`timeout after ${timeoutMs}ms`,
 					);
 					controller.abort();
-				}, timeoutMs);
+					reject(
+						new Error(
+							`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
+						),
+					);
+					}, timeoutMs);
+				});
 
 				// Set up stale output detection
 				const staleOutputTimeoutMs = computeStaleOutputTimeoutMs(timeoutMs);
+				const stalePromise: Promise<never> = new Promise((_, reject) => {
+					staleCheckId = setInterval(() => {
+						if (killAttempted) return;
 
-				staleCheckId = setInterval(() => {
-					if (killAttempted) return;
+						const staleDuration = Date.now() - lastOutputTime;
+						const threshold = staleOutputTimeoutMs;
 
-					const staleDuration = Date.now() - lastOutputTime;
-					const threshold = staleOutputTimeoutMs;
+						if (staleDuration > threshold) {
+							killAttempted = true;
+							staleKilled = true;
+							staleTimeoutMs = threshold;
 
-					if (staleDuration > threshold) {
-						killAttempted = true;
-						staleKilled = true;
-						staleTimeoutMs = threshold;
+							// Clear interval IMMEDIATELY to prevent repeated kill attempts
+							clearInterval(staleCheckId);
+							staleCheckId = undefined;
 
-						// Clear interval IMMEDIATELY to prevent repeated kill attempts
-						clearInterval(staleCheckId);
-						staleCheckId = undefined;
+							// Also clear the main timeout since we're killing now
+							if (timeoutId) {
+								clearTimeout(timeoutId);
+								timeoutId = undefined;
+							}
 
-						// Also clear the main timeout since we're killing now
-						if (timeoutId) {
-							clearTimeout(timeoutId);
-							timeoutId = undefined;
+							log.warn(
+								{ staleDurationMs: staleDuration, pid, thresholdMs: threshold },
+								"OpenCode appears hung (no output), killing process",
+							);
+							void forceKillProcess(
+								proc,
+								pid,
+								log,
+								`no output for ${staleDuration}ms`,
+							);
+							controller.abort();
+							reject(
+								new Error(
+									`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
+								),
+							);
 						}
+					}, STALE_CHECK_INTERVAL_MS);
+				});
 
-						log.warn(
-							{ staleDurationMs: staleDuration, pid, thresholdMs: threshold },
-							"OpenCode appears hung (no output), killing process",
-						);
-						void forceKillProcess(
-							proc,
-							pid,
-							log,
-							`no output for ${staleDuration}ms`,
-						);
-						controller.abort();
-					}
-				}, STALE_CHECK_INTERVAL_MS);
-
-				// Wait for process to complete
-				const result = await proc;
+				// Wait for process completion, timeout, or stale-output detection.
+				// Promise.race prevents hanging forever if process termination is delayed.
+				const result = await Promise.race([proc, timeoutPromise, stalePromise]);
 
 				// Clear timers immediately after completion
 				if (timeoutId) clearTimeout(timeoutId);

@@ -2,7 +2,7 @@
  * Purpose: Unit tests for harness-runtime compatibility.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import {
 	isHarnessCompatibleWithRuntime,
 	getCompatibleHarnesses,

@@ -20,6 +20,7 @@ import { composite as compositeTooltips } from "@/lib/tooltip-content";
 import {
   computeCompositeMetrics,
   groupByModel,
+  groupByRuntime,
   groupByHarness,
   groupByTest,
   inferToolHarnesses,
@@ -28,7 +29,10 @@ import {
 
 interface CompositeScoreChartProps {
   items: MatrixItemResult[];
-  onDimensionClick?: (dimension: "model" | "harness" | "test", name: string) => void;
+  onDimensionClick?: (
+    dimension: "model" | "runtime" | "harness" | "test",
+    name: string
+  ) => void;
 }
 
 // Chart colors - match existing design system
@@ -292,10 +296,12 @@ export function CompositeScoreChart({ items, onDimensionClick }: CompositeScoreC
   const toolHarnesses = inferToolHarnesses(items);
 
   const byModel = computeCompositeMetrics(items, groupByModel, toolHarnesses);
+  const byRuntime = computeCompositeMetrics(items, groupByRuntime, toolHarnesses);
   const byHarness = computeCompositeMetrics(items, groupByHarness, toolHarnesses);
   const byTest = computeCompositeMetrics(items, groupByTest, toolHarnesses);
 
   const modelData = prepareChartData(byModel);
+  const runtimeData = prepareChartData(byRuntime);
   const harnessData = prepareChartData(byHarness);
   const testData = prepareChartData(byTest);
 
@@ -317,6 +323,7 @@ export function CompositeScoreChart({ items, onDimensionClick }: CompositeScoreC
         <Tabs defaultValue="model">
           <TabsList>
             <TabsTrigger value="model">By Model</TabsTrigger>
+            <TabsTrigger value="runtime">By Runtime</TabsTrigger>
             <TabsTrigger value="harness">By Harness</TabsTrigger>
             <TabsTrigger value="test">By Test</TabsTrigger>
           </TabsList>
@@ -324,6 +331,12 @@ export function CompositeScoreChart({ items, onDimensionClick }: CompositeScoreC
             <CompositeBarChart
               data={modelData}
               onBarClick={onDimensionClick ? (name) => onDimensionClick("model", name) : undefined}
+            />
+          </TabsContent>
+          <TabsContent value="runtime" className="mt-4">
+            <CompositeBarChart
+              data={runtimeData}
+              onBarClick={onDimensionClick ? (name) => onDimensionClick("runtime", name) : undefined}
             />
           </TabsContent>
           <TabsContent value="harness" className="mt-4">

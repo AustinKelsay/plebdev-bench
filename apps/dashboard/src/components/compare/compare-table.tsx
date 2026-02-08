@@ -41,6 +41,7 @@ export function CompareTable({ items, showOnlyChanges = false }: CompareTablePro
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>RUNTIME</TableHead>
           <TableHead>MODEL</TableHead>
           <TableHead>HARNESS</TableHead>
           <TableHead>TEST</TableHead>
@@ -54,6 +55,7 @@ export function CompareTable({ items, showOnlyChanges = false }: CompareTablePro
       <TableBody>
         {filteredItems.map((item) => (
           <TableRow key={item.key}>
+            <TableCell>{item.runtime}</TableCell>
             <TableCell className="font-medium truncate max-w-[120px]">
               {item.model}
             </TableCell>
@@ -145,6 +147,7 @@ export function RegressionsTable({ items }: { items: MatchedItem[] }) {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>RUNTIME</TableHead>
           <TableHead>MODEL</TableHead>
           <TableHead>HARNESS</TableHead>
           <TableHead>TEST</TableHead>
@@ -154,6 +157,7 @@ export function RegressionsTable({ items }: { items: MatchedItem[] }) {
       <TableBody>
         {regressions.map((item) => (
           <TableRow key={item.key}>
+            <TableCell>{item.runtime}</TableCell>
             <TableCell className="font-medium">{item.model}</TableCell>
             <TableCell>{item.harness}</TableCell>
             <TableCell>{item.test}</TableCell>
@@ -184,6 +188,7 @@ export function ImprovementsTable({ items }: { items: MatchedItem[] }) {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>RUNTIME</TableHead>
           <TableHead>MODEL</TableHead>
           <TableHead>HARNESS</TableHead>
           <TableHead>TEST</TableHead>
@@ -193,6 +198,7 @@ export function ImprovementsTable({ items }: { items: MatchedItem[] }) {
       <TableBody>
         {improvements.map((item) => (
           <TableRow key={item.key}>
+            <TableCell>{item.runtime}</TableCell>
             <TableCell className="font-medium">{item.model}</TableCell>
             <TableCell>{item.harness}</TableCell>
             <TableCell>{item.test}</TableCell>

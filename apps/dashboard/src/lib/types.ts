@@ -97,7 +97,9 @@ export interface ScoringMetrics {
 /** Single matrix item in plan */
 export interface MatrixItem {
   id: string;
+  runtime: string;
   model: string;
+  modelAlias?: string;
   harness: string;
   test: string;
   passType: PassType;
@@ -121,12 +123,12 @@ export interface MatrixItemResult extends MatrixItem {
 export interface Environment {
   platform: string;
   bunVersion: string;
-  hostname: string;
 }
 
 /** Run plan configuration */
 export interface PlanConfig {
   ollamaBaseUrl: string;
+  vllmBaseUrl: string;
   generateTimeoutMs: number;
   passTypes: PassType[];
 }
@@ -141,6 +143,7 @@ export interface RunPlan {
   items: MatrixItem[];
   summary: {
     totalItems: number;
+    runtimes: number;
     models: number;
     harnesses: number;
     tests: number;
@@ -203,6 +206,7 @@ export interface ItemDeltas {
 /** Matched item in compare result */
 export interface MatchedItem {
   key: string;
+  runtime: string;
   model: string;
   harness: string;
   test: string;

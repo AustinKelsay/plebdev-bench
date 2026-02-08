@@ -2,7 +2,7 @@
  * Purpose: Unit tests for vLLM runtime functionality.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { estimateParametersFromName } from "../src/runtimes/vllm-runtime.js";
 
 describe("estimateParametersFromName", () => {

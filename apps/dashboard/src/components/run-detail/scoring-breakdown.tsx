@@ -9,6 +9,7 @@ import type { MatrixItemResult } from "@/lib/types";
 import {
   computeBreakdown,
   groupByModel,
+  groupByRuntime,
   groupByHarness,
   groupByTest,
   type DimensionBreakdown,
@@ -58,6 +59,7 @@ function BreakdownList({ breakdowns }: { breakdowns: DimensionBreakdown[] }) {
 
 export function ScoringBreakdown({ items }: ScoringBreakdownProps) {
   const byModel = computeBreakdown(items, groupByModel);
+  const byRuntime = computeBreakdown(items, groupByRuntime);
   const byHarness = computeBreakdown(items, groupByHarness);
   const byTest = computeBreakdown(items, groupByTest);
 
@@ -72,11 +74,15 @@ export function ScoringBreakdown({ items }: ScoringBreakdownProps) {
         <Tabs defaultValue="model">
           <TabsList>
             <TabsTrigger value="model">By Model</TabsTrigger>
+            <TabsTrigger value="runtime">By Runtime</TabsTrigger>
             <TabsTrigger value="harness">By Harness</TabsTrigger>
             <TabsTrigger value="test">By Test</TabsTrigger>
           </TabsList>
           <TabsContent value="model" className="mt-4">
             <BreakdownList breakdowns={byModel} />
+          </TabsContent>
+          <TabsContent value="runtime" className="mt-4">
+            <BreakdownList breakdowns={byRuntime} />
           </TabsContent>
           <TabsContent value="harness" className="mt-4">
             <BreakdownList breakdowns={byHarness} />

@@ -35,6 +35,9 @@ export function MatrixTable({ items, onRowClick }: MatrixTableProps) {
             <WithInfoTooltip tooltip={matrixTooltips.status}>STATUS</WithInfoTooltip>
           </TableHead>
           <TableHead>
+            <WithInfoTooltip tooltip={matrixTooltips.runtime}>RUNTIME</WithInfoTooltip>
+          </TableHead>
+          <TableHead>
             <WithInfoTooltip tooltip={matrixTooltips.model}>MODEL</WithInfoTooltip>
           </TableHead>
           <TableHead>
@@ -74,6 +77,9 @@ export function MatrixTable({ items, onRowClick }: MatrixTableProps) {
             >
               <TableCell>
                 <StatusBadge status={item.status} />
+              </TableCell>
+              <TableCell className="font-medium truncate max-w-[150px]">
+                {item.runtime}
               </TableCell>
               <TableCell className="font-medium truncate max-w-[150px]">
                 {item.model}
