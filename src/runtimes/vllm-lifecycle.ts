@@ -17,6 +17,22 @@ import type { ManagedVllmConfig } from "../schemas/index.js";
 const READY_POLL_MS = 2000;
 
 /**
+ * Ensures the docker CLI can reach a running daemon.
+ *
+ * @throws Error when docker isn't available or the daemon isn't reachable.
+ */
+async function ensureDockerRunning(): Promise<void> {
+	try {
+		await execa("docker", ["info"], { timeout: 10_000 });
+	} catch (error) {
+		const detail = error instanceof Error ? error.message : String(error);
+		throw new Error(
+			`Docker daemon is not reachable. If you use OrbStack, start it (or rerun with --manage-orbstack). Details: ${detail}`,
+		);
+	}
+}
+
+/**
  * Ensures OrbStack is running (best-effort).
  *
  * @param orbctlPath - orbctl executable name/path
@@ -27,7 +43,7 @@ export async function ensureOrbStackRunning(orbctlPath: string): Promise<void> {
 
 	// Try docker first; if it works, no-op.
 	try {
-		await execa("docker", ["info"], { timeout: 10_000 });
+		await ensureDockerRunning();
 		return;
 	} catch {
 		// continue
@@ -45,7 +61,7 @@ export async function ensureOrbStackRunning(orbctlPath: string): Promise<void> {
 	const startTime = Date.now();
 	while (Date.now() - startTime < 60_000) {
 		try {
-			await execa("docker", ["info"], { timeout: 10_000 });
+			await ensureDockerRunning();
 			return;
 		} catch {
 			await new Promise((r) => setTimeout(r, READY_POLL_MS));
@@ -70,6 +86,9 @@ export async function startManagedVllm(
 
 	if (managed.manageOrbStack) {
 		await ensureOrbStackRunning(managed.orbctlPath);
+	} else {
+		// Fail fast with a helpful error instead of a cryptic compose failure.
+		await ensureDockerRunning();
 	}
 
 	log.info(
@@ -143,4 +162,3 @@ export async function stopManagedVllm(managed: ManagedVllmConfig): Promise<void>
 		}
 	}
 }
-
