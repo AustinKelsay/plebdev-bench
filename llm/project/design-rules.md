@@ -27,7 +27,7 @@ Purpose: Define Terminal-Native / ANSI-Inspired design rules for `plebdev-bench`
 - Always preserve original evidence (logs, reasoning) so diffs can be explained.
 
 ### Principle 5 — "Matrix thinking" should feel simple
-- Users are really running runtime × harness × model × test × pass-type.
+- Users are really running runtime × harness × model × test × passType.
 - The UX should make the matrix visible without overwhelming:
   - show counts and grouping
   - let users narrow dimensions easily
