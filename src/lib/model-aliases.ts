@@ -11,7 +11,11 @@
  */
 
 import * as fs from "node:fs";
-import { ModelAliasMapSchema, type ModelAliasMap } from "../schemas/model-alias.schema.js";
+import {
+	ModelAliasFileSchema,
+	ModelAliasMapSchema,
+	type ModelAliasMap,
+} from "../schemas/model-alias.schema.js";
 import { logger } from "./logger.js";
 
 /**
@@ -35,6 +39,19 @@ export function loadModelAliases(filePath: string): ModelAliasMap {
 		parsed = JSON.parse(raw);
 	} catch (err) {
 		throw new Error(`Invalid JSON in model alias file: ${filePath}`);
+	}
+
+	// Prefer the versioned wrapper when present; fall back to raw map format.
+	const wrapper = ModelAliasFileSchema.safeParse(parsed);
+	if (wrapper.success) {
+		log.debug(
+			{
+				aliasCount: Object.keys(wrapper.data.aliases).length,
+				schemaVersion: wrapper.data.schemaVersion,
+			},
+			"Loaded versioned model alias file",
+		);
+		return wrapper.data.aliases;
 	}
 
 	const result = ModelAliasMapSchema.safeParse(parsed);

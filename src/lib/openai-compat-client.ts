@@ -10,7 +10,9 @@
  * - Throws descriptive errors on timeout
  */
 
+import { z } from "zod";
 import type { GenerateResponse } from "./ollama-client.js";
+import { logger } from "./logger.js";
 
 /** Options for OpenAI-compatible generation. */
 export interface OpenAiCompatGenerateOpts {
@@ -26,24 +28,30 @@ export interface OpenAiCompatGenerateOpts {
 	apiKey?: string;
 }
 
-/** SSE data event structure from OpenAI-compatible API. */
-interface ChatCompletionChunk {
-	id?: string;
-	object?: string;
-	choices?: Array<{
-		index?: number;
-		delta?: {
-			role?: string;
-			content?: string;
-		};
-		finish_reason?: string | null;
-	}>;
-	usage?: {
-		prompt_tokens?: number;
-		completion_tokens?: number;
-		total_tokens?: number;
-	};
-}
+const ChatCompletionChunkSchema = z
+	.object({
+		choices: z
+			.array(
+				z
+					.object({
+						delta: z
+							.object({
+								content: z.string().optional(),
+							})
+							.optional(),
+					})
+					.passthrough(),
+			)
+			.optional(),
+		usage: z
+			.object({
+				prompt_tokens: z.number().int().nonnegative().optional(),
+				completion_tokens: z.number().int().nonnegative().optional(),
+			})
+			.passthrough()
+			.optional(),
+	})
+	.passthrough();
 
 /**
  * Generates text using an OpenAI-compatible /v1/chat/completions endpoint.
@@ -57,6 +65,7 @@ interface ChatCompletionChunk {
  */
 export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Promise<GenerateResponse> {
 	const { baseUrl, model, prompt, timeoutMs, apiKey } = opts;
+	const log = logger.child({ module: "openai-compat-client", model, baseUrl });
 
 	const controller = new AbortController();
 	let timedOut = false;
@@ -120,14 +129,27 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 				if (data === "[DONE]") continue;
 
 				try {
-					const chunk = JSON.parse(data) as ChatCompletionChunk;
+					const parsed = JSON.parse(data) as unknown;
+					const result = ChatCompletionChunkSchema.safeParse(parsed);
+					if (!result.success) {
+						log.debug(
+							{ issues: result.error.issues },
+							"Skipping SSE chunk that failed schema validation",
+						);
+						continue;
+					}
+
+					const chunk = result.data;
 					const delta = chunk.choices?.[0]?.delta;
-					if (delta?.content) {
+					if (typeof delta?.content === "string" && delta.content.length > 0) {
 						output += delta.content;
 					}
-					// Token counts often come in the final chunk
-					if (chunk.usage) {
+					// Token counts often come in the final chunk.
+					// Preserve zeros by checking undefined explicitly.
+					if (chunk.usage?.prompt_tokens !== undefined) {
 						promptTokens = chunk.usage.prompt_tokens;
+					}
+					if (chunk.usage?.completion_tokens !== undefined) {
 						completionTokens = chunk.usage.completion_tokens;
 					}
 				} catch {
@@ -141,14 +163,20 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 			const data = buffer.trim().slice(6);
 			if (data !== "[DONE]") {
 				try {
-					const chunk = JSON.parse(data) as ChatCompletionChunk;
-					const delta = chunk.choices?.[0]?.delta;
-					if (delta?.content) {
-						output += delta.content;
-					}
-					if (chunk.usage) {
-						promptTokens = chunk.usage.prompt_tokens;
-						completionTokens = chunk.usage.completion_tokens;
+					const parsed = JSON.parse(data) as unknown;
+					const result = ChatCompletionChunkSchema.safeParse(parsed);
+					if (result.success) {
+						const chunk = result.data;
+						const delta = chunk.choices?.[0]?.delta;
+						if (typeof delta?.content === "string" && delta.content.length > 0) {
+							output += delta.content;
+						}
+						if (chunk.usage?.prompt_tokens !== undefined) {
+							promptTokens = chunk.usage.prompt_tokens;
+						}
+						if (chunk.usage?.completion_tokens !== undefined) {
+							completionTokens = chunk.usage.completion_tokens;
+						}
 					}
 				} catch {
 					// Skip malformed JSON

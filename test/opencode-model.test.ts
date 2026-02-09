@@ -39,6 +39,10 @@ describe("toOpenCodeModelKey", () => {
 		);
 	});
 
+	it("supports model IDs with multiple slashes", () => {
+		expect(toOpenCodeModelKey("org/sub/model")).toBe("org__sub__model");
+	});
+
 	it("throws for empty model names", () => {
 		expect(() => toOpenCodeModelKey("")).toThrow(
 			"OpenCode model must be non-empty",

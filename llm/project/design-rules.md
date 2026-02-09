@@ -31,7 +31,7 @@ Purpose: Define Terminal-Native / ANSI-Inspired design rules for `plebdev-bench`
 - The UX should make the matrix visible without overwhelming:
   - show counts and grouping
   - let users narrow dimensions easily
-  - keep naming consistent everywhere (model/harness/test/passType)
+  - keep naming consistent everywhere (runtime/model/harness/test/passType)
 
 ### Principle 6 — Treat files as UI surfaces
 - The `results/<run-id>/` directory is a user-facing interface.
@@ -188,4 +188,3 @@ The dashboard includes 5 chart components using Recharts:
 
 - No interactive TUI; CLI remains script-friendly and deterministic
 - No live updates during runs; dashboard reads static result files
-

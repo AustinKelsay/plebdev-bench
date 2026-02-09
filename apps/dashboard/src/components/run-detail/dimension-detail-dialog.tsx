@@ -1,6 +1,10 @@
 /**
  * Purpose: Dialog showing detailed breakdown when clicking on a model/harness/test bar.
- * Displays summary stats, sub-dimension breakdowns, and items list.
+ * Exports: DimensionDetailDialog, DimensionType
+ *
+ * Invariants:
+ * - `items` is the full run matrix; filtering is done inside the dialog
+ * - Tool-smoke is excluded from pass-rate scoring summaries by default
  */
 import {
   Dialog,
@@ -347,6 +351,12 @@ function ItemsList({ items }: { items: MatrixItemResult[] }) {
   );
 }
 
+/**
+ * Renders a dialog with per-dimension breakdowns and item details.
+ *
+ * @param props - Component props
+ * @returns React element or null if no `name` is selected
+ */
 export function DimensionDetailDialog({
   dimension,
   name,

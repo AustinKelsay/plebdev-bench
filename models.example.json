@@ -5,7 +5,7 @@
   },
   "qwen3-4b": {
     "ollama": "qwen3:4b",
-    "vllm": "mlx-community/Qwen3-4B-Instruct-4bit"
+    "vllm": "Qwen/Qwen3-4B-Instruct"
   },
   "llama3-8b": {
     "ollama": "llama3.1:8b",

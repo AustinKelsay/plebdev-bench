@@ -84,6 +84,11 @@ export function createDirectAdapter(): Harness {
 					completionTokens = response.completionTokens;
 					break;
 				}
+
+				default: {
+					const _exhaustive: never = runtime.apiFormat;
+					throw new Error(`Unsupported API format: ${_exhaustive}`);
+				}
 			}
 
 			const durationMs = Math.round(performance.now() - startTime);

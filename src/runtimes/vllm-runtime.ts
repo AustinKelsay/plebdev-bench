@@ -14,6 +14,7 @@
  */
 
 import type { Runtime, ModelInfo } from "./runtime.js";
+import { logger } from "../lib/logger.js";
 
 /** Configuration for the vLLM runtime. */
 export interface VllmRuntimeConfig {
@@ -118,6 +119,7 @@ export function createVllmRuntime(config: VllmRuntimeConfig): Runtime {
 		apiFormat: "openai-compat" as const,
 
 		async ping(): Promise<boolean> {
+			const log = logger.child({ runtime: "vllm", baseUrl });
 			try {
 				// Try /health endpoint first (vLLM standard)
 				const healthResponse = await fetchWithTimeout(
@@ -128,11 +130,15 @@ export function createVllmRuntime(config: VllmRuntimeConfig): Runtime {
 				if (healthResponse.ok) {
 					return true;
 				}
-				// Log non-ok responses for debugging
-				console.debug(`vLLM /health returned ${healthResponse.status}`);
+				log.debug(
+					{ url: `${baseUrl}/health`, status: healthResponse.status },
+					"vLLM /health returned non-ok status",
+				);
 			} catch (error) {
-				// Log error and fall through to /v1/models fallback
-				console.debug(`vLLM /health failed: ${error instanceof Error ? error.message : error}`);
+				log.debug(
+					{ err: error, url: `${baseUrl}/health` },
+					"vLLM /health request failed",
+				);
 			}
 
 			try {
@@ -143,11 +149,17 @@ export function createVllmRuntime(config: VllmRuntimeConfig): Runtime {
 					{ headers: buildHeaders() },
 				);
 				if (!modelsResponse.ok) {
-					console.debug(`vLLM /v1/models returned ${modelsResponse.status}`);
+					log.debug(
+						{ url: `${baseUrl}/v1/models`, status: modelsResponse.status },
+						"vLLM /v1/models returned non-ok status",
+					);
 				}
 				return modelsResponse.ok;
 			} catch (error) {
-				console.debug(`vLLM /v1/models failed: ${error instanceof Error ? error.message : error}`);
+				log.debug(
+					{ err: error, url: `${baseUrl}/v1/models` },
+					"vLLM /v1/models request failed",
+				);
 				return false;
 			}
 		},

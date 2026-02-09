@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { PassTypeSchema, SCHEMA_VERSION } from "./common.schema.js";
+import { PassTypeSchema, RuntimeNameSchema, SCHEMA_VERSION } from "./common.schema.js";
 
 /** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
 export const MatrixItemSchema = z.object({
@@ -14,7 +14,7 @@ export const MatrixItemSchema = z.object({
 	id: z.string(),
 
 	/** Runtime name (e.g., 'ollama'). */
-	runtime: z.string(),
+	runtime: RuntimeNameSchema,
 
 	/** Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),
@@ -63,8 +63,8 @@ export const RunPlanSchema = z.object({
 
 	/** Resolved configuration snapshot (subset relevant to reproducibility). */
 	config: z.object({
-		ollamaBaseUrl: z.string(),
-		vllmBaseUrl: z.string(),
+		ollamaBaseUrl: z.string().url(),
+		vllmBaseUrl: z.string().url(),
 		generateTimeoutMs: z.number(),
 		passTypes: z.array(PassTypeSchema),
 	}),

@@ -29,6 +29,7 @@ describe("common schemas", () => {
 
 	it("should validate runtime names", () => {
 		expect(RuntimeNameSchema.parse("ollama")).toBe("ollama");
+		expect(RuntimeNameSchema.parse("vllm")).toBe("vllm");
 		expect(() => RuntimeNameSchema.parse("unknown")).toThrow();
 	});
 

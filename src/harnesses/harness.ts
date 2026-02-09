@@ -121,7 +121,10 @@ export function normalizeHarnessName(name: string): HarnessName {
 	if (name === LEGACY_HARNESS_ALIAS) {
 		return "direct";
 	}
-	return name as HarnessName;
+	if (HARNESS_NAMES.includes(name as HarnessName)) {
+		return name as HarnessName;
+	}
+	throw new Error(`Invalid harness name: ${name}`);
 }
 
 /**

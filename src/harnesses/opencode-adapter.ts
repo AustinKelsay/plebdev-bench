@@ -2,29 +2,30 @@
  * Purpose: OpenCode CLI adapter implementing the Harness interface.
  * Exports: createOpenCodeAdapter
  *
- * This adapter runs OpenCode via CLI using execa directly in the working directory.
- * Command: opencode run "<prompt>" --model <provider>/<model> --format json
+ * Runs OpenCode via CLI (execa): `opencode run "<prompt>" --model <provider>/<model> --format json`
  *
  * Invariants:
- * - Uses runtime.baseUrl for runtime-specific OpenAI-compatible provider config
- * - Runs directly in workDir (no server mode) for reliable tool execution
- * - Timeout handled via AbortController + process group kill for reliable cleanup
- * - Stale output detection kills hung processes (no output for 2 min)
- * - Tool output is optional; plain assistant output is still scored
+ * - Uses runtime.baseUrl for provider baseURL
+ * - Best-effort tool output capture; plain output is still scored
+ * - Enforces timeout + stale-output kill for cleanup
  */
 
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
-import { type ResultPromise, execa } from "execa";
-import type pino from "pino";
+import { execa } from "execa";
 import { extractCode } from "../lib/code-extractor.js";
 import { logger } from "../lib/logger.js";
 import {
-	toOpenAiCompatBaseUrl,
-	toOpenCodeModelKey,
-} from "./opencode-model.js";
+	buildOpenCodeConfig,
+	buildOpenCodeEnv,
+	resolveOpenCodeToolOutputRoot,
+} from "./opencode-config.js";
+import { normalizeOpenCodeOutput } from "./opencode-output.js";
+import {
+	computeStaleOutputTimeoutMs,
+	forceKillProcess,
+} from "./opencode-process.js";
 import type {
 	GenerateOpts,
 	GenerateResult,
@@ -37,409 +38,8 @@ const MIN_OUTPUT_LENGTH = 10;
 /** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
 
-/**
- * Minimum time without output before considering process hung (ms).
- */
-const STALE_OUTPUT_TIMEOUT_MS = 120_000;
-
-/**
- * Maximum time without output before considering process hung (ms).
- */
-const MAX_STALE_OUTPUT_TIMEOUT_MS = 300_000;
-
 /** Interval for checking stale output (ms). */
 const STALE_CHECK_INTERVAL_MS = 30_000;
-
-/** Delay after SIGTERM before sending SIGKILL (ms). */
-const FORCE_KILL_DELAY_MS = 2_000;
-
-/** OpenCode tool-output root subpath within XDG data home. */
-const OPENCODE_TOOL_OUTPUT_SUBPATH = path.join("opencode", "tool-output");
-
-/**
- * Resolve OpenCode's tool-output root directory.
- *
- * OpenCode allows external directory access for its tool-output path by default.
- * Using this location avoids interactive permission prompts in headless runs.
- *
- * @returns Absolute path to tool-output root directory
- */
-function resolveOpenCodeToolOutputRoot(): string {
-	const xdgDataHome =
-		typeof process.env.XDG_DATA_HOME === "string" &&
-		process.env.XDG_DATA_HOME.trim().length > 0
-			? process.env.XDG_DATA_HOME.trim()
-			: path.join(os.homedir(), ".local", "share");
-
-	return path.join(xdgDataHome, OPENCODE_TOOL_OUTPUT_SUBPATH);
-}
-
-/**
- * Strips markdown code block wrappers from text.
- *
- * @param text - Text that might be wrapped in ```json or ``` blocks
- * @returns Unwrapped text
- */
-function stripMarkdownCodeBlock(text: string): string {
-	const trimmed = text.trim();
-	// Match ```json, ```typescript, ```ts, or just ```
-	const match = trimmed.match(
-		/^```(?:json|typescript|ts|javascript|js)?\n([\s\S]*?)\n?```$/,
-	);
-	if (match) {
-		return match[1].trim();
-	}
-	return trimmed;
-}
-
-/**
- * Tool name variants that indicate file writing operations.
- * Models use different naming conventions.
- */
-const WRITE_TOOL_NAMES = new Set([
-	"edit",
-	"write",
-	"writefile",
-	"write_file",
-	"create_file",
-	"createfile",
-	"text_editor",
-	"developer__text_editor",
-	// Case-insensitive variants are handled below
-]);
-
-/**
- * Extracts code content from tool arguments.
- *
- * @param args - Tool arguments object
- * @returns Extracted code or null
- */
-function extractContentFromArgs(args: Record<string, unknown>): string | null {
-	const content =
-		args.content ??
-		args.contents ??
-		args.text ??
-		args.code ??
-		args.file_text ??
-		args.fileText ??
-		args.file;
-
-	if (typeof content === "string" && content.trim().length > 0) {
-		return content;
-	}
-
-	return null;
-}
-
-/**
- * Extracts code from a tool call object.
- *
- * @param obj - Tool call object
- * @returns Extracted code or null
- */
-function extractFromToolCallObject(obj: unknown): string | null {
-	const MAX_DEPTH = 4;
-
-	const visit = (value: unknown, depth: number): string | null => {
-		if (depth > MAX_DEPTH || !value) return null;
-
-		if (Array.isArray(value)) {
-			for (const item of value) {
-				const found = visit(item, depth + 1);
-				if (found) return found;
-			}
-			return null;
-		}
-
-		if (typeof value !== "object") return null;
-
-		const record = value as Record<string, unknown>;
-
-		// Direct tool call: { name, arguments }
-		const nameValue =
-			typeof record.name === "string"
-				? record.name
-				: typeof record.toolName === "string"
-					? record.toolName
-					: undefined;
-		const argsValue =
-			record.arguments ?? record.args ?? record.parameters ?? record.input;
-
-		if (nameValue && argsValue) {
-			const toolName = nameValue.toLowerCase();
-			if (WRITE_TOOL_NAMES.has(toolName)) {
-				let argsObj: Record<string, unknown> | null = null;
-				if (typeof argsValue === "string") {
-					try {
-						const parsedArgs = JSON.parse(argsValue) as unknown;
-						if (typeof parsedArgs === "object" && parsedArgs !== null) {
-							argsObj = parsedArgs as Record<string, unknown>;
-						}
-					} catch {
-						// ignore
-					}
-				} else if (typeof argsValue === "object" && argsValue !== null) {
-					argsObj = argsValue as Record<string, unknown>;
-				}
-
-				if (argsObj) {
-					const content = extractContentFromArgs(argsObj);
-					if (content) return content;
-				}
-			}
-		}
-
-		// Common nesting keys for tool calls/events
-		const nestedKeys = [
-			"tool",
-			"toolCall",
-			"tool_call",
-			"toolCalls",
-			"tool_calls",
-			"call",
-			"data",
-			"part",
-			"delta",
-		];
-
-		for (const key of nestedKeys) {
-			if (key in record) {
-				const found = visit(record[key], depth + 1);
-				if (found) return found;
-			}
-		}
-
-		return null;
-	};
-
-	return visit(obj, 0);
-}
-
-/**
- * Extracts code from an OpenCode edit tool call JSON object.
- * Handles cases where model outputs tool call directly instead of OpenCode executing it.
- *
- * @param text - Text that might be JSON tool call (possibly wrapped in markdown)
- * @returns Extracted code or null
- */
-function extractFromToolCall(text: string): string | null {
-	// Strip markdown code blocks if present
-	const jsonText = stripMarkdownCodeBlock(text);
-
-	// First try standard JSON parsing
-	try {
-		const parsed = JSON.parse(jsonText) as unknown;
-		const extracted = extractFromToolCallObject(parsed);
-		if (extracted) return extracted;
-	} catch {
-		// Try to extract content using regex for malformed JSON (e.g., backtick strings)
-		// Match: "content": `...` or "content": "..."
-		const contentMatch = jsonText.match(
-			/"(?:content|contents|text|code)":\s*[`"]([\s\S]*?)[`"]\s*[,}]/,
-		);
-		if (contentMatch?.[1]) {
-			const content = contentMatch[1]
-				.replace(/\\n/g, "\n")
-				.replace(/\\t/g, "\t")
-				.replace(/\\"/g, '"');
-			if (content.trim().length > 0) {
-				return content;
-			}
-		}
-		return null;
-	}
-
-	return null;
-}
-
-/**
- * Normalize OpenCode JSON/JSONL output into plain assistant text or extracted code.
- *
- * OpenCode's --format json outputs JSONL (one JSON object per line) with streaming events.
- * Text content is in the "text" type events under part.text.
- *
- * @param raw - Raw stdout/stderr from OpenCode
- * @returns Normalized output and method indicator
- */
-function normalizeOpenCodeOutput(raw: string): {
-	output: string;
-	method: "raw" | "json" | "tool_call";
-} {
-	const trimmed = raw.trim();
-	if (!trimmed) {
-		return { output: raw, method: "raw" };
-	}
-
-	// Parse JSONL format - extract text from streaming events
-	const textParts: string[] = [];
-	let parsedLines = 0;
-
-	const lines = trimmed.split(/\r?\n/).filter((line) => line.trim().length > 0);
-	let toolCallOutput: string | null = null;
-	for (const line of lines) {
-		try {
-			const obj = JSON.parse(line) as {
-				type?: string;
-				text?: string;
-				part?: { type?: string; text?: string; delta?: { text?: string } };
-			};
-
-			parsedLines += 1;
-
-			if (!toolCallOutput) {
-				const toolCallCode = extractFromToolCallObject(obj);
-				if (toolCallCode) {
-					toolCallOutput = toolCallCode;
-				}
-			}
-
-			// Extract text from various possible locations in the event
-			const text =
-				typeof obj.part?.text === "string"
-					? obj.part.text
-					: typeof obj.part?.delta?.text === "string"
-						? obj.part.delta.text
-						: typeof obj.text === "string"
-							? obj.text
-							: undefined;
-
-			if (typeof text === "string" && text.length > 0) {
-				textParts.push(text);
-			}
-		} catch {
-			// Ignore non-JSON lines
-		}
-	}
-
-	if (toolCallOutput) {
-		return { output: toolCallOutput, method: "tool_call" };
-	}
-
-	// If we parsed JSONL successfully, try to extract tool call from the combined text
-	if (parsedLines > 0 && textParts.length > 0) {
-		const combined = textParts.join("");
-		// Try to extract tool call from combined text (model might output JSON tool call as text)
-		const toolCallCode = extractFromToolCall(combined);
-		if (toolCallCode) {
-			return { output: toolCallCode, method: "tool_call" };
-		}
-		return { output: combined, method: "json" };
-	}
-
-	// Fallback: try parsing as a single JSON object
-	try {
-		const obj = JSON.parse(trimmed) as {
-			text?: string;
-			part?: { text?: string; delta?: { text?: string } };
-		};
-		const toolCallCode = extractFromToolCallObject(obj);
-		if (toolCallCode) {
-			return { output: toolCallCode, method: "tool_call" };
-		}
-		const text =
-			typeof obj.part?.text === "string"
-				? obj.part.text
-				: typeof obj.part?.delta?.text === "string"
-					? obj.part.delta.text
-					: typeof obj.text === "string"
-						? obj.text
-						: undefined;
-		if (typeof text === "string" && text.length > 0) {
-			// Try to extract tool call from text
-			const toolCallCode = extractFromToolCall(text);
-			if (toolCallCode) {
-				return { output: toolCallCode, method: "tool_call" };
-			}
-			return { output: text, method: "json" };
-		}
-	} catch {
-		// Ignore parse failures
-	}
-
-	// Last resort: try direct tool call extraction on raw input
-	// This handles cases where output is a single raw JSON tool call (not JSONL)
-	const directToolCallCode = extractFromToolCall(raw);
-	if (directToolCallCode) {
-		return { output: directToolCallCode, method: "tool_call" };
-	}
-
-	return { output: raw, method: "raw" };
-}
-
-/**
- * Forcefully kills a process and its entire process tree.
- * Attempts SIGTERM first, then uses shell commands to kill the process tree.
- *
- * Node's process.kill() cannot kill child processes. OpenCode spawns child
- * processes for Ollama communication, so we must use shell commands (pkill, kill)
- * to reliably terminate the entire process tree.
- *
- * @param proc - The execa process to kill
- * @param pid - Process ID (for logging)
- * @param log - Logger instance
- * @param reason - Reason for killing (for logging)
- */
-async function forceKillProcess(
-	proc: ResultPromise,
-	pid: number | undefined,
-	log: pino.Logger,
-	reason: string,
-): Promise<void> {
-	log.warn({ pid, reason }, "Force killing OpenCode process");
-
-	// First try graceful kill via execa
-	proc.kill("SIGTERM");
-
-	// Wait a bit for graceful shutdown
-	await new Promise((resolve) => setTimeout(resolve, FORCE_KILL_DELAY_MS));
-
-	if (pid) {
-		try {
-			// Check if process still exists (throws if dead)
-			process.kill(pid, 0);
-
-			log.warn({ pid }, "Process still alive after SIGTERM, killing process tree");
-
-			// Use pkill to kill all child processes of the given PID
-			// -9 sends SIGKILL, -P targets children of the PID
-			try {
-				await execa("pkill", ["-9", "-P", String(pid)], { reject: false });
-			} catch {
-				// pkill may fail if no children, that's ok
-			}
-
-			// Then kill the main process with shell command
-			try {
-				await execa("kill", ["-9", String(pid)], { reject: false });
-			} catch {
-				// kill may fail if process already dead, that's ok
-			}
-
-			// Also try process.kill as fallback
-			try {
-				process.kill(pid, "SIGKILL");
-			} catch {
-				// May fail if already dead
-			}
-		} catch {
-			// Process already dead, good
-		}
-	}
-}
-
-/**
- * Computes a dynamic stale-output timeout based on the overall request timeout.
- *
- * @param timeoutMs - Overall generation timeout
- * @returns Timeout in milliseconds for stale-output detection
- */
-function computeStaleOutputTimeoutMs(timeoutMs: number): number {
-	const halfTimeout = Math.floor(timeoutMs * 0.5);
-	return Math.min(
-		MAX_STALE_OUTPUT_TIMEOUT_MS,
-		Math.max(STALE_OUTPUT_TIMEOUT_MS, halfTimeout),
-	);
-}
 
 /**
  * Creates an OpenCode harness adapter.
@@ -453,13 +53,11 @@ export function createOpenCodeAdapter(): Harness {
 		async ping(): Promise<boolean> {
 			const log = logger.child({ harness: "opencode" });
 			try {
-				// Check if opencode CLI is available and get version
 				const versionResult = await execa("opencode", ["--version"], {
 					timeout: 5000,
 				});
 				const version = versionResult.stdout.trim();
 
-				// Require minimum version 1.1.0 for stable tool support
 				const versionMatch = version.match(/(\d+)\.(\d+)/);
 				if (versionMatch) {
 					const major = Number.parseInt(versionMatch[1], 10);
@@ -484,8 +82,7 @@ export function createOpenCodeAdapter(): Harness {
 			const log = logger.child({ harness: "opencode", model });
 			const startTime = performance.now();
 
-			// Create unique work directory for this generation in OpenCode tool-output root
-			// to avoid interactive external-directory permission prompts.
+			// Unique directory in tool-output root avoids interactive permission prompts.
 			const runId = crypto.randomBytes(8).toString("hex");
 			const toolOutputRoot = resolveOpenCodeToolOutputRoot();
 			const workDir = path.join(
@@ -502,8 +99,7 @@ export function createOpenCodeAdapter(): Harness {
 				);
 			}
 
-			// Initialize as git repo to avoid "not a git repo" confusion
-			// OpenCode checks for git context and gets confused when the directory isn't a repo
+			// OpenCode checks git context; initializing avoids "not a git repo" confusion.
 			try {
 				await execa("git", ["init", "--quiet"], { cwd: workDir });
 				await execa("git", ["config", "user.email", "bench@local"], {
@@ -514,16 +110,9 @@ export function createOpenCodeAdapter(): Harness {
 				log.warn({ error: gitErr }, "Failed to initialize git repo in workDir");
 			}
 
-			// Create opencode.json config file to explicitly enable edit/write tools
-			// and disable distracting tools that confuse smaller models
 			const configPath = path.join(workDir, "opencode.json");
 
-			// Determine provider config based on runtime API format
 			const providerName = runtime.name; // "ollama" or "vllm"
-			const baseURL = toOpenAiCompatBaseUrl(runtime.baseUrl);
-
-			// Build provider options with optional API key for vLLM
-			const providerOptions: Record<string, string> = { baseURL };
 			if (runtime.apiFormat === "openai-compat") {
 				const apiKey =
 					process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
@@ -532,49 +121,15 @@ export function createOpenCodeAdapter(): Harness {
 						"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
 					);
 				}
-				providerOptions.apiKey = apiKey ?? "dummy";
 			}
 
-			const modelKey = toOpenCodeModelKey(model);
-			const openCodeConfig = {
-				$schema: "https://opencode.ai/config.json",
-				provider: {
-					[providerName]: {
-						npm: "@ai-sdk/openai-compatible",
-						name: providerName === "ollama" ? "Ollama (local)" : "vLLM",
-						options: providerOptions,
-						models: {
-							[model]: { name: model, tools: true },
-							// Include a safe, slash-free alias in case the CLI normalizes model IDs.
-							...(modelKey !== model
-								? { [modelKey]: { name: model, tools: true } }
-								: {}),
-						},
-					},
-				},
-				permission: {
-					edit: "allow",
-					write: "allow",
-					read: "allow",
-					bash: "deny",
-					question: "deny",
-					websearch: "deny",
-					webfetch: "deny",
-				},
-				tools: {
-					edit: true,
-					write: true,
-					read: false,
-					bash: false,
-					question: false,
-					websearch: false,
-					webfetch: false,
-					glob: false,
-					grep: false,
-					task: false,
-				},
-			};
-			const openCodeConfigJson = JSON.stringify(openCodeConfig);
+			const { config: openCodeConfig, configJson: openCodeConfigJson } =
+				buildOpenCodeConfig({
+					runtimeName: providerName,
+					runtimeApiFormat: runtime.apiFormat,
+					runtimeBaseUrl: runtime.baseUrl,
+					model,
+				});
 			try {
 				await fs.promises.writeFile(
 					configPath,
@@ -592,37 +147,14 @@ export function createOpenCodeAdapter(): Harness {
 			// Use runtime model identifier verbatim so provider receives the exact model ID.
 			const modelArg = `${providerName}/${model}`;
 
-			// Environment optimized for headless/benchmark mode
-			// Disable features that might confuse the model or cause side effects
-			// vLLM tool-calling requests can exceed context length if max_tokens is too high.
-			// Cap output tokens to keep requests within the model context window.
-			const env = {
-				...process.env,
-				OPENCODE_CONFIG: configPath,
-				OPENCODE_CONFIG_CONTENT: openCodeConfigJson,
-				OPENCODE_DISABLE_AUTOUPDATE: "true",
-				OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
-				OPENCODE_DISABLE_DEFAULT_PLUGINS: "true",
-				OPENCODE_DISABLE_AUTOCOMPACT: "true",
-				OPENCODE_DISABLE_PRUNE: "true",
-				OPENCODE_DISABLE_TERMINAL_TITLE: "true",
-				// Disable web features that cause model confusion
-				OPENCODE_DISABLE_WEBSEARCH: "true",
-				OPENCODE_DISABLE_WEBFETCH: "true",
-				OPENCODE_DISABLE_CLAUDE_CODE: "true",
-				OPENCODE_DISABLE_CLAUDE_CODE_PROMPT: "true",
-				OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: "true",
-				...(runtime.name === "vllm" && {
-					OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX: "1024",
-				}),
-			};
+			const env = buildOpenCodeEnv({
+				configPath,
+				configJson: openCodeConfigJson,
+				runtimeName: runtime.name,
+			});
 
-			// Prefer plain code responses even if the model internally uses tools.
 			const fullPrompt = `${prompt.trim()}\n\nReturn the final TypeScript code in your response. Do not return status-only messages.`;
 
-			// Run directly in workDir for deterministic local execution
-			// --format json provides structured output for reliable parsing
-			// --log-level ERROR reduces noise in output
 			const args = [
 				"run",
 				fullPrompt,
@@ -646,10 +178,9 @@ export function createOpenCodeAdapter(): Harness {
 			let timeoutId: ReturnType<typeof setTimeout> | undefined;
 			let staleCheckId: ReturnType<typeof setInterval> | undefined;
 			let lastOutputTime = Date.now();
-			let hasOutput = false;
 			let timedOut = false;
 			let staleKilled = false;
-			let staleTimeoutMs = STALE_OUTPUT_TIMEOUT_MS;
+			let staleTimeoutMs = 0;
 			let killAttempted = false;
 
 			// Track stdout/stderr for output collection
@@ -675,12 +206,10 @@ export function createOpenCodeAdapter(): Harness {
 
 				// Set up output listeners to track activity and collect output
 				proc.stdout?.on("data", (chunk: Buffer) => {
-					hasOutput = true;
 					lastOutputTime = Date.now();
 					stdoutChunks.push(chunk.toString());
 				});
 				proc.stderr?.on("data", (chunk: Buffer) => {
-					hasOutput = true;
 					lastOutputTime = Date.now();
 					stderrChunks.push(chunk.toString());
 				});
@@ -719,6 +248,7 @@ export function createOpenCodeAdapter(): Harness {
 
 				// Set up stale output detection
 				const staleOutputTimeoutMs = computeStaleOutputTimeoutMs(timeoutMs);
+				staleTimeoutMs = staleOutputTimeoutMs;
 				const stalePromise: Promise<never> = new Promise((_, reject) => {
 					staleCheckId = setInterval(() => {
 						if (killAttempted) return;

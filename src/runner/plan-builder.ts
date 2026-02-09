@@ -13,6 +13,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
+import { SCHEMA_VERSION } from "../schemas/index.js";
 import { discoverHarnesses, normalizeHarnessName, isValidHarnessName, isHarnessCompatibleWithRuntime, type HarnessName } from "../harnesses/index.js";
 import { discoverRuntimes, createRuntime, type RuntimeName, RUNTIME_NAMES } from "../runtimes/index.js";
 import { generateRunId } from "../lib/run-id.js";
@@ -315,7 +316,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 	// Build the plan
 	const plan: RunPlan = {
-		schemaVersion: "0.2.0",
+		schemaVersion: SCHEMA_VERSION,
 		runId,
 		createdAt: new Date().toISOString(),
 		environment: {

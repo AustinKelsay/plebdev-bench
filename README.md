@@ -33,6 +33,7 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - Benchmark run `20260208-122510-cb6911` completed `53/54` items with `91.2%` overall pass rate.
 - Dashboard now renders and compares multi-runtime/multi-harness run data from `results/index.json`.
 - Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
+- vLLM local setup notes (OrbStack/Docker, memory sizing, troubleshooting): `llm/implementation/vllm-orbstack-setup.md`.
 
 ## Tech stack (MVP)
 

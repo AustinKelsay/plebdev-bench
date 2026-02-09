@@ -1,5 +1,9 @@
 /**
  * Purpose: Unit tests for harness-runtime compatibility.
+ * Exports: (none)
+ *
+ * Invariants:
+ * - All harnesses in HARNESS_RUNTIME_COMPATIBILITY must include expected runtimes
  */
 
 import { describe, it, expect } from "vitest";

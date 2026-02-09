@@ -10,6 +10,9 @@
  * - Throws descriptive errors on timeout
  */
 
+import { z } from "zod";
+import { logger } from "./logger.js";
+
 /** Options for Ollama generation. */
 export interface OllamaGenerateOpts {
 	/** Ollama API base URL (e.g., "http://localhost:11434"). */
@@ -34,6 +37,15 @@ export interface GenerateResponse {
 	completionTokens?: number;
 }
 
+const OllamaStreamChunkSchema = z
+	.object({
+		response: z.string().optional(),
+		done: z.boolean().optional(),
+		prompt_eval_count: z.number().int().nonnegative().optional(),
+		eval_count: z.number().int().nonnegative().optional(),
+	})
+	.passthrough();
+
 /**
  * Generates text using Ollama's /api/generate endpoint.
  *
@@ -46,6 +58,7 @@ export interface GenerateResponse {
  */
 export async function generateOllama(opts: OllamaGenerateOpts): Promise<GenerateResponse> {
 	const { baseUrl, model, prompt, timeoutMs, keepAlive = "5m" } = opts;
+	const log = logger.child({ module: "ollama-client", model });
 
 	const controller = new AbortController();
 	let timedOut = false;
@@ -82,22 +95,90 @@ export async function generateOllama(opts: OllamaGenerateOpts): Promise<Generate
 		if (!reader) throw new Error("No response body from Ollama");
 
 		const decoder = new TextDecoder();
+		let buffer = "";
 		while (true) {
 			const { done, value } = await reader.read();
 			if (done) break;
 
-			// Parse NDJSON chunks (Ollama streams newline-delimited JSON)
-			const chunk = decoder.decode(value, { stream: true });
-			for (const line of chunk.split("\n").filter(Boolean)) {
-				const data = JSON.parse(line) as {
-					response?: string;
-					done?: boolean;
-					prompt_eval_count?: number;
-					eval_count?: number;
-				};
-				if (data.response) output += data.response;
-				if (data.prompt_eval_count) promptTokens = data.prompt_eval_count;
-				if (data.eval_count) completionTokens = data.eval_count;
+			// Parse NDJSON chunks (Ollama streams newline-delimited JSON).
+			// Must buffer partial lines across chunks.
+			buffer += decoder.decode(value, { stream: true });
+
+			const lines = buffer.split("\n");
+			buffer = lines.pop() ?? ""; // keep trailing partial line
+
+			for (const line of lines) {
+				const trimmed = line.trim();
+				if (!trimmed) continue;
+
+				let parsed: unknown;
+				try {
+					parsed = JSON.parse(trimmed) as unknown;
+				} catch (err) {
+					log.debug(
+						{ err, linePreview: trimmed.slice(0, 200) },
+						"Skipping invalid NDJSON line from Ollama stream",
+					);
+					continue;
+				}
+
+				const result = OllamaStreamChunkSchema.safeParse(parsed);
+				if (!result.success) {
+					log.debug(
+						{ issues: result.error.issues },
+						"Skipping NDJSON line that failed schema validation",
+					);
+					continue;
+				}
+
+				const data = result.data;
+				if (typeof data.response === "string" && data.response.length > 0) {
+					output += data.response;
+				}
+				// Preserve zeros by checking undefined explicitly.
+				if (data.prompt_eval_count !== undefined) {
+					promptTokens = data.prompt_eval_count;
+				}
+				if (data.eval_count !== undefined) {
+					completionTokens = data.eval_count;
+				}
+			}
+		}
+
+		// Flush any remaining buffered line (common when the stream doesn't end with "\n").
+		buffer += decoder.decode();
+		const trailing = buffer.trim();
+		if (trailing.length > 0) {
+			let parsed: unknown;
+			try {
+				parsed = JSON.parse(trailing) as unknown;
+			} catch (err) {
+				log.debug(
+					{ err, linePreview: trailing.slice(0, 200) },
+					"Skipping invalid trailing NDJSON line from Ollama stream",
+				);
+				parsed = undefined;
+			}
+
+			if (parsed !== undefined) {
+				const result = OllamaStreamChunkSchema.safeParse(parsed);
+				if (!result.success) {
+					log.debug(
+						{ issues: result.error.issues },
+						"Skipping trailing NDJSON line that failed schema validation",
+					);
+				} else {
+					const data = result.data;
+					if (typeof data.response === "string" && data.response.length > 0) {
+						output += data.response;
+					}
+					if (data.prompt_eval_count !== undefined) {
+						promptTokens = data.prompt_eval_count;
+					}
+					if (data.eval_count !== undefined) {
+						completionTokens = data.eval_count;
+					}
+				}
 			}
 		}
 

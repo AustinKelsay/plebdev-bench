@@ -12,6 +12,7 @@ import {
 	ItemStatusSchema,
 	PassTypeSchema,
 	SCHEMA_VERSION,
+	RuntimeNameSchema,
 	GenerationFailureTypeSchema,
 	ScoringFailureTypeSchema,
 	FrontierEvalFailureTypeSchema,
@@ -143,7 +144,7 @@ export const MatrixItemResultSchema = z.object({
 	id: z.string(),
 
 	/** Runtime name. */
-	runtime: z.string(),
+	runtime: RuntimeNameSchema,
 
 	/** Model name. */
 	model: z.string(),

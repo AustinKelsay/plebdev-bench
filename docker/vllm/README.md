@@ -26,3 +26,8 @@ docker compose -f docker/vllm/docker-compose.yml down
 - Override `VLLM_TOOL_CALL_PARSER` to match your model's tool-calling format.
 - Override `VLLM_MAX_MODEL_LEN` to control context length (useful for tool prompts).
 - The default model is `alexchen4ai/Qwen3-8B-Instruct` (text-only extraction of Qwen3-VL 8B).
+
+### CLI compatibility
+
+This compose file uses `vllm serve <model>` positional argument (not `--model`) to avoid
+deprecation warnings and accidental extra positional args.
