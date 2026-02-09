@@ -67,11 +67,11 @@ export function createGooseAdapter(): Harness {
 			let provider: string;
 			let extraEnv: Record<string, string> = {};
 
-			switch (runtime.apiFormat) {
-				case "ollama":
-					provider = "ollama";
-					break;
-				case "openai-compat": {
+				switch (runtime.apiFormat) {
+					case "ollama":
+						provider = "ollama";
+						break;
+					case "openai-compat": {
 					provider = "openai";
 
 					const apiKey =
@@ -100,10 +100,20 @@ export function createGooseAdapter(): Harness {
 						OPENAI_API_BASE: baseUrl,
 						OPENAI_MODEL: model,
 						OPENAI_DEFAULT_MODEL: model,
-					};
-					break;
+						};
+						break;
+					}
+					default: {
+						const _exhaustive: never = runtime.apiFormat;
+						log.warn(
+							{ apiFormat: _exhaustive },
+							"Unsupported runtime apiFormat for Goose",
+						);
+						throw new Error(
+							`Unsupported runtime apiFormat for Goose: ${String(_exhaustive)}`,
+						);
+					}
 				}
-			}
 
 			// Set up environment for Goose (headless mode)
 			const env = {

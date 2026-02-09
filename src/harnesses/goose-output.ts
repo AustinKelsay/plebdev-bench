@@ -67,11 +67,12 @@ function stripMarkdownCodeBlock(text: string): string {
  */
 function decodeEscapedText(text: string): string {
 	return text
+		// Unescape backslashes first so sequences like "\\n" decode correctly.
+		.replace(/\\\\/g, "\\")
 		.replace(/\\r/g, "\r")
 		.replace(/\\n/g, "\n")
 		.replace(/\\t/g, "\t")
-		.replace(/\\"/g, '"')
-		.replace(/\\\\/g, "\\");
+		.replace(/\\"/g, '"');
 }
 
 /**
@@ -124,38 +125,42 @@ function extractFromToolCall(text: string): string | null {
 
 		if (typeof parsed !== "object" || parsed === null) {
 			return null;
-		}
+			}
 
-		const obj = parsed as Record<string, unknown>;
+			const obj = parsed as Record<string, unknown>;
+			const hasArgsObject = (
+				value: unknown,
+			): value is Record<string, unknown> =>
+				typeof value === "object" && value !== null;
 
-		// Handle direct text_editor payload: { type: "text_editor", file_text: "..." }
-		if (obj.type === "text_editor" && typeof obj.file_text === "string") {
-			const fileText = obj.file_text.trim();
-			return fileText.length > 0 ? fileText : null;
-		}
+			// Handle direct text_editor payload: { type: "text_editor", file_text: "..." }
+			if (obj.type === "text_editor" && typeof obj.file_text === "string") {
+				const fileText = obj.file_text.trim();
+				return fileText.length > 0 ? fileText : null;
+			}
 
-		// Handle direct tool call format: { name: "developer__text_editor", arguments: { file_text: "..." } }
-		if (obj.name === "developer__text_editor" && typeof obj.arguments === "object") {
-			const args = obj.arguments as Record<string, unknown>;
-			const fileText =
-				typeof args.file_text === "string"
-					? args.file_text
-					: typeof args.fileText === "string"
-						? args.fileText
+			// Handle direct tool call format: { name: "developer__text_editor", arguments: { file_text: "..." } }
+			if (obj.name === "developer__text_editor" && hasArgsObject(obj.arguments)) {
+				const args = obj.arguments;
+				const fileText =
+					typeof args.file_text === "string"
+						? args.file_text
+						: typeof args.fileText === "string"
+							? args.fileText
 						: undefined;
 			if (typeof fileText === "string" && fileText.trim().length > 0) {
 				// JSON.parse already decodes escape sequences correctly.
 				return fileText;
 			}
-		}
+			}
 
-		// Handle text_editor call: { name: "text_editor", arguments: { file_text: "..." } }
-		if (obj.name === "text_editor" && typeof obj.arguments === "object") {
-			const args = obj.arguments as Record<string, unknown>;
-			const fileText =
-				typeof args.file_text === "string"
-					? args.file_text
-					: typeof args.fileText === "string"
+			// Handle text_editor call: { name: "text_editor", arguments: { file_text: "..." } }
+			if (obj.name === "text_editor" && hasArgsObject(obj.arguments)) {
+				const args = obj.arguments;
+				const fileText =
+					typeof args.file_text === "string"
+						? args.file_text
+						: typeof args.fileText === "string"
 						? args.fileText
 						: typeof args.content === "string"
 							? args.content
@@ -163,15 +168,15 @@ function extractFromToolCall(text: string): string | null {
 			if (typeof fileText === "string" && fileText.trim().length > 0) {
 				return fileText;
 			}
-		}
-
-		// Handle { tool: "text_editor", arguments: { content: "..." } } format
-		if (obj.tool === "text_editor" && typeof obj.arguments === "object") {
-			const args = obj.arguments as Record<string, unknown>;
-			const content = args.content ?? args.file_text ?? args.fileText;
-			if (typeof content === "string" && content.trim().length > 0) {
-				return content;
 			}
+
+			// Handle { tool: "text_editor", arguments: { content: "..." } } format
+			if (obj.tool === "text_editor" && hasArgsObject(obj.arguments)) {
+				const args = obj.arguments;
+				const content = args.content ?? args.file_text ?? args.fileText;
+				if (typeof content === "string" && content.trim().length > 0) {
+					return content;
+				}
 		}
 	} catch {
 		const loose = extractFromLooseTextEditor(jsonText);
@@ -265,4 +270,3 @@ export function normalizeGooseOutput(raw: string): GooseNormalizedOutput {
 
 	return { output: raw, method: "raw" };
 }
-
