@@ -11,9 +11,12 @@
  * Harnesses use runtimes to perform inference via different interfaces.
  */
 
+import { runtimeNames } from "../schemas/common.schema.js";
+import type { RuntimeName } from "../schemas/common.schema.js";
+
 /** Supported runtime names. */
-export const RUNTIME_NAMES = ["ollama", "vllm"] as const;
-export type RuntimeName = (typeof RUNTIME_NAMES)[number];
+export const RUNTIME_NAMES = runtimeNames;
+export type { RuntimeName };
 
 /** API formats for generation requests. */
 export const API_FORMATS = ["ollama", "openai-compat"] as const;

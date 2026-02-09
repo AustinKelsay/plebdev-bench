@@ -15,9 +15,13 @@
  * - Streaming mode keeps connection alive during model loading (critical for bf16)
  */
 
+import { z } from "zod";
 import { generateOllama } from "../lib/ollama-client.js";
 import { generateOpenAiCompat } from "../lib/openai-compat-client.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
+
+const VllmApiKeySchema = z.string().min(1).optional();
+const vllmApiKey = VllmApiKeySchema.parse(process.env.VLLM_API_KEY);
 
 /** Prompt prefix instructing the model to output code in markdown blocks. */
 const DIRECT_PROMPT_PREFIX = `Output only TypeScript code as a single markdown code block (\`\`\`typescript).
@@ -77,7 +81,7 @@ export function createDirectAdapter(): Harness {
 						model,
 						prompt: fullPrompt,
 						timeoutMs,
-						apiKey: process.env.VLLM_API_KEY,
+						apiKey: vllmApiKey,
 					});
 					output = response.output;
 					promptTokens = response.promptTokens;

@@ -178,7 +178,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 			);
 
-			const toolSmokeKey = `${item.harness}::${item.model}`;
+			const toolSmokeKey = `${item.runtime}::${item.harness}::${item.model}`;
 			const isToolHarness = toolCallingHarnesses.has(
 				item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
 			);

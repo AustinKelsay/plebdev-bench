@@ -8,7 +8,11 @@
  */
 
 import { z } from "zod";
-import { PassTypeSchema, SCHEMA_VERSION } from "./common.schema.js";
+import {
+	PassTypeSchema,
+	RuntimeNameSchema,
+	SCHEMA_VERSION,
+} from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
 
 /**
@@ -53,7 +57,7 @@ export const BenchConfigSchema = z.object({
 	schemaVersion: z.string().default(SCHEMA_VERSION),
 
 	/** Runtimes to use. Empty array triggers auto-discovery. */
-	runtimes: z.array(z.string()).default([]),
+	runtimes: z.array(RuntimeNameSchema).default([]),
 
 	/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
 	models: z.array(z.string()).default([]),

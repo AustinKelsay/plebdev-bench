@@ -172,10 +172,15 @@ function extractFromToolCall(text: string): string | null {
 			/"(?:content|contents|text|code)":\s*[`"]([\s\S]*?)[`"]\s*[,}]/,
 		);
 		if (contentMatch?.[1]) {
-			const content = contentMatch[1]
-				.replace(/\\n/g, "\n")
-				.replace(/\\t/g, "\t")
-				.replace(/\\"/g, '"');
+			const rawContent = contentMatch[1];
+			let content = rawContent;
+			try {
+				// Decode escapes via JSON rules (avoid ad-hoc replacements that can corrupt code).
+				const jsonString = `"${rawContent.replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/"/g, '\\"')}"`;
+				content = JSON.parse(jsonString) as string;
+			} catch {
+				// Keep raw when decode fails.
+			}
 			if (content.trim().length > 0) {
 				return content;
 			}

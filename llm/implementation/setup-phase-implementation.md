@@ -21,7 +21,7 @@ src/
 │   └── compare-command.ts   # `bench compare` command (implemented in MVP)
 ├── schemas/
 │   ├── index.ts             # Re-exports
-│   ├── common.schema.ts     # PassType, RuntimeName, SCHEMA_VERSION (0.2.0)
+│   ├── common.schema.ts     # PassType, RuntimeName, SCHEMA_VERSION (0.2.1)
 │   ├── config.schema.ts     # BenchConfig (CLI input)
 │   ├── plan.schema.ts       # RunPlan, MatrixItem
 │   └── result.schema.ts     # RunResult, MatrixItemResult
@@ -108,7 +108,7 @@ Note: `ollama` is accepted as a legacy alias for the `direct` harness.
 ### RunPlan (plan.json)
 ```typescript
 {
-  schemaVersion: "0.2.0"
+  schemaVersion: "0.2.1"
   runId: string              // e.g., "20260114-143052-abc123"
   createdAt: ISO datetime
   environment: {
@@ -146,7 +146,7 @@ Note: `ollama` is accepted as a legacy alias for the `direct` harness.
 ### RunResult (run.json)
 ```typescript
 {
-  schemaVersion: "0.2.0"
+  schemaVersion: "0.2.1"
   runId: string
   startedAt: ISO datetime
   completedAt: ISO datetime

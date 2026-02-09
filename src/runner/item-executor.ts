@@ -25,7 +25,7 @@ import {
 } from "../lib/openrouter-client.js";
 import { scoreGeneration } from "../lib/scorer.js";
 import { loadRubric } from "../lib/scoring-spec.js";
-import { type RuntimeName, createRuntime } from "../runtimes/index.js";
+import { createRuntime } from "../runtimes/index.js";
 import type {
 	AutomatedScore,
 	FrontierEval,
@@ -105,7 +105,7 @@ export async function executeItem(
 		const prompt = loadPrompt(item.test, item.passType);
 
 		// Create runtime instance
-		const runtime = createRuntime(item.runtime as RuntimeName, {
+		const runtime = createRuntime(item.runtime, {
 			ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
 			vllmBaseUrl: runtimeConfig.vllmBaseUrl,
 			defaultTimeoutMs: timeoutMs,

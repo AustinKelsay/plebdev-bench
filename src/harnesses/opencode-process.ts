@@ -30,6 +30,8 @@ const FORCE_KILL_DELAY_MS = 2_000;
  * @param pid - Process ID (for logging and process-tree killing)
  * @param log - Logger instance
  * @param reason - Reason for killing (for logging)
+ * @returns Promise that resolves when kill attempts complete
+ * @throws {Error} If the initial termination signal cannot be sent
  */
 export async function forceKillProcess(
 	proc: ResultPromise,
@@ -77,8 +79,12 @@ export async function forceKillProcess(
  *
  * @param timeoutMs - Overall generation timeout
  * @returns Timeout in milliseconds for stale-output detection
+ * @throws {RangeError} If timeoutMs is not a finite positive number
  */
 export function computeStaleOutputTimeoutMs(timeoutMs: number): number {
+	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+		throw new RangeError("timeoutMs must be a finite positive number");
+	}
 	const halfTimeout = Math.floor(timeoutMs * 0.5);
 	return Math.min(
 		MAX_STALE_OUTPUT_TIMEOUT_MS,

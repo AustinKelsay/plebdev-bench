@@ -98,7 +98,7 @@ If you want Ollama to run without OrbStack/vLLM consuming memory for the whole r
 3) stops vLLM (and optionally OrbStack) when done.
 
 ```bash
-cd /Users/plebdev/Desktop/code/plebdev-bench
+cd /path/to/plebdev-bench
 
 bun pb \
   --runtimes ollama vllm \

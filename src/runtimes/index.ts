@@ -4,19 +4,24 @@
  *
  * Use createRuntime() to get a runtime instance by name.
  * Use discoverRuntimes() to find available runtimes on the system.
+ *
+ * Invariants:
+ * - createRuntime returns a Runtime whose apiFormat matches its name.
+ * - Unknown runtime names throw.
  */
 
-// Re-export types
-export type { Runtime, RuntimeName, ModelInfo, ApiFormat } from "./runtime.js";
-export { RUNTIME_NAMES, API_FORMATS } from "./runtime.js";
-
-// Re-export discovery
-export { discoverRuntimes, isRuntimeAvailable } from "./discovery.js";
-
+import { z } from "zod";
 import { createOllamaRuntime } from "./ollama-runtime.js";
-// Import runtime factories
 import type { Runtime, RuntimeName } from "./runtime.js";
 import { createVllmRuntime } from "./vllm-runtime.js";
+
+const VllmApiKeySchema = z.string().min(1).optional();
+const vllmApiKey = VllmApiKeySchema.parse(process.env.VLLM_API_KEY);
+
+// Re-export types/constants for a stable import path.
+export type { Runtime, RuntimeName, ModelInfo, ApiFormat } from "./runtime.js";
+export { RUNTIME_NAMES, API_FORMATS } from "./runtime.js";
+export { discoverRuntimes, isRuntimeAvailable } from "./discovery.js";
 
 /** Configuration for creating a runtime. */
 export interface RuntimeConfig {
@@ -51,7 +56,7 @@ export function createRuntime(
 			return createVllmRuntime({
 				baseUrl: config.vllmBaseUrl,
 				defaultTimeoutMs: config.defaultTimeoutMs,
-				apiKey: process.env.VLLM_API_KEY,
+				apiKey: vllmApiKey,
 			});
 
 		default: {

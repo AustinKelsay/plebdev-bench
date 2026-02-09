@@ -52,7 +52,7 @@ export function computeToolUseStats(items: MatrixItemResult[]): ToolUseStats {
 		return failureType === "tool_missing" ? acc + 1 : acc;
 	}, 0);
 	const toolSuccessRate =
-		totalItems > 0 ? (totalItems - toolMissing) / totalItems : 0;
+		totalItems > 0 ? (totalItems - toolMissing) / totalItems : 1;
 
 	return { totalItems, toolMissing, toolSuccessRate };
 }
@@ -95,7 +95,7 @@ export function computeToolScoreBreakdown(
 		}, 0);
 		const toolTotal = toolItems.length;
 		const toolSuccessRate =
-			toolTotal > 0 ? (toolTotal - toolMissing) / toolTotal : 0;
+			toolTotal > 0 ? (toolTotal - toolMissing) / toolTotal : 1;
 
 		const nonToolSmoke = groupItems.filter(
 			(item) => item.test !== TOOL_SMOKE_TEST_SLUG,
@@ -200,7 +200,7 @@ export function computeCompositeMetrics(
 		}, 0);
 		const toolTotal = toolItems.length;
 		const toolSuccessRate =
-			toolTotal > 0 ? (toolTotal - toolMissing) / toolTotal : 0;
+			toolTotal > 0 ? (toolTotal - toolMissing) / toolTotal : 1;
 
 		const frontierScores = groupItems
 			.map((i) => i.frontierEval?.score)

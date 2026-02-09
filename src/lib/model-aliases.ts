@@ -121,7 +121,13 @@ export function parseInlineAlias(inline: string): ModelAliasMap {
 		entry[runtime] = model;
 	}
 
-	return { [aliasName]: entry };
+	const parsed = ModelAliasMapSchema.safeParse({ [aliasName]: entry });
+	if (!parsed.success) {
+		throw new Error(
+			`Invalid inline alias format: "${inline}". ${parsed.error.message}`,
+		);
+	}
+	return parsed.data;
 }
 
 /**

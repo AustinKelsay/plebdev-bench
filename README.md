@@ -112,7 +112,7 @@ bun pb --runtimes ollama --harnesses direct
 If you want a single run that starts vLLM only when needed (after the Ollama segment) and stops it afterward to free memory:
 
 ```bash
-cd /Users/plebdev/Desktop/code/plebdev-bench
+cd /path/to/plebdev-bench
 
 bun pb \
   --runtimes ollama vllm \

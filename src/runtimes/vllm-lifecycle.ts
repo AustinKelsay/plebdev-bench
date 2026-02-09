@@ -10,11 +10,16 @@
  */
 
 import { execa } from "execa";
+import { z } from "zod";
 import { logger } from "../lib/logger.js";
 import type { ManagedVllmConfig } from "../schemas/index.js";
 
 /** Poll interval for readiness checks. */
 const READY_POLL_MS = 2000;
+
+const VllmModelsResponseSchema = z.object({
+	data: z.array(z.object({ id: z.string().optional() })).optional(),
+});
 
 /**
  * Ensures the docker CLI can reach a running daemon.
@@ -122,8 +127,16 @@ export async function startManagedVllm(
 				await new Promise((r) => setTimeout(r, READY_POLL_MS));
 				continue;
 			}
-			const json = (await res.json()) as { data?: Array<{ id?: string }> };
-			const ids = (json.data ?? [])
+			const parsed = VllmModelsResponseSchema.safeParse(await res.json());
+			if (!parsed.success) {
+				log.warn(
+					{ issues: parsed.error.issues },
+					"Unexpected vLLM /v1/models response",
+				);
+				await new Promise((r) => setTimeout(r, READY_POLL_MS));
+				continue;
+			}
+			const ids = (parsed.data.data ?? [])
 				.map((m) => m.id)
 				.filter((id): id is string => typeof id === "string");
 			if (ids.includes(managed.model)) {

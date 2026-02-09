@@ -1,5 +1,7 @@
 /**
  * Purpose: Unit tests for Ollama runtime and Direct adapter with mocked fetch.
+ * Exports: none
+ * Invariants: All network calls are mocked; no real timeouts.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

@@ -143,7 +143,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 	// Discover models per runtime
 	const runtimeModels = new Map<RuntimeName, string[]>();
-	// Track canonical name -> runtime model name for alias resolution
+	// Track runtime-scoped resolved model name -> canonical alias name (avoid collisions across runtimes)
 	const modelCanonicalMap = new Map<string, string>();
 	const aliases = config.modelAliases;
 	const hasAliases = Object.keys(aliases).length > 0;
@@ -167,7 +167,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 						);
 						if (resolved) {
 							modelsForVllm.push(resolved);
-							modelCanonicalMap.set(resolved, modelSpec);
+							modelCanonicalMap.set(`${runtimeName}::${resolved}`, modelSpec);
 							log.debug(
 								{ alias: modelSpec, runtime: runtimeName, resolved },
 								"Resolved model alias (managed vLLM)",
@@ -218,7 +218,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 					);
 					if (resolved && discovered.includes(resolved)) {
 						filtered.push(resolved);
-						modelCanonicalMap.set(resolved, modelSpec);
+						modelCanonicalMap.set(`${runtimeName}::${resolved}`, modelSpec);
 						log.debug(
 							{ alias: modelSpec, runtime: runtimeName, resolved },
 							"Resolved model alias",
@@ -349,7 +349,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		for (const harness of compatibleHarnesses) {
 			for (const model of modelsForRuntime) {
 				// Look up canonical alias if this model was resolved from one
-				const modelAlias = modelCanonicalMap.get(model);
+				const modelAlias = modelCanonicalMap.get(`${runtime}::${model}`);
 
 				for (const test of tests) {
 					const passTypes = isToolSmokeTest(test)

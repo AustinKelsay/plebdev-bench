@@ -58,7 +58,7 @@ export function createGooseAdapter(): Harness {
 			const runId = crypto.randomBytes(8).toString("hex");
 			const workDir = path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
 			const solutionPath = path.join(workDir, SOLUTION_FILENAME);
-			const executionCwd = process.cwd();
+			const executionCwd = workDir;
 
 			await fs.promises.mkdir(workDir, { recursive: true });
 			log.debug({ workDir, executionCwd }, "Prepared Goose output directory");
