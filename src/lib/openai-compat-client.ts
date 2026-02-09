@@ -14,19 +14,16 @@ import { z } from "zod";
 import type { GenerateResponse } from "./ollama-client.js";
 import { logger } from "./logger.js";
 
+const OpenAiCompatGenerateOptsSchema = z.object({
+	baseUrl: z.string().url(),
+	model: z.string().min(1),
+	prompt: z.string(),
+	timeoutMs: z.number().int().positive(),
+	apiKey: z.string().min(1).optional(),
+});
+
 /** Options for OpenAI-compatible generation. */
-export interface OpenAiCompatGenerateOpts {
-	/** API base URL (e.g., "http://localhost:8000"). */
-	baseUrl: string;
-	/** Model name. */
-	model: string;
-	/** The prompt to send to the model (converted to user message). */
-	prompt: string;
-	/** Timeout in milliseconds. */
-	timeoutMs: number;
-	/** Optional API key for authenticated endpoints. */
-	apiKey?: string;
-}
+export type OpenAiCompatGenerateOpts = z.infer<typeof OpenAiCompatGenerateOptsSchema>;
 
 const ChatCompletionChunkSchema = z
 	.object({
@@ -61,17 +58,24 @@ const ChatCompletionChunkSchema = z
  *
  * @param opts - Generation options
  * @returns Generation response with output and optional token counts
- * @throws Error on timeout or HTTP failure
+ * @throws Error when `timeoutMs` is invalid (finite positive integer required).
+ * @throws z.ZodError when `opts` fails boundary validation.
+ * @throws Error on timeout or HTTP failure.
  */
 export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Promise<GenerateResponse> {
-	const { baseUrl, model, prompt, timeoutMs, apiKey } = opts;
-	const log = logger.child({ module: "openai-compat-client", model, baseUrl });
-
-	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-		throw new Error(
-			`Invalid timeoutMs "${String(timeoutMs)}" for OpenAI-compatible generation. Must be a finite positive number.`,
-		);
+	const parsed = OpenAiCompatGenerateOptsSchema.safeParse(opts);
+	if (!parsed.success) {
+		const timeoutIssue = parsed.error.issues.find((issue) => issue.path.join(".") === "timeoutMs");
+		if (timeoutIssue) {
+			throw new Error(
+				`Invalid timeoutMs "${String((opts as { timeoutMs?: unknown } | null | undefined)?.timeoutMs)}" for OpenAI-compatible generation. Must be a finite positive integer.`,
+			);
+		}
+		throw parsed.error;
 	}
+
+	const { baseUrl, model, prompt, timeoutMs, apiKey } = parsed.data;
+	const log = logger.child({ module: "openai-compat-client", model, baseUrl });
 
 	const controller = new AbortController();
 	let timedOut = false;
