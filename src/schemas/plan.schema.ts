@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { PassTypeSchema, RuntimeNameSchema, SCHEMA_VERSION } from "./common.schema.js";
+import { ManagedVllmSchema } from "./config.schema.js";
 
 /** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
 export const MatrixItemSchema = z.object({
@@ -67,6 +68,7 @@ export const RunPlanSchema = z.object({
 		vllmBaseUrl: z.string().url(),
 		generateTimeoutMs: z.number(),
 		passTypes: z.array(PassTypeSchema),
+		managedVllm: ManagedVllmSchema.optional(),
 	}),
 
 	/** Expanded matrix items to execute. */

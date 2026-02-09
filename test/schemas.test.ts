@@ -24,7 +24,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.2.0");
+		expect(SCHEMA_VERSION).toBe("0.2.1");
 	});
 
 	it("should validate runtime names", () => {
@@ -50,6 +50,7 @@ describe("BenchConfigSchema", () => {
 		expect(config.ollamaBaseUrl).toBe("http://localhost:11434");
 		expect(config.generateTimeoutMs).toBe(300_000);
 		expect(config.outputDir).toBe("results");
+		expect(config.managedVllm).toBeUndefined();
 	});
 
 	it("should parse custom values", () => {

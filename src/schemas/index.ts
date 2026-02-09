@@ -28,6 +28,8 @@ export {
 export {
 	BenchConfigSchema,
 	type BenchConfig,
+	ManagedVllmSchema,
+	type ManagedVllmConfig,
 	defaultConfig,
 } from "./config.schema.js";
 

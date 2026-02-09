@@ -18,7 +18,7 @@ Purpose: Document the local vLLM (OrbStack + Docker Compose) setup and how plebd
   - Failure modes seen in multi-runtime runs and how to debug them.
 - Out of scope:
   - GPU configs (this compose is CPU-only).
-  - Automatic runtime lifecycle orchestration inside `plebdev-bench` (currently external).
+  - Automatic runtime lifecycle orchestration inside `plebdev-bench` (see "Single-run managed lifecycle").
 
 ## Current Behavior
 
@@ -91,6 +91,34 @@ bun pb \
   --model-alias "qwen2.5-14b=ollama:qwen2.5:14b,vllm:Qwen/Qwen2.5-14B-Instruct"
 ```
 
+### Single-run managed lifecycle (optional)
+If you want Ollama to run without OrbStack/vLLM consuming memory for the whole run, you can run a single benchmark that:
+1) runs Ollama items first, then
+2) starts OrbStack + vLLM only for the vLLM segment, then
+3) stops vLLM (and optionally OrbStack) when done.
+
+```bash
+cd /Users/plebdev/Desktop/code/plebdev-bench
+
+bun pb \
+  --runtimes ollama vllm \
+  --harnesses direct goose opencode \
+  --timeout 900000 \
+  --manage-vllm \
+  --vllm-model "Qwen/Qwen2.5-14B-Instruct" \
+  --vllm-compose-file docker/vllm/docker-compose.yml \
+  --vllm-startup-timeout 1800000
+```
+
+To also start/stop OrbStack around the vLLM segment:
+```bash
+  --manage-orbstack \
+  --orbctl-path orbctl
+```
+
+Notes:
+- Stopping OrbStack is disruptive if you use it for other containers, so it is opt-in.
+
 ## Configuration
 
 ### OrbStack memory sizing (important for 14B fp16)
@@ -147,4 +175,3 @@ This is not currently wired into `docker/vllm/docker-compose.yml` by default; ad
 
 ## Change Notes
 - `docker/vllm/docker-compose.yml` uses `vllm serve <model>` positional arg to avoid deprecated `--model` usage.
-

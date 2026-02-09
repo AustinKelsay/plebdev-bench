@@ -24,6 +24,7 @@ import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
 import { isToolSmokeTest, TOOL_SMOKE_TEST_SLUG } from "../lib/tool-smoke.js";
+import { startManagedVllm, stopManagedVllm } from "../runtimes/vllm-lifecycle.js";
 
 /** Warn if run.json exceeds this size (bytes). */
 const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
@@ -39,6 +40,8 @@ const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
 export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const startedAt = new Date().toISOString();
 	const startTime = performance.now();
+	const managedVllm = config.managedVllm?.enabled === true ? config.managedVllm : undefined;
+	let managedVllmStarted = false;
 
 	// Build plan
 	const plan = await buildRunPlan(config);
@@ -116,112 +119,133 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		);
 	}
 
-	for (let i = 0; i < plan.items.length; i++) {
-		const item = plan.items[i];
-		const itemNum = String(i + 1).padStart(2, "0");
+	try {
+		for (let i = 0; i < plan.items.length; i++) {
+			const item = plan.items[i];
+			const itemNum = String(i + 1).padStart(2, "0");
+			const runtimeName = item.runtime as RuntimeName;
+			const nextItem = plan.items[i + 1];
+			const isLastForRuntime = !nextItem || (nextItem.runtime as RuntimeName) !== runtimeName;
 
-		// Calculate dynamic timeout based on model size and harness
-		const modelInfo = modelInfoCache.get(`${item.runtime}:${item.model}`);
-		const paramsBillions = modelInfo?.parametersBillions ?? 7;
-		const dynamicTimeout = calculateTimeout(
-			paramsBillions,
-			item.harness as HarnessName,
-			config.generateTimeoutMs,
-			item.model,
-		);
+			if (managedVllm && runtimeName === "vllm" && !managedVllmStarted) {
+				log.info("Managed vLLM enabled; starting vLLM for vLLM segment...");
+				await startManagedVllm(managedVllm, config.vllmBaseUrl);
+				managedVllmStarted = true;
+			}
 
-		// Progress counter (terminal-native UX)
-		console.log(
-			`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
-		);
+			// Calculate dynamic timeout based on model size and harness
+			const modelInfo = modelInfoCache.get(`${item.runtime}:${item.model}`);
+			const paramsBillions = modelInfo?.parametersBillions ?? 7;
+			const dynamicTimeout = calculateTimeout(
+				paramsBillions,
+				item.harness as HarnessName,
+				config.generateTimeoutMs,
+				item.model,
+			);
 
-		const toolSmokeKey = `${item.harness}::${item.model}`;
-		const isToolHarness = toolCallingHarnesses.has(item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number]);
-		const isToolSmoke = isToolSmokeTest(item.test);
+			// Progress counter (terminal-native UX)
+			console.log(
+				`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
+			);
 
-		if (isToolHarness && !isToolSmoke) {
-			const status = toolSmokeStatus.get(toolSmokeKey);
-			if (status?.skip) {
-				const now = new Date().toISOString();
-				const message =
-					status.message ??
-					"tool-smoke failed; skipping remaining items for this harness/model";
-				log.warn(
-					{ harness: item.harness, model: item.model, test: item.test },
-					"Skipping item due to tool-smoke failure",
-				);
-				results.push({
-					id: item.id,
-					runtime: item.runtime,
-					model: item.model,
-					harness: item.harness,
-					test: item.test,
-					passType: item.passType,
-					status: "failed",
-					startedAt: now,
-					completedAt: now,
-					generation: {
-						success: false,
-						error: `Skipped: ${message}`,
-						failureType: "tool_missing",
-						durationMs: 0,
-					},
-					generationFailure: {
-						type: "tool_missing",
-						message: `Skipped: ${message}`,
-					},
+			const toolSmokeKey = `${item.harness}::${item.model}`;
+			const isToolHarness = toolCallingHarnesses.has(item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number]);
+			const isToolSmoke = isToolSmokeTest(item.test);
+
+			if (isToolHarness && !isToolSmoke) {
+				const status = toolSmokeStatus.get(toolSmokeKey);
+				if (status?.skip) {
+					const now = new Date().toISOString();
+					const message =
+						status.message ??
+						"tool-smoke failed; skipping remaining items for this harness/model";
+					log.warn(
+						{ harness: item.harness, model: item.model, test: item.test },
+						"Skipping item due to tool-smoke failure",
+					);
+					results.push({
+						id: item.id,
+						runtime: item.runtime,
+						model: item.model,
+						harness: item.harness,
+						test: item.test,
+						passType: item.passType,
+						status: "failed",
+						startedAt: now,
+						completedAt: now,
+						generation: {
+							success: false,
+							error: `Skipped: ${message}`,
+							failureType: "tool_missing",
+							durationMs: 0,
+						},
+						generationFailure: {
+							type: "tool_missing",
+							message: `Skipped: ${message}`,
+						},
+					});
+					continue;
+				}
+			}
+
+			// Unload model only when switching to a different model/runtime (or last item)
+			// Must check both: same model name on different runtimes should trigger unload
+			const isLastForModel = !nextItem ||
+				nextItem.model !== item.model ||
+				nextItem.runtime !== item.runtime;
+
+			const result = await executeItem(
+				item,
+				{ ollamaBaseUrl: config.ollamaBaseUrl, vllmBaseUrl: config.vllmBaseUrl },
+				dynamicTimeout,
+				isLastForModel,
+			);
+			results.push(result);
+
+			if (isToolHarness && isToolSmoke) {
+				const failureMessage =
+					result.generation?.error ?? result.generationFailure?.message;
+				const passed = result.generation?.success === true;
+				const shouldSkip =
+					result.generation?.success === false &&
+					result.generation?.failureType === "tool_missing";
+				toolSmokeStatus.set(toolSmokeKey, {
+					status: passed ? "passed" : "failed",
+					skip: shouldSkip,
+					message: failureMessage,
 				});
-				continue;
+			}
+
+			if (
+				isToolHarness &&
+				!isToolSmoke &&
+				result.generation?.success === false &&
+				result.generation?.failureType === "tool_missing"
+			) {
+				toolSmokeStatus.set(toolSmokeKey, {
+					status: "failed",
+					skip: true,
+					message:
+						result.generation?.error ??
+						result.generationFailure?.message ??
+						"tool_missing detected; skipping remaining items",
+				});
+				log.warn(
+					{ harness: item.harness, model: item.model },
+					"tool_missing detected; skipping remaining items for this harness/model",
+				);
+			}
+
+			if (managedVllm && runtimeName === "vllm" && isLastForRuntime && managedVllm.stopAfterRun) {
+				log.info("Managed vLLM enabled; stopping vLLM after vLLM segment...");
+				await stopManagedVllm(managedVllm);
+				managedVllmStarted = false;
 			}
 		}
-
-		// Unload model only when switching to a different model/runtime (or last item)
-		// Must check both: same model name on different runtimes should trigger unload
-		const nextItem = plan.items[i + 1];
-		const isLastForModel = !nextItem ||
-			nextItem.model !== item.model ||
-			nextItem.runtime !== item.runtime;
-
-		const result = await executeItem(
-			item,
-			{ ollamaBaseUrl: config.ollamaBaseUrl, vllmBaseUrl: config.vllmBaseUrl },
-			dynamicTimeout,
-			isLastForModel,
-		);
-		results.push(result);
-
-		if (isToolHarness && isToolSmoke) {
-			const failureMessage =
-				result.generation?.error ?? result.generationFailure?.message;
-			const passed = result.generation?.success === true;
-			const shouldSkip =
-				result.generation?.success === false &&
-				result.generation?.failureType === "tool_missing";
-			toolSmokeStatus.set(toolSmokeKey, {
-				status: passed ? "passed" : "failed",
-				skip: shouldSkip,
-				message: failureMessage,
-			});
-		}
-
-		if (
-			isToolHarness &&
-			!isToolSmoke &&
-			result.generation?.success === false &&
-			result.generation?.failureType === "tool_missing"
-		) {
-			toolSmokeStatus.set(toolSmokeKey, {
-				status: "failed",
-				skip: true,
-				message:
-					result.generation?.error ??
-					result.generationFailure?.message ??
-					"tool_missing detected; skipping remaining items",
-			});
-			log.warn(
-				{ harness: item.harness, model: item.model },
-				"tool_missing detected; skipping remaining items for this harness/model",
-			);
+	} finally {
+		if (managedVllm && managedVllmStarted && managedVllm.stopAfterRun) {
+			log.warn("Benchmark ended while managed vLLM was running; stopping vLLM in finally...");
+			await stopManagedVllm(managedVllm);
 		}
 	}
 

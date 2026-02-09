@@ -8,7 +8,7 @@
 import { z } from "zod";
 
 /** Current schema version for all result/plan files. */
-export const SCHEMA_VERSION = "0.2.0";
+export const SCHEMA_VERSION = "0.2.1";
 
 /** Valid runtime names (inference backends). */
 export const runtimeNames = ["ollama", "vllm"] as const;
