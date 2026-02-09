@@ -167,7 +167,11 @@ export function computeTimingStats(items: MatrixItemResult[]): TimingStats | nul
   if (durations.length === 0) return null;
 
   const sum = durations.reduce((a, b) => a + b, 0);
-  const p90Index = Math.floor(durations.length * 0.9);
+  const rawP90Index = Math.ceil(durations.length * 0.9) - 1;
+  const p90Index = Math.min(
+    durations.length - 1,
+    Math.max(0, rawP90Index),
+  );
 
   return {
     min: durations[0],
@@ -340,4 +344,3 @@ export function computeBlindInformedBreakdown(
 
   return breakdowns.sort((a, b) => b.delta - a.delta);
 }
-

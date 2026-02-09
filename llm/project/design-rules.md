@@ -31,7 +31,7 @@ Purpose: Define Terminal-Native / ANSI-Inspired design rules for `plebdev-bench`
 - The UX should make the matrix visible without overwhelming:
   - show counts and grouping
   - let users narrow dimensions easily
-  - keep naming consistent everywhere (runtime/model/harness/test/passType)
+  - keep naming consistent everywhere (runtime/harness/model/test/passType)
 
 ### Principle 6 — Treat files as UI surfaces
 - The `results/<run-id>/` directory is a user-facing interface.
