@@ -67,6 +67,12 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 	const { baseUrl, model, prompt, timeoutMs, apiKey } = opts;
 	const log = logger.child({ module: "openai-compat-client", model, baseUrl });
 
+	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+		throw new Error(
+			`Invalid timeoutMs "${String(timeoutMs)}" for OpenAI-compatible generation. Must be a finite positive number.`,
+		);
+	}
+
 	const controller = new AbortController();
 	let timedOut = false;
 	const timeoutId = setTimeout(() => {
@@ -152,11 +158,17 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 					if (chunk.usage?.completion_tokens !== undefined) {
 						completionTokens = chunk.usage.completion_tokens;
 					}
-				} catch {
-					// Skip malformed JSON lines
+				} catch (err) {
+					log.debug(
+						{ err, raw: data },
+						"Skipping malformed SSE chunk",
+					);
 				}
 			}
 		}
+
+		// Flush any remaining decoded text.
+		buffer += decoder.decode();
 
 		// Process any remaining buffer content
 		if (buffer.trim().startsWith("data: ")) {
@@ -178,8 +190,11 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 							completionTokens = chunk.usage.completion_tokens;
 						}
 					}
-				} catch {
-					// Skip malformed JSON
+				} catch (err) {
+					log.debug(
+						{ err, raw: data },
+						"Skipping malformed SSE chunk",
+					);
 				}
 			}
 		}
