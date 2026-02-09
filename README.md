@@ -105,7 +105,35 @@ bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
 # Run with specific runtime and harness
 bun pb --runtimes ollama --harnesses direct
+```
 
+### Managed vLLM Lifecycle (Single Run)
+
+If you want a single run that starts vLLM only when needed (after the Ollama segment) and stops it afterward to free memory:
+
+```bash
+cd /Users/plebdev/Desktop/code/plebdev-bench
+
+bun pb \
+  --runtimes ollama vllm \
+  --harnesses direct goose opencode \
+  --timeout 900000 \
+  --manage-vllm \
+  --vllm-model "Qwen/Qwen2.5-14B-Instruct" \
+  --vllm-compose-file docker/vllm/docker-compose.yml \
+  --vllm-startup-timeout 1800000
+```
+
+Optional: start/stop OrbStack around the vLLM segment too (disruptive if you use OrbStack for other containers):
+
+```bash
+  --manage-orbstack \
+  --orbctl-path orbctl
+```
+
+Full vLLM setup/troubleshooting: `llm/implementation/vllm-orbstack-setup.md`.
+
+```bash
 # Compare two runs
 bun run bench compare <run-a> <run-b>
 
