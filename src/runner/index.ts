@@ -11,20 +11,31 @@
  * 6. Print summary
  */
 
-import type { BenchConfig, RunResult, MatrixItemResult } from "../schemas/index.js";
-import { SCHEMA_VERSION } from "../schemas/index.js";
 import type { HarnessName } from "../harnesses/harness.js";
 import { TOOL_CALLING_HARNESS_NAMES } from "../harnesses/harness.js";
-import { buildRunPlan } from "./plan-builder.js";
-import { executeItem } from "./item-executor.js";
-import { writePlan, writeResult } from "../results/writer.js";
 import { logger } from "../lib/logger.js";
-import { createRuntime, type ModelInfo, type RuntimeName } from "../runtimes/index.js";
-import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
-import { isToolSmokeTest, TOOL_SMOKE_TEST_SLUG } from "../lib/tool-smoke.js";
-import { startManagedVllm, stopManagedVllm } from "../runtimes/vllm-lifecycle.js";
+import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
+import { TOOL_SMOKE_TEST_SLUG, isToolSmokeTest } from "../lib/tool-smoke.js";
+import { writePlan, writeResult } from "../results/writer.js";
+import {
+	type ModelInfo,
+	type RuntimeName,
+	createRuntime,
+} from "../runtimes/index.js";
+import {
+	startManagedVllm,
+	stopManagedVllm,
+} from "../runtimes/vllm-lifecycle.js";
+import type {
+	BenchConfig,
+	MatrixItemResult,
+	RunResult,
+} from "../schemas/index.js";
+import { SCHEMA_VERSION } from "../schemas/index.js";
+import { executeItem } from "./item-executor.js";
+import { buildRunPlan } from "./plan-builder.js";
 
 /** Warn if run.json exceeds this size (bytes). */
 const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
@@ -40,7 +51,8 @@ const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
 export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const startedAt = new Date().toISOString();
 	const startTime = performance.now();
-	const managedVllm = config.managedVllm?.enabled === true ? config.managedVllm : undefined;
+	const managedVllm =
+		config.managedVllm?.enabled === true ? config.managedVllm : undefined;
 	let managedVllmStarted = false;
 
 	// Build plan
@@ -56,7 +68,9 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	console.log(
 		`Items: ${plan.summary.totalItems} (runtimes: ${plan.summary.runtimes}, models: ${plan.summary.models}, harnesses: ${plan.summary.harnesses}, tests: ${plan.summary.tests})`,
 	);
-	console.log(`Frontier eval: ${frontierEvalEnabled ? "enabled" : "disabled (no OPENROUTER_API_KEY)"}`);
+	console.log(
+		`Frontier eval: ${frontierEvalEnabled ? "enabled" : "disabled (no OPENROUTER_API_KEY)"}`,
+	);
 	console.log("");
 
 	// Fetch model info for dynamic timeouts (per-runtime)
@@ -84,12 +98,29 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			[...models].map(async (model) => {
 				try {
 					const info = await runtime.getModelInfo(model);
-					log.debug({ runtime: runtimeName, model, parametersBillions: info.parametersBillions.toFixed(1) }, "Model info fetched");
+					log.debug(
+						{
+							runtime: runtimeName,
+							model,
+							parametersBillions: info.parametersBillions.toFixed(1),
+						},
+						"Model info fetched",
+					);
 					return { model, info };
 				} catch (error) {
 					// Default to 7B if we can't get model info
-					log.warn({ runtime: runtimeName, model, error }, "Failed to get model info, using default 7B");
-					return { model, info: { name: model, sizeBytes: 0, parametersBillions: 7 } as ModelInfo };
+					log.warn(
+						{ runtime: runtimeName, model, error },
+						"Failed to get model info, using default 7B",
+					);
+					return {
+						model,
+						info: {
+							name: model,
+							sizeBytes: 0,
+							parametersBillions: 7,
+						} as ModelInfo,
+					};
 				}
 			}),
 		);
@@ -114,9 +145,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	>();
 
 	if (!plan.items.some((item) => item.test === TOOL_SMOKE_TEST_SLUG)) {
-		log.warn(
-			"tool-smoke test not present in plan; tool preflight is disabled",
-		);
+		log.warn("tool-smoke test not present in plan; tool preflight is disabled");
 	}
 
 	try {
@@ -125,7 +154,8 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			const itemNum = String(i + 1).padStart(2, "0");
 			const runtimeName = item.runtime as RuntimeName;
 			const nextItem = plan.items[i + 1];
-			const isLastForRuntime = !nextItem || (nextItem.runtime as RuntimeName) !== runtimeName;
+			const isLastForRuntime =
+				!nextItem || (nextItem.runtime as RuntimeName) !== runtimeName;
 
 			if (managedVllm && runtimeName === "vllm" && !managedVllmStarted) {
 				log.info("Managed vLLM enabled; starting vLLM for vLLM segment...");
@@ -149,7 +179,9 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			);
 
 			const toolSmokeKey = `${item.harness}::${item.model}`;
-			const isToolHarness = toolCallingHarnesses.has(item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number]);
+			const isToolHarness = toolCallingHarnesses.has(
+				item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
+			);
 			const isToolSmoke = isToolSmokeTest(item.test);
 
 			if (isToolHarness && !isToolSmoke) {
@@ -190,13 +222,17 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 
 			// Unload model only when switching to a different model/runtime (or last item)
 			// Must check both: same model name on different runtimes should trigger unload
-			const isLastForModel = !nextItem ||
+			const isLastForModel =
+				!nextItem ||
 				nextItem.model !== item.model ||
 				nextItem.runtime !== item.runtime;
 
 			const result = await executeItem(
 				item,
-				{ ollamaBaseUrl: config.ollamaBaseUrl, vllmBaseUrl: config.vllmBaseUrl },
+				{
+					ollamaBaseUrl: config.ollamaBaseUrl,
+					vllmBaseUrl: config.vllmBaseUrl,
+				},
 				dynamicTimeout,
 				isLastForModel,
 			);
@@ -236,7 +272,12 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				);
 			}
 
-			if (managedVllm && runtimeName === "vllm" && isLastForRuntime && managedVllm.stopAfterRun) {
+			if (
+				managedVllm &&
+				runtimeName === "vllm" &&
+				isLastForRuntime &&
+				managedVllm.stopAfterRun
+			) {
 				log.info("Managed vLLM enabled; stopping vLLM after vLLM segment...");
 				await stopManagedVllm(managedVllm);
 				managedVllmStarted = false;
@@ -244,7 +285,9 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		}
 	} finally {
 		if (managedVllm && managedVllmStarted && managedVllm.stopAfterRun) {
-			log.warn("Benchmark ended while managed vLLM was running; stopping vLLM in finally...");
+			log.warn(
+				"Benchmark ended while managed vLLM was running; stopping vLLM in finally...",
+			);
 			await stopManagedVllm(managedVllm);
 		}
 	}
@@ -292,5 +335,15 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 
 	// Calculate and print detailed stats
 	const stats = calculateRunStats(results);
-	console.log(formatRunStats(stats, plan.runId, completed, failed, total, durationMs, config.outputDir));
+	console.log(
+		formatRunStats(
+			stats,
+			plan.runId,
+			completed,
+			failed,
+			total,
+			durationMs,
+			config.outputDir,
+		),
+	);
 }

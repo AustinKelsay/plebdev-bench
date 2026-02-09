@@ -7,9 +7,9 @@
  * - Test cases to run against the code
  */
 
-import * as path from "node:path";
 import * as fs from "node:fs";
-import { ScoringSpecSchema, type ScoringSpec } from "../schemas/index.js";
+import * as path from "node:path";
+import { type ScoringSpec, ScoringSpecSchema } from "../schemas/index.js";
 import { logger } from "./logger.js";
 
 /** Cache for loaded scoring specs. */
@@ -70,9 +70,7 @@ export async function loadScoringSpec(testSlug: string): Promise<ScoringSpec> {
 		const module = await import(specPath);
 
 		if (!module.spec) {
-			throw new Error(
-				`Scoring spec file must export "spec": ${specPath}`,
-			);
+			throw new Error(`Scoring spec file must export "spec": ${specPath}`);
 		}
 
 		// Validate with Zod
@@ -82,9 +80,7 @@ export async function loadScoringSpec(testSlug: string): Promise<ScoringSpec> {
 			const errors = parsed.error.errors
 				.map((e) => `  ${e.path.join(".")}: ${e.message}`)
 				.join("\n");
-			throw new Error(
-				`Invalid scoring spec for "${testSlug}":\n${errors}`,
-			);
+			throw new Error(`Invalid scoring spec for "${testSlug}":\n${errors}`);
 		}
 
 		// Verify testSlug matches

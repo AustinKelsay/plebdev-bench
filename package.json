@@ -1,40 +1,40 @@
 {
-  "name": "plebdev-bench",
-  "version": "0.1.0",
-  "description": "Local LLM benchmark runner",
-  "type": "module",
-  "workspaces": ["apps/*"],
-  "bin": {
-    "bench": "./src/index.ts"
-  },
-  "scripts": {
-    "pb": "bun run src/index.ts run",
-    "pb:ollama": "bun run src/index.ts run --runtimes ollama",
-    "pb:vllm": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run --runtimes vllm",
-    "pb:all": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run",
-    "bench": "bun run src/index.ts",
-    "compare": "bun run src/index.ts compare",
-    "dashboard": "bun run --cwd apps/dashboard dev",
-    "dashboard:build": "bun run --cwd apps/dashboard build",
-    "dashboard:index": "bun run apps/dashboard/scripts/build-index.ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "biome check .",
-    "lint:fix": "biome check --apply .",
-    "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "commander": "^12.1.0",
-    "execa": "^9.5.2",
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
-    "zod": "^3.24.1"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@types/bun": "latest",
-    "typescript": "^5.7.3",
-    "vitest": "^2.1.8"
-  }
+	"name": "plebdev-bench",
+	"version": "0.1.0",
+	"description": "Local LLM benchmark runner",
+	"type": "module",
+	"workspaces": ["apps/*"],
+	"bin": {
+		"bench": "./src/index.ts"
+	},
+	"scripts": {
+		"pb": "bun run src/index.ts run",
+		"pb:ollama": "bun run src/index.ts run --runtimes ollama",
+		"pb:vllm": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run --runtimes vllm",
+		"pb:all": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run",
+		"bench": "bun run src/index.ts",
+		"compare": "bun run src/index.ts compare",
+		"dashboard": "bun run --cwd apps/dashboard dev",
+		"dashboard:build": "bun run --cwd apps/dashboard build",
+		"dashboard:index": "bun run apps/dashboard/scripts/build-index.ts",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"lint": "biome check .",
+		"lint:fix": "biome check --apply .",
+		"format": "biome format --write .",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"commander": "^12.1.0",
+		"execa": "^9.5.2",
+		"pino": "^9.6.0",
+		"pino-pretty": "^13.0.0",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/bun": "latest",
+		"typescript": "^5.7.3",
+		"vitest": "^2.1.8"
+	}
 }

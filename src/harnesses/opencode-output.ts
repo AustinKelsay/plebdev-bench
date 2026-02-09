@@ -290,4 +290,3 @@ export function normalizeOpenCodeOutput(raw: string): OpenCodeNormalizedOutput {
 
 	return { output: raw, method: "raw" };
 }
-

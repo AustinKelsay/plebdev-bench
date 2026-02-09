@@ -34,9 +34,7 @@ async function isCliAvailable(cli: string): Promise<boolean> {
  * @param name - Harness name to check
  * @returns true if the harness is available
  */
-export async function isHarnessAvailable(
-	name: HarnessName,
-): Promise<boolean> {
+export async function isHarnessAvailable(name: HarnessName): Promise<boolean> {
 	switch (name) {
 		case "direct":
 			// Direct harness is always available - runtime availability is checked separately

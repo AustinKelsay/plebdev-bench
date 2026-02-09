@@ -20,7 +20,8 @@ export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 
 /** Harnesses that require tool-calling to produce output files. */
 export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
-export type ToolCallingHarnessName = (typeof TOOL_CALLING_HARNESS_NAMES)[number];
+export type ToolCallingHarnessName =
+	(typeof TOOL_CALLING_HARNESS_NAMES)[number];
 
 /**
  * Runtime compatibility for each harness.
@@ -31,7 +32,10 @@ export type ToolCallingHarnessName = (typeof TOOL_CALLING_HARNESS_NAMES)[number]
  * - goose: maps runtime.apiFormat to --provider (ollama or openai)
  * - opencode: dynamically configures provider in opencode.json based on runtime
  */
-export const HARNESS_RUNTIME_COMPATIBILITY: Record<HarnessName, readonly string[]> = {
+export const HARNESS_RUNTIME_COMPATIBILITY: Record<
+	HarnessName,
+	readonly string[]
+> = {
 	direct: ["ollama", "vllm"],
 	goose: ["ollama", "vllm"],
 	opencode: ["ollama", "vllm"],
@@ -43,7 +47,10 @@ export const HARNESS_RUNTIME_COMPATIBILITY: Record<HarnessName, readonly string[
  * @param runtime - Runtime name
  * @returns true if the harness can be used with the runtime
  */
-export function isHarnessCompatibleWithRuntime(harness: HarnessName, runtime: string): boolean {
+export function isHarnessCompatibleWithRuntime(
+	harness: HarnessName,
+	runtime: string,
+): boolean {
 	const compatibleRuntimes = HARNESS_RUNTIME_COMPATIBILITY[harness];
 	return compatibleRuntimes.includes(runtime);
 }
@@ -54,7 +61,9 @@ export function isHarnessCompatibleWithRuntime(harness: HarnessName, runtime: st
  * @returns Array of compatible harness names
  */
 export function getCompatibleHarnesses(runtime: string): HarnessName[] {
-	return HARNESS_NAMES.filter((harness) => isHarnessCompatibleWithRuntime(harness, runtime));
+	return HARNESS_NAMES.filter((harness) =>
+		isHarnessCompatibleWithRuntime(harness, runtime),
+	);
 }
 
 /** Options for generating a completion. */
@@ -134,7 +143,6 @@ export function normalizeHarnessName(name: string): HarnessName {
  */
 export function isValidHarnessName(name: string): boolean {
 	return (
-		HARNESS_NAMES.includes(name as HarnessName) ||
-		name === LEGACY_HARNESS_ALIAS
+		HARNESS_NAMES.includes(name as HarnessName) || name === LEGACY_HARNESS_ALIAS
 	);
 }

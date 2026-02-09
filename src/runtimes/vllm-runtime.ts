@@ -13,8 +13,8 @@
  * - vLLM doesn't expose parameter counts, so we estimate from model names
  */
 
-import type { Runtime, ModelInfo } from "./runtime.js";
 import { logger } from "../lib/logger.js";
+import type { ModelInfo, Runtime } from "./runtime.js";
 
 /** Configuration for the vLLM runtime. */
 export interface VllmRuntimeConfig {
@@ -73,7 +73,7 @@ export function estimateParametersFromName(modelName: string): number {
 	// Match patterns like "7b", "70B", "1.7b", "72B", etc.
 	const match = modelName.match(/([\d.]+)\s*[bB]/i);
 	if (match) {
-		const value = parseFloat(match[1]);
+		const value = Number.parseFloat(match[1]);
 		if (!Number.isNaN(value) && value > 0) {
 			return value;
 		}
@@ -82,7 +82,7 @@ export function estimateParametersFromName(modelName: string): number {
 	// Match patterns with millions like "350m", "1.3M"
 	const millionMatch = modelName.match(/([\d.]+)\s*[mM]/i);
 	if (millionMatch) {
-		const value = parseFloat(millionMatch[1]);
+		const value = Number.parseFloat(millionMatch[1]);
 		if (!Number.isNaN(value) && value > 0) {
 			return value / 1000; // Convert millions to billions
 		}
@@ -108,7 +108,7 @@ export function createVllmRuntime(config: VllmRuntimeConfig): Runtime {
 		};
 		// Only add auth if key is provided and not "dummy"
 		if (apiKey && apiKey !== "dummy") {
-			headers["Authorization"] = `Bearer ${apiKey}`;
+			headers.Authorization = `Bearer ${apiKey}`;
 		}
 		return headers;
 	}

@@ -50,7 +50,10 @@ export async function ensureOrbStackRunning(orbctlPath: string): Promise<void> {
 	}
 
 	log.info("Docker not available; attempting to start OrbStack...");
-	const start = await execa(orbctlPath, ["start"], { reject: false, timeout: 20_000 });
+	const start = await execa(orbctlPath, ["start"], {
+		reject: false,
+		timeout: 20_000,
+	});
 	if (start.exitCode !== 0) {
 		throw new Error(
 			`Failed to start OrbStack via "${orbctlPath} start" (exit ${start.exitCode}).`,
@@ -68,7 +71,9 @@ export async function ensureOrbStackRunning(orbctlPath: string): Promise<void> {
 		}
 	}
 
-	throw new Error("OrbStack start succeeded but docker did not become available within 60s.");
+	throw new Error(
+		"OrbStack start succeeded but docker did not become available within 60s.",
+	);
 }
 
 /**
@@ -118,12 +123,17 @@ export async function startManagedVllm(
 				continue;
 			}
 			const json = (await res.json()) as { data?: Array<{ id?: string }> };
-			const ids = (json.data ?? []).map((m) => m.id).filter((id): id is string => typeof id === "string");
+			const ids = (json.data ?? [])
+				.map((m) => m.id)
+				.filter((id): id is string => typeof id === "string");
 			if (ids.includes(managed.model)) {
 				log.info({ models: ids }, "vLLM ready");
 				return;
 			}
-			log.warn({ models: ids, expected: managed.model }, "vLLM responded but expected model not present yet");
+			log.warn(
+				{ models: ids, expected: managed.model },
+				"vLLM responded but expected model not present yet",
+			);
 		} catch (error) {
 			log.debug({ err: error }, "vLLM readiness check failed");
 		}
@@ -141,20 +151,32 @@ export async function startManagedVllm(
  * @param managed - Managed vLLM config (validated by schema)
  * @throws Error when compose down fails.
  */
-export async function stopManagedVllm(managed: ManagedVllmConfig): Promise<void> {
-	const log = logger.child({ module: "vllm-lifecycle", composeFile: managed.composeFile });
+export async function stopManagedVllm(
+	managed: ManagedVllmConfig,
+): Promise<void> {
+	const log = logger.child({
+		module: "vllm-lifecycle",
+		composeFile: managed.composeFile,
+	});
 	log.info("Stopping vLLM via docker compose down...");
 
-	const down = await execa("docker", ["compose", "-f", managed.composeFile, "down"], {
-		timeout: 5 * 60_000,
-	});
+	const down = await execa(
+		"docker",
+		["compose", "-f", managed.composeFile, "down"],
+		{
+			timeout: 5 * 60_000,
+		},
+	);
 	if (down.exitCode !== 0) {
 		throw new Error(`docker compose down failed with exit ${down.exitCode}`);
 	}
 
 	if (managed.manageOrbStack) {
 		log.info("Stopping OrbStack...");
-		const stop = await execa(managed.orbctlPath, ["stop"], { reject: false, timeout: 20_000 });
+		const stop = await execa(managed.orbctlPath, ["stop"], {
+			reject: false,
+			timeout: 20_000,
+		});
 		if (stop.exitCode !== 0) {
 			throw new Error(
 				`Failed to stop OrbStack via "${managed.orbctlPath} stop" (exit ${stop.exitCode}).`,

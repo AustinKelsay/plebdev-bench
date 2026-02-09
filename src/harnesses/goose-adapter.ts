@@ -12,16 +12,16 @@
  * - Tool output is optional; plain assistant output is still scored
  */
 
-import { execa } from "execa";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
 import * as crypto from "node:crypto";
-import type { Harness, GenerateOpts, GenerateResult } from "./harness.js";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { execa } from "execa";
 import { extractCode } from "../lib/code-extractor.js";
 import { logger } from "../lib/logger.js";
 import { normalizeOpenAiBasePath } from "./goose-openai.js";
 import { normalizeGooseOutput } from "./goose-output.js";
+import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
@@ -67,15 +67,14 @@ export function createGooseAdapter(): Harness {
 			let provider: string;
 			let extraEnv: Record<string, string> = {};
 
-				switch (runtime.apiFormat) {
-					case "ollama":
-						provider = "ollama";
-						break;
-					case "openai-compat": {
+			switch (runtime.apiFormat) {
+				case "ollama":
+					provider = "ollama";
+					break;
+				case "openai-compat": {
 					provider = "openai";
 
-					const apiKey =
-						process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
+					const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
 					if (!apiKey) {
 						log.warn(
 							"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
@@ -100,20 +99,20 @@ export function createGooseAdapter(): Harness {
 						OPENAI_API_BASE: baseUrl,
 						OPENAI_MODEL: model,
 						OPENAI_DEFAULT_MODEL: model,
-						};
-						break;
-					}
-					default: {
-						const _exhaustive: never = runtime.apiFormat;
-						log.warn(
-							{ apiFormat: _exhaustive },
-							"Unsupported runtime apiFormat for Goose",
-						);
-						throw new Error(
-							`Unsupported runtime apiFormat for Goose: ${String(_exhaustive)}`,
-						);
-					}
+					};
+					break;
 				}
+				default: {
+					const _exhaustive: never = runtime.apiFormat;
+					log.warn(
+						{ apiFormat: _exhaustive },
+						"Unsupported runtime apiFormat for Goose",
+					);
+					throw new Error(
+						`Unsupported runtime apiFormat for Goose: ${String(_exhaustive)}`,
+					);
+				}
+			}
 
 			// Set up environment for Goose (headless mode)
 			const env = {
@@ -130,11 +129,16 @@ export function createGooseAdapter(): Harness {
 			const args = [
 				"run",
 				"--no-session",
-				"--max-turns", "1",              // Keep Goose on a single completion turn
-				"--provider", provider,           // Override config - use determined provider
-				"--model", model,                 // Override config - use our model
-				"--output-format", "json",        // Structured output for parsing
-				"-i", "-",                        // Read prompt from stdin
+				"--max-turns",
+				"1", // Keep Goose on a single completion turn
+				"--provider",
+				provider, // Override config - use determined provider
+				"--model",
+				model, // Override config - use our model
+				"--output-format",
+				"json", // Structured output for parsing
+				"-i",
+				"-", // Read prompt from stdin
 			];
 			log.debug(
 				{ cmd: "goose", model, executionCwd, runtimeBaseUrl: runtime.baseUrl },
@@ -164,24 +168,36 @@ export function createGooseAdapter(): Harness {
 				// Fallback to stderr if stdout empty
 				if (!output || output.trim().length === 0) {
 					if (stderr.length >= MIN_OUTPUT_LENGTH) {
-						log.info({ stderrUsed: true, length: stderr.length }, "Using stderr output (stdout was empty)");
+						log.info(
+							{ stderrUsed: true, length: stderr.length },
+							"Using stderr output (stdout was empty)",
+						);
 						output = stderr;
 					}
 				}
 
 				const normalized = normalizeGooseOutput(output);
 				const toolCallDetected =
-					normalized.method === "tool_call" || normalized.method === "file_text";
+					normalized.method === "tool_call" ||
+					normalized.method === "file_text";
 				if (normalized.method !== "raw") {
 					log.debug(
-						{ method: normalized.method, originalLength: output.length, normalizedLength: normalized.output.length },
+						{
+							method: normalized.method,
+							originalLength: output.length,
+							normalizedLength: normalized.output.length,
+						},
 						"Normalized Goose output",
 					);
 					output = normalized.output;
 				}
 
 				log.debug(
-					{ durationMs, outputLength: output.length, exitCode: result.exitCode },
+					{
+						durationMs,
+						outputLength: output.length,
+						exitCode: result.exitCode,
+					},
 					"Goose completed",
 				);
 
@@ -191,15 +207,24 @@ export function createGooseAdapter(): Harness {
 					const code = await fs.promises.readFile(solutionPath, "utf-8");
 					if (code.trim().length >= MIN_OUTPUT_LENGTH) {
 						codeFilePath = solutionPath;
-						log.info({ codeFilePath, codeLength: code.length }, "Code written via developer tool");
+						log.info(
+							{ codeFilePath, codeLength: code.length },
+							"Code written via developer tool",
+						);
 					} else {
-						log.warn({ codeLength: code.trim().length }, "solution.ts exists but is too short");
+						log.warn(
+							{ codeLength: code.trim().length },
+							"solution.ts exists but is too short",
+						);
 					}
 				}
 
 				// Fast empty responses often indicate server-side errors (e.g., model mismatch).
 				if (!codeFilePath) {
-					if (durationMs < 2000 && (!output || output.trim().length < MIN_OUTPUT_LENGTH)) {
+					if (
+						durationMs < 2000 &&
+						(!output || output.trim().length < MIN_OUTPUT_LENGTH)
+					) {
 						throw new Error(
 							`Goose returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized`,
 						);
@@ -224,7 +249,11 @@ export function createGooseAdapter(): Harness {
 						);
 					} else {
 						log.warn(
-							{ toolCallDetected, outputLength: output.length, extractionMethod: extracted.method },
+							{
+								toolCallDetected,
+								outputLength: output.length,
+								extractionMethod: extracted.method,
+							},
 							"Goose finished without usable code output",
 						);
 
@@ -232,8 +261,10 @@ export function createGooseAdapter(): Harness {
 							const error = new Error(
 								"Goose returned no usable output and did not produce code",
 							);
-							(error as { output?: string; durationMs?: number }).output = output;
-							(error as { output?: string; durationMs?: number }).durationMs = durationMs;
+							(error as { output?: string; durationMs?: number }).output =
+								output;
+							(error as { output?: string; durationMs?: number }).durationMs =
+								durationMs;
 							throw error;
 						}
 					}
@@ -247,10 +278,7 @@ export function createGooseAdapter(): Harness {
 				};
 			} catch (error) {
 				// Check if it's a timeout error
-				if (
-					error instanceof Error &&
-					error.message.includes("timed out")
-				) {
+				if (error instanceof Error && error.message.includes("timed out")) {
 					throw new Error(
 						`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
 					);

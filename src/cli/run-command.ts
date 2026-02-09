@@ -11,14 +11,18 @@
  */
 
 import { Command } from "commander";
-import { BenchConfigSchema, type BenchConfig, type ModelAliasMap } from "../schemas/index.js";
-import { runBenchmark } from "../runner/index.js";
 import { logger } from "../lib/logger.js";
 import {
 	loadModelAliases,
-	parseInlineAliases,
 	mergeAliases,
+	parseInlineAliases,
 } from "../lib/model-aliases.js";
+import { runBenchmark } from "../runner/index.js";
+import {
+	type BenchConfig,
+	BenchConfigSchema,
+	type ModelAliasMap,
+} from "../schemas/index.js";
 
 /** CLI run command. */
 export const runCommand = new Command("run")
@@ -31,7 +35,10 @@ export const runCommand = new Command("run")
 		"-m, --models <models...>",
 		"Limit to specific models or aliases (default: all from runtime)",
 	)
-	.option("-t, --tests <tests...>", "Limit to specific tests (default: all in src/tests/)")
+	.option(
+		"-t, --tests <tests...>",
+		"Limit to specific tests (default: all in src/tests/)",
+	)
 	.option(
 		"-p, --pass-types <types...>",
 		"Limit pass types: blind, informed (default: both)",
@@ -40,16 +47,8 @@ export const runCommand = new Command("run")
 		"-H, --harnesses <harnesses...>",
 		"Limit to specific harnesses: direct, goose, opencode (default: all available). 'ollama' is accepted as alias for 'direct'.",
 	)
-	.option(
-		"--ollama-url <url>",
-		"Ollama API base URL",
-		"http://localhost:11434",
-	)
-	.option(
-		"--vllm-url <url>",
-		"vLLM API base URL",
-		"http://localhost:8000",
-	)
+	.option("--ollama-url <url>", "Ollama API base URL", "http://localhost:11434")
+	.option("--vllm-url <url>", "vLLM API base URL", "http://localhost:8000")
 	.option("--timeout <ms>", "Generation timeout in milliseconds", "300000")
 	.option("-o, --output <dir>", "Output directory", "results")
 	.option(
@@ -122,14 +121,20 @@ export const runCommand = new Command("run")
 			};
 
 			if (options.manageVllm) {
-				if (typeof options.vllmModel !== "string" || options.vllmModel.trim().length === 0) {
+				if (
+					typeof options.vllmModel !== "string" ||
+					options.vllmModel.trim().length === 0
+				) {
 					throw new Error("--manage-vllm requires --vllm-model <name>");
 				}
 				configInput.managedVllm = {
 					enabled: true,
 					model: options.vllmModel.trim(),
 					composeFile: String(options.vllmComposeFile),
-					startupTimeoutMs: Number.parseInt(String(options.vllmStartupTimeout), 10),
+					startupTimeoutMs: Number.parseInt(
+						String(options.vllmStartupTimeout),
+						10,
+					),
 					stopAfterRun: true,
 					manageOrbStack: Boolean(options.manageOrbstack),
 					orbctlPath: String(options.orbctlPath),

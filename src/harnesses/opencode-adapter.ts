@@ -16,6 +16,7 @@ import * as path from "node:path";
 import { execa } from "execa";
 import { extractCode } from "../lib/code-extractor.js";
 import { logger } from "../lib/logger.js";
+import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import {
 	buildOpenCodeConfig,
 	buildOpenCodeEnv,
@@ -26,11 +27,6 @@ import {
 	computeStaleOutputTimeoutMs,
 	forceKillProcess,
 } from "./opencode-process.js";
-import type {
-	GenerateOpts,
-	GenerateResult,
-	Harness,
-} from "./harness.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
@@ -118,8 +114,7 @@ export function createOpenCodeAdapter(): Harness {
 
 			const providerName = runtime.name; // "ollama" or "vllm"
 			if (runtime.apiFormat === "openai-compat") {
-				const apiKey =
-					process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
+				const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
 				if (!apiKey) {
 					log.warn(
 						"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
@@ -221,32 +216,29 @@ export function createOpenCodeAdapter(): Harness {
 				// Set up main timeout
 				const timeoutPromise: Promise<never> = new Promise((_, reject) => {
 					timeoutId = setTimeout(() => {
-					if (killAttempted) return;
-					killAttempted = true;
-					timedOut = true;
+						if (killAttempted) return;
+						killAttempted = true;
+						timedOut = true;
 
-					// Clear intervals IMMEDIATELY to prevent repeated kill attempts
-					if (staleCheckId) {
-						clearInterval(staleCheckId);
-						staleCheckId = undefined;
-					}
+						// Clear intervals IMMEDIATELY to prevent repeated kill attempts
+						if (staleCheckId) {
+							clearInterval(staleCheckId);
+							staleCheckId = undefined;
+						}
 
-					log.warn(
-						{ timeoutMs, pid },
-						"OpenCode timed out, killing process",
-					);
-					void forceKillProcess(
-						proc,
-						pid,
-						log,
-						`timeout after ${timeoutMs}ms`,
-					);
-					controller.abort();
-					reject(
-						new Error(
-							`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
-						),
-					);
+						log.warn({ timeoutMs, pid }, "OpenCode timed out, killing process");
+						void forceKillProcess(
+							proc,
+							pid,
+							log,
+							`timeout after ${timeoutMs}ms`,
+						);
+						controller.abort();
+						reject(
+							new Error(
+								`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
+							),
+						);
 					}, timeoutMs);
 				});
 
@@ -398,7 +390,10 @@ export function createOpenCodeAdapter(): Harness {
 
 				// Fast empty responses often indicate server-side errors (e.g., model not found).
 				if (!codeFilePath) {
-					if (durationMs < 2000 && (!output || output.trim().length < MIN_OUTPUT_LENGTH)) {
+					if (
+						durationMs < 2000 &&
+						(!output || output.trim().length < MIN_OUTPUT_LENGTH)
+					) {
 						throw new Error(
 							`OpenCode returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized by OpenCode`,
 						);

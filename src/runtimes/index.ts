@@ -13,9 +13,9 @@ export { RUNTIME_NAMES, API_FORMATS } from "./runtime.js";
 // Re-export discovery
 export { discoverRuntimes, isRuntimeAvailable } from "./discovery.js";
 
-// Import runtime factories
-import type { RuntimeName, Runtime } from "./runtime.js";
 import { createOllamaRuntime } from "./ollama-runtime.js";
+// Import runtime factories
+import type { Runtime, RuntimeName } from "./runtime.js";
 import { createVllmRuntime } from "./vllm-runtime.js";
 
 /** Configuration for creating a runtime. */
@@ -36,7 +36,10 @@ export interface RuntimeConfig {
  * @returns Runtime instance
  * @throws {Error} If runtime name is unknown
  */
-export function createRuntime(name: RuntimeName, config: RuntimeConfig): Runtime {
+export function createRuntime(
+	name: RuntimeName,
+	config: RuntimeConfig,
+): Runtime {
 	switch (name) {
 		case "ollama":
 			return createOllamaRuntime({

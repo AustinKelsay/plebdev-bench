@@ -137,3 +137,8 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Bench output (keep the committed sample run + index.json)
+results/*
+!results/index.json
+!results/20260209-080211-751e64/

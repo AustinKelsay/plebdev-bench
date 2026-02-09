@@ -10,23 +10,31 @@
  */
 
 import * as fs from "node:fs";
-import * as path from "node:path";
 import * as os from "node:os";
-import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
-import { SCHEMA_VERSION } from "../schemas/index.js";
-import { discoverHarnesses, normalizeHarnessName, isValidHarnessName, isHarnessCompatibleWithRuntime, type HarnessName } from "../harnesses/index.js";
-import { discoverRuntimes, createRuntime, type RuntimeName, RUNTIME_NAMES } from "../runtimes/index.js";
-import { generateRunId } from "../lib/run-id.js";
+import * as path from "node:path";
+import {
+	type HarnessName,
+	discoverHarnesses,
+	isHarnessCompatibleWithRuntime,
+	isValidHarnessName,
+	normalizeHarnessName,
+} from "../harnesses/index.js";
 import { logger } from "../lib/logger.js";
+import { isAlias, resolveModelForRuntime } from "../lib/model-aliases.js";
+import { generateRunId } from "../lib/run-id.js";
 import {
 	TOOL_SMOKE_TEST_SLUG,
 	isToolSmokeTest,
 	selectToolSmokePassType,
 } from "../lib/tool-smoke.js";
 import {
-	isAlias,
-	resolveModelForRuntime,
-} from "../lib/model-aliases.js";
+	RUNTIME_NAMES,
+	type RuntimeName,
+	createRuntime,
+	discoverRuntimes,
+} from "../runtimes/index.js";
+import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
+import { SCHEMA_VERSION } from "../schemas/index.js";
 
 /**
  * Discovers available tests by scanning src/tests/ directory.
@@ -89,7 +97,8 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const log = logger.child({ runId });
 
 	log.info("Building run plan...");
-	const managedVllm = config.managedVllm?.enabled === true ? config.managedVllm : undefined;
+	const managedVllm =
+		config.managedVllm?.enabled === true ? config.managedVllm : undefined;
 
 	// Discover runtimes if not specified
 	let runtimes: RuntimeName[];
@@ -151,7 +160,11 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			if (config.models.length > 0) {
 				for (const modelSpec of config.models) {
 					if (isAlias(modelSpec, aliases)) {
-						const resolved = resolveModelForRuntime(modelSpec, runtimeName, aliases);
+						const resolved = resolveModelForRuntime(
+							modelSpec,
+							runtimeName,
+							aliases,
+						);
 						if (resolved) {
 							modelsForVllm.push(resolved);
 							modelCanonicalMap.set(resolved, modelSpec);
@@ -169,7 +182,10 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			}
 
 			runtimeModels.set(runtimeName, modelsForVllm);
-			log.info({ runtime: runtimeName, count: modelsForVllm.length }, "Models discovered (managed vLLM)");
+			log.info(
+				{ runtime: runtimeName, count: modelsForVllm.length },
+				"Models discovered (managed vLLM)",
+			);
 			continue;
 		}
 
@@ -195,7 +211,11 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			for (const modelSpec of config.models) {
 				// Check if this is an alias
 				if (isAlias(modelSpec, aliases)) {
-					const resolved = resolveModelForRuntime(modelSpec, runtimeName, aliases);
+					const resolved = resolveModelForRuntime(
+						modelSpec,
+						runtimeName,
+						aliases,
+					);
 					if (resolved && discovered.includes(resolved)) {
 						filtered.push(resolved);
 						modelCanonicalMap.set(resolved, modelSpec);
@@ -216,7 +236,10 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		}
 
 		runtimeModels.set(runtimeName, filtered);
-		log.info({ runtime: runtimeName, count: filtered.length }, "Models discovered");
+		log.info(
+			{ runtime: runtimeName, count: filtered.length },
+			"Models discovered",
+		);
 	}
 
 	// Validate at least one model exists
@@ -234,12 +257,14 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				});
 				const available = await runtime.listModels();
 				if (available.length > 0) {
-					availableByRuntime.push(`${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`);
+					availableByRuntime.push(
+						`${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`,
+					);
 				}
 			}
 			throw new Error(
 				`No models matched filter: ${config.models.join(", ")}\n` +
-				`Available models:\n  ${availableByRuntime.join("\n  ") || "None found"}`,
+					`Available models:\n  ${availableByRuntime.join("\n  ") || "None found"}`,
 			);
 		}
 		throw new Error(

@@ -5,13 +5,13 @@
 import { describe, expect, it } from "vitest";
 import {
 	BenchConfigSchema,
+	FrontierEvalFailureTypeSchema,
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
-	RuntimeNameSchema,
-	FrontierEvalFailureTypeSchema,
 	RunPlanSchema,
 	RunResultSchema,
+	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	defaultConfig,
 } from "../src/schemas/index.js";

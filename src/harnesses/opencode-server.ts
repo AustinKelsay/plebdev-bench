@@ -16,7 +16,7 @@
  * - Health checks before reusing existing server
  */
 
-import { execa, type ResultPromise } from "execa";
+import { type ResultPromise, execa } from "execa";
 import { logger } from "../lib/logger.js";
 
 /** Default port for OpenCode server. */
@@ -78,7 +78,10 @@ async function waitForServerReady(
 
 	while (Date.now() - startTime < timeoutMs) {
 		if (await isServerHealthy(url)) {
-			log.debug({ url, elapsedMs: Date.now() - startTime }, "OpenCode server is ready");
+			log.debug(
+				{ url, elapsedMs: Date.now() - startTime },
+				"OpenCode server is ready",
+			);
 			return;
 		}
 
@@ -103,7 +106,9 @@ async function waitForServerReady(
  * @returns Server URL
  * @throws Error if server fails to start
  */
-export async function ensureServerRunning(port: number = DEFAULT_PORT): Promise<string> {
+export async function ensureServerRunning(
+	port: number = DEFAULT_PORT,
+): Promise<string> {
 	const url = `http://localhost:${port}`;
 
 	// ALWAYS check if server is already healthy on this port first

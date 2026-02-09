@@ -9,13 +9,13 @@
 
 import { z } from "zod";
 import {
+	FrontierEvalFailureTypeSchema,
+	GenerationFailureTypeSchema,
 	ItemStatusSchema,
 	PassTypeSchema,
-	SCHEMA_VERSION,
 	RuntimeNameSchema,
-	GenerationFailureTypeSchema,
+	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
-	FrontierEvalFailureTypeSchema,
 } from "./common.schema.js";
 
 /** Zod schema for generation output from a harness. */

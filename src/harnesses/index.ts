@@ -26,13 +26,13 @@ export {
 // Re-export discovery
 export { discoverHarnesses, isHarnessAvailable } from "./discovery.js";
 
-// Import adapters
-import type { HarnessName, Harness } from "./harness.js";
-import { normalizeHarnessName, LEGACY_HARNESS_ALIAS } from "./harness.js";
+import { logger } from "../lib/logger.js";
 import { createDirectAdapter } from "./direct-adapter.js";
 import { createGooseAdapter } from "./goose-adapter.js";
+// Import adapters
+import type { Harness, HarnessName } from "./harness.js";
+import { LEGACY_HARNESS_ALIAS, normalizeHarnessName } from "./harness.js";
 import { createOpenCodeAdapter } from "./opencode-adapter.js";
-import { logger } from "../lib/logger.js";
 
 /**
  * Creates a harness instance by name.

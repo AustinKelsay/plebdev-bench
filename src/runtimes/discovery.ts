@@ -7,10 +7,10 @@
  * - vLLM: HTTP endpoint reachable at configured URL
  */
 
-import type { RuntimeName } from "./runtime.js";
-import { createOllamaRuntime } from "./ollama-runtime.js";
-import { createVllmRuntime } from "./vllm-runtime.js";
 import { logger } from "../lib/logger.js";
+import { createOllamaRuntime } from "./ollama-runtime.js";
+import type { RuntimeName } from "./runtime.js";
+import { createVllmRuntime } from "./vllm-runtime.js";
 
 /** Configuration for runtime discovery. */
 export interface RuntimeDiscoveryConfig {
@@ -70,7 +70,10 @@ export async function discoverRuntimes(
 	if (ollamaAvailable) {
 		available.push("ollama");
 	} else {
-		logger.debug({ baseUrl: config.ollamaBaseUrl }, "Ollama runtime not available");
+		logger.debug(
+			{ baseUrl: config.ollamaBaseUrl },
+			"Ollama runtime not available",
+		);
 	}
 
 	// Check vLLM

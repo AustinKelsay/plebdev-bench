@@ -11,8 +11,8 @@
  */
 
 import { z } from "zod";
-import type { GenerateResponse } from "./ollama-client.js";
 import { logger } from "./logger.js";
+import type { GenerateResponse } from "./ollama-client.js";
 
 const OpenAiCompatGenerateOptsSchema = z.object({
 	baseUrl: z.string().url(),
@@ -23,7 +23,9 @@ const OpenAiCompatGenerateOptsSchema = z.object({
 });
 
 /** Options for OpenAI-compatible generation. */
-export type OpenAiCompatGenerateOpts = z.infer<typeof OpenAiCompatGenerateOptsSchema>;
+export type OpenAiCompatGenerateOpts = z.infer<
+	typeof OpenAiCompatGenerateOptsSchema
+>;
 
 const ChatCompletionChunkSchema = z
 	.object({
@@ -62,10 +64,14 @@ const ChatCompletionChunkSchema = z
  * @throws z.ZodError when `opts` fails boundary validation.
  * @throws Error on timeout or HTTP failure.
  */
-export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Promise<GenerateResponse> {
+export async function generateOpenAiCompat(
+	opts: OpenAiCompatGenerateOpts,
+): Promise<GenerateResponse> {
 	const parsed = OpenAiCompatGenerateOptsSchema.safeParse(opts);
 	if (!parsed.success) {
-		const timeoutIssue = parsed.error.issues.find((issue) => issue.path.join(".") === "timeoutMs");
+		const timeoutIssue = parsed.error.issues.find(
+			(issue) => issue.path.join(".") === "timeoutMs",
+		);
 		if (timeoutIssue) {
 			throw new Error(
 				`Invalid timeoutMs "${String((opts as { timeoutMs?: unknown } | null | undefined)?.timeoutMs)}" for OpenAI-compatible generation. Must be a finite positive integer.`,
@@ -89,7 +95,7 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 			"Content-Type": "application/json",
 		};
 		if (apiKey) {
-			headers["Authorization"] = `Bearer ${apiKey}`;
+			headers.Authorization = `Bearer ${apiKey}`;
 		}
 
 		const response = await fetch(`${baseUrl}/v1/chat/completions`, {
@@ -163,10 +169,7 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 						completionTokens = chunk.usage.completion_tokens;
 					}
 				} catch (err) {
-					log.debug(
-						{ err, raw: data },
-						"Skipping malformed SSE chunk",
-					);
+					log.debug({ err, raw: data }, "Skipping malformed SSE chunk");
 				}
 			}
 		}
@@ -184,7 +187,10 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 					if (result.success) {
 						const chunk = result.data;
 						const delta = chunk.choices?.[0]?.delta;
-						if (typeof delta?.content === "string" && delta.content.length > 0) {
+						if (
+							typeof delta?.content === "string" &&
+							delta.content.length > 0
+						) {
 							output += delta.content;
 						}
 						if (chunk.usage?.prompt_tokens !== undefined) {
@@ -195,10 +201,7 @@ export async function generateOpenAiCompat(opts: OpenAiCompatGenerateOpts): Prom
 						}
 					}
 				} catch (err) {
-					log.debug(
-						{ err, raw: data },
-						"Skipping malformed SSE chunk",
-					);
+					log.debug({ err, raw: data }, "Skipping malformed SSE chunk");
 				}
 			}
 		}

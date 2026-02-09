@@ -15,9 +15,9 @@
  * - Streaming mode keeps connection alive during model loading (critical for bf16)
  */
 
-import type { Harness, GenerateOpts, GenerateResult } from "./harness.js";
 import { generateOllama } from "../lib/ollama-client.js";
 import { generateOpenAiCompat } from "../lib/openai-compat-client.js";
+import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 
 /** Prompt prefix instructing the model to output code in markdown blocks. */
 const DIRECT_PROMPT_PREFIX = `Output only TypeScript code as a single markdown code block (\`\`\`typescript).

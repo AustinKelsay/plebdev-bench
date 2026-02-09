@@ -85,4 +85,3 @@ export function computeStaleOutputTimeoutMs(timeoutMs: number): number {
 		Math.max(STALE_OUTPUT_TIMEOUT_MS, halfTimeout),
 	);
 }
-

@@ -4,7 +4,7 @@
  *
  * Data is loaded from the results directory via Vite's dev server.
  */
-import type { RunResult, RunPlan, RunListItem } from "./types";
+import type { RunListItem, RunPlan, RunResult } from "./types";
 
 /** Base path for results - served via Vite dev server */
 const RESULTS_BASE = "/results";
@@ -15,16 +15,18 @@ const RESULTS_BASE = "/results";
  * @throws Error if fetch fails or index doesn't exist
  */
 export async function fetchRuns(): Promise<RunListItem[]> {
-  const response = await fetch(`${RESULTS_BASE}/index.json`);
-  if (!response.ok) {
-    if (response.status === 404) {
-      // Index doesn't exist yet - return empty list
-      console.warn("No runs index found. Run `bun dashboard:index` to generate it.");
-      return [];
-    }
-    throw new Error(`Failed to fetch runs index: ${response.status}`);
-  }
-  return response.json();
+	const response = await fetch(`${RESULTS_BASE}/index.json`);
+	if (!response.ok) {
+		if (response.status === 404) {
+			// Index doesn't exist yet - return empty list
+			console.warn(
+				"No runs index found. Run `bun dashboard:index` to generate it.",
+			);
+			return [];
+		}
+		throw new Error(`Failed to fetch runs index: ${response.status}`);
+	}
+	return response.json();
 }
 
 /**
@@ -33,11 +35,11 @@ export async function fetchRuns(): Promise<RunListItem[]> {
  * @throws Error if run doesn't exist or fetch fails
  */
 export async function fetchRun(runId: string): Promise<RunResult> {
-  const response = await fetch(`${RESULTS_BASE}/${runId}/run.json`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch run ${runId}: ${response.status}`);
-  }
-  return response.json();
+	const response = await fetch(`${RESULTS_BASE}/${runId}/run.json`);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch run ${runId}: ${response.status}`);
+	}
+	return response.json();
 }
 
 /**
@@ -46,11 +48,11 @@ export async function fetchRun(runId: string): Promise<RunResult> {
  * @throws Error if plan doesn't exist or fetch fails
  */
 export async function fetchPlan(runId: string): Promise<RunPlan> {
-  const response = await fetch(`${RESULTS_BASE}/${runId}/plan.json`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch plan ${runId}: ${response.status}`);
-  }
-  return response.json();
+	const response = await fetch(`${RESULTS_BASE}/${runId}/plan.json`);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch plan ${runId}: ${response.status}`);
+	}
+	return response.json();
 }
 
 /**
@@ -59,8 +61,8 @@ export async function fetchPlan(runId: string): Promise<RunPlan> {
  * @returns Object with run and plan data
  */
 export async function fetchRunWithPlan(
-  runId: string
+	runId: string,
 ): Promise<{ run: RunResult; plan: RunPlan }> {
-  const [run, plan] = await Promise.all([fetchRun(runId), fetchPlan(runId)]);
-  return { run, plan };
+	const [run, plan] = await Promise.all([fetchRun(runId), fetchPlan(runId)]);
+	return { run, plan };
 }

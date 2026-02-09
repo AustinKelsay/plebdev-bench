@@ -12,22 +12,28 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { createHarness } from "../harnesses/index.js";
+import { extractCode } from "../lib/code-extractor.js";
+import {
+	classifyGenerationError,
+	classifyScoringError,
+} from "../lib/failure-classifier.js";
+import { logger } from "../lib/logger.js";
+import {
+	evaluateWithFrontier,
+	getOpenRouterKey,
+} from "../lib/openrouter-client.js";
+import { scoreGeneration } from "../lib/scorer.js";
+import { loadRubric } from "../lib/scoring-spec.js";
+import { type RuntimeName, createRuntime } from "../runtimes/index.js";
 import type {
-	MatrixItem,
-	MatrixItemResult,
-	GenerationResult,
 	AutomatedScore,
 	FrontierEval,
+	GenerationResult,
+	MatrixItem,
+	MatrixItemResult,
 	ScoringMetrics,
 } from "../schemas/index.js";
-import { createHarness } from "../harnesses/index.js";
-import { createRuntime, type RuntimeName } from "../runtimes/index.js";
-import { logger } from "../lib/logger.js";
-import { scoreGeneration } from "../lib/scorer.js";
-import { extractCode } from "../lib/code-extractor.js";
-import { loadRubric } from "../lib/scoring-spec.js";
-import { evaluateWithFrontier, getOpenRouterKey } from "../lib/openrouter-client.js";
-import { classifyGenerationError, classifyScoringError } from "../lib/failure-classifier.js";
 
 /**
  * Loads a prompt file from the test directory.
@@ -128,10 +134,16 @@ export async function executeItem(
 			codeFilePath: result.codeFilePath,
 		};
 
-		log.info({ durationMs: result.durationMs, harness: item.harness, codeFilePath: result.codeFilePath }, "Generation completed");
+		log.info(
+			{
+				durationMs: result.durationMs,
+				harness: item.harness,
+				codeFilePath: result.codeFilePath,
+			},
+			"Generation completed",
+		);
 	} catch (error) {
-		const errorMessage =
-			error instanceof Error ? error.message : String(error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
 		const errorDetails = error as {
 			output?: string;
 			durationMs?: number;
@@ -164,7 +176,10 @@ export async function executeItem(
 			message: errorMessage,
 		};
 
-		log.warn({ error: errorMessage, failureType, harness: item.harness }, "Generation failed");
+		log.warn(
+			{ error: errorMessage, failureType, harness: item.harness },
+			"Generation failed",
+		);
 	}
 
 	// Run automated scoring if generation succeeded
@@ -181,7 +196,9 @@ export async function executeItem(
 				undefined, // use default timeout
 				generation.codeFilePath, // pass file path from tool-calling harness
 			);
-			const scoringDurationMs = Math.round(performance.now() - scoringStartTime);
+			const scoringDurationMs = Math.round(
+				performance.now() - scoringStartTime,
+			);
 
 			automatedScore = {
 				passed: scoringResult.passed,
@@ -201,11 +218,16 @@ export async function executeItem(
 			}
 
 			log.info(
-				{ passed: scoringResult.passed, total: scoringResult.total, durationMs: scoringDurationMs },
+				{
+					passed: scoringResult.passed,
+					total: scoringResult.total,
+					durationMs: scoringDurationMs,
+				},
 				"Scoring completed",
 			);
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
 			scoringFailure = {
 				type: classifyScoringError(errorMessage),
 				message: errorMessage,
@@ -219,7 +241,11 @@ export async function executeItem(
 	let frontierEval: FrontierEval | undefined;
 	let frontierEvalFailure: MatrixItemResult["frontierEvalFailure"];
 	const openRouterKey = getOpenRouterKey();
-	if (openRouterKey && generation.success && (generation.output || generation.codeFilePath)) {
+	if (
+		openRouterKey &&
+		generation.success &&
+		(generation.output || generation.codeFilePath)
+	) {
 		const rubric = loadRubric(item.test);
 		if (rubric) {
 			try {
@@ -255,7 +281,8 @@ export async function executeItem(
 					frontierEvalFailure = evalResult.failure;
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
 				frontierEvalFailure = {
 					type: "unknown",
 					message: errorMessage,

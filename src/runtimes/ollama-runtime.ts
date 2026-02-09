@@ -12,7 +12,7 @@
  * - Connection errors are thrown, not swallowed
  */
 
-import type { Runtime, ModelInfo } from "./runtime.js";
+import type { ModelInfo, Runtime } from "./runtime.js";
 
 /** Configuration for the Ollama runtime. */
 export interface OllamaRuntimeConfig {
@@ -145,7 +145,7 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 			else if (data.details?.parameter_size) {
 				const match = data.details.parameter_size.match(/([\d.]+)([BMK]?)/i);
 				if (match) {
-					let value = parseFloat(match[1]);
+					let value = Number.parseFloat(match[1]);
 					const unit = match[2]?.toUpperCase();
 					if (unit === "M") value /= 1000;
 					else if (unit === "K") value /= 1_000_000;

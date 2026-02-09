@@ -13,16 +13,16 @@
 import * as os from "node:os";
 import * as path from "node:path";
 import { z } from "zod";
-import {
-	toOpenAiCompatBaseUrl,
-	toOpenCodeModelKey,
-} from "./opencode-model.js";
+import { toOpenAiCompatBaseUrl, toOpenCodeModelKey } from "./opencode-model.js";
 
 /** OpenCode tool-output root subpath within XDG data home. */
 const OPENCODE_TOOL_OUTPUT_SUBPATH = path.join("opencode", "tool-output");
 
 const RuntimeNameSchema = z.union([z.literal("ollama"), z.literal("vllm")]);
-const RuntimeApiFormatSchema = z.union([z.literal("ollama"), z.literal("openai-compat")]);
+const RuntimeApiFormatSchema = z.union([
+	z.literal("ollama"),
+	z.literal("openai-compat"),
+]);
 
 const BuildOpenCodeConfigOptsSchema = z.object({
 	runtimeName: RuntimeNameSchema,
@@ -31,7 +31,9 @@ const BuildOpenCodeConfigOptsSchema = z.object({
 	model: z.string().min(1),
 });
 
-export type BuildOpenCodeConfigOpts = z.infer<typeof BuildOpenCodeConfigOptsSchema>;
+export type BuildOpenCodeConfigOpts = z.infer<
+	typeof BuildOpenCodeConfigOptsSchema
+>;
 
 export interface OpenCodeConfigBuildResult {
 	config: unknown;
@@ -45,8 +47,7 @@ export interface OpenCodeConfigBuildResult {
  * @throws z.ZodError when the environment shape is unexpected (defensive; should not happen in Node).
  */
 export function resolveOpenCodeToolOutputRoot(): string {
-	z
-		.object({ XDG_DATA_HOME: z.string().optional() })
+	z.object({ XDG_DATA_HOME: z.string().optional() })
 		.passthrough()
 		.parse(process.env);
 
@@ -93,7 +94,9 @@ export function buildOpenCodeConfig(
 				options: providerOptions,
 				models: {
 					[model]: { name: model, tools: true },
-					...(modelKey !== model ? { [modelKey]: { name: model, tools: true } } : {}),
+					...(modelKey !== model
+						? { [modelKey]: { name: model, tools: true } }
+						: {}),
 				},
 			},
 		},

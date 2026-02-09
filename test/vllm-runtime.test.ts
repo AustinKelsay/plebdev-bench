@@ -2,7 +2,7 @@
  * Purpose: Unit tests for vLLM runtime functionality.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { estimateParametersFromName } from "../src/runtimes/vllm-runtime.js";
 
 describe("estimateParametersFromName", () => {
@@ -35,6 +35,8 @@ describe("estimateParametersFromName", () => {
 	it("should handle real model names", () => {
 		expect(estimateParametersFromName("Qwen/Qwen2.5-72B-Instruct")).toBe(72);
 		expect(estimateParametersFromName("meta-llama/Llama-3.2-3B")).toBe(3);
-		expect(estimateParametersFromName("mistralai/Mistral-7B-Instruct-v0.2")).toBe(7);
+		expect(
+			estimateParametersFromName("mistralai/Mistral-7B-Instruct-v0.2"),
+		).toBe(7);
 	});
 });

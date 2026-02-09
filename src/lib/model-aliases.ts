@@ -13,8 +13,8 @@
 import * as fs from "node:fs";
 import {
 	ModelAliasFileSchema,
-	ModelAliasMapSchema,
 	type ModelAliasMap,
+	ModelAliasMapSchema,
 } from "../schemas/model-alias.schema.js";
 import { logger } from "./logger.js";
 
@@ -61,7 +61,10 @@ export function loadModelAliases(filePath: string): ModelAliasMap {
 		);
 	}
 
-	log.debug({ aliasCount: Object.keys(result.data).length }, "Loaded model aliases");
+	log.debug(
+		{ aliasCount: Object.keys(result.data).length },
+		"Loaded model aliases",
+	);
 	return result.data;
 }
 

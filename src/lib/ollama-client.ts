@@ -56,7 +56,9 @@ const OllamaStreamChunkSchema = z
  * @returns Generation response with output and optional token counts
  * @throws Error on timeout or HTTP failure
  */
-export async function generateOllama(opts: OllamaGenerateOpts): Promise<GenerateResponse> {
+export async function generateOllama(
+	opts: OllamaGenerateOpts,
+): Promise<GenerateResponse> {
 	const { baseUrl, model, prompt, timeoutMs, keepAlive = "5m" } = opts;
 	const log = logger.child({ module: "ollama-client", model });
 

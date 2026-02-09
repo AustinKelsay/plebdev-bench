@@ -60,7 +60,10 @@ describe("compareRuns", () => {
 		const runB = buildRun("run-b", [itemOnlyInB, itemBlind, itemInformed]);
 
 		const comparison1 = compareRuns(runA, runB);
-		const comparison2 = compareRuns(buildRun("run-a", [itemBlind, itemOnlyInA, itemInformed]), runB);
+		const comparison2 = compareRuns(
+			buildRun("run-a", [itemBlind, itemOnlyInA, itemInformed]),
+			runB,
+		);
 
 		const matchedKeys = comparison1.matched.map((m) => m.key);
 		expect(matchedKeys).toEqual([
@@ -68,11 +71,11 @@ describe("compareRuns", () => {
 			"llama3.2:3b|direct|smoke|informed",
 		]);
 
-		const onlyInAKeys = comparison1.onlyInA.map((item) =>
-			`${item.model}|${item.harness}|${item.test}|${item.passType}`,
+		const onlyInAKeys = comparison1.onlyInA.map(
+			(item) => `${item.model}|${item.harness}|${item.test}|${item.passType}`,
 		);
-		const onlyInBKeys = comparison1.onlyInB.map((item) =>
-			`${item.model}|${item.harness}|${item.test}|${item.passType}`,
+		const onlyInBKeys = comparison1.onlyInB.map(
+			(item) => `${item.model}|${item.harness}|${item.test}|${item.passType}`,
 		);
 
 		expect(onlyInAKeys).toEqual(["llama3.2:3b|direct|todo-app|blind"]);

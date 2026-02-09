@@ -107,7 +107,8 @@ export function calculateTimeout(
 	}
 
 	// Add extra buffer for large models
-	const largeModelOverhead = parametersBillions > 20 ? LARGE_MODEL_OVERHEAD_MS : 0;
+	const largeModelOverhead =
+		parametersBillions > 20 ? LARGE_MODEL_OVERHEAD_MS : 0;
 
 	// Calculate total
 	let timeout = base + sizeScaling + harnessOverhead + largeModelOverhead;

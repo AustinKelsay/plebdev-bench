@@ -3,8 +3,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createOllamaRuntime } from "../src/runtimes/ollama-runtime.js";
 import { createDirectAdapter } from "../src/harnesses/direct-adapter.js";
+import { createOllamaRuntime } from "../src/runtimes/ollama-runtime.js";
 import type { Runtime } from "../src/runtimes/runtime.js";
 
 describe("OllamaRuntime", () => {
@@ -32,7 +32,10 @@ describe("OllamaRuntime", () => {
 				new Response(JSON.stringify({ version: "0.5.1" }), { status: 200 }),
 			);
 
-			const runtime = createOllamaRuntime({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
 			const result = await runtime.ping();
 
 			expect(result).toBe(true);
@@ -45,7 +48,10 @@ describe("OllamaRuntime", () => {
 		it("should return false when Ollama is not reachable", async () => {
 			mockFetch.mockRejectedValue(new Error("Connection refused"));
 
-			const runtime = createOllamaRuntime({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
 			const result = await runtime.ping();
 
 			expect(result).toBe(false);
@@ -54,7 +60,10 @@ describe("OllamaRuntime", () => {
 		it("should return false on non-OK response", async () => {
 			mockFetch.mockResolvedValue(new Response("Not Found", { status: 404 }));
 
-			const runtime = createOllamaRuntime({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
 			const result = await runtime.ping();
 
 			expect(result).toBe(false);
@@ -84,7 +93,10 @@ describe("OllamaRuntime", () => {
 				new Response(JSON.stringify(mockModels), { status: 200 }),
 			);
 
-			const runtime = createOllamaRuntime({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
 			const models = await runtime.listModels();
 
 			expect(models).toHaveLength(2);
@@ -97,15 +109,23 @@ describe("OllamaRuntime", () => {
 				new Response("Server Error", { status: 500 }),
 			);
 
-			const runtime = createOllamaRuntime({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
 
-			await expect(runtime.listModels()).rejects.toThrow("Failed to list models");
+			await expect(runtime.listModels()).rejects.toThrow(
+				"Failed to list models",
+			);
 		});
 	});
 
 	describe("runtime interface", () => {
 		it("should have correct name and baseUrl", () => {
-			const runtime = createOllamaRuntime({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
 			expect(runtime.name).toBe("ollama");
 			expect(runtime.baseUrl).toBe(baseUrl);
 		});
@@ -162,11 +182,11 @@ describe("DirectAdapter", () => {
 				{ response: "a: number, b: number", done: false },
 				{ response: "): number { return a + b; }", done: false },
 				{ response: "", done: true, prompt_eval_count: 50, eval_count: 25 },
-			].map(obj => JSON.stringify(obj)).join("\n");
+			]
+				.map((obj) => JSON.stringify(obj))
+				.join("\n");
 
-			mockFetch.mockResolvedValue(
-				new Response(mockNdjson, { status: 200 }),
-			);
+			mockFetch.mockResolvedValue(new Response(mockNdjson, { status: 200 }));
 
 			const adapter = createDirectAdapter();
 			const result = await adapter.generate({

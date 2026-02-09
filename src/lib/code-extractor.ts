@@ -83,15 +83,15 @@ function stripHarnessPrefixes(output: string): string {
  * @param languages - Languages to match (empty = any)
  * @returns Array of code block contents
  */
-function extractMarkdownBlocks(
-	content: string,
-	languages: string[],
-): string[] {
+function extractMarkdownBlocks(content: string, languages: string[]): string[] {
 	const blocks: string[] = [];
 	const regex = new RegExp(CODE_BLOCK_REGEX.source, "g");
 
-	let match: RegExpExecArray | null;
-	while ((match = regex.exec(content)) !== null) {
+	for (;;) {
+		const match = regex.exec(content);
+		if (!match) {
+			break;
+		}
 		const lang = match[1]?.toLowerCase() || "";
 		const code = match[2];
 

@@ -6,11 +6,11 @@
  * - All harnesses in HARNESS_RUNTIME_COMPATIBILITY must include expected runtimes
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	isHarnessCompatibleWithRuntime,
-	getCompatibleHarnesses,
 	HARNESS_RUNTIME_COMPATIBILITY,
+	getCompatibleHarnesses,
+	isHarnessCompatibleWithRuntime,
 } from "../src/harnesses/harness.js";
 
 describe("HARNESS_RUNTIME_COMPATIBILITY", () => {

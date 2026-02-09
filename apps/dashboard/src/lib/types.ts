@@ -12,170 +12,170 @@ export type ItemStatus = "pending" | "running" | "completed" | "failed";
 
 /** Generation failure types */
 export type GenerationFailureType =
-  | "timeout"
-  | "api_error"
-  | "tool_missing"
-  | "harness_error"
-  | "prompt_not_found"
-  | "unknown";
+	| "timeout"
+	| "api_error"
+	| "tool_missing"
+	| "harness_error"
+	| "prompt_not_found"
+	| "unknown";
 
 /** Scoring failure types */
 export type ScoringFailureType =
-  | "no_spec"
-  | "extraction"
-  | "spec_load"
-  | "import"
-  | "export_validation"
-  | "test_execution"
-  | "unknown";
+	| "no_spec"
+	| "extraction"
+	| "spec_load"
+	| "import"
+	| "export_validation"
+	| "test_execution"
+	| "unknown";
 
 /** Frontier eval failure types */
 export type FrontierEvalFailureType =
-  | "timeout"
-  | "auth_error"
-  | "rate_limited"
-  | "http_error"
-  | "invalid_response"
-  | "parse_error"
-  | "truncated"
-  | "unknown";
+	| "timeout"
+	| "auth_error"
+	| "rate_limited"
+	| "http_error"
+	| "invalid_response"
+	| "parse_error"
+	| "truncated"
+	| "unknown";
 
 /** Generation failure record */
 export interface GenerationFailure {
-  type: GenerationFailureType;
-  message: string;
+	type: GenerationFailureType;
+	message: string;
 }
 
 /** Scoring failure record */
 export interface ScoringFailure {
-  type: ScoringFailureType;
-  message: string;
+	type: ScoringFailureType;
+	message: string;
 }
 
 /** Frontier eval failure record */
 export interface FrontierEvalFailure {
-  type: FrontierEvalFailureType;
-  message: string;
-  status?: number;
-  latencyMs?: number;
-  model?: string;
-  attempts?: number;
+	type: FrontierEvalFailureType;
+	message: string;
+	status?: number;
+	latencyMs?: number;
+	model?: string;
+	attempts?: number;
 }
 
 /** Automated test scoring result */
 export interface AutomatedScore {
-  passed: number;
-  failed: number;
-  total: number;
+	passed: number;
+	failed: number;
+	total: number;
 }
 
 /** Frontier model evaluation result */
 export interface FrontierEval {
-  score: number; // 1-10
-  reasoning: string;
-  model: string;
-  latencyMs?: number;
+	score: number; // 1-10
+	reasoning: string;
+	model: string;
+	latencyMs?: number;
 }
 
 /** Code generation result from harness */
 export interface GenerationResult {
-  success: boolean;
-  output?: string;
-  error?: string;
-  failureType?: GenerationFailureType;
-  durationMs: number;
-  promptTokens?: number;
-  completionTokens?: number;
-  codeFilePath?: string;
+	success: boolean;
+	output?: string;
+	error?: string;
+	failureType?: GenerationFailureType;
+	durationMs: number;
+	promptTokens?: number;
+	completionTokens?: number;
+	codeFilePath?: string;
 }
 
 /** Scoring execution metrics */
 export interface ScoringMetrics {
-  durationMs: number;
+	durationMs: number;
 }
 
 /** Single matrix item in plan */
 export interface MatrixItem {
-  id: string;
-  runtime: string;
-  model: string;
-  modelAlias?: string;
-  harness: string;
-  test: string;
-  passType: PassType;
+	id: string;
+	runtime: string;
+	model: string;
+	modelAlias?: string;
+	harness: string;
+	test: string;
+	passType: PassType;
 }
 
 /** Single matrix item execution result */
 export interface MatrixItemResult extends MatrixItem {
-  status: ItemStatus;
-  startedAt?: string;
-  completedAt?: string;
-  generation?: GenerationResult;
-  generationFailure?: GenerationFailure;
-  automatedScore?: AutomatedScore;
-  scoringMetrics?: ScoringMetrics;
-  scoringFailure?: ScoringFailure;
-  frontierEval?: FrontierEval;
-  frontierEvalFailure?: FrontierEvalFailure;
+	status: ItemStatus;
+	startedAt?: string;
+	completedAt?: string;
+	generation?: GenerationResult;
+	generationFailure?: GenerationFailure;
+	automatedScore?: AutomatedScore;
+	scoringMetrics?: ScoringMetrics;
+	scoringFailure?: ScoringFailure;
+	frontierEval?: FrontierEval;
+	frontierEvalFailure?: FrontierEvalFailure;
 }
 
 /** Run plan environment info */
 export interface Environment {
-  platform: string;
-  bunVersion: string;
+	platform: string;
+	bunVersion: string;
 }
 
 /** Run plan configuration */
 export interface PlanConfig {
-  ollamaBaseUrl: string;
-  vllmBaseUrl: string;
-  generateTimeoutMs: number;
-  passTypes: PassType[];
+	ollamaBaseUrl: string;
+	vllmBaseUrl: string;
+	generateTimeoutMs: number;
+	passTypes: PassType[];
 }
 
 /** Full run plan (plan.json) */
 export interface RunPlan {
-  schemaVersion: string;
-  runId: string;
-  createdAt: string;
-  environment: Environment;
-  config: PlanConfig;
-  items: MatrixItem[];
-  summary: {
-    totalItems: number;
-    runtimes: number;
-    models: number;
-    harnesses: number;
-    tests: number;
-  };
+	schemaVersion: string;
+	runId: string;
+	createdAt: string;
+	environment: Environment;
+	config: PlanConfig;
+	items: MatrixItem[];
+	summary: {
+		totalItems: number;
+		runtimes: number;
+		models: number;
+		harnesses: number;
+		tests: number;
+	};
 }
 
 /** Run result summary */
 export interface RunSummary {
-  total: number;
-  completed: number;
-  failed: number;
-  pending: number;
+	total: number;
+	completed: number;
+	failed: number;
+	pending: number;
 }
 
 /** Full run result (run.json) */
 export interface RunResult {
-  schemaVersion: string;
-  runId: string;
-  startedAt: string;
-  completedAt: string;
-  durationMs: number;
-  summary: RunSummary;
-  items: MatrixItemResult[];
+	schemaVersion: string;
+	runId: string;
+	startedAt: string;
+	completedAt: string;
+	durationMs: number;
+	summary: RunSummary;
+	items: MatrixItemResult[];
 }
 
 /** Run list item for index */
 export interface RunListItem {
-  runId: string;
-  startedAt: string;
-  completedAt: string;
-  durationMs: number;
-  summary: RunSummary;
+	runId: string;
+	startedAt: string;
+	completedAt: string;
+	durationMs: number;
+	summary: RunSummary;
 }
 
 // ============================================================
@@ -184,64 +184,64 @@ export interface RunListItem {
 
 /** Score delta between two items */
 export interface ScoreDelta {
-  passedDelta: number;
-  failedDelta: number;
-  totalDelta: number;
-  passRateDelta: number;
+	passedDelta: number;
+	failedDelta: number;
+	totalDelta: number;
+	passRateDelta: number;
 }
 
 /** Frontier eval delta */
 export interface EvalDelta {
-  scoreDelta: number;
+	scoreDelta: number;
 }
 
 /** Deltas between matched items */
 export interface ItemDeltas {
-  status: { a: ItemStatus; b: ItemStatus } | null;
-  automatedScore: ScoreDelta | null;
-  frontierEval: EvalDelta | null;
-  durationMs: number | null;
+	status: { a: ItemStatus; b: ItemStatus } | null;
+	automatedScore: ScoreDelta | null;
+	frontierEval: EvalDelta | null;
+	durationMs: number | null;
 }
 
 /** Matched item in compare result */
 export interface MatchedItem {
-  key: string;
-  runtime: string;
-  model: string;
-  harness: string;
-  test: string;
-  passType: string;
-  itemA: MatrixItemResult;
-  itemB: MatrixItemResult;
-  deltas: ItemDeltas;
+	key: string;
+	runtime: string;
+	model: string;
+	harness: string;
+	test: string;
+	passType: string;
+	itemA: MatrixItemResult;
+	itemB: MatrixItemResult;
+	deltas: ItemDeltas;
 }
 
 /** Compare result summary */
 export interface CompareSummary {
-  totalMatched: number;
-  totalOnlyInA: number;
-  totalOnlyInB: number;
-  statusChanges: {
-    improved: number;
-    regressed: number;
-  };
-  scoringDelta: {
-    passRateDelta: number;
-    totalTestsDelta: number;
-  } | null;
-  frontierEvalDelta: {
-    avgScoreDelta: number;
-  } | null;
+	totalMatched: number;
+	totalOnlyInA: number;
+	totalOnlyInB: number;
+	statusChanges: {
+		improved: number;
+		regressed: number;
+	};
+	scoringDelta: {
+		passRateDelta: number;
+		totalTestsDelta: number;
+	} | null;
+	frontierEvalDelta: {
+		avgScoreDelta: number;
+	} | null;
 }
 
 /** Full compare result */
 export interface CompareResult {
-  runA: { runId: string; timestamp: string };
-  runB: { runId: string; timestamp: string };
-  summary: CompareSummary;
-  matched: MatchedItem[];
-  onlyInA: MatrixItemResult[];
-  onlyInB: MatrixItemResult[];
+	runA: { runId: string; timestamp: string };
+	runB: { runId: string; timestamp: string };
+	summary: CompareSummary;
+	matched: MatchedItem[];
+	onlyInA: MatrixItemResult[];
+	onlyInB: MatrixItemResult[];
 }
 
 // ============================================================
@@ -250,16 +250,16 @@ export interface CompareResult {
 
 /** Code extraction methods used by the scorer */
 export type ExtractionMethod =
-  | "markdown-ts"
-  | "markdown-any"
-  | "heuristic"
-  | "raw"
-  | "file";
+	| "markdown-ts"
+	| "markdown-any"
+	| "heuristic"
+	| "raw"
+	| "file";
 
 /** Test slug used for tool-smoke preflight tests */
 export const TOOL_SMOKE_TEST_SLUG = "tool-smoke";
 
 /** Checks if an item is a tool-smoke test */
 export function isToolSmokeItem(item: { test: string }): boolean {
-  return item.test === TOOL_SMOKE_TEST_SLUG;
+	return item.test === TOOL_SMOKE_TEST_SLUG;
 }

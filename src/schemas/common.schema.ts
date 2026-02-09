@@ -91,4 +91,6 @@ export const frontierEvalFailureTypes = [
 export const FrontierEvalFailureTypeSchema = z.enum(frontierEvalFailureTypes);
 
 /** Frontier eval failure type. */
-export type FrontierEvalFailureType = z.infer<typeof FrontierEvalFailureTypeSchema>;
+export type FrontierEvalFailureType = z.infer<
+	typeof FrontierEvalFailureTypeSchema
+>;

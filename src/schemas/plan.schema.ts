@@ -6,7 +6,11 @@
  */
 
 import { z } from "zod";
-import { PassTypeSchema, RuntimeNameSchema, SCHEMA_VERSION } from "./common.schema.js";
+import {
+	PassTypeSchema,
+	RuntimeNameSchema,
+	SCHEMA_VERSION,
+} from "./common.schema.js";
 import { ManagedVllmSchema } from "./config.schema.js";
 
 /** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */

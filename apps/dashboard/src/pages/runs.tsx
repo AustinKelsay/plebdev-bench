@@ -5,5 +5,5 @@
 import { RunListPage } from "@/components/run-list/run-list-page";
 
 export function RunsPage() {
-  return <RunListPage />;
+	return <RunListPage />;
 }

@@ -28,7 +28,11 @@ export const ManagedVllmSchema = z.object({
 	composeFile: z.string().min(1).default("docker/vllm/docker-compose.yml"),
 
 	/** Startup timeout (ms) while waiting for vLLM to become ready. */
-	startupTimeoutMs: z.number().int().positive().default(30 * 60 * 1000),
+	startupTimeoutMs: z
+		.number()
+		.int()
+		.positive()
+		.default(30 * 60 * 1000),
 
 	/** Stop vLLM after finishing the vLLM segment. */
 	stopAfterRun: z.boolean().default(true),

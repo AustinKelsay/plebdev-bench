@@ -30,4 +30,3 @@ export function normalizeOpenAiBasePath(pathname: string): string {
 
 	return trimmed;
 }
-
