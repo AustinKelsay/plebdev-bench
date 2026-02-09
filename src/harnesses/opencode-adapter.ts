@@ -45,6 +45,10 @@ const STALE_CHECK_INTERVAL_MS = 30_000;
  * Creates an OpenCode harness adapter.
  *
  * @returns Harness instance for OpenCode
+ * @throws Error TimeoutError-like: when OpenCode exceeds `timeoutMs` and is force-killed.
+ * @throws Error StaleOutputError-like: when OpenCode produces no output for the stale threshold and is force-killed.
+ * @throws Error NonZeroExitError-like: when OpenCode exits with a non-zero exit code (stdout/stderr preview included).
+ * @throws Error EmptyOutputError-like: when OpenCode returns empty output too quickly (often indicates a misconfigured model/provider).
  */
 export function createOpenCodeAdapter(): Harness {
 	return {

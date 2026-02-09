@@ -122,8 +122,14 @@ export function buildOpenCodeEnv(opts: {
 }): Record<string, string> {
 	const { configPath, configJson, runtimeName } = opts;
 
+	const safeEnv = Object.fromEntries(
+		Object.entries(process.env).filter(
+			(entry): entry is [string, string] => entry[1] !== undefined,
+		),
+	);
+
 	return {
-		...process.env,
+		...safeEnv,
 		OPENCODE_CONFIG: configPath,
 		OPENCODE_CONFIG_CONTENT: configJson,
 		OPENCODE_DISABLE_AUTOUPDATE: "true",
@@ -140,6 +146,5 @@ export function buildOpenCodeEnv(opts: {
 		...(runtimeName === "vllm" && {
 			OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX: "1024",
 		}),
-	} as Record<string, string>;
+	};
 }
-
