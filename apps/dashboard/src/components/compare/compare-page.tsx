@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/utils";
  */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { z } from "zod";
 import { CompareSummaryCard } from "./compare-summary";
 import {
 	CompareTable,
@@ -21,12 +22,21 @@ import { RunSelector } from "./run-selector";
 
 const SUMMARY_SKELETON_KEYS = ["s1", "s2", "s3", "s4"] as const;
 
+const CompareRouteParamsSchema = z.object({
+	runA: z.string().min(1).optional(),
+	runB: z.string().min(1).optional(),
+});
+
 export function ComparePageContent() {
 	const navigate = useNavigate();
-	const { runA: urlRunA, runB: urlRunB } = useParams<{
-		runA: string;
-		runB: string;
-	}>();
+	const routeParams = useParams();
+	const parsedRouteParams = CompareRouteParamsSchema.safeParse(routeParams);
+	const urlRunA = parsedRouteParams.success
+		? parsedRouteParams.data.runA
+		: undefined;
+	const urlRunB = parsedRouteParams.success
+		? parsedRouteParams.data.runB
+		: undefined;
 
 	const { runs, loading: runsLoading } = useRuns();
 	const [selectedRunA, setSelectedRunA] = useState<string | undefined>(urlRunA);

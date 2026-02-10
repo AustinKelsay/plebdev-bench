@@ -7,6 +7,7 @@
  */
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { RunResultSchema } from "../src/lib/schemas";
 import type { RunListItem } from "../src/lib/types";
 
 const RESULTS_DIR = join(import.meta.dir, "../../../results");
@@ -28,7 +29,13 @@ async function buildIndex(): Promise<void> {
 
 			try {
 				const content = await readFile(runJsonPath, "utf-8");
-				const run = JSON.parse(content);
+				const parsedJson = JSON.parse(content) as unknown;
+				const parsedRun = RunResultSchema.safeParse(parsedJson);
+				if (!parsedRun.success) {
+					console.log(`  Skipped: ${entry.name} (invalid run.json schema)`);
+					continue;
+				}
+				const run = parsedRun.data;
 
 				runs.push({
 					runId: run.runId,
