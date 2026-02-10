@@ -16,24 +16,33 @@ import { z } from "zod";
 import type { ModelInfo, Runtime } from "./runtime.js";
 
 /** Schema for GET /api/tags response. */
-const TagsResponseSchema = z.object({
-	models: z.array(
-		z.object({
-			name: z.string(),
-			size: z.number(),
-			modified_at: z.string(),
-			digest: z.string(),
-		}).passthrough()
-	),
-}).passthrough();
+const TagsResponseSchema = z
+	.object({
+		models: z.array(
+			z
+				.object({
+					name: z.string(),
+					size: z.number(),
+					modified_at: z.string(),
+					digest: z.string(),
+				})
+				.passthrough(),
+		),
+	})
+	.passthrough();
 
 /** Schema for POST /api/show response. */
-const ShowResponseSchema = z.object({
-	details: z.object({
-		parameter_size: z.string().optional(),
-	}).passthrough().optional(),
-	model_info: z.record(z.unknown()).optional(),
-}).passthrough();
+const ShowResponseSchema = z
+	.object({
+		details: z
+			.object({
+				parameter_size: z.string().optional(),
+			})
+			.passthrough()
+			.optional(),
+		model_info: z.record(z.unknown()).optional(),
+	})
+	.passthrough();
 
 /** Configuration for the Ollama runtime. */
 export interface OllamaRuntimeConfig {

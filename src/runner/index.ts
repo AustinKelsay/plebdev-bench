@@ -163,7 +163,10 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 					await startManagedVllm(managedVllm, config.vllmBaseUrl);
 					managedVllmStarted = true;
 				} catch (error) {
-					log.error({ error }, "Failed to start managed vLLM; attempting cleanup...");
+					log.error(
+						{ error },
+						"Failed to start managed vLLM; attempting cleanup...",
+					);
 					try {
 						await stopManagedVllm(managedVllm);
 					} catch (cleanupError) {
