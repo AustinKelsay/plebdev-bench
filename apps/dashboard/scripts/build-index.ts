@@ -7,19 +7,7 @@
  */
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-
-interface RunListItem {
-	runId: string;
-	startedAt: string;
-	completedAt: string;
-	durationMs: number;
-	summary: {
-		total: number;
-		completed: number;
-		failed: number;
-		pending: number;
-	};
-}
+import type { RunListItem } from "../src/lib/types";
 
 const RESULTS_DIR = join(import.meta.dir, "../../../results");
 const INDEX_PATH = join(RESULTS_DIR, "index.json");

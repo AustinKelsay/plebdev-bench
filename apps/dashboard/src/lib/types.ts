@@ -210,7 +210,7 @@ export interface MatchedItem {
 	model: string;
 	harness: string;
 	test: string;
-	passType: string;
+	passType: PassType;
 	itemA: MatrixItemResult;
 	itemB: MatrixItemResult;
 	deltas: ItemDeltas;

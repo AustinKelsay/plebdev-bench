@@ -22,7 +22,7 @@ export const matrix = {
 	runtime: "Inference backend used for this item (for example ollama or vllm).",
 	model: "The LLM model that generated the code for this item.",
 	harness:
-		"Execution adapter used: ollama (direct API), goose (CLI agent), opencode (CLI agent).",
+		"Execution adapter used: direct (API calls), goose (CLI agent), opencode (CLI agent).",
 	test: "The benchmark test being evaluated (e.g., calculator-basic, todo-app).",
 	pass: "Prompt type: blind (no hints) or informed (includes guidance and examples).",
 	tests:

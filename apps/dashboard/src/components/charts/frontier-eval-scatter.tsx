@@ -24,7 +24,7 @@ interface FrontierEvalScatterProps {
 
 // Colors for different harnesses
 const HARNESS_COLORS: Record<string, string> = {
-	ollama: "hsl(212, 100%, 67%)", // info blue
+	direct: "hsl(212, 100%, 67%)", // info blue
 	goose: "hsl(156, 67%, 55%)", // success green
 	opencode: "hsl(43, 93%, 63%)", // warning yellow
 };

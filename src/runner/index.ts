@@ -159,8 +159,21 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 
 			if (managedVllm && runtimeName === "vllm" && !managedVllmStarted) {
 				log.info("Managed vLLM enabled; starting vLLM for vLLM segment...");
-				await startManagedVllm(managedVllm, config.vllmBaseUrl);
-				managedVllmStarted = true;
+				try {
+					await startManagedVllm(managedVllm, config.vllmBaseUrl);
+					managedVllmStarted = true;
+				} catch (error) {
+					log.error({ error }, "Failed to start managed vLLM; attempting cleanup...");
+					try {
+						await stopManagedVllm(managedVllm);
+					} catch (cleanupError) {
+						log.warn(
+							{ cleanupError },
+							"Best-effort cleanup of managed vLLM failed",
+						);
+					}
+					throw error;
+				}
 			}
 
 			// Calculate dynamic timeout based on model size and harness

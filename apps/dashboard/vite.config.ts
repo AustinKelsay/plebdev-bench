@@ -16,10 +16,19 @@ function serveResultsPlugin() {
 		configureServer(server: ViteDevServer) {
 			server.middlewares.use((req, res, next) => {
 				if (req.url?.startsWith("/results/")) {
-					const filePath = path.join(
-						resultsDir,
-						req.url.replace("/results/", ""),
+					// Parse URL to strip query string and decode the pathname
+					const parsed = new URL(req.url, "http://localhost");
+					const relativePath = decodeURIComponent(
+						parsed.pathname.replace("/results/", ""),
 					);
+
+					// Resolve and verify path stays within resultsDir (prevent traversal)
+					const filePath = path.resolve(resultsDir, relativePath);
+					if (!filePath.startsWith(resultsDir + path.sep)) {
+						next();
+						return;
+					}
+
 					if (existsSync(filePath)) {
 						try {
 							const content = readFileSync(filePath, "utf-8");

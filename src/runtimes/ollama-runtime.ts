@@ -12,7 +12,28 @@
  * - Connection errors are thrown, not swallowed
  */
 
+import { z } from "zod";
 import type { ModelInfo, Runtime } from "./runtime.js";
+
+/** Schema for GET /api/tags response. */
+const TagsResponseSchema = z.object({
+	models: z.array(
+		z.object({
+			name: z.string(),
+			size: z.number(),
+			modified_at: z.string(),
+			digest: z.string(),
+		}).passthrough()
+	),
+}).passthrough();
+
+/** Schema for POST /api/show response. */
+const ShowResponseSchema = z.object({
+	details: z.object({
+		parameter_size: z.string().optional(),
+	}).passthrough().optional(),
+	model_info: z.record(z.unknown()).optional(),
+}).passthrough();
 
 /** Configuration for the Ollama runtime. */
 export interface OllamaRuntimeConfig {
@@ -85,10 +106,8 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 		},
 
 		async listModels(): Promise<string[]> {
-			const response = await fetchWithTimeout(
-				`${baseUrl}/api/tags`,
-				defaultTimeoutMs,
-			);
+			const endpoint = `${baseUrl}/api/tags`;
+			const response = await fetchWithTimeout(endpoint, defaultTimeoutMs);
 
 			if (!response.ok) {
 				throw new Error(
@@ -96,28 +115,24 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 				);
 			}
 
-			const data = (await response.json()) as {
-				models: Array<{
-					name: string;
-					size: number;
-					modified_at: string;
-					digest: string;
-				}>;
-			};
+			const json = await response.json();
+			const result = TagsResponseSchema.safeParse(json);
+			if (!result.success) {
+				throw new Error(
+					`Invalid response from ${endpoint}: ${result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`,
+				);
+			}
 
-			return data.models.map((m) => m.name);
+			return result.data.models.map((m) => m.name);
 		},
 
 		async getModelInfo(model: string): Promise<ModelInfo> {
-			const response = await fetchWithTimeout(
-				`${baseUrl}/api/show`,
-				defaultTimeoutMs,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ name: model }),
-				},
-			);
+			const endpoint = `${baseUrl}/api/show`;
+			const response = await fetchWithTimeout(endpoint, defaultTimeoutMs, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name: model }),
+			});
 
 			if (!response.ok) {
 				throw new Error(
@@ -125,21 +140,23 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 				);
 			}
 
-			const data = (await response.json()) as {
-				details?: {
-					parameter_size?: string; // e.g., "8B", "70B", "1.7B"
-				};
-				model_info?: {
-					"general.parameter_count"?: number;
-				};
-			};
+			const json = await response.json();
+			const result = ShowResponseSchema.safeParse(json);
+			if (!result.success) {
+				throw new Error(
+					`Invalid response from ${endpoint}: ${result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`,
+				);
+			}
+
+			const data = result.data;
 
 			// Try to parse parameter count from various sources
 			let parametersBillions = 7; // Default fallback
 
 			// First try model_info.general.parameter_count (most accurate)
-			if (data.model_info?.["general.parameter_count"]) {
-				parametersBillions = data.model_info["general.parameter_count"] / 1e9;
+			const paramCount = data.model_info?.["general.parameter_count"];
+			if (typeof paramCount === "number") {
+				parametersBillions = paramCount / 1e9;
 			}
 			// Then try details.parameter_size string (e.g., "8B", "70B")
 			else if (data.details?.parameter_size) {
