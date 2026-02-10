@@ -5,12 +5,13 @@
 import { describe, expect, it } from "vitest";
 import {
 	BenchConfigSchema,
+	FrontierEvalFailureTypeSchema,
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
-	FrontierEvalFailureTypeSchema,
 	RunPlanSchema,
 	RunResultSchema,
+	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	defaultConfig,
 } from "../src/schemas/index.js";
@@ -23,7 +24,13 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.1.0");
+		expect(SCHEMA_VERSION).toBe("0.2.1");
+	});
+
+	it("should validate runtime names", () => {
+		expect(RuntimeNameSchema.parse("ollama")).toBe("ollama");
+		expect(RuntimeNameSchema.parse("vllm")).toBe("vllm");
+		expect(() => RuntimeNameSchema.parse("unknown")).toThrow();
 	});
 
 	it("should validate frontier eval failure types", () => {
@@ -35,6 +42,7 @@ describe("common schemas", () => {
 describe("BenchConfigSchema", () => {
 	it("should parse empty object with defaults", () => {
 		const config = BenchConfigSchema.parse({});
+		expect(config.runtimes).toEqual([]);
 		expect(config.models).toEqual([]);
 		expect(config.harnesses).toEqual([]); // Auto-discover all available
 		expect(config.tests).toEqual([]);
@@ -42,15 +50,18 @@ describe("BenchConfigSchema", () => {
 		expect(config.ollamaBaseUrl).toBe("http://localhost:11434");
 		expect(config.generateTimeoutMs).toBe(300_000);
 		expect(config.outputDir).toBe("results");
+		expect(config.managedVllm).toBeUndefined();
 	});
 
 	it("should parse custom values", () => {
 		const config = BenchConfigSchema.parse({
+			runtimes: ["ollama"],
 			models: ["llama3.2:3b"],
 			tests: ["smoke"],
 			passTypes: ["blind"],
 			generateTimeoutMs: 60_000,
 		});
+		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual(["llama3.2:3b"]);
 		expect(config.tests).toEqual(["smoke"]);
 		expect(config.passTypes).toEqual(["blind"]);
@@ -72,12 +83,14 @@ describe("MatrixItemSchema", () => {
 	it("should validate a matrix item", () => {
 		const item = MatrixItemSchema.parse({
 			id: "01",
+			runtime: "ollama",
 			model: "llama3.2:3b",
-			harness: "ollama",
+			harness: "direct",
 			test: "smoke",
 			passType: "blind",
 		});
 		expect(item.id).toBe("01");
+		expect(item.runtime).toBe("ollama");
 		expect(item.model).toBe("llama3.2:3b");
 	});
 });
@@ -94,20 +107,23 @@ describe("RunPlanSchema", () => {
 			},
 			config: {
 				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 120_000,
 				passTypes: ["blind", "informed"],
 			},
 			items: [
 				{
 					id: "01",
+					runtime: "ollama",
 					model: "llama3.2:3b",
-					harness: "ollama",
+					harness: "direct",
 					test: "smoke",
 					passType: "blind",
 				},
 			],
 			summary: {
 				totalItems: 1,
+				runtimes: 1,
 				models: 1,
 				harnesses: 1,
 				tests: 1,
@@ -123,8 +139,9 @@ describe("MatrixItemResultSchema", () => {
 	it("should validate a successful result", () => {
 		const result = MatrixItemResultSchema.parse({
 			id: "01",
+			runtime: "ollama",
 			model: "llama3.2:3b",
-			harness: "ollama",
+			harness: "direct",
 			test: "smoke",
 			passType: "blind",
 			status: "completed",
@@ -145,8 +162,9 @@ describe("MatrixItemResultSchema", () => {
 	it("should validate a failed result", () => {
 		const result = MatrixItemResultSchema.parse({
 			id: "02",
+			runtime: "ollama",
 			model: "llama3.2:3b",
-			harness: "ollama",
+			harness: "direct",
 			test: "smoke",
 			passType: "informed",
 			status: "failed",
@@ -170,8 +188,9 @@ describe("MatrixItemResultSchema", () => {
 	it("should validate a frontier eval failure record", () => {
 		const result = MatrixItemResultSchema.parse({
 			id: "03",
+			runtime: "ollama",
 			model: "llama3.2:3b",
-			harness: "ollama",
+			harness: "direct",
 			test: "smoke",
 			passType: "blind",
 			status: "completed",
@@ -207,8 +226,9 @@ describe("RunResultSchema", () => {
 			items: [
 				{
 					id: "01",
+					runtime: "ollama",
 					model: "llama3.2:3b",
-					harness: "ollama",
+					harness: "direct",
 					test: "smoke",
 					passType: "blind",
 					status: "completed",
@@ -220,8 +240,9 @@ describe("RunResultSchema", () => {
 				},
 				{
 					id: "02",
+					runtime: "ollama",
 					model: "llama3.2:3b",
-					harness: "ollama",
+					harness: "direct",
 					test: "smoke",
 					passType: "informed",
 					status: "failed",

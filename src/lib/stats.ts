@@ -152,8 +152,10 @@ function calculateTimingStats(results: MatrixItemResult[]): TimingStats {
 		avgGenerationMs: avg(generationTimes),
 		avgScoringMs: scoringTimes.length > 0 ? avg(scoringTimes) : null,
 		avgFrontierEvalMs: frontierTimes.length > 0 ? avg(frontierTimes) : null,
-		minGenerationMs: generationTimes.length > 0 ? Math.min(...generationTimes) : 0,
-		maxGenerationMs: generationTimes.length > 0 ? Math.max(...generationTimes) : 0,
+		minGenerationMs:
+			generationTimes.length > 0 ? Math.min(...generationTimes) : 0,
+		maxGenerationMs:
+			generationTimes.length > 0 ? Math.max(...generationTimes) : 0,
 	};
 }
 
@@ -162,13 +164,21 @@ function calculateTimingStats(results: MatrixItemResult[]): TimingStats {
  */
 function calculateTokenStats(results: MatrixItemResult[]): TokenStats | null {
 	const withTokens = results.filter(
-		(r) => r.generation?.promptTokens !== undefined && r.generation?.completionTokens !== undefined,
+		(r) =>
+			r.generation?.promptTokens !== undefined &&
+			r.generation?.completionTokens !== undefined,
 	);
 
 	if (withTokens.length === 0) return null;
 
-	const totalPrompt = withTokens.reduce((acc, r) => acc + (r.generation!.promptTokens ?? 0), 0);
-	const totalCompletion = withTokens.reduce((acc, r) => acc + (r.generation!.completionTokens ?? 0), 0);
+	const totalPrompt = withTokens.reduce(
+		(acc, r) => acc + (r.generation!.promptTokens ?? 0),
+		0,
+	);
+	const totalCompletion = withTokens.reduce(
+		(acc, r) => acc + (r.generation!.completionTokens ?? 0),
+		0,
+	);
 
 	return {
 		totalPromptTokens: totalPrompt,
@@ -181,12 +191,20 @@ function calculateTokenStats(results: MatrixItemResult[]): TokenStats | null {
 /**
  * Calculates scoring statistics from results.
  */
-function calculateScoringStats(results: MatrixItemResult[]): ScoringStats | null {
+function calculateScoringStats(
+	results: MatrixItemResult[],
+): ScoringStats | null {
 	const withScores = results.filter((r) => r.automatedScore !== undefined);
 	if (withScores.length === 0) return null;
 
-	const totalPassed = withScores.reduce((acc, r) => acc + (r.automatedScore!.passed ?? 0), 0);
-	const totalTests = withScores.reduce((acc, r) => acc + (r.automatedScore!.total ?? 0), 0);
+	const totalPassed = withScores.reduce(
+		(acc, r) => acc + (r.automatedScore!.passed ?? 0),
+		0,
+	);
+	const totalTests = withScores.reduce(
+		(acc, r) => acc + (r.automatedScore!.total ?? 0),
+		0,
+	);
 	const passRate = totalTests > 0 ? (totalPassed / totalTests) * 100 : 0;
 
 	// Breakdown by test
@@ -194,9 +212,19 @@ function calculateScoringStats(results: MatrixItemResult[]): ScoringStats | null
 		withScores,
 		(r) => r.test,
 		(items) => {
-			const passed = items.reduce((acc, r) => acc + (r.automatedScore!.passed ?? 0), 0);
-			const total = items.reduce((acc, r) => acc + (r.automatedScore!.total ?? 0), 0);
-			return { passed, total, passRate: total > 0 ? (passed / total) * 100 : 0 };
+			const passed = items.reduce(
+				(acc, r) => acc + (r.automatedScore!.passed ?? 0),
+				0,
+			);
+			const total = items.reduce(
+				(acc, r) => acc + (r.automatedScore!.total ?? 0),
+				0,
+			);
+			return {
+				passed,
+				total,
+				passRate: total > 0 ? (passed / total) * 100 : 0,
+			};
 		},
 	);
 
@@ -205,9 +233,19 @@ function calculateScoringStats(results: MatrixItemResult[]): ScoringStats | null
 		withScores,
 		(r) => r.harness,
 		(items) => {
-			const passed = items.reduce((acc, r) => acc + (r.automatedScore!.passed ?? 0), 0);
-			const total = items.reduce((acc, r) => acc + (r.automatedScore!.total ?? 0), 0);
-			return { passed, total, passRate: total > 0 ? (passed / total) * 100 : 0 };
+			const passed = items.reduce(
+				(acc, r) => acc + (r.automatedScore!.passed ?? 0),
+				0,
+			);
+			const total = items.reduce(
+				(acc, r) => acc + (r.automatedScore!.total ?? 0),
+				0,
+			);
+			return {
+				passed,
+				total,
+				passRate: total > 0 ? (passed / total) * 100 : 0,
+			};
 		},
 	);
 
@@ -216,9 +254,19 @@ function calculateScoringStats(results: MatrixItemResult[]): ScoringStats | null
 		withScores,
 		(r) => r.model,
 		(items) => {
-			const passed = items.reduce((acc, r) => acc + (r.automatedScore!.passed ?? 0), 0);
-			const total = items.reduce((acc, r) => acc + (r.automatedScore!.total ?? 0), 0);
-			return { passed, total, passRate: total > 0 ? (passed / total) * 100 : 0 };
+			const passed = items.reduce(
+				(acc, r) => acc + (r.automatedScore!.passed ?? 0),
+				0,
+			);
+			const total = items.reduce(
+				(acc, r) => acc + (r.automatedScore!.total ?? 0),
+				0,
+			);
+			return {
+				passed,
+				total,
+				passRate: total > 0 ? (passed / total) * 100 : 0,
+			};
 		},
 	);
 
@@ -241,7 +289,9 @@ function calculateScoringStats(results: MatrixItemResult[]): ScoringStats | null
 /**
  * Calculates frontier eval statistics from results.
  */
-function calculateFrontierStats(results: MatrixItemResult[]): FrontierStats | null {
+function calculateFrontierStats(
+	results: MatrixItemResult[],
+): FrontierStats | null {
 	const withEval = results.filter((r) => r.frontierEval !== undefined);
 	if (withEval.length === 0) return null;
 
@@ -285,10 +335,10 @@ function calculateFrontierStats(results: MatrixItemResult[]): FrontierStats | nu
 /**
  * Calculates generation failure statistics from results.
  */
-function calculateGenerationFailureStats(results: MatrixItemResult[]): GenerationFailureStats | null {
-	const failures = results.filter(
-		(r) => r.generation && !r.generation.success,
-	);
+function calculateGenerationFailureStats(
+	results: MatrixItemResult[],
+): GenerationFailureStats | null {
+	const failures = results.filter((r) => r.generation && !r.generation.success);
 
 	if (failures.length === 0) return null;
 
@@ -345,7 +395,11 @@ function formatNumber(n: number): string {
 /**
  * Pads a string to a fixed width.
  */
-function pad(str: string, width: number, align: "left" | "right" = "left"): string {
+function pad(
+	str: string,
+	width: number,
+	align: "left" | "right" = "left",
+): string {
 	if (align === "right") return str.padStart(width);
 	return str.padEnd(width);
 }
@@ -389,22 +443,36 @@ export function formatRunStats(
 	// Timing section
 	lines.push("");
 	lines.push("Timing");
-	lines.push(`  Avg generation:    ${formatDuration(stats.timing.avgGenerationMs)}`);
+	lines.push(
+		`  Avg generation:    ${formatDuration(stats.timing.avgGenerationMs)}`,
+	);
 	if (stats.timing.avgScoringMs !== null) {
-		lines.push(`  Avg scoring:       ${formatDuration(stats.timing.avgScoringMs)}`);
+		lines.push(
+			`  Avg scoring:       ${formatDuration(stats.timing.avgScoringMs)}`,
+		);
 	}
 	if (stats.timing.avgFrontierEvalMs !== null) {
-		lines.push(`  Avg frontier eval: ${formatDuration(stats.timing.avgFrontierEvalMs)}`);
+		lines.push(
+			`  Avg frontier eval: ${formatDuration(stats.timing.avgFrontierEvalMs)}`,
+		);
 	}
-	lines.push(`  Generation range:  ${formatDuration(stats.timing.minGenerationMs)} - ${formatDuration(stats.timing.maxGenerationMs)}`);
+	lines.push(
+		`  Generation range:  ${formatDuration(stats.timing.minGenerationMs)} - ${formatDuration(stats.timing.maxGenerationMs)}`,
+	);
 
 	// Tokens section (if available)
 	if (stats.tokens) {
 		lines.push("");
 		lines.push("Tokens");
-		lines.push(`  Total prompt:      ${formatNumber(stats.tokens.totalPromptTokens)}`);
-		lines.push(`  Total completion:  ${formatNumber(stats.tokens.totalCompletionTokens)}`);
-		lines.push(`  Avg completion:    ${formatNumber(stats.tokens.avgCompletionTokens)}/item`);
+		lines.push(
+			`  Total prompt:      ${formatNumber(stats.tokens.totalPromptTokens)}`,
+		);
+		lines.push(
+			`  Total completion:  ${formatNumber(stats.tokens.totalCompletionTokens)}`,
+		);
+		lines.push(
+			`  Avg completion:    ${formatNumber(stats.tokens.avgCompletionTokens)}/item`,
+		);
 		lines.push(`  Items with tokens: ${stats.tokens.itemsWithTokens}/${total}`);
 	}
 
@@ -412,33 +480,49 @@ export function formatRunStats(
 	if (stats.scoring) {
 		lines.push("");
 		lines.push("Scoring");
-		lines.push(`  Pass rate: ${stats.scoring.passRate.toFixed(1)}% (${stats.scoring.totalPassed}/${stats.scoring.totalTests} tests)`);
+		lines.push(
+			`  Pass rate: ${stats.scoring.passRate.toFixed(1)}% (${stats.scoring.totalPassed}/${stats.scoring.totalTests} tests)`,
+		);
 
 		// By test breakdown (show all)
 		if (stats.scoring.byTest.length > 1) {
 			lines.push("  By test:");
-			const maxNameLen = Math.max(...stats.scoring.byTest.map((t) => t.name.length));
+			const maxNameLen = Math.max(
+				...stats.scoring.byTest.map((t) => t.name.length),
+			);
 			for (const t of stats.scoring.byTest) {
-				lines.push(`    ${pad(t.name, maxNameLen)}  ${pad(t.passRate.toFixed(1) + "%", 6, "right")} (${t.passed}/${t.total})`);
+				lines.push(
+					`    ${pad(t.name, maxNameLen)}  ${pad(`${t.passRate.toFixed(1)}%`, 6, "right")} (${t.passed}/${t.total})`,
+				);
 			}
 		}
 
 		// By harness breakdown (show if > 1 harness)
 		if (stats.scoring.byHarness.length > 1) {
 			lines.push("  By harness:");
-			const maxNameLen = Math.max(...stats.scoring.byHarness.map((h) => h.name.length));
+			const maxNameLen = Math.max(
+				...stats.scoring.byHarness.map((h) => h.name.length),
+			);
 			for (const h of stats.scoring.byHarness) {
-				lines.push(`    ${pad(h.name, maxNameLen)}  ${pad(h.passRate.toFixed(1) + "%", 6, "right")} (${h.passed}/${h.total})`);
+				lines.push(
+					`    ${pad(h.name, maxNameLen)}  ${pad(`${h.passRate.toFixed(1)}%`, 6, "right")} (${h.passed}/${h.total})`,
+				);
 			}
 		}
 
 		// By model breakdown (show if > 1 model)
 		if (stats.scoring.byModel.length > 1) {
 			lines.push("  By model:");
-			const maxNameLen = Math.min(25, Math.max(...stats.scoring.byModel.map((m) => m.name.length)));
+			const maxNameLen = Math.min(
+				25,
+				Math.max(...stats.scoring.byModel.map((m) => m.name.length)),
+			);
 			for (const m of stats.scoring.byModel) {
-				const displayName = m.name.length > 25 ? m.name.slice(0, 24) + "…" : m.name;
-				lines.push(`    ${pad(displayName, maxNameLen)}  ${pad(m.passRate.toFixed(1) + "%", 6, "right")} (${m.passed}/${m.total})`);
+				const displayName =
+					m.name.length > 25 ? `${m.name.slice(0, 24)}…` : m.name;
+				lines.push(
+					`    ${pad(displayName, maxNameLen)}  ${pad(`${m.passRate.toFixed(1)}%`, 6, "right")} (${m.passed}/${m.total})`,
+				);
 			}
 		}
 	}
@@ -447,25 +531,39 @@ export function formatRunStats(
 	if (stats.frontier) {
 		lines.push("");
 		lines.push("Frontier Eval");
-		lines.push(`  Avg score: ${stats.frontier.avgScore.toFixed(1)}/10 (${stats.frontier.itemCount} items)`);
-		lines.push(`  Range: ${stats.frontier.minScore}/10 - ${stats.frontier.maxScore}/10`);
+		lines.push(
+			`  Avg score: ${stats.frontier.avgScore.toFixed(1)}/10 (${stats.frontier.itemCount} items)`,
+		);
+		lines.push(
+			`  Range: ${stats.frontier.minScore}/10 - ${stats.frontier.maxScore}/10`,
+		);
 
 		// By harness breakdown (show if > 1 harness)
 		if (stats.frontier.byHarness.length > 1) {
 			lines.push("  By harness:");
-			const maxNameLen = Math.max(...stats.frontier.byHarness.map((h) => h.name.length));
+			const maxNameLen = Math.max(
+				...stats.frontier.byHarness.map((h) => h.name.length),
+			);
 			for (const h of stats.frontier.byHarness) {
-				lines.push(`    ${pad(h.name, maxNameLen)}  ${h.avgScore.toFixed(1)}/10 (${h.count})`);
+				lines.push(
+					`    ${pad(h.name, maxNameLen)}  ${h.avgScore.toFixed(1)}/10 (${h.count})`,
+				);
 			}
 		}
 
 		// By model breakdown (show if > 1 model)
 		if (stats.frontier.byModel.length > 1) {
 			lines.push("  By model:");
-			const maxNameLen = Math.min(25, Math.max(...stats.frontier.byModel.map((m) => m.name.length)));
+			const maxNameLen = Math.min(
+				25,
+				Math.max(...stats.frontier.byModel.map((m) => m.name.length)),
+			);
 			for (const m of stats.frontier.byModel) {
-				const displayName = m.name.length > 25 ? m.name.slice(0, 24) + "…" : m.name;
-				lines.push(`    ${pad(displayName, maxNameLen)}  ${m.avgScore.toFixed(1)}/10 (${m.count})`);
+				const displayName =
+					m.name.length > 25 ? `${m.name.slice(0, 24)}…` : m.name;
+				lines.push(
+					`    ${pad(displayName, maxNameLen)}  ${m.avgScore.toFixed(1)}/10 (${m.count})`,
+				);
 			}
 		}
 	}

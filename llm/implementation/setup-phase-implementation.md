@@ -5,9 +5,9 @@ Purpose: Document the setup phase implementation - minimal running CLI that exec
 ## Summary
 
 The setup phase delivers a working CLI that:
-- Runs a benchmark matrix: `models × harnesses × tests × passTypes`
+- Runs a benchmark matrix: `runtimes × harnesses × models × tests × passTypes`
 - Writes reproducible artifacts: `plan.json` + `run.json`
-- Auto-discovers models from Ollama and tests from `src/tests/`
+- Auto-discovers runtimes, models, harnesses, and tests
 - Handles failures gracefully (records them, doesn't crash)
 
 ## Architecture
@@ -21,16 +21,21 @@ src/
 │   └── compare-command.ts   # `bench compare` command (implemented in MVP)
 ├── schemas/
 │   ├── index.ts             # Re-exports
-│   ├── common.schema.ts     # PassType, SCHEMA_VERSION
+│   ├── common.schema.ts     # PassType, RuntimeName, SCHEMA_VERSION (0.2.1)
 │   ├── config.schema.ts     # BenchConfig (CLI input)
 │   ├── plan.schema.ts       # RunPlan, MatrixItem
 │   └── result.schema.ts     # RunResult, MatrixItemResult
-├── harnesses/               # Harness adapters
+├── runtimes/                # Runtime adapters (inference backends)
+│   ├── runtime.ts           # Runtime interface + types
+│   ├── ollama-runtime.ts    # Ollama HTTP implementation
+│   ├── discovery.ts         # Detect available runtimes
+│   └── index.ts             # Factory + exports
+├── harnesses/               # Harness adapters (interface layer)
 │   ├── harness.ts           # Common interface
-│   ├── ollama-adapter.ts    # Direct HTTP to Ollama
+│   ├── direct-adapter.ts    # Direct HTTP to runtime (was ollama-adapter)
 │   ├── goose-adapter.ts     # CLI via Goose (headless mode)
-│   ├── opencode-adapter.ts  # CLI via OpenCode (server mode)
-│   ├── opencode-server.ts   # OpenCode server lifecycle management
+│   ├── opencode-adapter.ts  # CLI via OpenCode (direct mode)
+│   ├── opencode-server.ts   # OpenCode server lifecycle (deprecated)
 │   ├── discovery.ts         # Detect available harnesses
 │   └── index.ts             # Factory + re-exports
 ├── lib/
@@ -69,13 +74,16 @@ bun run bench run [options]   # Full form
 ### Options
 | Flag | Description | Default |
 |------|-------------|---------|
-| `-m, --models <models...>` | Limit to specific models | All from Ollama |
+| `-r, --runtimes <runtimes...>` | Limit to specific runtimes: ollama | All available |
+| `-m, --models <models...>` | Limit to specific models | All from runtimes |
 | `-t, --tests <tests...>` | Limit to specific tests | All in src/tests/ |
 | `-p, --pass-types <types...>` | Limit pass types: blind, informed | Both |
-| `-H, --harnesses <harnesses...>` | Limit harnesses: ollama, goose, opencode | All available |
+| `-H, --harnesses <harnesses...>` | Limit harnesses: direct, goose, opencode | All available |
 | `--ollama-url <url>` | Ollama API URL | http://localhost:11434 |
 | `--timeout <ms>` | Generation timeout | 300000 |
 | `-o, --output <dir>` | Output directory | results |
+
+Note: `ollama` is accepted as a legacy alias for the `direct` harness.
 
 ### Exit Codes
 - `0` - Success (even if some items failed)
@@ -86,7 +94,8 @@ bun run bench run [options]   # Full form
 ### BenchConfig (CLI Input)
 ```typescript
 {
-  models: string[]           // Empty = auto-discover all from Ollama
+  runtimes: string[]         // Empty = auto-discover all available
+  models: string[]           // Empty = auto-discover all from runtimes
   harnesses: string[]        // Empty = auto-discover all available
   tests: string[]            // Empty = scan src/tests/
   passTypes: ("blind" | "informed")[]
@@ -99,7 +108,7 @@ bun run bench run [options]   # Full form
 ### RunPlan (plan.json)
 ```typescript
 {
-  schemaVersion: "0.1.0"
+  schemaVersion: "0.2.1"
   runId: string              // e.g., "20260114-143052-abc123"
   createdAt: ISO datetime
   environment: {
@@ -114,6 +123,7 @@ bun run bench run [options]   # Full form
   items: MatrixItem[]        // Expanded matrix
   summary: {
     totalItems: number
+    runtimes: number
     models: number
     harnesses: number
     tests: number
@@ -125,8 +135,9 @@ bun run bench run [options]   # Full form
 ```typescript
 {
   id: string                 // "01", "02", etc.
+  runtime: string            // "ollama"
   model: string              // "llama3.2:3b"
-  harness: string            // "ollama"
+  harness: string            // "direct"
   test: string               // "smoke"
   passType: "blind" | "informed"
 }
@@ -135,7 +146,7 @@ bun run bench run [options]   # Full form
 ### RunResult (run.json)
 ```typescript
 {
-  schemaVersion: "0.1.0"
+  schemaVersion: "0.2.1"
   runId: string
   startedAt: ISO datetime
   completedAt: ISO datetime
@@ -210,16 +221,19 @@ Config → Discovery → Matrix Expansion → RunPlan
 ```
 
 **Discovery:**
-- Models: If `config.models` is empty, fetch from Ollama `/api/tags`
+- Runtimes: If `config.runtimes` is empty, discover available runtimes (Ollama)
+- Models: If `config.models` is empty, fetch from runtime (e.g., Ollama `/api/tags`)
+- Harnesses: If `config.harnesses` is empty, discover available harnesses
 - Tests: If `config.tests` is empty, scan `src/tests/` for directories
 
 **Matrix Expansion:**
 ```typescript
-for (model of models)
+for (runtime of runtimes)
   for (harness of harnesses)
-    for (test of tests)
-      for (passType of passTypes)
-        → MatrixItem
+    for (model of models)
+      for (test of tests)
+        for (passType of passTypes)
+          → MatrixItem
 ```
 
 ### 2. Execution Loop (`src/runner/index.ts`)
@@ -248,7 +262,8 @@ Load prompt → Call Ollama → Record result
 ### Defaults (via Zod)
 ```typescript
 {
-  models: []                  // Auto-discover all from Ollama
+  runtimes: []                // Auto-discover all available
+  models: []                  // Auto-discover all from runtimes
   harnesses: []               // Auto-discover all available
   tests: []                   // Auto-discover all from src/tests/
   passTypes: ["blind", "informed"]
@@ -301,11 +316,15 @@ Error: No models found in Ollama. Pull a model first: ollama pull llama3.2:3b
 | `src/cli/run-command.ts` | Run command options/action |
 | `src/cli/compare-command.ts` | Compare command (implemented) |
 | `src/schemas/*.ts` | Zod schemas (config, plan, result) |
+| `src/runtimes/runtime.ts` | Runtime interface + types |
+| `src/runtimes/ollama-runtime.ts` | Ollama HTTP runtime |
+| `src/runtimes/discovery.ts` | Detect available runtimes |
+| `src/runtimes/index.ts` | Runtime factory + exports |
 | `src/harnesses/harness.ts` | Common interface + types |
-| `src/harnesses/ollama-adapter.ts` | Ollama HTTP adapter |
+| `src/harnesses/direct-adapter.ts` | Direct HTTP adapter (was ollama-adapter) |
 | `src/harnesses/goose-adapter.ts` | Goose CLI adapter (headless mode) |
-| `src/harnesses/opencode-adapter.ts` | OpenCode CLI adapter (server mode) |
-| `src/harnesses/opencode-server.ts` | OpenCode server lifecycle management |
+| `src/harnesses/opencode-adapter.ts` | OpenCode CLI adapter (direct mode) |
+| `src/harnesses/opencode-server.ts` | OpenCode server lifecycle (deprecated) |
 | `src/harnesses/discovery.ts` | Detect available harnesses |
 | `src/lib/logger.ts` | Pino setup |
 | `src/lib/timeout.ts` | Dynamic timeout calculation |

@@ -6,7 +6,7 @@ Ship the smallest version that delivers the core value: repeatable benchmarking 
 
 ## Goals
 - Deliver the primary flows from `llm/project/user-flow.md`: run → inspect → compare.
-- Support a real matrix: **model × harness × test × passType** (blind + informed).
+- Support a real matrix: **runtime × harness × model × test × passType** (blind + informed).
 - Establish meaningful quality gates: deterministic tests and schema validation.
 
 ## Scope
@@ -24,7 +24,8 @@ Ship the smallest version that delivers the core value: repeatable benchmarking 
 
 ### Feature A — Full run orchestration (matrix + durability)
 1. Implement plan expansion:
-   - auto-discover models (Ollama)
+   - auto-discover runtimes (Ollama)
+   - auto-discover models from runtimes
    - enumerate harnesses/tests/passTypes
    - produce a stable `RunPlan` and write `plan.json`
 2. Execute the full plan with deterministic progress output (`item 07/48`).

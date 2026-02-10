@@ -5,6 +5,9 @@
 
 export {
 	SCHEMA_VERSION,
+	runtimeNames,
+	RuntimeNameSchema,
+	type RuntimeName,
 	passTypes,
 	PassTypeSchema,
 	type PassType,
@@ -25,6 +28,8 @@ export {
 export {
 	BenchConfigSchema,
 	type BenchConfig,
+	ManagedVllmSchema,
+	type ManagedVllmConfig,
 	defaultConfig,
 } from "./config.schema.js";
 
@@ -70,3 +75,10 @@ export {
 	ScoringResultSchema,
 	type ScoringResult,
 } from "./scoring.schema.js";
+
+export {
+	ModelAliasEntrySchema,
+	type ModelAliasEntry,
+	ModelAliasMapSchema,
+	type ModelAliasMap,
+} from "./model-alias.schema.js";

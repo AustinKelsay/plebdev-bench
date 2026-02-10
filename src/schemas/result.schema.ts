@@ -9,12 +9,13 @@
 
 import { z } from "zod";
 import {
+	FrontierEvalFailureTypeSchema,
+	GenerationFailureTypeSchema,
 	ItemStatusSchema,
 	PassTypeSchema,
+	RuntimeNameSchema,
 	SCHEMA_VERSION,
-	GenerationFailureTypeSchema,
 	ScoringFailureTypeSchema,
-	FrontierEvalFailureTypeSchema,
 } from "./common.schema.js";
 
 /** Zod schema for generation output from a harness. */
@@ -141,6 +142,9 @@ export type FrontierEvalFailure = z.infer<typeof FrontierEvalFailureSchema>;
 export const MatrixItemResultSchema = z.object({
 	/** Unique item ID (matches plan). */
 	id: z.string(),
+
+	/** Runtime name. */
+	runtime: RuntimeNameSchema,
 
 	/** Model name. */
 	model: z.string(),

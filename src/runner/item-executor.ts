@@ -1,31 +1,39 @@
 /**
- * Purpose: Execute a single matrix item (one model/harness/test/passType combination).
+ * Purpose: Execute a single matrix item (one runtime/harness/model/test/passType combination).
  * Exports: executeItem
  *
  * Execution flow:
  * 1. Load prompt from src/tests/<test>/prompt.<passType>.md
- * 2. Create harness adapter and generate completion
- * 3. Run automated scoring against generated code
- * 4. Record result (success/failure, duration, output, scores)
+ * 2. Create runtime and harness adapter
+ * 3. Generate completion (passing runtime to harness)
+ * 4. Run automated scoring against generated code
+ * 5. Record result (success/failure, duration, output, scores)
  */
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { createHarness } from "../harnesses/index.js";
+import { extractCode } from "../lib/code-extractor.js";
+import {
+	classifyGenerationError,
+	classifyScoringError,
+} from "../lib/failure-classifier.js";
+import { logger } from "../lib/logger.js";
+import {
+	evaluateWithFrontier,
+	getOpenRouterKey,
+} from "../lib/openrouter-client.js";
+import { scoreGeneration } from "../lib/scorer.js";
+import { loadRubric } from "../lib/scoring-spec.js";
+import { createRuntime } from "../runtimes/index.js";
 import type {
-	MatrixItem,
-	MatrixItemResult,
-	GenerationResult,
 	AutomatedScore,
 	FrontierEval,
+	GenerationResult,
+	MatrixItem,
+	MatrixItemResult,
 	ScoringMetrics,
 } from "../schemas/index.js";
-import { createHarness, type HarnessName } from "../harnesses/index.js";
-import { logger } from "../lib/logger.js";
-import { scoreGeneration } from "../lib/scorer.js";
-import { extractCode } from "../lib/code-extractor.js";
-import { loadRubric } from "../lib/scoring-spec.js";
-import { evaluateWithFrontier, getOpenRouterKey } from "../lib/openrouter-client.js";
-import { classifyGenerationError, classifyScoringError } from "../lib/failure-classifier.js";
 
 /**
  * Loads a prompt file from the test directory.
@@ -52,11 +60,17 @@ function loadPrompt(test: string, passType: string): string {
 	return fs.readFileSync(promptPath, "utf-8");
 }
 
+/** Runtime configuration for creating runtime instances. */
+interface RuntimeUrls {
+	ollamaBaseUrl: string;
+	vllmBaseUrl: string;
+}
+
 /**
  * Executes a single matrix item.
  *
  * @param item - The matrix item to execute
- * @param ollamaBaseUrl - Ollama API base URL (used by all harnesses)
+ * @param runtimeConfig - Runtime URLs for creating runtime instances
  * @param timeoutMs - Generation timeout in milliseconds
  * @param unloadAfter - If true, unload model after generation (Ollama-specific)
  * @returns The execution result
@@ -66,12 +80,13 @@ function loadPrompt(test: string, passType: string): string {
  */
 export async function executeItem(
 	item: MatrixItem,
-	ollamaBaseUrl: string,
+	runtimeConfig: RuntimeUrls,
 	timeoutMs: number,
 	unloadAfter = true,
 ): Promise<MatrixItemResult> {
 	const log = logger.child({
 		itemId: item.id,
+		runtime: item.runtime,
 		model: item.model,
 		harness: item.harness,
 		test: item.test,
@@ -89,19 +104,25 @@ export async function executeItem(
 		log.debug("Loading prompt...");
 		const prompt = loadPrompt(item.test, item.passType);
 
-		// Create harness adapter and generate
-		log.debug({ harness: item.harness }, "Creating harness and generating...");
-		const harness = createHarness(item.harness as HarnessName, {
-			ollamaBaseUrl,
+		// Create runtime instance
+		const runtime = createRuntime(item.runtime, {
+			ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
+			vllmBaseUrl: runtimeConfig.vllmBaseUrl,
 			defaultTimeoutMs: timeoutMs,
 		});
 
+		// Create harness adapter
+		log.debug({ harness: item.harness }, "Creating harness...");
+		const harness = createHarness(item.harness);
+
+		// Generate completion (pass runtime to harness)
 		generationStartTime = performance.now();
 		const result = await harness.generate({
 			model: item.model,
 			prompt,
 			timeoutMs,
 			unloadAfter,
+			runtime,
 		});
 
 		generation = {
@@ -113,10 +134,16 @@ export async function executeItem(
 			codeFilePath: result.codeFilePath,
 		};
 
-		log.info({ durationMs: result.durationMs, harness: item.harness, codeFilePath: result.codeFilePath }, "Generation completed");
+		log.info(
+			{
+				durationMs: result.durationMs,
+				harness: item.harness,
+				codeFilePath: result.codeFilePath,
+			},
+			"Generation completed",
+		);
 	} catch (error) {
-		const errorMessage =
-			error instanceof Error ? error.message : String(error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
 		const errorDetails = error as {
 			output?: string;
 			durationMs?: number;
@@ -149,7 +176,10 @@ export async function executeItem(
 			message: errorMessage,
 		};
 
-		log.warn({ error: errorMessage, failureType, harness: item.harness }, "Generation failed");
+		log.warn(
+			{ error: errorMessage, failureType, harness: item.harness },
+			"Generation failed",
+		);
 	}
 
 	// Run automated scoring if generation succeeded
@@ -166,7 +196,9 @@ export async function executeItem(
 				undefined, // use default timeout
 				generation.codeFilePath, // pass file path from tool-calling harness
 			);
-			const scoringDurationMs = Math.round(performance.now() - scoringStartTime);
+			const scoringDurationMs = Math.round(
+				performance.now() - scoringStartTime,
+			);
 
 			automatedScore = {
 				passed: scoringResult.passed,
@@ -186,11 +218,16 @@ export async function executeItem(
 			}
 
 			log.info(
-				{ passed: scoringResult.passed, total: scoringResult.total, durationMs: scoringDurationMs },
+				{
+					passed: scoringResult.passed,
+					total: scoringResult.total,
+					durationMs: scoringDurationMs,
+				},
 				"Scoring completed",
 			);
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
 			scoringFailure = {
 				type: classifyScoringError(errorMessage),
 				message: errorMessage,
@@ -204,7 +241,11 @@ export async function executeItem(
 	let frontierEval: FrontierEval | undefined;
 	let frontierEvalFailure: MatrixItemResult["frontierEvalFailure"];
 	const openRouterKey = getOpenRouterKey();
-	if (openRouterKey && generation.success && (generation.output || generation.codeFilePath)) {
+	if (
+		openRouterKey &&
+		generation.success &&
+		(generation.output || generation.codeFilePath)
+	) {
 		const rubric = loadRubric(item.test);
 		if (rubric) {
 			try {
@@ -240,7 +281,8 @@ export async function executeItem(
 					frontierEvalFailure = evalResult.failure;
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
 				frontierEvalFailure = {
 					type: "unknown",
 					message: errorMessage,
@@ -257,6 +299,7 @@ export async function executeItem(
 
 	return {
 		id: item.id,
+		runtime: item.runtime,
 		model: item.model,
 		harness: item.harness,
 		test: item.test,

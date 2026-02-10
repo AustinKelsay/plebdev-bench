@@ -11,12 +11,17 @@
  */
 
 import * as fs from "node:fs";
-import * as path from "node:path";
 import * as os from "node:os";
-import { extractCode, type ExtractedCode } from "./code-extractor.js";
-import { loadScoringSpec, hasScoringSpec } from "./scoring-spec.js";
-import type { ScoringResult, TestCaseResult, TestCase, ScoringFailureType } from "../schemas/index.js";
+import * as path from "node:path";
+import type {
+	ScoringFailureType,
+	ScoringResult,
+	TestCase,
+	TestCaseResult,
+} from "../schemas/index.js";
+import { type ExtractedCode, extractCode } from "./code-extractor.js";
 import { logger } from "./logger.js";
+import { hasScoringSpec, loadScoringSpec } from "./scoring-spec.js";
 
 /** Default timeout for scoring (5 seconds). */
 const DEFAULT_SCORING_TIMEOUT_MS = 5000;
@@ -80,7 +85,9 @@ function runTestCase(
 	testCase: TestCase,
 	instance?: unknown,
 ): TestCaseResult {
-	const name = testCase.description || `${testCase.fn}(${JSON.stringify(testCase.args).slice(1, -1)})`;
+	const name =
+		testCase.description ||
+		`${testCase.fn}(${JSON.stringify(testCase.args).slice(1, -1)})`;
 
 	try {
 		// Determine the target (module export or instance method)
@@ -104,8 +111,12 @@ function runTestCase(
 			};
 		}
 
-		// Call the function
-		const actual = (target as Function).apply(thisArg, testCase.args);
+		// Call the function (preserve `this` for instance methods)
+		const targetFn = target as (...args: unknown[]) => unknown;
+		const actual =
+			thisArg !== undefined
+				? targetFn.bind(thisArg)(...testCase.args)
+				: targetFn(...testCase.args);
 
 		// If no expected value is provided, test passes as long as function doesn't throw
 		if (testCase.expected === undefined) {
@@ -216,9 +227,10 @@ function suppressStdout<T>(fn: () => T | Promise<T>): T | Promise<T> {
  * @param fn - Async function to execute with suppressed stdout
  * @returns Promise and restore function for early cleanup
  */
-function suppressStdoutAsync<T>(
-	fn: () => Promise<T>,
-): { promise: Promise<T>; restore: () => void } {
+function suppressStdoutAsync<T>(fn: () => Promise<T>): {
+	promise: Promise<T>;
+	restore: () => void;
+} {
 	const originalWrite = process.stdout.write.bind(process.stdout);
 	const originalLog = console.log;
 	const originalError = console.error;
@@ -270,9 +282,11 @@ async function importWithTimeout(
 		// Add cache-busting query param
 		const cacheBuster = `?t=${Date.now()}`;
 		// Suppress stdout during import (module may have top-level console.log)
-		const { promise: importPromise, restore } = suppressStdoutAsync(async () => {
-			return await import(`${filePath}${cacheBuster}`);
-		});
+		const { promise: importPromise, restore } = suppressStdoutAsync(
+			async () => {
+				return await import(`${filePath}${cacheBuster}`);
+			},
+		);
 		// Prevent unhandled rejections if timeout wins the race.
 		void importPromise.catch(() => {});
 
@@ -334,10 +348,16 @@ export async function scoreGeneration(
 		if (codeFilePath && fs.existsSync(codeFilePath)) {
 			const code = await fs.promises.readFile(codeFilePath, "utf-8");
 			extracted = { code, method: "file" };
-			log.debug({ method: "file", codeLength: code.length, codeFilePath }, "Code read from file");
+			log.debug(
+				{ method: "file", codeLength: code.length, codeFilePath },
+				"Code read from file",
+			);
 		} else {
 			extracted = extractCode(rawOutput);
-			log.debug({ method: extracted.method, codeLength: extracted.code.length }, "Code extracted from text");
+			log.debug(
+				{ method: extracted.method, codeLength: extracted.code.length },
+				"Code extracted from text",
+			);
 		}
 	} catch (error) {
 		return {
@@ -350,7 +370,7 @@ export async function scoreGeneration(
 	}
 
 	// Load scoring spec
-	let spec;
+	let spec: Awaited<ReturnType<typeof loadScoringSpec>>;
 	try {
 		spec = await loadScoringSpec(testSlug);
 	} catch (error) {
@@ -441,7 +461,9 @@ export async function scoreGeneration(
 				instance = suppressStdout(() => createInstance(module, spec.factoryFn));
 			}
 
-			const result = suppressStdout(() => runTestCase(module, testCase, instance));
+			const result = suppressStdout(() =>
+				runTestCase(module, testCase, instance),
+			);
 			testResults.push(result);
 		}
 

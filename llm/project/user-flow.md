@@ -45,17 +45,18 @@ progress output, and generated artifacts on disk.
 - **Decision points**:
   - Should OpenRouter frontier-eval be enabled (auto-enabled when API key is present)?
 
-### State S2 — Catalog Browse (Tests / Harnesses / Models)
-- **User sees**: Lists of available tests, harness adapters, and discoverable local models.
+### State S2 — Catalog Browse (Tests / Runtimes / Harnesses / Models)
+- **User sees**: Lists of available tests, runtimes, harness adapters, and discoverable local models.
 - **Artifacts**: Optional cached discovery output.
 - **Decision points**:
   - Which test(s) to run?
+  - Which runtime(s) to use?
   - Which harness(es) to run through?
   - Which model(s) to benchmark?
 
 ### State S3 — Run Plan (Matrix + Pass Types)
 - **User sees**: A concrete execution plan before running:
-  - All combinations of model × harness × test × pass type (blind/informed)
+  - All combinations of runtime × harness × model × test × pass type (blind/informed)
   - Estimated runtime and costs (if frontier eval is enabled)
 - **Artifacts**:
   - A saved “run plan” metadata blob (recommended) for reproducibility.
@@ -223,4 +224,3 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 - **Config format**: JSON vs YAML vs TS (and exact file name/location).
 - **Comparison UX**: how users specify two runs to compare (run IDs, paths, “latest”, etc.).
 - **Reproducibility metadata**: which versions are mandatory (harness CLI versions, model runtime versions, OS info).
-

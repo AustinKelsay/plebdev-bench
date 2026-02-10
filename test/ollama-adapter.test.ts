@@ -1,11 +1,15 @@
 /**
- * Purpose: Unit tests for Ollama adapter with mocked fetch.
+ * Purpose: Unit tests for Ollama runtime and Direct adapter with mocked fetch.
+ * Exports: none
+ * Invariants: All network calls are mocked; no real timeouts.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createOllamaAdapter } from "../src/harnesses/ollama-adapter.js";
+import { createDirectAdapter } from "../src/harnesses/direct-adapter.js";
+import { createOllamaRuntime } from "../src/runtimes/ollama-runtime.js";
+import type { Runtime } from "../src/runtimes/runtime.js";
 
-describe("OllamaAdapter", () => {
+describe("OllamaRuntime", () => {
 	const baseUrl = "http://localhost:11434";
 	const timeoutMs = 5000;
 
@@ -30,8 +34,11 @@ describe("OllamaAdapter", () => {
 				new Response(JSON.stringify({ version: "0.5.1" }), { status: 200 }),
 			);
 
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
-			const result = await adapter.ping();
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const result = await runtime.ping();
 
 			expect(result).toBe(true);
 			expect(mockFetch).toHaveBeenCalledWith(
@@ -43,8 +50,11 @@ describe("OllamaAdapter", () => {
 		it("should return false when Ollama is not reachable", async () => {
 			mockFetch.mockRejectedValue(new Error("Connection refused"));
 
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
-			const result = await adapter.ping();
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const result = await runtime.ping();
 
 			expect(result).toBe(false);
 		});
@@ -52,8 +62,11 @@ describe("OllamaAdapter", () => {
 		it("should return false on non-OK response", async () => {
 			mockFetch.mockResolvedValue(new Response("Not Found", { status: 404 }));
 
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
-			const result = await adapter.ping();
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const result = await runtime.ping();
 
 			expect(result).toBe(false);
 		});
@@ -82,8 +95,11 @@ describe("OllamaAdapter", () => {
 				new Response(JSON.stringify(mockModels), { status: 200 }),
 			);
 
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
-			const models = await adapter.listModels();
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const models = await runtime.listModels();
 
 			expect(models).toHaveLength(2);
 			expect(models[0]).toBe("llama3.2:3b");
@@ -95,69 +111,129 @@ describe("OllamaAdapter", () => {
 				new Response("Server Error", { status: 500 }),
 			);
 
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
 
-			await expect(adapter.listModels()).rejects.toThrow("Failed to list models");
+			await expect(runtime.listModels()).rejects.toThrow(
+				"Failed to list models",
+			);
+		});
+	});
+
+	describe("runtime interface", () => {
+		it("should have correct name and baseUrl", () => {
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			expect(runtime.name).toBe("ollama");
+			expect(runtime.baseUrl).toBe(baseUrl);
+		});
+	});
+});
+
+describe("DirectAdapter", () => {
+	const baseUrl = "http://localhost:11434";
+	const timeoutMs = 5000;
+
+	let mockFetch: ReturnType<typeof vi.fn>;
+	let originalFetch: typeof fetch;
+	let mockRuntime: Runtime;
+
+	beforeEach(() => {
+		originalFetch = globalThis.fetch;
+		mockFetch = vi.fn();
+		// Cast to unknown first to avoid Bun-specific fetch type issues
+		globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+		// Create a mock runtime
+		mockRuntime = {
+			name: "ollama",
+			baseUrl,
+			apiFormat: "ollama",
+			ping: vi.fn().mockResolvedValue(true),
+			listModels: vi.fn().mockResolvedValue(["llama3.2:3b"]),
+			getModelInfo: vi.fn().mockResolvedValue({
+				name: "llama3.2:3b",
+				sizeBytes: 2000000000,
+				parametersBillions: 3,
+			}),
+		};
+	});
+
+	afterEach(() => {
+		globalThis.fetch = originalFetch;
+		vi.restoreAllMocks();
+	});
+
+	describe("ping", () => {
+		it("should always return true (availability depends on runtime)", async () => {
+			const adapter = createDirectAdapter();
+			const result = await adapter.ping();
+			expect(result).toBe(true);
 		});
 	});
 
 	describe("generate", () => {
-		it("should generate completion", async () => {
-			const mockResponse = {
-				model: "llama3.2:3b",
-				response: "function add(a: number, b: number): number { return a + b; }",
-				done: true,
-				total_duration: 5000000000,
-				prompt_eval_count: 50,
-				eval_count: 25,
-			};
+		it("should generate completion using runtime baseUrl", async () => {
+			// Ollama uses NDJSON streaming format - multiple JSON lines
+			const mockNdjson = [
+				{ response: "function add(", done: false },
+				{ response: "a: number, b: number", done: false },
+				{ response: "): number { return a + b; }", done: false },
+				{ response: "", done: true, prompt_eval_count: 50, eval_count: 25 },
+			]
+				.map((obj) => JSON.stringify(obj))
+				.join("\n");
 
-			mockFetch.mockResolvedValue(
-				new Response(JSON.stringify(mockResponse), { status: 200 }),
-			);
+			mockFetch.mockResolvedValue(new Response(mockNdjson, { status: 200 }));
 
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const adapter = createDirectAdapter();
 			const result = await adapter.generate({
 				model: "llama3.2:3b",
 				prompt: "Write an add function",
 				timeoutMs,
+				runtime: mockRuntime,
 			});
 
 			expect(result.output).toContain("add");
 			expect(result.promptTokens).toBe(50);
 			expect(result.completionTokens).toBe(25);
 
-				expect(mockFetch).toHaveBeenCalledWith(
-					`${baseUrl}/api/generate`,
-					expect.objectContaining({
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: expect.stringContaining('"stream":true'),
-					}),
-				);
-			});
+			expect(mockFetch).toHaveBeenCalledWith(
+				`${baseUrl}/api/generate`,
+				expect.objectContaining({
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: expect.stringContaining('"stream":true'),
+				}),
+			);
+		});
 
 		it("should throw on generation error", async () => {
 			mockFetch.mockResolvedValue(
 				new Response("Model not found", { status: 404 }),
 			);
 
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
+			const adapter = createDirectAdapter();
 
 			await expect(
 				adapter.generate({
 					model: "nonexistent-model",
 					prompt: "test",
 					timeoutMs,
+					runtime: mockRuntime,
 				}),
-			).rejects.toThrow("Generation failed");
+			).rejects.toThrow("Ollama generation failed");
 		});
 	});
 
 	describe("harness interface", () => {
 		it("should have correct name", () => {
-			const adapter = createOllamaAdapter({ baseUrl, defaultTimeoutMs: timeoutMs });
-			expect(adapter.name).toBe("ollama");
+			const adapter = createDirectAdapter();
+			expect(adapter.name).toBe("direct");
 		});
 	});
 });

@@ -7,8 +7,13 @@
  */
 
 import { Command } from "commander";
+import {
+	type CompareResult,
+	type MatchedItem,
+	compareRuns,
+	formatDelta,
+} from "../results/compare.js";
 import { findRunDir, readResult } from "../results/reader.js";
-import { compareRuns, formatDelta, type CompareResult, type MatchedItem } from "../results/compare.js";
 
 /** Default output directory for results. */
 const DEFAULT_OUTPUT_DIR = "results";
@@ -18,13 +23,17 @@ const DEFAULT_OUTPUT_DIR = "results";
  */
 function truncate(str: string, maxLen: number): string {
 	if (str.length <= maxLen) return str;
-	return str.slice(0, maxLen - 1) + "…";
+	return `${str.slice(0, maxLen - 1)}…`;
 }
 
 /**
  * Pads a string to a fixed width.
  */
-function pad(str: string, width: number, align: "left" | "right" = "left"): string {
+function pad(
+	str: string,
+	width: number,
+	align: "left" | "right" = "left",
+): string {
 	if (align === "right") {
 		return str.padStart(width);
 	}
@@ -52,8 +61,12 @@ function printHeader(result: CompareResult): void {
 	console.log("");
 	console.log("Compare Benchmark Runs");
 	console.log("=".repeat(60));
-	console.log(`Run A: ${result.runA.runId} (${formatTimestamp(result.runA.timestamp)})`);
-	console.log(`Run B: ${result.runB.runId} (${formatTimestamp(result.runB.timestamp)})`);
+	console.log(
+		`Run A: ${result.runA.runId} (${formatTimestamp(result.runA.timestamp)})`,
+	);
+	console.log(
+		`Run B: ${result.runB.runId} (${formatTimestamp(result.runB.timestamp)})`,
+	);
 	console.log("");
 }
 
@@ -70,14 +83,21 @@ function printSummary(result: CompareResult): void {
 	console.log(`  Only in B:      ${summary.totalOnlyInB}`);
 	console.log("");
 
-	if (summary.statusChanges.improved > 0 || summary.statusChanges.regressed > 0) {
+	if (
+		summary.statusChanges.improved > 0 ||
+		summary.statusChanges.regressed > 0
+	) {
 		console.log("Status Changes");
 		console.log("-".repeat(40));
 		if (summary.statusChanges.improved > 0) {
-			console.log(`  Improved:   ${summary.statusChanges.improved} (failed → completed)`);
+			console.log(
+				`  Improved:   ${summary.statusChanges.improved} (failed → completed)`,
+			);
 		}
 		if (summary.statusChanges.regressed > 0) {
-			console.log(`  Regressed:  ${summary.statusChanges.regressed} (completed → failed)`);
+			console.log(
+				`  Regressed:  ${summary.statusChanges.regressed} (completed → failed)`,
+			);
 		}
 		console.log("");
 	}
@@ -85,14 +105,18 @@ function printSummary(result: CompareResult): void {
 	if (summary.scoringDelta) {
 		console.log("Scoring Delta");
 		console.log("-".repeat(40));
-		console.log(`  Pass rate:  ${formatDelta(summary.scoringDelta.passRateDelta, "%")}`);
+		console.log(
+			`  Pass rate:  ${formatDelta(summary.scoringDelta.passRateDelta, "%")}`,
+		);
 		console.log("");
 	}
 
 	if (summary.frontierEvalDelta) {
 		console.log("Frontier Eval Delta");
 		console.log("-".repeat(40));
-		console.log(`  Avg score:  ${formatDelta(summary.frontierEvalDelta.avgScoreDelta, "/10")}`);
+		console.log(
+			`  Avg score:  ${formatDelta(summary.frontierEvalDelta.avgScoreDelta, "/10")}`,
+		);
 		console.log("");
 	}
 }
@@ -102,7 +126,8 @@ function printSummary(result: CompareResult): void {
  */
 function printRegressions(result: CompareResult): void {
 	const regressions = result.matched.filter(
-		(m) => m.deltas.status?.a === "completed" && m.deltas.status?.b === "failed",
+		(m) =>
+			m.deltas.status?.a === "completed" && m.deltas.status?.b === "failed",
 	);
 
 	if (regressions.length === 0) return;
@@ -123,9 +148,9 @@ function printRegressions(result: CompareResult): void {
 	for (const item of regressions) {
 		console.log(
 			`${pad(truncate(item.model, modelW), modelW)} ` +
-			`${pad(item.harness, harnessW)} ` +
-			`${pad(truncate(item.test, testW), testW)} ` +
-			`${pad(item.passType, passW)}`,
+				`${pad(item.harness, harnessW)} ` +
+				`${pad(truncate(item.test, testW), testW)} ` +
+				`${pad(item.passType, passW)}`,
 		);
 	}
 	console.log("");
@@ -136,7 +161,8 @@ function printRegressions(result: CompareResult): void {
  */
 function printImprovements(result: CompareResult): void {
 	const improvements = result.matched.filter(
-		(m) => m.deltas.status?.a === "failed" && m.deltas.status?.b === "completed",
+		(m) =>
+			m.deltas.status?.a === "failed" && m.deltas.status?.b === "completed",
 	);
 
 	if (improvements.length === 0) return;
@@ -157,9 +183,9 @@ function printImprovements(result: CompareResult): void {
 	for (const item of improvements) {
 		console.log(
 			`${pad(truncate(item.model, modelW), modelW)} ` +
-			`${pad(item.harness, harnessW)} ` +
-			`${pad(truncate(item.test, testW), testW)} ` +
-			`${pad(item.passType, passW)}`,
+				`${pad(item.harness, harnessW)} ` +
+				`${pad(truncate(item.test, testW), testW)} ` +
+				`${pad(item.passType, passW)}`,
 		);
 	}
 	console.log("");
@@ -203,10 +229,10 @@ function printScoringDeltas(result: CompareResult): void {
 
 		console.log(
 			`${pad(truncate(item.model, modelW), modelW)} ` +
-			`${pad(item.harness, harnessW)} ` +
-			`${pad(truncate(item.test, testW), testW)} ` +
-			`${pad(item.passType, passW)} ` +
-			`${pad(deltaStr, deltaW, "right")}`,
+				`${pad(item.harness, harnessW)} ` +
+				`${pad(truncate(item.test, testW), testW)} ` +
+				`${pad(item.passType, passW)} ` +
+				`${pad(deltaStr, deltaW, "right")}`,
 		);
 	}
 	console.log("");
@@ -220,7 +246,9 @@ function printExclusiveItems(result: CompareResult): void {
 		console.log(`Items only in Run A (${result.onlyInA.length})`);
 		console.log("-".repeat(40));
 		for (const item of result.onlyInA.slice(0, 10)) {
-			console.log(`  ${item.model} / ${item.harness} / ${item.test} / ${item.passType}`);
+			console.log(
+				`  ${item.model} / ${item.harness} / ${item.test} / ${item.passType}`,
+			);
 		}
 		if (result.onlyInA.length > 10) {
 			console.log(`  ... and ${result.onlyInA.length - 10} more`);
@@ -232,7 +260,9 @@ function printExclusiveItems(result: CompareResult): void {
 		console.log(`Items only in Run B (${result.onlyInB.length})`);
 		console.log("-".repeat(40));
 		for (const item of result.onlyInB.slice(0, 10)) {
-			console.log(`  ${item.model} / ${item.harness} / ${item.test} / ${item.passType}`);
+			console.log(
+				`  ${item.model} / ${item.harness} / ${item.test} / ${item.passType}`,
+			);
 		}
 		if (result.onlyInB.length > 10) {
 			console.log(`  ... and ${result.onlyInB.length - 10} more`);
@@ -246,36 +276,46 @@ export const compareCommand = new Command("compare")
 	.description("Compare two benchmark runs")
 	.argument("<run-a>", "First run ID or path (baseline)")
 	.argument("<run-b>", "Second run ID or path (comparison)")
-	.option("-o, --output <dir>", "Output directory for results", DEFAULT_OUTPUT_DIR)
+	.option(
+		"-o, --output <dir>",
+		"Output directory for results",
+		DEFAULT_OUTPUT_DIR,
+	)
 	.option("--json", "Output raw JSON instead of formatted table")
-	.action(async (runA: string, runB: string, options: { output: string; json?: boolean }) => {
-		try {
-			// Find and read run A
-			const dirA = findRunDir(options.output, runA);
-			const resultA = await readResult(dirA);
+	.action(
+		async (
+			runA: string,
+			runB: string,
+			options: { output: string; json?: boolean },
+		) => {
+			try {
+				// Find and read run A
+				const dirA = findRunDir(options.output, runA);
+				const resultA = await readResult(dirA);
 
-			// Find and read run B
-			const dirB = findRunDir(options.output, runB);
-			const resultB = await readResult(dirB);
+				// Find and read run B
+				const dirB = findRunDir(options.output, runB);
+				const resultB = await readResult(dirB);
 
-			// Compare runs
-			const comparison = compareRuns(resultA, resultB);
+				// Compare runs
+				const comparison = compareRuns(resultA, resultB);
 
-			// Output
-			if (options.json) {
-				console.log(JSON.stringify(comparison, null, 2));
-			} else {
-				printHeader(comparison);
-				printSummary(comparison);
-				printRegressions(comparison);
-				printImprovements(comparison);
-				printScoringDeltas(comparison);
-				printExclusiveItems(comparison);
+				// Output
+				if (options.json) {
+					console.log(JSON.stringify(comparison, null, 2));
+				} else {
+					printHeader(comparison);
+					printSummary(comparison);
+					printRegressions(comparison);
+					printImprovements(comparison);
+					printScoringDeltas(comparison);
+					printExclusiveItems(comparison);
+				}
+			} catch (error) {
+				console.error(
+					`Error: ${error instanceof Error ? error.message : String(error)}`,
+				);
+				process.exit(1);
 			}
-		} catch (error) {
-			console.error(
-				`Error: ${error instanceof Error ? error.message : String(error)}`,
-			);
-			process.exit(1);
-		}
-	});
+		},
+	);

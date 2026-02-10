@@ -1,0 +1,192 @@
+/**
+ * Purpose: Ollama runtime implementation.
+ * Exports: createOllamaRuntime
+ *
+ * This runtime communicates with Ollama's HTTP API for:
+ * - Health checks (GET /api/version)
+ * - Model listing (GET /api/tags)
+ * - Model info (POST /api/show)
+ *
+ * Invariants:
+ * - All requests have a timeout via AbortController
+ * - Connection errors are thrown, not swallowed
+ */
+
+import { z } from "zod";
+import type { ModelInfo, Runtime } from "./runtime.js";
+
+/** Schema for GET /api/tags response. */
+const TagsResponseSchema = z
+	.object({
+		models: z.array(
+			z
+				.object({
+					name: z.string(),
+					size: z.number(),
+					modified_at: z.string(),
+					digest: z.string(),
+				})
+				.passthrough(),
+		),
+	})
+	.passthrough();
+
+/** Schema for POST /api/show response. */
+const ShowResponseSchema = z
+	.object({
+		details: z
+			.object({
+				parameter_size: z.string().optional(),
+			})
+			.passthrough()
+			.optional(),
+		model_info: z.record(z.unknown()).optional(),
+	})
+	.passthrough();
+
+/** Configuration for the Ollama runtime. */
+export interface OllamaRuntimeConfig {
+	/** Ollama API base URL (e.g., "http://localhost:11434"). */
+	baseUrl: string;
+	/** Default timeout for requests in milliseconds. */
+	defaultTimeoutMs: number;
+}
+
+/**
+ * Makes a fetch request with timeout.
+ * Throws a descriptive error on timeout instead of generic "aborted".
+ */
+async function fetchWithTimeout(
+	url: string,
+	timeoutMs: number,
+	options: RequestInit = {},
+): Promise<Response> {
+	const controller = new AbortController();
+	let timedOut = false;
+	const timeoutId = setTimeout(() => {
+		timedOut = true;
+		controller.abort();
+	}, timeoutMs);
+
+	try {
+		const response = await fetch(url, {
+			...options,
+			signal: controller.signal,
+		});
+		return response;
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		// Check both our flag AND error message (external timeouts won't set our flag)
+		if (timedOut || errorMessage.toLowerCase().includes("timed out")) {
+			throw new Error(
+				`Request timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout for large models.`,
+			);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
+/**
+ * Creates an Ollama runtime instance.
+ *
+ * @param config - Runtime configuration
+ * @returns Runtime instance for Ollama
+ */
+export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
+	const { baseUrl, defaultTimeoutMs } = config;
+
+	return {
+		name: "ollama" as const,
+		baseUrl,
+		apiFormat: "ollama" as const,
+
+		async ping(): Promise<boolean> {
+			try {
+				const response = await fetchWithTimeout(
+					`${baseUrl}/api/version`,
+					defaultTimeoutMs,
+				);
+				return response.ok;
+			} catch {
+				return false;
+			}
+		},
+
+		async listModels(): Promise<string[]> {
+			const endpoint = `${baseUrl}/api/tags`;
+			const response = await fetchWithTimeout(endpoint, defaultTimeoutMs);
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to list models: ${response.status} ${response.statusText}`,
+				);
+			}
+
+			const json = await response.json();
+			const result = TagsResponseSchema.safeParse(json);
+			if (!result.success) {
+				throw new Error(
+					`Invalid response from ${endpoint}: ${result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`,
+				);
+			}
+
+			return result.data.models.map((m) => m.name);
+		},
+
+		async getModelInfo(model: string): Promise<ModelInfo> {
+			const endpoint = `${baseUrl}/api/show`;
+			const response = await fetchWithTimeout(endpoint, defaultTimeoutMs, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name: model }),
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to get model info: ${response.status} ${response.statusText}`,
+				);
+			}
+
+			const json = await response.json();
+			const result = ShowResponseSchema.safeParse(json);
+			if (!result.success) {
+				throw new Error(
+					`Invalid response from ${endpoint}: ${result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`,
+				);
+			}
+
+			const data = result.data;
+
+			// Try to parse parameter count from various sources
+			let parametersBillions = 7; // Default fallback
+
+			// First try model_info.general.parameter_count (most accurate)
+			const paramCount = data.model_info?.["general.parameter_count"];
+			if (typeof paramCount === "number") {
+				parametersBillions = paramCount / 1e9;
+			}
+			// Then try details.parameter_size string (e.g., "8B", "70B")
+			else if (data.details?.parameter_size) {
+				const match = data.details.parameter_size.match(/([\d.]+)([BMK]?)/i);
+				if (match) {
+					let value = Number.parseFloat(match[1]);
+					const unit = match[2]?.toUpperCase();
+					if (unit === "M") value /= 1000;
+					else if (unit === "K") value /= 1_000_000;
+					parametersBillions = value;
+				}
+			}
+
+			// Estimate size in bytes (rough: ~0.5-1 byte per parameter for quantized)
+			const sizeBytes = parametersBillions * 1e9 * 0.6;
+
+			return {
+				name: model,
+				sizeBytes,
+				parametersBillions,
+			};
+		},
+	};
+}

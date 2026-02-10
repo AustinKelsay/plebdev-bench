@@ -10,7 +10,7 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
 - Lock in the result schema and directory conventions early (schema-first).
 
 ## Scope
-- In scope: CLI skeleton, schemas, three harnesses (Ollama HTTP, Goose CLI, OpenCode CLI), a minimal test stub, file output.
+- In scope: CLI skeleton, schemas, runtime adapters (Ollama), three harnesses (direct HTTP, Goose CLI, OpenCode CLI), a minimal test stub, file output.
 - Out of scope: full matrix runs, frontier eval via OpenRouter, rich compare UX, performance tuning.
 
 ## Steps (per feature)
@@ -40,17 +40,26 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
 3. Ensure exit code is non-zero only on crashes.
 
 ### Feature D — Thin vertical slice: multi-harness generation + result writing
-1. Define a common `Harness` interface in `src/harnesses/harness.ts`:
-   - `name: string`
+1. Define a `Runtime` interface in `src/runtimes/runtime.ts`:
+   - `name: RuntimeName`
+   - `baseUrl: string`
+   - `ping(): Promise<boolean>`
    - `listModels(): Promise<string[]>`
+   - `getModelInfo(model: string): Promise<ModelInfo>`
+2. Define a common `Harness` interface in `src/harnesses/harness.ts`:
+   - `name: HarnessName`
+   - `ping(): Promise<boolean>`
    - `generate(opts: GenerateOpts): Promise<GenerateResult>`
-   - `GenerateOpts`: `{ model, prompt, timeout }`
-   - `GenerateResult`: `{ output, durationMs, error? }`
-2. Implement `src/harnesses/ollama-adapter.ts` using `fetch`:
-   - ping/health check (best-effort)
-   - list models (auto-discovery)
-   - generate completion (non-streaming for setup)
-3. Implement `src/harnesses/goose-adapter.ts` using `execa`:
+   - `GenerateOpts`: `{ model, prompt, timeout, runtime }`
+   - `GenerateResult`: `{ output, durationMs, codeFilePath? }`
+3. Implement `src/runtimes/ollama-runtime.ts` using `fetch`:
+   - ping/health check via `/api/version`
+   - list models via `/api/tags`
+   - get model info via `/api/show`
+4. Implement `src/harnesses/direct-adapter.ts` using `fetch`:
+   - ping always returns true (runtime availability checked separately)
+   - generate completion via `runtime.baseUrl`
+5. Implement `src/harnesses/goose-adapter.ts` using `execa`:
    - Run: `goose run --no-session --provider ollama --model <model> --max-turns 5 -q -t "<prompt>"`
    - **Critical CLI flags** (override config file):
      - `--provider ollama` - Force Ollama provider (ignores user's config file)
@@ -62,7 +71,7 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
      - `cwd: /tmp` - Run in temp dir to avoid codebase scanning
      - `stdin: "ignore"` - Prevent hanging on stdin (critical for headless)
    - Use stdout (validated for non-empty, min 10 chars); handle non-zero exit as structured error
-4. Implement `src/harnesses/opencode-adapter.ts` using `execa` with **server mode**:
+6. Implement `src/harnesses/opencode-adapter.ts` using `execa` with **direct mode**:
    - **Problem**: Cold boot takes 2+ min (32+ LSP servers, MCP connections, plugins)
    - **Solution**: Use persistent server + `--attach` mode
    - Implement `src/harnesses/opencode-server.ts` for server lifecycle:
@@ -78,15 +87,17 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
    - Set env: `OPENCODE_DISABLE_AUTOUPDATE=true`, `OPENCODE_DISABLE_LSP_DOWNLOAD=true`, etc.
    - Use raw stdout (validated for non-empty, min 10 chars)
    - Handle timeouts and non-zero exit codes as structured errors
-5. Add `src/harnesses/discovery.ts` to detect available harnesses:
-   - Check CLI availability (`which goose`, `which opencode`)
+7. Add `src/runtimes/discovery.ts` to detect available runtimes:
    - Ping Ollama endpoint
-6. Implement a single "smoke" benchmark test under `src/tests/<test>/`:
+8. Add `src/harnesses/discovery.ts` to detect available harnesses:
+   - Check CLI availability (`which goose`, `which opencode`)
+   - Direct harness always available
+9. Implement a single "smoke" benchmark test under `src/tests/<test>/`:
    - `prompt.blind.md` + `prompt.informed.md` (both passTypes required)
    - `README.md` describing what it is
    - `scoring.test.ts` can be a placeholder in setup (MVP will make it real)
-7. Implement run execution for **one** matrix item (one model, one harness, one test, one passType).
-8. Write `results/<run-id>/plan.json` and `results/<run-id>/run.json` with validated schemas.
+10. Implement run execution for **one** matrix item (one runtime, one harness, one model, one test, one passType).
+11. Write `results/<run-id>/plan.json` and `results/<run-id>/run.json` with validated schemas.
 
 ### Feature E — Docs alignment
 1. Update root `README.md` quickstart section to match the implemented CLI.
@@ -96,7 +107,8 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
 - `bun test` runs and passes.
 - `bun run bench run ...` produces `results/<run-id>/plan.json` + one `run.json`.
 - `run.json` validates against Zod schema and includes a clear failure shape for per-item errors.
-- Common `Harness` interface defined; at least Ollama adapter fully implemented.
+- `Runtime` interface defined; Ollama runtime fully implemented.
+- Common `Harness` interface defined; direct adapter fully implemented.
 - At least one CLI harness adapter (Goose or OpenCode) is implemented and runnable (if CLI is installed).
 - Smoke test includes both `prompt.blind.md` and `prompt.informed.md` (both passTypes).
 - Docs updated to match what actually runs.

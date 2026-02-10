@@ -2,16 +2,17 @@ Purpose: Quick reference for the current codebase structure and key commands.
 
 # Codebase Overview
 
-Local-first CLI benchmark runner for local LLMs. Runs matrix of `models × harnesses × tests × passTypes` and writes reproducible artifacts.
+Local-first CLI benchmark runner for local LLMs. Runs matrix of `runtimes × harnesses × models × tests × passTypes` and writes reproducible artifacts.
 
 ## Key Commands
 
 ```bash
-bun pb                              # Run all (auto-discovers models/harnesses/tests)
+bun pb                              # Run all (auto-discovers runtimes/harnesses/models/tests)
 bun pb --models llama3.2:3b         # Limit to specific model
 bun pb --tests smoke                # Limit to specific test
 bun pb --pass-types blind           # Limit to blind pass only
-bun pb --harnesses ollama           # Limit to ollama harness only
+bun pb --harnesses direct           # Limit to direct harness only
+bun pb --runtimes ollama            # Limit to ollama runtime
 bun run bench compare <runA> <runB>        # Compare two runs
 bun run bench compare <runA> <runB> --json # Output raw JSON
 bun test                            # Run test suite
@@ -37,12 +38,18 @@ src/
 │   ├── run-command.ts    # `bench run` implementation
 │   └── compare-command.ts # Compare command
 ├── schemas/              # Zod schemas (source of truth)
+│   ├── common.schema.ts  # SCHEMA_VERSION, PassType, RuntimeName
 │   ├── config.schema.ts  # BenchConfig
 │   ├── plan.schema.ts    # RunPlan, MatrixItem
 │   └── result.schema.ts  # RunResult, MatrixItemResult
-├── harnesses/            # Harness adapters
+├── runtimes/             # Runtime adapters (inference backends)
+│   ├── runtime.ts        # Runtime interface + types
+│   ├── ollama-runtime.ts # Ollama HTTP implementation
+│   ├── discovery.ts      # Detect available runtimes
+│   └── index.ts          # Factory + exports
+├── harnesses/            # Harness adapters (interface layer)
 │   ├── harness.ts        # Common interface
-│   ├── ollama-adapter.ts # Direct HTTP to Ollama
+│   ├── direct-adapter.ts # Direct HTTP to runtime (was ollama-adapter)
 │   ├── goose-adapter.ts  # CLI via Goose (headless mode)
 │   ├── opencode-adapter.ts # CLI via OpenCode (direct mode)
 │   ├── opencode-server.ts  # OpenCode server lifecycle (deprecated, kept for reference)
@@ -76,17 +83,32 @@ src/
     └── tool-smoke/       # Tool-calling preflight test
 ```
 
-## Harnesses
+## Architecture: Runtimes vs Harnesses
 
-All harnesses use Ollama as the backend provider:
+The architecture separates **runtimes** (inference backends) from **harnesses** (interface adapters):
+
+- **Runtime**: An inference backend that provides models (e.g., Ollama). Runtimes handle model discovery, health checks, and metadata.
+- **Harness**: An interface adapter that sends prompts to a runtime (e.g., direct HTTP, Goose CLI, OpenCode CLI).
+
+### Runtimes
+
+| Runtime | Method | Description |
+|---------|--------|-------------|
+| `ollama` | HTTP | Local Ollama server at configured URL |
+
+Discovery: `discoverRuntimes()` checks if Ollama endpoint is reachable.
+
+### Harnesses
+
+All harnesses use a Runtime for the actual inference:
 
 | Harness | Method | Description |
 |---------|--------|-------------|
-| `ollama` | HTTP | Direct API calls to Ollama |
+| `direct` | HTTP | Direct API calls to runtime (was "ollama" harness) |
 | `goose` | CLI | Headless mode with `--provider ollama --model` CLI flags |
 | `opencode` | CLI | Direct mode with `opencode run` (tool-calling) |
 
-Discovery: `discoverHarnesses()` checks CLI availability and Ollama endpoint.
+Discovery: `discoverHarnesses()` checks CLI availability. The `direct` harness is always available.
 
 **Robustness**: All adapters validate output (fail-fast on empty/short responses) and log debug info + stderr.
 
@@ -120,12 +142,15 @@ Each run creates `results/<run-id>/`:
 
 ## Schemas
 
+Schema version: `0.2.1`
+
 | Schema | File | Purpose |
 |--------|------|---------|
+| `RuntimeNameSchema` | common.schema.ts | Valid runtime names ("ollama") |
 | `BenchConfig` | config.schema.ts | CLI input, defaults |
 | `RunPlan` | plan.schema.ts | Expanded matrix (plan.json) |
 | `RunResult` | result.schema.ts | Execution output (run.json) |
-| `MatrixItem` | plan.schema.ts | Single matrix entry |
+| `MatrixItem` | plan.schema.ts | Single matrix entry (includes runtime) |
 | `MatrixItemResult` | result.schema.ts | Item + generation result + scores |
 | `ScoringSpec` | scoring.schema.ts | Data-driven test definitions |
 | `AutomatedScore` | result.schema.ts | Passed/failed/total counts |
@@ -136,7 +161,7 @@ Each run creates `results/<run-id>/`:
 
 ## Key Behaviors
 
-- **Auto-discovery**: By default, discovers all models from Ollama, all harnesses available, and all tests in `src/tests/`
+- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/`
 - **Limiting flags**: Use `--models`, `--harnesses`, `--tests` to limit which items to run
 - **Sequential execution**: One item at a time
 - **Dynamic timeouts**: Timeout scales with model size and harness:
@@ -154,13 +179,14 @@ Each run creates `results/<run-id>/`:
 - **Failure categorization**: Errors classified as generation failures (timeout, api_error, harness_error, prompt_not_found) or scoring failures (extraction, import, export_validation, test_execution, spec_load, no_spec)
 - **Frontier eval failures**: Recorded per-item in `frontierEvalFailure` with type/message/status when OpenRouter calls fail
 - **Debug logging**: Harness adapters log command execution and stderr for troubleshooting
-- **Progress output**: `item 01/08: harness=ollama model=X test=Y pass=blind timeout=5m`
+- **Progress output**: `item 01/08: runtime=ollama harness=direct model=X test=Y pass=blind timeout=5m`
 
 ## Defaults
 
 ```typescript
 {
-  models: []                  // Auto-discover all from Ollama
+  runtimes: []                // Auto-discover all available
+  models: []                  // Auto-discover all from runtimes
   harnesses: []               // Auto-discover all available
   tests: []                   // Auto-discover all from src/tests/
   passTypes: ["blind", "informed"]

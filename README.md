@@ -6,7 +6,9 @@ Local-first, CLI-driven benchmark runner for local LLMs.
 
 For each benchmark run, `plebdev-bench` executes a matrix:
 
-- **model × harness × test × passType**
+- **runtime × harness × model × test × passType**
+  - runtime: inference backend (e.g., Ollama)
+  - harness: interface adapter (direct HTTP, Goose CLI, OpenCode CLI)
   - passType: **blind** + **informed**
 
 Scoring:
@@ -24,6 +26,14 @@ Built-ins:
 
 **MVP complete + hardening applied.** Multi-harness runs, automated scoring, frontier eval, compare, and dashboard are implemented.
 Authoritative docs live in `llm/project/` and `llm/implementation/`.
+
+### Multi-Runtime MVP Checkpoint (2026-02-08)
+
+- Runtime matrix validated across `ollama` and `vllm` with harnesses `direct`, `goose`, and `opencode`.
+- Benchmark run `20260208-122510-cb6911` completed `53/54` items with `91.2%` overall pass rate.
+- Dashboard now renders and compares multi-runtime/multi-harness run data from `results/index.json`.
+- Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
+- vLLM local setup notes (OrbStack/Docker, memory sizing, troubleshooting): `llm/implementation/vllm-orbstack-setup.md`.
 
 ## Tech stack (MVP)
 
@@ -64,11 +74,12 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 ## Project layout (target)
 
 - `src/cli/` — CLI entrypoint(s), command parsing
-- `src/harnesses/` — harness adapters (Ollama HTTP, Goose/OpenCode CLI, etc.)
+- `src/runtimes/` — runtime adapters (inference backends like Ollama)
+- `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI)
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
-- `results/` — runtime output (ignored by git)
+- `results/` — runtime output (including tracked MVP run snapshots in this branch)
 - `llm/` — planning docs (project overview, user flow, tech stack, design rules, phases)
 
 ## Quickstart
@@ -92,6 +103,37 @@ bun pb
 # Run with specific options
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
+# Run with specific runtime and harness
+bun pb --runtimes ollama --harnesses direct
+```
+
+### Managed vLLM Lifecycle (Single Run)
+
+If you want a single run that starts vLLM only when needed (after the Ollama segment) and stops it afterward to free memory:
+
+```bash
+cd /path/to/plebdev-bench
+
+bun pb \
+  --runtimes ollama vllm \
+  --harnesses direct goose opencode \
+  --timeout 900000 \
+  --manage-vllm \
+  --vllm-model "Qwen/Qwen2.5-14B-Instruct" \
+  --vllm-compose-file docker/vllm/docker-compose.yml \
+  --vllm-startup-timeout 1800000
+```
+
+Optional: start/stop OrbStack around the vLLM segment too (disruptive if you use OrbStack for other containers):
+
+```bash
+  --manage-orbstack \
+  --orbctl-path orbctl
+```
+
+Full vLLM setup/troubleshooting: `llm/implementation/vllm-orbstack-setup.md`.
+
+```bash
 # Compare two runs
 bun run bench compare <run-a> <run-b>
 
@@ -117,3 +159,4 @@ Each run creates:
 - `llm/project/project-rules.md` — engineering standards
 - `llm/implementation/review-and-hardening-implementation.md` — threat model + hardening notes
 - `llm/implementation/release-readiness-checklist.md` — release checklist and sign-off
+- `llm/implementation/multi-runtime-mvp-implementation.md` — detailed multi-runtime MVP implementation and validation notes

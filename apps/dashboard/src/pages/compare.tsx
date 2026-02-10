@@ -5,5 +5,5 @@
 import { ComparePageContent } from "@/components/compare/compare-page";
 
 export function ComparePage() {
-  return <ComparePageContent />;
+	return <ComparePageContent />;
 }

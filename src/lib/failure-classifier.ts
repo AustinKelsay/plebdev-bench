@@ -6,7 +6,10 @@
  * This keeps classification logic centralized and testable.
  */
 
-import type { GenerationFailureType, ScoringFailureType } from "../schemas/index.js";
+import type {
+	GenerationFailureType,
+	ScoringFailureType,
+} from "../schemas/index.js";
 
 /**
  * Classifies a generation error message into a failure type.
@@ -20,7 +23,9 @@ import type { GenerationFailureType, ScoringFailureType } from "../schemas/index
  * classifyGenerationError("Empty output received") // => "harness_error"
  * ```
  */
-export function classifyGenerationError(errorMessage: string): GenerationFailureType {
+export function classifyGenerationError(
+	errorMessage: string,
+): GenerationFailureType {
 	const lower = errorMessage.toLowerCase();
 
 	// Timeout patterns
@@ -38,13 +43,17 @@ export function classifyGenerationError(errorMessage: string): GenerationFailure
 	}
 
 	// Prompt file not found
-	if (lower.includes("prompt file not found") || lower.includes("prompt not found")) {
+	if (
+		lower.includes("prompt file not found") ||
+		lower.includes("prompt not found")
+	) {
 		return "prompt_not_found";
 	}
 
 	// API/HTTP error patterns
 	if (
-		(lower.includes("failed:") && (lower.includes("4") || lower.includes("5"))) ||
+		(lower.includes("failed:") &&
+			(lower.includes("4") || lower.includes("5"))) ||
 		lower.includes("status") ||
 		lower.includes("http") ||
 		lower.includes("fetch") ||

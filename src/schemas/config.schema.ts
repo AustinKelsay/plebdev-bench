@@ -3,16 +3,63 @@
  * Exports: BenchConfigSchema, BenchConfig, defaultConfig
  *
  * Invariants:
- * - Empty arrays mean "auto-discover all" for models/tests/harnesses
- * - Use flags to limit which models/tests/harnesses to run
+ * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes
+ * - Use flags to limit which models/tests/harnesses/runtimes to run
  */
 
 import { z } from "zod";
-import { PassTypeSchema } from "./common.schema.js";
+import {
+	PassTypeSchema,
+	RuntimeNameSchema,
+	SCHEMA_VERSION,
+} from "./common.schema.js";
+import { ModelAliasMapSchema } from "./model-alias.schema.js";
+
+/**
+ * Purpose: Managed vLLM lifecycle configuration.
+ *
+ * When enabled, the runner can start/stop vLLM (and optionally OrbStack) during
+ * a single benchmark run so Ollama can run without the extra memory pressure.
+ */
+export const ManagedVllmSchema = z.object({
+	/** Enable managed vLLM lifecycle for a single run. */
+	enabled: z.boolean().default(false),
+
+	/** The model to serve in vLLM (sets VLLM_MODEL for docker compose). */
+	model: z.string().min(1),
+
+	/** Docker compose file path for vLLM. */
+	composeFile: z.string().min(1).default("docker/vllm/docker-compose.yml"),
+
+	/** Startup timeout (ms) while waiting for vLLM to become ready. */
+	startupTimeoutMs: z
+		.number()
+		.int()
+		.positive()
+		.default(30 * 60 * 1000),
+
+	/** Stop vLLM after finishing the vLLM segment. */
+	stopAfterRun: z.boolean().default(true),
+
+	/** If true, attempt to start/stop OrbStack around the vLLM segment. */
+	manageOrbStack: z.boolean().default(false),
+
+	/** OrbStack CLI name or absolute path. */
+	orbctlPath: z.string().min(1).default("orbctl"),
+});
+
+/** Managed vLLM config type. */
+export type ManagedVllmConfig = z.infer<typeof ManagedVllmSchema>;
 
 /** Zod schema for benchmark configuration. */
 export const BenchConfigSchema = z.object({
-	/** Models to benchmark. Empty array triggers auto-discovery from Ollama. */
+	/** Schema version for config evolution. */
+	schemaVersion: z.string().default(SCHEMA_VERSION),
+
+	/** Runtimes to use. Empty array triggers auto-discovery. */
+	runtimes: z.array(RuntimeNameSchema).default([]),
+
+	/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
 	models: z.array(z.string()).default([]),
 
 	/** Harness adapters to use. Empty array triggers auto-discovery of all available. */
@@ -27,11 +74,20 @@ export const BenchConfigSchema = z.object({
 	/** Ollama API base URL. */
 	ollamaBaseUrl: z.string().url().default("http://localhost:11434"),
 
+	/** vLLM API base URL. */
+	vllmBaseUrl: z.string().url().default("http://localhost:8000"),
+
 	/** Generation timeout in milliseconds (5 min default for large models). */
 	generateTimeoutMs: z.number().positive().default(300_000),
 
 	/** Output directory for results. */
 	outputDir: z.string().default("results"),
+
+	/** Model aliases for cross-runtime mapping. */
+	modelAliases: ModelAliasMapSchema.default({}),
+
+	/** Optional managed vLLM lifecycle configuration. */
+	managedVllm: ManagedVllmSchema.optional(),
 });
 
 /** Benchmark configuration type. */

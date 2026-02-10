@@ -13,7 +13,8 @@ They are optimized for:
 ### Top-level
 
 - `src/` — application code (runner, harness adapters, schemas, utilities)
-- `src/harnesses/` — harness adapters (Ollama HTTP, Goose/OpenCode CLI) + tool-prompt builder
+- `src/runtimes/` — runtime adapters (inference backends: Ollama, vLLM)
+- `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI) + tool-prompt builder
 - `src/tests/` — benchmark test catalog (5 tests: smoke, calculator-basic, calculator-stateful, todo-app, tool-smoke)
 - `src/results/` — result schema + read/write helpers + compare logic
 - `src/cli/` — CLI entrypoint(s) and argument parsing
@@ -187,4 +188,3 @@ Before merging changes:
 - `plan.json` + one `run.json` per run
 - Frontier eval auto-enabled when API key is present
 - Best-effort resource metrics; never fail runs because metrics are unavailable
-

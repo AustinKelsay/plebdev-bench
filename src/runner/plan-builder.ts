@@ -1,60 +1,40 @@
 /**
- * Purpose: Build RunPlan from config by discovering models/tests/harnesses and expanding the matrix.
+ * Purpose: Build RunPlan from config by discovering runtimes/models/tests/harnesses and expanding the matrix.
  * Exports: buildRunPlan
  *
  * Discovery:
- * - Models: fetch from Ollama API (shared across all harnesses)
+ * - Runtimes: check available inference backends (Ollama, etc.)
+ * - Models: fetch from runtime API
  * - Tests: scan src/tests/ directory for subdirectories
- * - Harnesses: detect available CLIs and Ollama endpoint
+ * - Harnesses: detect available CLIs
  */
 
 import * as fs from "node:fs";
-import * as path from "node:path";
 import * as os from "node:os";
-import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
-import { createHarness, discoverHarnesses, type HarnessName } from "../harnesses/index.js";
-import { generateRunId } from "../lib/run-id.js";
+import * as path from "node:path";
+import {
+	type HarnessName,
+	discoverHarnesses,
+	isHarnessCompatibleWithRuntime,
+	isValidHarnessName,
+	normalizeHarnessName,
+} from "../harnesses/index.js";
 import { logger } from "../lib/logger.js";
+import { isAlias, resolveModelForRuntime } from "../lib/model-aliases.js";
+import { generateRunId } from "../lib/run-id.js";
 import {
 	TOOL_SMOKE_TEST_SLUG,
 	isToolSmokeTest,
 	selectToolSmokePassType,
 } from "../lib/tool-smoke.js";
-
-/**
- * Discovers available models from Ollama.
- * All harnesses use Ollama as the backend, so models are shared.
- *
- * @param ollamaBaseUrl - Ollama API base URL
- * @param timeoutMs - Request timeout
- * @returns Array of model names
- */
-async function discoverModels(
-	ollamaBaseUrl: string,
-	timeoutMs: number,
-): Promise<string[]> {
-	const harness = createHarness("ollama", {
-		ollamaBaseUrl,
-		defaultTimeoutMs: timeoutMs,
-	});
-
-	// Check if Ollama is available
-	const available = await harness.ping();
-	if (!available) {
-		throw new Error(
-			`Ollama is not reachable at ${ollamaBaseUrl}. Is it running? Try: ollama serve`,
-		);
-	}
-
-	const models = await harness.listModels();
-	if (models.length === 0) {
-		throw new Error(
-			"No models found in Ollama. Pull a model first: ollama pull llama3.2:3b",
-		);
-	}
-
-	return models;
-}
+import {
+	RUNTIME_NAMES,
+	type RuntimeName,
+	createRuntime,
+	discoverRuntimes,
+} from "../runtimes/index.js";
+import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
+import { SCHEMA_VERSION } from "../schemas/index.js";
 
 /**
  * Discovers available tests by scanning src/tests/ directory.
@@ -110,20 +90,186 @@ function getBunVersion(): string {
  * @param config - Benchmark configuration
  * @returns The complete run plan ready for execution
  *
- * @throws {Error} If Ollama is unavailable or no models/tests found
+ * @throws {Error} If no runtimes available or no models/tests found
  */
 export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const runId = generateRunId();
 	const log = logger.child({ runId });
 
 	log.info("Building run plan...");
+	const managedVllm =
+		config.managedVllm?.enabled === true ? config.managedVllm : undefined;
 
-	// Discover models if not specified (from Ollama, shared by all harnesses)
-	let models = config.models;
-	if (models.length === 0) {
-		log.info("Auto-discovering models from Ollama...");
-		models = await discoverModels(config.ollamaBaseUrl, config.generateTimeoutMs);
-		log.info({ models }, `Found ${models.length} model(s)`);
+	// Discover runtimes if not specified
+	let runtimes: RuntimeName[];
+	if (config.runtimes.length === 0) {
+		log.info("Auto-discovering runtimes...");
+		runtimes = await discoverRuntimes({
+			ollamaBaseUrl: config.ollamaBaseUrl,
+			vllmBaseUrl: config.vllmBaseUrl,
+			timeoutMs: config.generateTimeoutMs,
+		});
+		if (runtimes.length === 0) {
+			throw new Error(
+				`No runtimes available. Is Ollama running at ${config.ollamaBaseUrl}? Try: ollama serve`,
+			);
+		}
+		log.info({ runtimes }, `Found ${runtimes.length} runtime(s)`);
+	} else {
+		// Validate requested runtimes
+		const invalid = config.runtimes.filter(
+			(r) => !RUNTIME_NAMES.includes(r as RuntimeName),
+		);
+		if (invalid.length > 0) {
+			throw new Error(
+				`Unknown runtimes: ${invalid.join(", ")}. Available: ${RUNTIME_NAMES.join(", ")}`,
+			);
+		}
+		runtimes = config.runtimes as RuntimeName[];
+		log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
+	}
+
+	// Ensure managed vLLM is included even if it's not currently reachable.
+	if (managedVllm) {
+		const hasVllm = runtimes.includes("vllm");
+		if (!hasVllm) {
+			runtimes = [...runtimes, "vllm"];
+			log.info(
+				{ runtimes },
+				"Managed vLLM enabled; including vLLM runtime even if not currently reachable",
+			);
+		}
+	}
+
+	// Discover models per runtime
+	const runtimeModels = new Map<RuntimeName, string[]>();
+	// Track runtime-scoped resolved model name -> canonical alias name (avoid collisions across runtimes)
+	const modelCanonicalMap = new Map<string, string>();
+	const aliases = config.modelAliases;
+	const hasAliases = Object.keys(aliases).length > 0;
+
+	if (hasAliases) {
+		log.info({ aliases: Object.keys(aliases) }, "Using model aliases");
+	}
+
+	for (const runtimeName of runtimes) {
+		if (runtimeName === "vllm" && managedVllm) {
+			// Defer reachability/model discovery; use configured model(s) for reproducibility.
+			const modelsForVllm: string[] = [];
+
+			if (config.models.length > 0) {
+				for (const modelSpec of config.models) {
+					if (isAlias(modelSpec, aliases)) {
+						const resolved = resolveModelForRuntime(
+							modelSpec,
+							runtimeName,
+							aliases,
+						);
+						if (resolved) {
+							modelsForVllm.push(resolved);
+							modelCanonicalMap.set(`${runtimeName}::${resolved}`, modelSpec);
+							log.debug(
+								{ alias: modelSpec, runtime: runtimeName, resolved },
+								"Resolved model alias (managed vLLM)",
+							);
+						}
+					} else {
+						modelsForVllm.push(modelSpec);
+					}
+				}
+			} else {
+				modelsForVllm.push(managedVllm.model);
+			}
+
+			runtimeModels.set(runtimeName, modelsForVllm);
+			log.info(
+				{ runtime: runtimeName, count: modelsForVllm.length },
+				"Models discovered (managed vLLM)",
+			);
+			continue;
+		}
+
+		const runtime = createRuntime(runtimeName, {
+			ollamaBaseUrl: config.ollamaBaseUrl,
+			vllmBaseUrl: config.vllmBaseUrl,
+			defaultTimeoutMs: config.generateTimeoutMs,
+		});
+
+		const available = await runtime.ping();
+		if (!available) {
+			log.warn({ runtime: runtimeName }, "Runtime not reachable, skipping");
+			runtimeModels.set(runtimeName, []);
+			continue;
+		}
+
+		const discovered = await runtime.listModels();
+
+		// Apply --models filter if provided (with alias resolution)
+		let filtered: string[];
+		if (config.models.length > 0) {
+			filtered = [];
+			for (const modelSpec of config.models) {
+				// Check if this is an alias
+				if (isAlias(modelSpec, aliases)) {
+					const resolved = resolveModelForRuntime(
+						modelSpec,
+						runtimeName,
+						aliases,
+					);
+					if (resolved && discovered.includes(resolved)) {
+						filtered.push(resolved);
+						modelCanonicalMap.set(`${runtimeName}::${resolved}`, modelSpec);
+						log.debug(
+							{ alias: modelSpec, runtime: runtimeName, resolved },
+							"Resolved model alias",
+						);
+					}
+				} else {
+					// Direct model name - check if available
+					if (discovered.includes(modelSpec)) {
+						filtered.push(modelSpec);
+					}
+				}
+			}
+		} else {
+			filtered = discovered;
+		}
+
+		runtimeModels.set(runtimeName, filtered);
+		log.info(
+			{ runtime: runtimeName, count: filtered.length },
+			"Models discovered",
+		);
+	}
+
+	// Validate at least one model exists
+	const allModels = [...runtimeModels.values()].flat();
+	if (allModels.length === 0) {
+		// Provide helpful error message
+		if (config.models.length > 0) {
+			// User specified models but none matched - show what's available
+			const availableByRuntime: string[] = [];
+			for (const runtimeName of runtimes) {
+				const runtime = createRuntime(runtimeName, {
+					ollamaBaseUrl: config.ollamaBaseUrl,
+					vllmBaseUrl: config.vllmBaseUrl,
+					defaultTimeoutMs: config.generateTimeoutMs,
+				});
+				const available = await runtime.listModels();
+				if (available.length > 0) {
+					availableByRuntime.push(
+						`${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`,
+					);
+				}
+			}
+			throw new Error(
+				`No models matched filter: ${config.models.join(", ")}\n` +
+					`Available models:\n  ${availableByRuntime.join("\n  ") || "None found"}`,
+			);
+		}
+		throw new Error(
+			"No models found in any runtime. Pull a model first: ollama pull llama3.2:3b",
+		);
 	}
 
 	// Discover tests if not specified
@@ -138,21 +284,28 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	}
 
 	// Discover available harnesses
-	const availableHarnesses = await discoverHarnesses({
-		ollamaBaseUrl: config.ollamaBaseUrl,
-		timeoutMs: config.generateTimeoutMs,
-	});
+	const availableHarnesses = await discoverHarnesses();
 
 	// Auto-discover all harnesses if not specified, otherwise validate requested ones
-	let harnesses = config.harnesses;
-	if (harnesses.length === 0) {
+	let harnesses: HarnessName[];
+	if (config.harnesses.length === 0) {
 		log.info("Auto-discovering harnesses...");
 		harnesses = availableHarnesses;
 		log.info({ harnesses }, `Found ${harnesses.length} harness(es)`);
 	} else {
-		// Validate that requested harnesses are available
-		const unavailable = harnesses.filter(
-			(h) => !availableHarnesses.includes(h as HarnessName),
+		// Normalize and validate requested harnesses
+		const normalized = config.harnesses.map((h) => {
+			if (!isValidHarnessName(h)) {
+				throw new Error(
+					`Unknown harness: ${h}. Available: ${availableHarnesses.join(", ")}`,
+				);
+			}
+			return normalizeHarnessName(h);
+		});
+
+		// Check availability
+		const unavailable = normalized.filter(
+			(h) => !availableHarnesses.includes(h),
 		);
 		if (unavailable.length > 0) {
 			throw new Error(
@@ -160,29 +313,61 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 					`Available: ${availableHarnesses.join(", ")}`,
 			);
 		}
+		harnesses = normalized;
 		log.info({ harnesses }, `Using ${harnesses.length} harness(es)`);
 	}
 
-	// Build matrix items
+	// Build matrix items: runtimes × harnesses (filtered by compatibility) × models (per-runtime) × tests × passTypes
 	const items: MatrixItem[] = [];
 	let itemIndex = 0;
 
-	for (const model of models) {
-		for (const harness of harnesses) {
-			for (const test of tests) {
-				const passTypes = isToolSmokeTest(test)
-					? [selectToolSmokePassType(config.passTypes)]
-					: config.passTypes;
+	for (const runtime of runtimes) {
+		const modelsForRuntime = runtimeModels.get(runtime) ?? [];
+		if (modelsForRuntime.length === 0) continue;
 
-				for (const passType of passTypes) {
-					itemIndex++;
-					items.push({
-						id: String(itemIndex).padStart(2, "0"),
-						model,
-						harness,
-						test,
-						passType,
-					});
+		// Filter harnesses to only those compatible with this runtime
+		const compatibleHarnesses = harnesses.filter((h) =>
+			isHarnessCompatibleWithRuntime(h, runtime),
+		);
+
+		if (compatibleHarnesses.length === 0) {
+			log.warn(
+				{ runtime, requestedHarnesses: harnesses },
+				"No compatible harnesses for runtime, skipping",
+			);
+			continue;
+		}
+
+		if (compatibleHarnesses.length < harnesses.length) {
+			const skipped = harnesses.filter((h) => !compatibleHarnesses.includes(h));
+			log.info(
+				{ runtime, skipped },
+				"Some harnesses not compatible with runtime",
+			);
+		}
+
+		for (const harness of compatibleHarnesses) {
+			for (const model of modelsForRuntime) {
+				// Look up canonical alias if this model was resolved from one
+				const modelAlias = modelCanonicalMap.get(`${runtime}::${model}`);
+
+				for (const test of tests) {
+					const passTypes = isToolSmokeTest(test)
+						? [selectToolSmokePassType(config.passTypes)]
+						: config.passTypes;
+
+					for (const passType of passTypes) {
+						itemIndex++;
+						items.push({
+							id: String(itemIndex).padStart(2, "0"),
+							runtime,
+							harness,
+							model,
+							...(modelAlias ? { modelAlias } : {}),
+							test,
+							passType,
+						});
+					}
 				}
 			}
 		}
@@ -193,9 +378,12 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		`Matrix expanded to ${items.length} item(s)`,
 	);
 
+	// Calculate unique models across all runtimes for summary
+	const uniqueModels = new Set([...runtimeModels.values()].flat());
+
 	// Build the plan
 	const plan: RunPlan = {
-		schemaVersion: "0.1.0",
+		schemaVersion: SCHEMA_VERSION,
 		runId,
 		createdAt: new Date().toISOString(),
 		environment: {
@@ -204,13 +392,16 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		},
 		config: {
 			ollamaBaseUrl: config.ollamaBaseUrl,
+			vllmBaseUrl: config.vllmBaseUrl,
 			generateTimeoutMs: config.generateTimeoutMs,
 			passTypes: config.passTypes,
+			...(managedVllm ? { managedVllm } : {}),
 		},
 		items,
 		summary: {
 			totalItems: items.length,
-			models: models.length,
+			runtimes: runtimes.length,
+			models: uniqueModels.size,
 			harnesses: harnesses.length,
 			tests: tests.length,
 		},

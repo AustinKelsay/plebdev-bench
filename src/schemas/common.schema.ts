@@ -1,13 +1,23 @@
 /**
  * Purpose: Shared primitives and constants for the benchmark domain.
  * Exports: SCHEMA_VERSION, passTypes, PassTypeSchema, PassType,
- *          itemStatusTypes, ItemStatusSchema, ItemStatus
+ *          itemStatusTypes, ItemStatusSchema, ItemStatus,
+ *          runtimeNames, RuntimeNameSchema, RuntimeName
  */
 
 import { z } from "zod";
 
 /** Current schema version for all result/plan files. */
-export const SCHEMA_VERSION = "0.1.0";
+export const SCHEMA_VERSION = "0.2.1";
+
+/** Valid runtime names (inference backends). */
+export const runtimeNames = ["ollama", "vllm"] as const;
+
+/** Zod schema for runtime names. */
+export const RuntimeNameSchema = z.enum(runtimeNames);
+
+/** Runtime name type. */
+export type RuntimeName = z.infer<typeof RuntimeNameSchema>;
 
 /** Valid pass types for benchmark runs. */
 export const passTypes = ["blind", "informed"] as const;
@@ -81,4 +91,6 @@ export const frontierEvalFailureTypes = [
 export const FrontierEvalFailureTypeSchema = z.enum(frontierEvalFailureTypes);
 
 /** Frontier eval failure type. */
-export type FrontierEvalFailureType = z.infer<typeof FrontierEvalFailureTypeSchema>;
+export type FrontierEvalFailureType = z.infer<
+	typeof FrontierEvalFailureTypeSchema
+>;
