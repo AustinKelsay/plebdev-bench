@@ -138,7 +138,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Bench output (keep the committed sample run + index.json)
+# Bench output (local-only by default; published runs live under apps/dashboard/public/results)
 results/*
-!results/index.json
-!results/20260209-080211-751e64/
+
+# Dashboard build artifacts
+apps/dashboard/dist/
+apps/dashboard/tsconfig.tsbuildinfo
