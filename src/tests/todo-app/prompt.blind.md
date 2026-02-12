@@ -6,7 +6,6 @@ Export a factory `createTodoApp()` that returns an object with:
 - `getTodo(id: number): { id: number, text: string, completed: boolean } | undefined`
 - `toggleTodo(id: number): void`
 - `deleteTodo(id: number): boolean`
-- `listTodos`, `listCompleted`, `listPending`, `clearCompleted`
 - `listTodos(): Array<{ id: number, text: string, completed: boolean }>`
 - `listCompleted(): Array<{ id: number, text: string, completed: boolean }>`
 - `listPending(): Array<{ id: number, text: string, completed: boolean }>`
