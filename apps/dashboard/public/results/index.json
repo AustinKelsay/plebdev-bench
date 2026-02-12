@@ -1,5 +1,17 @@
 [
   {
+    "runId": "20260211-164022-24931c",
+    "startedAt": "2026-02-12T00:40:22.878Z",
+    "completedAt": "2026-02-12T09:37:41.728Z",
+    "durationMs": 31040004,
+    "summary": {
+      "total": 567,
+      "completed": 541,
+      "failed": 26,
+      "pending": 0
+    }
+  },
+  {
     "runId": "20260209-080211-751e64",
     "startedAt": "2026-02-09T16:02:11.419Z",
     "completedAt": "2026-02-09T22:49:40.514Z",
