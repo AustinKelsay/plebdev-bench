@@ -3,28 +3,63 @@
  * Purpose: Build index.json for the dashboard by scanning results directory.
  * Generates a list of all runs with summary information.
  *
- * Usage: bun run apps/dashboard/scripts/build-index.ts
+ * Usage:
+ *   bun run apps/dashboard/scripts/build-index.ts
+ *   bun run apps/dashboard/scripts/build-index.ts --dir results
  */
-import { readFile, readdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { RunResultSchema } from "../src/lib/schemas";
 import type { RunListItem } from "../src/lib/types";
 
-const RESULTS_DIR = join(import.meta.dir, "../../../results");
-const INDEX_PATH = join(RESULTS_DIR, "index.json");
+const DEFAULT_RESULTS_DIR = resolve(import.meta.dir, "../public/results");
+
+/**
+ * Resolves the results directory to scan.
+ *
+ * Rules:
+ * - Default: apps/dashboard/public/results
+ * - Optional: `--dir <path>` resolved from process cwd
+ *
+ * @throws Error if `--dir` is provided without a path
+ */
+function resolveResultsDir(argv: string[]): string {
+	if (argv.includes("--help") || argv.includes("-h")) {
+		console.log("Usage: bun run apps/dashboard/scripts/build-index.ts [--dir <path>]");
+		console.log("");
+		console.log("Default directory: apps/dashboard/public/results");
+		process.exit(0);
+	}
+
+	const dirFlagIndex = argv.indexOf("--dir");
+	if (dirFlagIndex === -1) return DEFAULT_RESULTS_DIR;
+
+	const dirArg = argv.at(dirFlagIndex + 1);
+	if (typeof dirArg !== "string" || dirArg.trim().length === 0) {
+		throw new Error("--dir requires a path");
+	}
+
+	return resolve(process.cwd(), dirArg);
+}
 
 async function buildIndex(): Promise<void> {
-	console.log(`Scanning ${RESULTS_DIR} for runs...`);
+	const resultsDir = resolveResultsDir(process.argv.slice(2));
+	const indexPath = join(resultsDir, "index.json");
+
+	console.log(`Scanning ${resultsDir} for runs...`);
 
 	const runs: RunListItem[] = [];
 
 	try {
-		const entries = await readdir(RESULTS_DIR, { withFileTypes: true });
+		// Ensure directory exists so first-time setups succeed deterministically.
+		await mkdir(resultsDir, { recursive: true });
+
+		const entries = await readdir(resultsDir, { withFileTypes: true });
 
 		for (const entry of entries) {
 			if (!entry.isDirectory()) continue;
 
-			const runDir = join(RESULTS_DIR, entry.name);
+			const runDir = join(resultsDir, entry.name);
 			const runJsonPath = join(runDir, "run.json");
 
 			try {
@@ -59,17 +94,16 @@ async function buildIndex(): Promise<void> {
 		);
 
 		// Write index.json
-		await writeFile(INDEX_PATH, JSON.stringify(runs, null, 2));
+		await writeFile(indexPath, JSON.stringify(runs, null, 2));
 
-		console.log(`\nWrote ${runs.length} runs to ${INDEX_PATH}`);
+		console.log(`\nWrote ${runs.length} runs to ${indexPath}`);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-			console.log(`Results directory not found: ${RESULTS_DIR}`);
-			console.log("Run some benchmarks first with: bun pb");
-
-			// Create empty index
-			await writeFile(INDEX_PATH, "[]");
-			console.log(`Created empty index at ${INDEX_PATH}`);
+			// Should be rare (we mkdir -p), but keep deterministic behavior.
+			console.log("Results directory not found; creating empty index.");
+			await mkdir(resultsDir, { recursive: true });
+			await writeFile(indexPath, "[]");
+			console.log(`Created empty index at ${indexPath}`);
 		} else {
 			throw error;
 		}

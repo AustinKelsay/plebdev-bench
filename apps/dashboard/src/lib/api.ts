@@ -8,8 +8,13 @@
 import { RunListSchema, RunPlanSchema, RunResultSchema } from "./schemas";
 import type { RunListItem, RunPlan, RunResult } from "./types";
 
-/** Base path for results - served via Vite dev server */
-const RESULTS_BASE = "/results";
+/**
+ * Base path for published results.
+ *
+ * Note: Use BASE_URL so static deployments under a sub-path still work.
+ * Example: BASE_URL="/bench/" -> "/bench/results"
+ */
+const RESULTS_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/results`;
 
 /**
  * Fetches the list of all available runs from index.json.
@@ -22,7 +27,7 @@ export async function fetchRuns(): Promise<RunListItem[]> {
 		if (response.status === 404) {
 			// Index doesn't exist yet - return empty list
 			console.warn(
-				"No runs index found. Run `bun dashboard:index` to generate it.",
+				"No runs index found. Run `bun dashboard:index` to generate apps/dashboard/public/results/index.json.",
 			);
 			return [];
 		}

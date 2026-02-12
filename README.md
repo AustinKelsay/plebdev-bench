@@ -31,7 +31,7 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 
 - Runtime matrix validated across `ollama` and `vllm` with harnesses `direct`, `goose`, and `opencode`.
 - Benchmark run `20260208-122510-cb6911` completed `53/54` items with `91.2%` overall pass rate.
-- Dashboard now renders and compares multi-runtime/multi-harness run data from `results/index.json`.
+- Dashboard can be hosted as a static frontend that reads published run data from `apps/dashboard/public/results/index.json`.
 - Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
 - vLLM local setup notes (OrbStack/Docker, memory sizing, troubleshooting): `llm/implementation/vllm-orbstack-setup.md`.
 
@@ -79,7 +79,8 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
-- `results/` — runtime output (including tracked MVP run snapshots in this branch)
+- `results/` — local runtime output (ignored by git)
+- `apps/dashboard/public/results/` — published runs for the hosted dashboard (tracked)
 - `llm/` — planning docs (project overview, user flow, tech stack, design rules, phases)
 
 ## Quickstart
@@ -105,6 +106,26 @@ bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
 # Run with specific runtime and harness
 bun pb --runtimes ollama --harnesses direct
+```
+
+## Dashboard: publish runs for hosting
+
+The dashboard is a static Vite app under `apps/dashboard/`. It loads runs from static JSON at `/results/*`.
+
+To publish a run (writes output directly into the tracked published folder):
+
+```bash
+bun run src/index.ts run -o apps/dashboard/public/results
+bun dashboard:index
+git add apps/dashboard/public/results
+git commit -m "Publish run <runId>"
+git push
+```
+
+To run locally (unpublished output in `results/`):
+
+```bash
+bun pb
 ```
 
 ### Managed vLLM Lifecycle (Single Run)
@@ -160,3 +181,49 @@ Each run creates:
 - `llm/implementation/review-and-hardening-implementation.md` — threat model + hardening notes
 - `llm/implementation/release-readiness-checklist.md` — release checklist and sign-off
 - `llm/implementation/multi-runtime-mvp-implementation.md` — detailed multi-runtime MVP implementation and validation notes
+
+## Hosted dashboard (how it works)
+
+The hosted dashboard is a static frontend that reads run data from static JSON files committed to git.
+
+High level:
+- Bench runs produce `plan.json` + `run.json` in an output directory.
+- Published runs live in `apps/dashboard/public/results/<runId>/`.
+- An index (`apps/dashboard/public/results/index.json`) is generated from the published runs.
+- The dashboard fetches:
+  - `/results/index.json` (run list)
+  - `/results/<runId>/run.json` and `/results/<runId>/plan.json` (details)
+
+Local vs hosted:
+- Local dev: Vite serves the app and serves `/results/*` from the filesystem.
+- Hosted (Vercel): Vite copies `apps/dashboard/public/*` into `apps/dashboard/dist/*`, so `/results/*` is just static files.
+
+Design constraints:
+- Runs are treated as append-only facts: publishing is a copy/commit action, not a mutation of prior runs.
+- The dashboard validates fetched JSON at the boundary (Zod) and fails loudly on schema mismatch.
+
+## Hosted dashboard (what we implemented)
+
+Published results:
+- Source of truth: `apps/dashboard/public/results/`
+- Example published run snapshot: `apps/dashboard/public/results/20260209-080211-751e64/`
+- Index generator: `apps/dashboard/scripts/build-index.ts`
+  - Default scan/output dir: `apps/dashboard/public/results`
+  - Optional override: `--dir <path>` (resolved from repo root cwd)
+
+Dashboard fetching:
+- Fetch base path is computed from `import.meta.env.BASE_URL` so it works under a subpath deploy.
+- Fetch implementation: `apps/dashboard/src/lib/api.ts`
+
+Git hygiene:
+- Local output ignored: `results/*` in `.gitignore`
+- Build artifacts ignored: `apps/dashboard/dist/` and `apps/dashboard/tsconfig.tsbuildinfo`
+
+Vercel routing:
+- `vercel.json` rewrites non-file routes to `index.html` for React Router deep links.
+- Static `/results/*` remains directly fetchable.
+
+Vercel build configuration (recommended):
+- Install: `bun install`
+- Build: `bun run --cwd apps/dashboard build`
+- Output: `apps/dashboard/dist`
