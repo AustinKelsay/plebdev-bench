@@ -62,6 +62,8 @@ export type GenerationFailureType = z.infer<typeof GenerationFailureTypeSchema>;
 export const scoringFailureTypes = [
 	"extraction",
 	"import",
+	"missing_export",
+	"factory_init_failed",
 	"export_validation",
 	"test_execution",
 	"spec_load",
