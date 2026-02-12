@@ -2,6 +2,14 @@
 
 Stateful calculator with running total and memory functions.
 
+## Output Contract
+
+The generated answer must be a single TypeScript module suitable for direct import by the harness:
+
+- Return code only (no prose, no examples, no `console.log`)
+- Export `createCalculator` as the primary API function
+- Do not use a class as the primary exported API
+
 ## Requirements
 
 Generate TypeScript code that exports a `createCalculator` factory function that returns a calculator object with the following methods:
@@ -18,7 +26,7 @@ Generate TypeScript code that exports a `createCalculator` factory function that
 - `memoryStore()` - Store current value in memory, returns calculator for chaining
 - `memoryRecall()` - Returns the stored memory value
 - `memoryClear()` - Clear memory to 0, returns calculator for chaining
-- `memoryAdd()` - Add current value to memory, returns calculator for chaining
+- `memoryAdd()` - Add current value to memory, returns calculator for chaining (must not change current value)
 
 ## Acceptance Criteria
 

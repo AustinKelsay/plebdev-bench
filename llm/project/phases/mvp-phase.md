@@ -40,13 +40,13 @@ Ship the smallest version that delivers the core value: repeatable benchmarking 
    - State management for tasks (add, toggle, delete)
    - blind/informed prompts
    - acceptance criteria in `README.md`
-   - `scoring.test.ts` validates CRUD operations
+   - `scoring.spec.ts` defines CRUD scoring expectations
 
    **Test 2: calculator-basic**
    - Stateless arithmetic: `+`, `-`, `*`, `/`
    - Blind prompt: "Build a calculator"
    - Informed prompt: includes function signature hints
-   - `scoring.test.ts` validates:
+   - `scoring.spec.ts` validates:
      - Basic operations work correctly
      - Division by zero handling
      - Floating point edge cases
@@ -56,7 +56,7 @@ Ship the smallest version that delivers the core value: repeatable benchmarking 
    - Memory functions (MC, MR, M+, M-)
    - Blind prompt: "Build a calculator with memory"
    - Informed prompt: includes state shape hints
-   - `scoring.test.ts` validates:
+   - `scoring.spec.ts` validates:
      - Operation chaining works
      - Memory functions work
      - Clear/reset behavior

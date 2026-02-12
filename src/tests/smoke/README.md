@@ -2,6 +2,13 @@
 
 A simple benchmark test to verify the pipeline works end-to-end.
 
+## Output Contract
+
+The generated answer must be a single TypeScript module suitable for direct import by the harness:
+
+- Return code only (no prose, no examples, no `console.log`)
+- Export a top-level named `add` function
+
 ## Task
 
 Write a TypeScript function called `add` that takes two numbers and returns their sum.
@@ -13,24 +20,7 @@ Write a TypeScript function called `add` that takes two numbers and returns thei
 - Returns the sum of the two numbers
 - Uses TypeScript syntax
 
-## Example
-
-```typescript
-function add(a: number, b: number): number {
-  return a + b;
-}
-
-// Usage
-add(2, 3); // returns 5
-```
-
 ## Scoring
 
-**Automated (placeholder for MVP):**
-- Parse output for function definition
-- Check function name matches `add`
-
-**Frontier eval (out of scope for setup):**
-- Code correctness
-- TypeScript type annotations
-- Code clarity
+- Automated scoring validates exports and executes functional test cases.
+- Frontier eval applies `rubric.md` via OpenRouter when `OPENROUTER_API_KEY` is configured.

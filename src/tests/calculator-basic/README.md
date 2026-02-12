@@ -2,6 +2,14 @@
 
 Stateless arithmetic calculator with four basic operations.
 
+## Output Contract
+
+The generated answer must be a single TypeScript module suitable for direct import by the harness:
+
+- Return code only (no prose, no examples, no `console.log`)
+- Use top-level named exports for required functions
+- Do not wrap required exports in a namespace/class/object
+
 ## Requirements
 
 Generate TypeScript code that exports four functions:
@@ -21,12 +29,11 @@ Generate TypeScript code that exports four functions:
 ### Edge Cases
 - Division by zero returns `Infinity` (JavaScript behavior)
 - Floating point operations return reasonable results
-- Very large numbers are handled without overflow errors
 
 ## Pass Criteria
 
 The generated code passes if:
 1. All four functions are exported
-2. All functions have correct signatures (2 number params, returns number)
-3. Test cases pass for basic operations
-4. Edge cases are handled appropriately
+2. Exports are top-level named functions
+3. All functions have correct signatures (2 number params, returns number)
+4. Test cases pass for basic operations and documented edge cases
