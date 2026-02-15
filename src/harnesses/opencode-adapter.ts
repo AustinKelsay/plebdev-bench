@@ -14,9 +14,15 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execa } from "execa";
-import { extractCode } from "../lib/code-extractor.js";
 import { logger } from "../lib/logger.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
+import {
+	appendRetryMarker,
+	buildCodeOnlyPrompt,
+	evaluateCodeOnlyOutput,
+	hasRetryMarker,
+	stripRetryMarker,
+} from "./code-output-policy.js";
 import {
 	buildOpenCodeConfig,
 	buildOpenCodeEnv,
@@ -37,15 +43,7 @@ const SOLUTION_FILENAME = "solution.ts";
 /** Interval for checking stale output (ms). */
 const STALE_CHECK_INTERVAL_MS = 30_000;
 
-/**
- * Creates an OpenCode harness adapter.
- *
- * @returns Harness instance for OpenCode
- * @throws Error TimeoutError-like: when OpenCode exceeds `timeoutMs` and is force-killed.
- * @throws Error StaleOutputError-like: when OpenCode produces no output for the stale threshold and is force-killed.
- * @throws Error NonZeroExitError-like: when OpenCode exits with a non-zero exit code (stdout/stderr preview included).
- * @throws Error EmptyOutputError-like: when OpenCode returns empty output too quickly (often indicates a misconfigured model/provider).
- */
+/** Creates an OpenCode harness adapter. */
 export function createOpenCodeAdapter(): Harness {
 	return {
 		name: "opencode" as const,
@@ -81,8 +79,9 @@ export function createOpenCodeAdapter(): Harness {
 			const { runtime, model, prompt, timeoutMs } = opts;
 			const log = logger.child({ harness: "opencode", model });
 			const startTime = performance.now();
+			const isRetryAttempt = hasRetryMarker(prompt);
+			const promptWithoutMarker = stripRetryMarker(prompt);
 
-			// Unique directory in tool-output root avoids interactive permission prompts.
 			const runId = crypto.randomBytes(8).toString("hex");
 			const toolOutputRoot = resolveOpenCodeToolOutputRoot();
 			const workDir = path.join(
@@ -99,7 +98,6 @@ export function createOpenCodeAdapter(): Harness {
 				);
 			}
 
-			// OpenCode checks git context; initializing avoids "not a git repo" confusion.
 			try {
 				await execa("git", ["init", "--quiet"], { cwd: workDir });
 				await execa("git", ["config", "user.email", "bench@local"], {
@@ -112,7 +110,7 @@ export function createOpenCodeAdapter(): Harness {
 
 			const configPath = path.join(workDir, "opencode.json");
 
-			const providerName = runtime.name; // "ollama" or "vllm"
+			const providerName = runtime.name;
 			if (runtime.apiFormat === "openai-compat") {
 				const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
 				if (!apiKey) {
@@ -143,7 +141,6 @@ export function createOpenCodeAdapter(): Harness {
 				"Created OpenCode work directory",
 			);
 
-			// Use runtime model identifier verbatim so provider receives the exact model ID.
 			const modelArg = `${providerName}/${model}`;
 
 			const env = buildOpenCodeEnv({
@@ -152,7 +149,7 @@ export function createOpenCodeAdapter(): Harness {
 				runtimeName: runtime.name,
 			});
 
-			const fullPrompt = `${prompt.trim()}\n\nReturn the final TypeScript code in your response. Do not return status-only messages.`;
+			const fullPrompt = buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 
 			const args = [
 				"run",
@@ -169,10 +166,7 @@ export function createOpenCodeAdapter(): Harness {
 				"Executing OpenCode command directly in workDir",
 			);
 
-			// Track codeFilePath outside try block for cleanup logic
 			let codeFilePath: string | undefined;
-
-			// AbortController for timeout management
 			const controller = new AbortController();
 			let timeoutId: ReturnType<typeof setTimeout> | undefined;
 			let staleCheckId: ReturnType<typeof setInterval> | undefined;
@@ -182,28 +176,23 @@ export function createOpenCodeAdapter(): Harness {
 			let staleTimeoutMs = 0;
 			let killAttempted = false;
 
-			// Track stdout/stderr for output collection
 			const stdoutChunks: string[] = [];
 			const stderrChunks: string[] = [];
 
 			try {
-				// Start the process with piped output for stale detection
 				const proc = execa("opencode", args, {
 					env,
 					cwd: workDir,
 					stdin: "ignore",
 					stdout: "pipe",
 					stderr: "pipe",
-					// Use cancelSignal for abort control (execa v9+)
 					cancelSignal: controller.signal,
-					// Don't reject on non-zero exit - we handle errors ourselves
 					reject: false,
 				});
 
 				const pid = proc.pid;
 				log.debug({ pid }, "OpenCode process started");
 
-				// Set up output listeners to track activity and collect output
 				proc.stdout?.on("data", (chunk: Buffer) => {
 					lastOutputTime = Date.now();
 					stdoutChunks.push(chunk.toString());
@@ -213,14 +202,12 @@ export function createOpenCodeAdapter(): Harness {
 					stderrChunks.push(chunk.toString());
 				});
 
-				// Set up main timeout
 				const timeoutPromise: Promise<never> = new Promise((_, reject) => {
 					timeoutId = setTimeout(() => {
 						if (killAttempted) return;
 						killAttempted = true;
 						timedOut = true;
 
-						// Clear intervals IMMEDIATELY to prevent repeated kill attempts
 						if (staleCheckId) {
 							clearInterval(staleCheckId);
 							staleCheckId = undefined;
@@ -242,7 +229,6 @@ export function createOpenCodeAdapter(): Harness {
 					}, timeoutMs);
 				});
 
-				// Set up stale output detection
 				const staleOutputTimeoutMs = computeStaleOutputTimeoutMs(timeoutMs);
 				staleTimeoutMs = staleOutputTimeoutMs;
 				const stalePromise: Promise<never> = new Promise((_, reject) => {
@@ -257,11 +243,9 @@ export function createOpenCodeAdapter(): Harness {
 							staleKilled = true;
 							staleTimeoutMs = threshold;
 
-							// Clear interval IMMEDIATELY to prevent repeated kill attempts
 							clearInterval(staleCheckId);
 							staleCheckId = undefined;
 
-							// Also clear the main timeout since we're killing now
 							if (timeoutId) {
 								clearTimeout(timeoutId);
 								timeoutId = undefined;
@@ -287,17 +271,13 @@ export function createOpenCodeAdapter(): Harness {
 					}, STALE_CHECK_INTERVAL_MS);
 				});
 
-				// Wait for process completion, timeout, or stale-output detection.
-				// Promise.race prevents hanging forever if process termination is delayed.
 				const result = await Promise.race([proc, timeoutPromise, stalePromise]);
 
-				// Clear timers immediately after completion
 				if (timeoutId) clearTimeout(timeoutId);
 				if (staleCheckId) clearInterval(staleCheckId);
 				timeoutId = undefined;
 				staleCheckId = undefined;
 
-				// Check for abort/timeout errors
 				if (timedOut) {
 					throw new Error(
 						`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
@@ -309,11 +289,9 @@ export function createOpenCodeAdapter(): Harness {
 					);
 				}
 
-				// Collect output from chunks
 				const stdout = stdoutChunks.join("");
 				const stderr = stderrChunks.join("");
 
-				// Check for non-zero exit code
 				if (result.exitCode !== 0 && result.exitCode !== null) {
 					const stdoutPreview = stdout.trim().slice(0, 800);
 					const stderrPreview = stderr.trim().slice(0, 800);
@@ -325,7 +303,6 @@ export function createOpenCodeAdapter(): Harness {
 
 				const durationMs = Math.round(performance.now() - startTime);
 
-				// Log stderr if present (may contain warnings)
 				if (stderr?.trim()) {
 					log.warn(
 						{ stderr: stderr.slice(0, 500) },
@@ -342,10 +319,8 @@ export function createOpenCodeAdapter(): Harness {
 					"OpenCode completed",
 				);
 
-				// Use raw stdout directly (simpler and more reliable)
 				let output = stdout;
 
-				// Fallback to stderr if stdout empty (OpenCode sometimes writes there)
 				if (!output || output.trim().length === 0) {
 					const stderrContent = stderr.trim();
 					if (stderrContent.length >= MIN_OUTPUT_LENGTH) {
@@ -371,7 +346,6 @@ export function createOpenCodeAdapter(): Harness {
 					output = normalized.output;
 				}
 
-				// Check if solution file was created by tool
 				if (fs.existsSync(solutionPath)) {
 					const code = await fs.promises.readFile(solutionPath, "utf-8");
 					if (code.trim().length >= MIN_OUTPUT_LENGTH) {
@@ -388,7 +362,6 @@ export function createOpenCodeAdapter(): Harness {
 					}
 				}
 
-				// Fast empty responses often indicate server-side errors (e.g., model not found).
 				if (!codeFilePath) {
 					if (
 						durationMs < 2000 &&
@@ -399,31 +372,53 @@ export function createOpenCodeAdapter(): Harness {
 						);
 					}
 
-					const extracted = extractCode(output);
-					const extractedCode = extracted.code.trim();
+					const decision = evaluateCodeOnlyOutput(output, MIN_OUTPUT_LENGTH);
 					if (
-						extractedCode.length >= MIN_OUTPUT_LENGTH &&
-						extracted.method !== "raw"
+						decision.method !== "raw" &&
+						decision.code.length >= MIN_OUTPUT_LENGTH
 					) {
-						await fs.promises.writeFile(solutionPath, extractedCode, "utf-8");
+						await fs.promises.writeFile(solutionPath, decision.code, "utf-8");
 						codeFilePath = solutionPath;
 						log.info(
 							{
 								codeFilePath,
-								extractionMethod: extracted.method,
-								codeLength: extractedCode.length,
+								extractionMethod: decision.method,
+								codeLength: decision.code.length,
 								toolCallDetected,
 							},
 							"Persisted extracted code to solution.ts (tool output absent)",
 						);
-					} else {
+					} else if (decision.shouldRetry) {
+						const elapsedMs = Math.round(performance.now() - startTime);
+						const remainingMs = timeoutMs - elapsedMs;
+						if (!isRetryAttempt && remainingMs > 1000) {
+							log.warn(
+								{
+									reason: decision.reason,
+									remainingMs,
+									outputPreview: output.slice(0, 200),
+								},
+								"OpenCode returned off-task/non-code output, retrying once",
+							);
+							const retryResult = await createOpenCodeAdapter().generate({
+								...opts,
+								prompt: appendRetryMarker(promptWithoutMarker),
+								timeoutMs: remainingMs,
+							});
+							return {
+								...retryResult,
+								durationMs: Math.round(performance.now() - startTime),
+							};
+						}
+
 						log.warn(
 							{
 								toolCallDetected,
 								outputLength: output.length,
-								extractionMethod: extracted.method,
+								extractionMethod: decision.method,
+								reason: decision.reason,
 							},
-							"OpenCode finished without usable code output",
+							"OpenCode finished with off-task/non-code output",
 						);
 					}
 				}
@@ -432,14 +427,11 @@ export function createOpenCodeAdapter(): Harness {
 					output,
 					durationMs,
 					codeFilePath,
-					// OpenCode doesn't provide token counts
 				};
 			} catch (error) {
-				// Clean up timers on error
 				if (timeoutId) clearTimeout(timeoutId);
 				if (staleCheckId) clearInterval(staleCheckId);
 
-				// Check for abort errors (from our timeout/stale handling)
 				if (error instanceof Error && error.name === "AbortError") {
 					if (timedOut) {
 						throw new Error(
@@ -454,14 +446,12 @@ export function createOpenCodeAdapter(): Harness {
 					throw new Error("OpenCode was aborted");
 				}
 
-				// Check if it's a timeout error (from execa's built-in timeout)
 				if (error instanceof Error && error.message.includes("timed out")) {
 					throw new Error(
 						`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
 					);
 				}
 
-				// Check for execa error with stderr
 				if (error && typeof error === "object" && "stderr" in error) {
 					const execaError = error as { stderr: string; message: string };
 					throw new Error(
@@ -471,22 +461,15 @@ export function createOpenCodeAdapter(): Harness {
 
 				throw error;
 			} finally {
-				// Always clean up timers
 				if (timeoutId) clearTimeout(timeoutId);
 				if (staleCheckId) clearInterval(staleCheckId);
 
-				// Clean up temp directory if no codeFilePath was set.
-				// If codeFilePath IS set, preserve it for scoring (scorer reads the file).
-				// Preserve directory only when tool output exists (scorer reads the file).
 				if (!codeFilePath) {
 					fs.promises
 						.rm(workDir, { recursive: true, force: true })
 						.catch(() => {
-							// Best-effort cleanup, ignore errors
 						});
 				}
-				// Note: When codeFilePath is set, cleanup is deferred to OS temp cleanup
-				// since scoring happens after generate() returns.
 			}
 		},
 	};

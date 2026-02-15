@@ -37,7 +37,7 @@ export function suppressStdout<T>(fn: () => T | Promise<T>): T | Promise<T> {
 	try {
 		const result = fn();
 		if (result instanceof Promise) {
-			return result.finally(restore) as T;
+			return result.finally(restore) as Promise<T>;
 		}
 		restore();
 		return result;

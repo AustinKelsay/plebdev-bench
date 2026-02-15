@@ -32,6 +32,7 @@ import type {
 	GenerationResult,
 	MatrixItem,
 	MatrixItemResult,
+	ScoringResult,
 	ScoringMetrics,
 } from "../schemas/index.js";
 
@@ -66,6 +67,117 @@ interface RuntimeUrls {
 	vllmBaseUrl: string;
 }
 
+/** Max compile error length embedded in retry prompt. */
+const COMPILE_RETRY_ERROR_MAX_LENGTH = 1200;
+
+/**
+ * Builds a retry prompt that includes compiler/import failure context.
+ *
+ * @param originalPrompt - Original test prompt
+ * @param compileError - Import/build error from scoring
+ * @returns Prompt instructing model to fix compile errors
+ */
+function buildCompileRetryPrompt(
+	originalPrompt: string,
+	compileError: string,
+): string {
+	const compactError = compileError.replace(/\s+/g, " ").trim();
+	const clippedError = compactError.slice(0, COMPILE_RETRY_ERROR_MAX_LENGTH);
+	return [
+		originalPrompt.trim(),
+		"",
+		"Previous attempt failed to compile/import during scoring.",
+		`Compiler/build error: ${clippedError}`,
+		"Fix all compile/type/syntax issues while preserving required behavior.",
+		"Return only final TypeScript source code.",
+	].join("\n");
+}
+
+/** Context for compile-feedback retry generation/scoring. */
+interface CompileRetryContext {
+	item: MatrixItem;
+	harness: ReturnType<typeof createHarness>;
+	runtime: ReturnType<typeof createRuntime>;
+	promptForRetry: string;
+	timeoutMs: number;
+	unloadAfter: boolean;
+	log: {
+		warn: (obj: Record<string, unknown>, msg?: string) => void;
+	};
+	currentGenerationDurationMs: number;
+	compileError: string;
+}
+
+/**
+ * Runs one compile-feedback retry attempt and returns retry generation+score on success.
+ *
+ * @param context - Retry context and dependencies
+ * @returns Retry result or undefined if retry attempt fails
+ */
+async function runCompileFeedbackRetry(
+	context: CompileRetryContext,
+): Promise<{ generation: GenerationResult; scoringResult: ScoringResult } | undefined> {
+	const retryPrompt = buildCompileRetryPrompt(
+		context.promptForRetry,
+		context.compileError,
+	);
+	const remainingTimeoutMs = Math.max(
+		1000,
+		context.timeoutMs - context.currentGenerationDurationMs,
+	);
+	context.log.warn(
+		{
+			harness: context.item.harness,
+			test: context.item.test,
+			passType: context.item.passType,
+			remainingTimeoutMs,
+			compileError: context.compileError.slice(0, 300),
+		},
+		"Compile/import failure detected, retrying generation once with compiler feedback",
+	);
+
+	try {
+		const retryResult = await context.harness.generate({
+			model: context.item.model,
+			prompt: retryPrompt,
+			timeoutMs: remainingTimeoutMs,
+			unloadAfter: context.unloadAfter,
+			runtime: context.runtime,
+		});
+		const retryGeneration: GenerationResult = {
+			success: true,
+			output: retryResult.output,
+			durationMs: retryResult.durationMs,
+			promptTokens: retryResult.promptTokens,
+			completionTokens: retryResult.completionTokens,
+			codeFilePath: retryResult.codeFilePath,
+		};
+		const retryScoringResult = await scoreGeneration(
+			context.item.test,
+			retryGeneration.output ?? "",
+			undefined,
+			retryGeneration.codeFilePath,
+		);
+		return {
+			generation: retryGeneration,
+			scoringResult: retryScoringResult,
+		};
+	} catch (retryError) {
+		const retryMessage =
+			retryError instanceof Error ? retryError.message : String(retryError);
+		context.log.warn(
+			{
+				harness: context.item.harness,
+				test: context.item.test,
+				passType: context.item.passType,
+				error: retryMessage,
+			},
+			"Compile-feedback retry generation failed; keeping original attempt",
+		);
+		return undefined;
+	}
+}
+
 /**
  * Executes a single matrix item.
  *
@@ -98,11 +210,17 @@ export async function executeItem(
 	let generation: GenerationResult;
 	let generationFailure: MatrixItemResult["generationFailure"];
 	let generationStartTime: number | undefined;
+	let promptForRetry = "";
+	let runtimeForRetry:
+		| ReturnType<typeof createRuntime>
+		| undefined;
+	let harnessForRetry: ReturnType<typeof createHarness> | undefined;
 
 	try {
 		// Load prompt
 		log.debug("Loading prompt...");
 		const prompt = loadPrompt(item.test, item.passType);
+		promptForRetry = prompt;
 
 		// Create runtime instance
 		const runtime = createRuntime(item.runtime, {
@@ -110,10 +228,12 @@ export async function executeItem(
 			vllmBaseUrl: runtimeConfig.vllmBaseUrl,
 			defaultTimeoutMs: timeoutMs,
 		});
+		runtimeForRetry = runtime;
 
 		// Create harness adapter
 		log.debug({ harness: item.harness }, "Creating harness...");
 		const harness = createHarness(item.harness);
+		harnessForRetry = harness;
 
 		// Generate completion (pass runtime to harness)
 		generationStartTime = performance.now();
@@ -182,20 +302,120 @@ export async function executeItem(
 		);
 	}
 
-	// Run automated scoring if generation succeeded
+	// Run automated scoring for every successful generation.
+	// This avoids denominator skew from "successful but empty" outputs.
 	let automatedScore: AutomatedScore | undefined;
 	let scoringMetrics: ScoringMetrics | undefined;
 	let scoringFailure: MatrixItemResult["scoringFailure"];
-	if (generation.success && (generation.output || generation.codeFilePath)) {
+	if (generation.success) {
 		try {
 			log.debug("Running automated scoring...");
 			const scoringStartTime = performance.now();
-			const scoringResult = await scoreGeneration(
-				item.test,
-				generation.output ?? "", // empty string OK when codeFilePath is set
-				undefined, // use default timeout
-				generation.codeFilePath, // pass file path from tool-calling harness
-			);
+			const supportsCompileRetry =
+				item.harness === "goose" || item.harness === "opencode";
+			let compileRetryUsed = false;
+			let scoringResult: ScoringResult;
+
+			try {
+				scoringResult = await scoreGeneration(
+					item.test,
+					generation.output ?? "", // empty string OK when codeFilePath is set
+					undefined, // use default timeout
+					generation.codeFilePath, // pass file path from tool-calling harness
+				);
+			} catch (scoringError) {
+				const scoringErrorMessage =
+					scoringError instanceof Error
+						? scoringError.message
+						: String(scoringError);
+				if (
+					supportsCompileRetry &&
+					harnessForRetry &&
+					runtimeForRetry &&
+					promptForRetry.length > 0
+				) {
+					const retryFromException = await runCompileFeedbackRetry({
+						item,
+						harness: harnessForRetry,
+						runtime: runtimeForRetry,
+						promptForRetry,
+						timeoutMs,
+						unloadAfter,
+						log,
+						currentGenerationDurationMs: generation.durationMs,
+						compileError: scoringErrorMessage,
+					});
+					if (retryFromException) {
+						compileRetryUsed = true;
+						generation = retryFromException.generation;
+						scoringResult = retryFromException.scoringResult;
+					} else {
+						throw scoringError;
+					}
+				} else {
+					throw scoringError;
+				}
+			}
+
+			const compileError =
+				scoringResult.failureType === "import" ||
+				scoringResult.failureType === "missing_export"
+					? scoringResult.error
+					: undefined;
+			if (
+				!compileRetryUsed &&
+				supportsCompileRetry &&
+				typeof compileError === "string" &&
+				harnessForRetry &&
+				runtimeForRetry &&
+				promptForRetry.length > 0
+			) {
+				const retryAttempt = await runCompileFeedbackRetry({
+					item,
+					harness: harnessForRetry,
+					runtime: runtimeForRetry,
+					promptForRetry,
+					timeoutMs,
+					unloadAfter,
+					log,
+					currentGenerationDurationMs: generation.durationMs,
+					compileError,
+				});
+				if (retryAttempt) {
+					const previousPassed = scoringResult.passed;
+					const shouldPromoteRetry =
+						retryAttempt.scoringResult.passed > previousPassed ||
+						(retryAttempt.scoringResult.passed === previousPassed &&
+							scoringResult.failureType === "import" &&
+							retryAttempt.scoringResult.failureType !== "import");
+					if (shouldPromoteRetry) {
+						generation = retryAttempt.generation;
+						scoringResult = retryAttempt.scoringResult;
+						log.info(
+							{
+								harness: item.harness,
+								test: item.test,
+								passType: item.passType,
+								beforePassed: previousPassed,
+								afterPassed: retryAttempt.scoringResult.passed,
+							},
+							"Compile-feedback retry promoted as best attempt",
+						);
+					} else {
+						log.warn(
+							{
+								harness: item.harness,
+								test: item.test,
+								passType: item.passType,
+								beforePassed: previousPassed,
+								retryPassed: retryAttempt.scoringResult.passed,
+							},
+							"Compile-feedback retry did not improve score; keeping original attempt",
+						);
+					}
+				}
+			}
+
 			const scoringDurationMs = Math.round(
 				performance.now() - scoringStartTime,
 			);

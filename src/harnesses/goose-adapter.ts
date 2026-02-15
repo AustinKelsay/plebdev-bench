@@ -17,8 +17,14 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { execa } from "execa";
-import { extractCode } from "../lib/code-extractor.js";
 import { logger } from "../lib/logger.js";
+import {
+	appendRetryMarker,
+	buildCodeOnlyPrompt,
+	evaluateCodeOnlyOutput,
+	hasRetryMarker,
+	stripRetryMarker,
+} from "./code-output-policy.js";
 import { normalizeOpenAiBasePath } from "./goose-openai.js";
 import { normalizeGooseOutput } from "./goose-output.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
@@ -53,6 +59,8 @@ export function createGooseAdapter(): Harness {
 			const { runtime, model, prompt, timeoutMs } = opts;
 			const log = logger.child({ harness: "goose", model });
 			const startTime = performance.now();
+			const isRetryAttempt = hasRetryMarker(prompt);
+			const promptWithoutMarker = stripRetryMarker(prompt);
 
 			// Create unique temp directory for this generation
 			const runId = crypto.randomBytes(8).toString("hex");
@@ -122,8 +130,7 @@ export function createGooseAdapter(): Harness {
 				...extraEnv,
 			};
 
-			// Keep prompt task-focused and require final code in response text.
-			const fullPrompt = `${prompt.trim()}\n\nReturn the final TypeScript code in your response. Do not return status-only messages.`;
+			const fullPrompt = buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 
 			// CRITICAL: Use --provider and --model flags to override Goose's config file
 			const args = [
@@ -230,43 +237,54 @@ export function createGooseAdapter(): Harness {
 						);
 					}
 
-					const extracted = extractCode(output);
-					const extractedCode = extracted.code.trim();
+					const decision = evaluateCodeOnlyOutput(output, MIN_OUTPUT_LENGTH);
 					if (
-						extractedCode.length >= MIN_OUTPUT_LENGTH &&
-						extracted.method !== "raw"
+						decision.method !== "raw" &&
+						decision.code.length >= MIN_OUTPUT_LENGTH
 					) {
-						await fs.promises.writeFile(solutionPath, extractedCode, "utf-8");
+						await fs.promises.writeFile(solutionPath, decision.code, "utf-8");
 						codeFilePath = solutionPath;
 						log.info(
 							{
 								codeFilePath,
-								extractionMethod: extracted.method,
-								codeLength: extractedCode.length,
+								extractionMethod: decision.method,
+								codeLength: decision.code.length,
 								toolCallDetected,
 							},
 							"Persisted extracted code to solution.ts (tool output absent)",
 						);
-					} else {
+					} else if (decision.shouldRetry) {
+						const elapsedMs = Math.round(performance.now() - startTime);
+						const remainingMs = timeoutMs - elapsedMs;
+						if (!isRetryAttempt && remainingMs > 1000) {
+							log.warn(
+								{
+									reason: decision.reason,
+									remainingMs,
+									outputPreview: output.slice(0, 200),
+								},
+								"Goose returned off-task/non-code output, retrying once",
+							);
+							const retryResult = await createGooseAdapter().generate({
+								...opts,
+								prompt: appendRetryMarker(promptWithoutMarker),
+								timeoutMs: remainingMs,
+							});
+							return {
+								...retryResult,
+								durationMs: Math.round(performance.now() - startTime),
+							};
+						}
+
 						log.warn(
 							{
 								toolCallDetected,
 								outputLength: output.length,
-								extractionMethod: extracted.method,
+								extractionMethod: decision.method,
+								reason: decision.reason,
 							},
-							"Goose finished without usable code output",
+							"Goose finished with off-task/non-code output",
 						);
-
-						if (output.trim().length < MIN_OUTPUT_LENGTH) {
-							const error = new Error(
-								"Goose returned no usable output and did not produce code",
-							);
-							(error as { output?: string; durationMs?: number }).output =
-								output;
-							(error as { output?: string; durationMs?: number }).durationMs =
-								durationMs;
-							throw error;
-						}
 					}
 				}
 
