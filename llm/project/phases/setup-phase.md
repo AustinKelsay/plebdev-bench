@@ -95,7 +95,7 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
 9. Implement a single "smoke" benchmark test under `src/tests/<test>/`:
    - `prompt.blind.md` + `prompt.informed.md` (both passTypes required)
    - `README.md` describing what it is
-   - `scoring.test.ts` can be a placeholder in setup (MVP will make it real)
+   - `scoring.spec.ts` can be minimal in setup (MVP will expand coverage)
 10. Implement run execution for **one** matrix item (one runtime, one harness, one model, one test, one passType).
 11. Write `results/<run-id>/plan.json` and `results/<run-id>/run.json` with validated schemas.
 

@@ -35,7 +35,7 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
 - vLLM local setup notes (OrbStack/Docker, memory sizing, troubleshooting): `llm/implementation/vllm-orbstack-setup.md`.
 
-## Tech stack (MVP)
+## Tech stack
 
 - **Bun + TypeScript**
 - **Zod** (schemas are the source of truth)
@@ -154,9 +154,11 @@ Optional: start/stop OrbStack around the vLLM segment too (disruptive if you use
 
 Full vLLM setup/troubleshooting: `llm/implementation/vllm-orbstack-setup.md`.
 
+## Core CLI Commands
+
 ```bash
 # Compare two runs
-bun run bench compare <run-a> <run-b>
+bun run src/index.ts compare <run-a> <run-b>
 
 # Run tests
 bun test
@@ -170,6 +172,13 @@ bun run typecheck
 Each run creates:
 - `results/<run-id>/plan.json` — expanded matrix plan
 - `results/<run-id>/run.json` — execution results
+
+## Interpreting Results Fairly
+
+- Prefer comparing runs by delta, not by single absolute scores.
+- Re-run the same matrix when evaluating prompt changes, then compare run pairs.
+- Treat harness-level no-output/tool-call failures as harness reliability signals, not always model capability signals.
+- Use `direct` harness as the baseline for prompt-level changes, and treat Goose/OpenCode as additional realism/stress layers.
 
 ## Docs
 

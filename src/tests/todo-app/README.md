@@ -2,6 +2,14 @@
 
 Simple todo list manager with CRUD operations and filtering.
 
+## Output Contract
+
+The generated answer must be a single TypeScript module suitable for direct import by the harness:
+
+- Return code only (no prose, no examples, no `console.log`)
+- Export `createTodoApp` as the primary API function
+- Do not use a class as the primary exported API
+
 ## Requirements
 
 Generate TypeScript code that exports a `createTodoApp` factory function that returns a todo app object with the following methods:
@@ -41,6 +49,7 @@ interface Todo {
 ### Deleting
 - deleteTodo removes the todo
 - Returns true if deleted, false if id not found
+- IDs are never reused after deletions
 
 ### Filtering
 - listCompleted returns only todos where completed is true

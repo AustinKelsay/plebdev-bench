@@ -1,3 +1,12 @@
 Output only TypeScript code for a single module.
 The harness imports your output and calls the exported functions directly.
-Export a function `add(a: number, b: number): number` that returns the sum.
+
+Output contract:
+- Return exactly one TypeScript module and nothing else.
+- No prose, no explanations, and no markdown outside an optional single ```typescript code block.
+- Do not include usage examples, tests, `console.log`, or self-imports.
+- If writing with tools, write raw TypeScript to the file (no markdown fences).
+- Use named exports exactly as specified (no default export).
+- Before finishing, verify export names and signatures match exactly.
+
+Export a top-level named function `add(a: number, b: number): number` that returns the sum.

@@ -52,7 +52,7 @@ src/
     └── smoke/               # First benchmark test
         ├── prompt.blind.md
         ├── prompt.informed.md
-        └── scoring.test.ts  # Placeholder
+        └── scoring.spec.ts  # Minimal scoring spec (initial setup)
 ```
 
 ### Data Flow

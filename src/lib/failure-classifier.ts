@@ -109,11 +109,15 @@ export function classifyScoringError(errorMessage: string): ScoringFailureType {
 		return "import";
 	}
 
-	if (
-		lower.includes("missing export") ||
-		lower.includes("failed to create instance") ||
-		lower.includes("not found or not a function")
-	) {
+	if (lower.includes("missing export")) {
+		return "missing_export";
+	}
+
+	if (lower.includes("failed to create instance")) {
+		return "factory_init_failed";
+	}
+
+	if (lower.includes("not found or not a function")) {
 		return "export_validation";
 	}
 

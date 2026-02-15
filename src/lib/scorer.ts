@@ -22,6 +22,7 @@ import type {
 import { type ExtractedCode, extractCode } from "./code-extractor.js";
 import { logger } from "./logger.js";
 import { hasScoringSpec, loadScoringSpec } from "./scoring-spec.js";
+import { suppressStdout, suppressStdoutAsync } from "./stdout-suppressor.js";
 
 /** Default timeout for scoring (5 seconds). */
 const DEFAULT_SCORING_TIMEOUT_MS = 5000;
@@ -178,95 +179,6 @@ function createInstance(
 }
 
 /**
- * Suppresses stdout during code execution to prevent generated code from polluting logs.
- *
- * @param fn - Function to execute with suppressed stdout
- * @returns Result of the function (supports both sync and async)
- */
-function suppressStdout<T>(fn: () => Promise<T>): Promise<T>;
-function suppressStdout<T>(fn: () => T): T;
-function suppressStdout<T>(fn: () => T | Promise<T>): T | Promise<T> {
-	const originalWrite = process.stdout.write.bind(process.stdout);
-	const originalLog = console.log;
-	const originalError = console.error;
-	const originalWarn = console.warn;
-
-	// Suppress stdout
-	const suppressedWrite = () => true;
-	process.stdout.write = suppressedWrite as typeof process.stdout.write;
-	console.log = () => {};
-	console.error = () => {};
-	console.warn = () => {};
-
-	const restore = () => {
-		process.stdout.write = originalWrite;
-		console.log = originalLog;
-		console.error = originalError;
-		console.warn = originalWarn;
-	};
-
-	try {
-		const result = fn();
-		// If it's a promise, wrap it to restore stdout after completion
-		if (result instanceof Promise) {
-			return result.finally(restore) as T;
-		}
-		// Sync case - restore immediately
-		restore();
-		return result;
-	} catch (error) {
-		// Error case - restore before rethrowing
-		restore();
-		throw error;
-	}
-}
-
-/**
- * Suppresses stdout during async code execution and provides a manual restore hook.
- *
- * @param fn - Async function to execute with suppressed stdout
- * @returns Promise and restore function for early cleanup
- */
-function suppressStdoutAsync<T>(fn: () => Promise<T>): {
-	promise: Promise<T>;
-	restore: () => void;
-} {
-	const originalWrite = process.stdout.write.bind(process.stdout);
-	const originalLog = console.log;
-	const originalError = console.error;
-	const originalWarn = console.warn;
-	let isRestored = false;
-
-	// Suppress stdout
-	const suppressedWrite = () => true;
-	process.stdout.write = suppressedWrite as typeof process.stdout.write;
-	console.log = () => {};
-	console.error = () => {};
-	console.warn = () => {};
-
-	const restore = () => {
-		if (isRestored) {
-			return;
-		}
-		isRestored = true;
-		process.stdout.write = originalWrite;
-		console.log = originalLog;
-		console.error = originalError;
-		console.warn = originalWarn;
-	};
-
-	const promise = (async () => {
-		try {
-			return await fn();
-		} finally {
-			restore();
-		}
-	})();
-
-	return { promise, restore };
-}
-
-/**
  * Imports a module with a timeout and suppressed stdout.
  *
  * @param filePath - Path to the file to import
@@ -386,13 +298,14 @@ export async function scoreGeneration(
 
 	// Write to temp file
 	const tempPath = getTempFilePath();
+	const expectedTotal = spec.expectedExports.length + spec.testCases.length;
 	try {
 		await fs.promises.writeFile(tempPath, extracted.code, "utf-8");
 	} catch (error) {
 		return {
 			passed: 0,
-			failed: spec.testCases.length,
-			total: spec.testCases.length,
+			failed: expectedTotal,
+			total: expectedTotal,
 			error: `Failed to write temp file: ${error instanceof Error ? error.message : String(error)}`,
 			extractionMethod: extracted.method,
 			failureType: "extraction",
@@ -407,8 +320,8 @@ export async function scoreGeneration(
 		} catch (error) {
 			return {
 				passed: 0,
-				failed: spec.testCases.length,
-				total: spec.testCases.length,
+				failed: expectedTotal,
+				total: expectedTotal,
 				error: `Import failed: ${error instanceof Error ? error.message : String(error)}`,
 				extractionMethod: extracted.method,
 				failureType: "import",
@@ -436,19 +349,38 @@ export async function scoreGeneration(
 			});
 		}
 
+		const failedExportResults = exportResults.filter(
+			(result) => !result.passed,
+		);
+		if (failedExportResults.length > 0) {
+			const passed = exportResults.length - failedExportResults.length;
+			return {
+				passed,
+				failed: expectedTotal - passed,
+				total: expectedTotal,
+				details: exportResults,
+				error: failedExportResults
+					.map((result) => result.error)
+					.filter((error): error is string => Boolean(error))
+					.join("; "),
+				extractionMethod: extracted.method,
+				failureType: "missing_export",
+			};
+		}
+
 		// Create instance if factory specified (suppress stdout from generated code)
 		let instance: unknown;
 		if (spec.factoryFn) {
 			instance = suppressStdout(() => createInstance(module, spec.factoryFn));
 			if (!instance) {
 				return {
-					passed: 0,
-					failed: spec.testCases.length,
-					total: spec.testCases.length,
+					passed: exportResults.length,
+					failed: expectedTotal - exportResults.length,
+					total: expectedTotal,
 					details: exportResults,
 					error: `Failed to create instance from "${spec.factoryFn}"`,
 					extractionMethod: extracted.method,
-					failureType: "export_validation",
+					failureType: "factory_init_failed",
 				};
 			}
 		}

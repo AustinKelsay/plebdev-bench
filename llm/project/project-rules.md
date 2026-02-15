@@ -38,8 +38,13 @@ Each benchmark test lives in its own directory:
   - `prompt.blind.md` — blind prompt
   - `prompt.informed.md` — informed prompt
   - `rubric.md` — frontier-eval rubric (if applicable)
-  - `scoring.test.ts` — automated scoring tests (vitest/jest style, but we use vitest)
+  - `scoring.spec.ts` — automated scoring specification consumed by the scorer
   - `fixtures/` — optional inputs, golden files
+
+Prompt contract convention (recommended across all tests):
+- Require a single TypeScript module output with no prose/explanations
+- Require exact named exports matching the scoring spec
+- For tool-calling harnesses, treat prompt output as file contents (not chat text)
 
 ### Results output layout (runtime)
 
@@ -151,7 +156,7 @@ Every file must start with a short header describing:
   - Test-catalog scoring tests (validate generated code against specs)
 - When adding a new benchmark test, include:
   - `README.md` describing acceptance criteria
-  - at least one `scoring.test.ts` that enforces the spec
+  - one `scoring.spec.ts` that defines expected exports + executable test cases
 
 ## Development Workflow Expectations
 

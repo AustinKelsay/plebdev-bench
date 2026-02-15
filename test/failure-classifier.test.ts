@@ -94,13 +94,17 @@ describe("classifyScoringError", () => {
 		).toBe("import");
 	});
 
-	it("should classify export_validation errors", () => {
-		expect(classifyScoringError("Missing export: add")).toBe(
-			"export_validation",
-		);
+	it("should classify missing export errors", () => {
+		expect(classifyScoringError("Missing export: add")).toBe("missing_export");
+	});
+
+	it("should classify factory initialization errors", () => {
 		expect(
 			classifyScoringError('Failed to create instance from "createCalculator"'),
-		).toBe("export_validation");
+		).toBe("factory_init_failed");
+	});
+
+	it("should classify export_validation errors", () => {
 		expect(
 			classifyScoringError('Function "add" not found or not a function'),
 		).toBe("export_validation");

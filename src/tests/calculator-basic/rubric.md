@@ -6,7 +6,7 @@ Score the generated code from 1-10 based on the following criteria:
 - All four functions (add, subtract, multiply, divide) are implemented
 - Functions have correct parameter types (number, number) and return type (number)
 - Basic arithmetic operations are correct
-- Division by zero is handled (returns Infinity or throws appropriate error)
+- Division by zero returns `Infinity` (matching JavaScript behavior and test expectations)
 
 ## Code Quality (30%)
 - Code is clean and readable

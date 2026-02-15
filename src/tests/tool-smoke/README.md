@@ -2,6 +2,13 @@
 
 A minimal tool-calling preflight to verify a harness can write files via tools.
 
+## Output Contract
+
+The generated answer must be a single TypeScript module suitable for direct import by the harness:
+
+- Return code only (no prose, no examples, no `console.log`)
+- Export a top-level named `add` function
+
 ## Task
 
 Write a TypeScript function called `add` that takes two numbers and returns their sum.
@@ -15,5 +22,5 @@ Write a TypeScript function called `add` that takes two numbers and returns thei
 
 ## Notes
 
-This test is intended to run before other tests for each model/harness. If it fails
-because tool calls are missing, the remaining items for that model/harness are skipped.
+This test runs once per model/harness (using one pass type) before other tests for that pair.
+If it fails with tool-missing behavior, remaining items for that model/harness are skipped.

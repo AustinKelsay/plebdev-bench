@@ -19,13 +19,13 @@ Score the generated code from 1-10 based on the following criteria:
 - Method signatures match specification
 - Appropriate return values for each operation
 - Graceful handling of non-existent ids
-- No side effects on returned objects
+- Returned objects should not violate core behavior when used normally (defensive-copy strategies are optional)
 
 ## Code Quality (15%)
 - Clean, readable implementation
 - Proper TypeScript types
 - Efficient filtering operations
-- No memory leaks or dangling references
+- Avoid unnecessary complexity
 
 ## Scoring Guide
 - 9-10: Excellent - Full CRUD functionality, proper state management
