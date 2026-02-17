@@ -82,6 +82,9 @@ export const failures = {
 	extraction: "Could not extract code from the model output.",
 	spec_load: "Could not load the test specification.",
 	import: "Code import/require errors when loading generated code.",
+	missing_export: "Required export was not found in the generated code.",
+	factory_init_failed:
+		"Factory function failed to create an instance from the generated code.",
 	export_validation: "Generated code missing required exports.",
 	test_execution: "Test runtime error during execution.",
 	// Frontier eval failure types

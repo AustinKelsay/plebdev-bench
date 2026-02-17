@@ -166,10 +166,16 @@ function computeTimingStatsFromValues(values: number[]): TimingStats | null {
 	const rawP90Index = Math.ceil(sortedValues.length * 0.9) - 1;
 	const p90Index = Math.min(sortedValues.length - 1, Math.max(0, rawP90Index));
 
+	const mid = sortedValues.length / 2;
+	const median =
+		sortedValues.length % 2 === 0
+			? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+			: sortedValues[Math.floor(mid)];
+
 	return {
 		min: sortedValues[0],
 		max: sortedValues[sortedValues.length - 1],
-		median: sortedValues[Math.floor(sortedValues.length / 2)],
+		median,
 		mean: sum / sortedValues.length,
 		p90: sortedValues[p90Index] || sortedValues[sortedValues.length - 1],
 		count: sortedValues.length,
