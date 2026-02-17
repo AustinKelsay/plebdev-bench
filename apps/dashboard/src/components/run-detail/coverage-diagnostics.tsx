@@ -53,6 +53,10 @@ export function CoverageDiagnostics({ run, plan }: CoverageDiagnosticsProps) {
 	const frontierEvalFailures = run.items.filter(
 		(i) => i.frontierEvalFailure,
 	).length;
+	const frontierEvalMissing = Math.max(
+		coverage.totalItems - coverage.frontierEvalItems - frontierEvalFailures,
+		0,
+	);
 
 	const rows: AlignmentRow[] = [
 		{
@@ -171,7 +175,7 @@ export function CoverageDiagnostics({ run, plan }: CoverageDiagnosticsProps) {
 							{frontierEvalFailures}
 						</p>
 						<p className="text-xs text-foreground-faint">
-							{coverage.totalItems - coverage.frontierEvalItems} missing evals
+							{frontierEvalMissing} missing evals
 						</p>
 					</div>
 				</div>

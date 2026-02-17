@@ -20,9 +20,47 @@ interface TimingStatsProps {
 	items: MatrixItemResult[];
 }
 
+interface TimingGridTooltipCopy {
+	average: string;
+	median: string;
+	min: string;
+	max: string;
+	p90: string;
+	items: string;
+}
+
+const NEUTRAL_TIMING_TOOLTIP = "Timing information for this stage.";
+const DEFAULT_TIMING_GRID_TOOLTIP_COPY: TimingGridTooltipCopy = {
+	average: NEUTRAL_TIMING_TOOLTIP,
+	median: NEUTRAL_TIMING_TOOLTIP,
+	min: NEUTRAL_TIMING_TOOLTIP,
+	max: NEUTRAL_TIMING_TOOLTIP,
+	p90: NEUTRAL_TIMING_TOOLTIP,
+	items: NEUTRAL_TIMING_TOOLTIP,
+};
+
+const GENERATION_TIMING_TOOLTIP_COPY: TimingGridTooltipCopy = {
+	average: timingTooltips.average,
+	median: timingTooltips.median,
+	min: timingTooltips.min,
+	max: timingTooltips.max,
+	p90: timingTooltips.p90,
+	items: timingTooltips.items,
+};
+
+const SCORING_TIMING_TOOLTIP_COPY: TimingGridTooltipCopy = {
+	average: "Mean scoring time across items that produced scoring metrics.",
+	median: "Middle scoring duration (p50) across scored items.",
+	min: "Fastest scoring duration observed.",
+	max: "Slowest scoring duration observed.",
+	p90: "90th percentile scoring duration.",
+	items: "Number of items with scoring duration metrics.",
+};
+
 function TimingGrid({
 	label,
 	stats,
+	tooltipCopy = DEFAULT_TIMING_GRID_TOOLTIP_COPY,
 }: {
 	label: string;
 	stats: {
@@ -33,6 +71,7 @@ function TimingGrid({
 		p90: number;
 		count: number;
 	};
+	tooltipCopy?: TimingGridTooltipCopy;
 }) {
 	return (
 		<div>
@@ -40,7 +79,7 @@ function TimingGrid({
 			<div className="grid grid-cols-2 gap-4 text-sm">
 				<div>
 					<span className="text-foreground-muted">
-						<WithInfoTooltip tooltip={timingTooltips.average} side="right">
+						<WithInfoTooltip tooltip={tooltipCopy.average} side="right">
 							Average
 						</WithInfoTooltip>
 					</span>
@@ -50,7 +89,7 @@ function TimingGrid({
 				</div>
 				<div>
 					<span className="text-foreground-muted">
-						<WithInfoTooltip tooltip={timingTooltips.median} side="right">
+						<WithInfoTooltip tooltip={tooltipCopy.median} side="right">
 							Median
 						</WithInfoTooltip>
 					</span>
@@ -60,7 +99,7 @@ function TimingGrid({
 				</div>
 				<div>
 					<span className="text-foreground-muted">
-						<WithInfoTooltip tooltip={timingTooltips.min} side="right">
+						<WithInfoTooltip tooltip={tooltipCopy.min} side="right">
 							Min
 						</WithInfoTooltip>
 					</span>
@@ -68,7 +107,7 @@ function TimingGrid({
 				</div>
 				<div>
 					<span className="text-foreground-muted">
-						<WithInfoTooltip tooltip={timingTooltips.max} side="right">
+						<WithInfoTooltip tooltip={tooltipCopy.max} side="right">
 							Max
 						</WithInfoTooltip>
 					</span>
@@ -76,7 +115,7 @@ function TimingGrid({
 				</div>
 				<div>
 					<span className="text-foreground-muted">
-						<WithInfoTooltip tooltip={timingTooltips.p90} side="right">
+						<WithInfoTooltip tooltip={tooltipCopy.p90} side="right">
 							p90
 						</WithInfoTooltip>
 					</span>
@@ -84,7 +123,7 @@ function TimingGrid({
 				</div>
 				<div>
 					<span className="text-foreground-muted">
-						<WithInfoTooltip tooltip={timingTooltips.items} side="right">
+						<WithInfoTooltip tooltip={tooltipCopy.items} side="right">
 							Items
 						</WithInfoTooltip>
 					</span>
@@ -151,6 +190,13 @@ function ScoringBreakdownTable({
 	);
 }
 
+/**
+ * Renders generation and scoring timing summaries for a run.
+ *
+ * @param props - Component props typed as TimingStatsProps.
+ * `props.items` is the matrix-item list whose generation/scoring durations are aggregated.
+ * @returns React element displaying timing cards, or an empty-state timing card when data is unavailable.
+ */
 export function TimingStats({ items }: TimingStatsProps) {
 	const generationStats = computeTimingStats(items);
 	const scoringStats = computeScoringTimingStats(items);
@@ -184,12 +230,20 @@ export function TimingStats({ items }: TimingStatsProps) {
 			</CardHeader>
 			<CardContent className="space-y-6">
 				{generationStats && (
-					<TimingGrid label="Generation Time" stats={generationStats} />
+					<TimingGrid
+						label="Generation Time"
+						stats={generationStats}
+						tooltipCopy={GENERATION_TIMING_TOOLTIP_COPY}
+					/>
 				)}
 
 				{scoringStats && (
 					<div className="space-y-3">
-						<TimingGrid label="Scoring Time" stats={scoringStats} />
+						<TimingGrid
+							label="Scoring Time"
+							stats={scoringStats}
+							tooltipCopy={SCORING_TIMING_TOOLTIP_COPY}
+						/>
 						<div className="grid gap-4 xl:grid-cols-3">
 							<ScoringBreakdownTable
 								title="By Runtime"
