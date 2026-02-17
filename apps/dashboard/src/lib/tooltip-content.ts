@@ -70,6 +70,7 @@ export const failures = {
 	title: "Breakdown of failure types by category.",
 	generation: "Failures during code generation phase.",
 	scoring: "Failures during test scoring phase.",
+	frontierEval: "Failures during frontier-evaluation API grading phase.",
 	// Generation failure types
 	timeout: "Generation took too long and was terminated.",
 	api_error: "API request to the model failed.",
@@ -83,6 +84,13 @@ export const failures = {
 	import: "Code import/require errors when loading generated code.",
 	export_validation: "Generated code missing required exports.",
 	test_execution: "Test runtime error during execution.",
+	// Frontier eval failure types
+	auth_error: "Frontier API authentication failed.",
+	rate_limited: "Frontier API request was rate limited.",
+	http_error: "Frontier API returned an HTTP error status.",
+	invalid_response: "Frontier API returned an unexpected response format.",
+	parse_error: "Dashboard failed to parse the frontier response payload.",
+	truncated: "Frontier response was truncated before completion.",
 } as const;
 
 /** Composite score chart explanations */

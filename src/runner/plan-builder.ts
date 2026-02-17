@@ -378,8 +378,11 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		`Matrix expanded to ${items.length} item(s)`,
 	);
 
-	// Calculate unique models across all runtimes for summary
-	const uniqueModels = new Set([...runtimeModels.values()].flat());
+	// Derive summary from actual expanded matrix items, not requested/discovered sets.
+	const summaryRuntimes = new Set(items.map((item) => item.runtime));
+	const summaryModels = new Set(items.map((item) => item.model));
+	const summaryHarnesses = new Set(items.map((item) => item.harness));
+	const summaryTests = new Set(items.map((item) => item.test));
 
 	// Build the plan
 	const plan: RunPlan = {
@@ -400,10 +403,10 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		items,
 		summary: {
 			totalItems: items.length,
-			runtimes: runtimes.length,
-			models: uniqueModels.size,
-			harnesses: harnesses.length,
-			tests: tests.length,
+			runtimes: summaryRuntimes.size,
+			models: summaryModels.size,
+			harnesses: summaryHarnesses.size,
+			tests: summaryTests.size,
 		},
 	};
 
