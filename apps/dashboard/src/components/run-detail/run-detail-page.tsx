@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { computeFrontierStats, computePassRate } from "@/lib/aggregations";
 import { summary as summaryTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult, RunPlan, RunResult } from "@/lib/types";
@@ -26,6 +27,7 @@ import {
 import { FailureBreakdown } from "./failure-breakdown";
 import { ItemDetailDialog } from "./item-detail-dialog";
 import { MatrixTable } from "./matrix-table";
+import { ModelOverviewTab } from "./model-overview-tab";
 import { ScoringBreakdown } from "./scoring-breakdown";
 import { TimingStats } from "./timing-stats";
 import { ToolingBreakdown } from "./tooling-breakdown";
@@ -165,44 +167,57 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 				</Card>
 			</div>
 
-			<CoverageDiagnostics run={run} plan={plan} />
+			<Tabs defaultValue="overview">
+				<TabsList>
+					<TabsTrigger value="overview">Overview</TabsTrigger>
+					<TabsTrigger value="model">Model View</TabsTrigger>
+				</TabsList>
 
-			{/* Matrix Table */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-base">Results Matrix</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<MatrixTable items={run.items} onRowClick={setSelectedItem} />
-				</CardContent>
-			</Card>
+				<TabsContent value="overview" className="mt-4 space-y-6">
+					<CoverageDiagnostics run={run} plan={plan} />
 
-			{/* Breakdowns */}
-			<div className="grid gap-4 md:grid-cols-2">
-				<ScoringBreakdown items={run.items} />
-				<ToolingBreakdown items={run.items} />
-			</div>
+					{/* Matrix Table */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Results Matrix</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<MatrixTable items={run.items} onRowClick={setSelectedItem} />
+						</CardContent>
+					</Card>
 
-			<div className="grid gap-4 md:grid-cols-2">
-				<TimingStats items={run.items} />
-				<FailureBreakdown items={run.items} />
-			</div>
+					{/* Breakdowns */}
+					<div className="grid gap-4 md:grid-cols-2">
+						<ScoringBreakdown items={run.items} />
+						<ToolingBreakdown items={run.items} />
+					</div>
 
-			{/* Primary Chart - Composite Scores */}
-			<CompositeScoreChart
-				items={run.items}
-				onDimensionClick={(dim, name) =>
-					setSelectedDimension({ dimension: dim, name })
-				}
-			/>
+					<div className="grid gap-4 md:grid-cols-2">
+						<TimingStats items={run.items} />
+						<FailureBreakdown items={run.items} />
+					</div>
 
-			{/* Comparison Charts */}
-			<div className="grid gap-4 lg:grid-cols-2">
-				<BlindVsInformedChart items={run.items} />
-				<TimingDistribution items={run.items} />
-			</div>
+					{/* Primary Chart - Composite Scores */}
+					<CompositeScoreChart
+						items={run.items}
+						onDimensionClick={(dim, name) =>
+							setSelectedDimension({ dimension: dim, name })
+						}
+					/>
 
-			<FrontierEvalScatter items={run.items} />
+					{/* Comparison Charts */}
+					<div className="grid gap-4 lg:grid-cols-2">
+						<BlindVsInformedChart items={run.items} />
+						<TimingDistribution items={run.items} />
+					</div>
+
+					<FrontierEvalScatter items={run.items} />
+				</TabsContent>
+
+				<TabsContent value="model" className="mt-4">
+					<ModelOverviewTab items={run.items} onItemClick={setSelectedItem} />
+				</TabsContent>
+			</Tabs>
 
 			{/* Item Detail Dialog */}
 			<ItemDetailDialog
