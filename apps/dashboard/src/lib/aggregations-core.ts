@@ -153,6 +153,36 @@ export interface TimingStats {
 }
 
 /**
+ * Computes timing statistics from an arbitrary numeric sample.
+ *
+ * @param values - Timing values in milliseconds
+ * @returns Timing stats or null when no values are present
+ */
+function computeTimingStatsFromValues(values: number[]): TimingStats | null {
+	const sortedValues = [...values].sort((a, b) => a - b);
+	if (sortedValues.length === 0) return null;
+
+	const sum = sortedValues.reduce((a, b) => a + b, 0);
+	const rawP90Index = Math.ceil(sortedValues.length * 0.9) - 1;
+	const p90Index = Math.min(sortedValues.length - 1, Math.max(0, rawP90Index));
+
+	const mid = sortedValues.length / 2;
+	const median =
+		sortedValues.length % 2 === 0
+			? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+			: sortedValues[Math.floor(mid)];
+
+	return {
+		min: sortedValues[0],
+		max: sortedValues[sortedValues.length - 1],
+		median,
+		mean: sum / sortedValues.length,
+		p90: sortedValues[p90Index] || sortedValues[sortedValues.length - 1],
+		count: sortedValues.length,
+	};
+}
+
+/**
  * Computes timing statistics from generation durations.
  *
  * @param items - Matrix items with generation data
@@ -163,23 +193,9 @@ export function computeTimingStats(
 ): TimingStats | null {
 	const durations = items
 		.map((i) => i.generation?.durationMs)
-		.filter((d): d is number => d !== undefined)
-		.sort((a, b) => a - b);
+		.filter((d): d is number => d !== undefined);
 
-	if (durations.length === 0) return null;
-
-	const sum = durations.reduce((a, b) => a + b, 0);
-	const rawP90Index = Math.ceil(durations.length * 0.9) - 1;
-	const p90Index = Math.min(durations.length - 1, Math.max(0, rawP90Index));
-
-	return {
-		min: durations[0],
-		max: durations[durations.length - 1],
-		median: durations[Math.floor(durations.length / 2)],
-		mean: sum / durations.length,
-		p90: durations[p90Index] || durations[durations.length - 1],
-		count: durations.length,
-	};
+	return computeTimingStatsFromValues(durations);
 }
 
 /** Frontier eval statistics. */
@@ -256,8 +272,23 @@ export function computeBreakdown(
 export interface FailureStats {
 	generationFailures: Map<string, number>;
 	scoringFailures: Map<string, number>;
+	frontierEvalFailures: Map<string, number>;
+	frontierEvalFailureDetails: Array<{
+		id: string;
+		runtime: string;
+		model: string;
+		harness: string;
+		test: string;
+		passType: string;
+		type: string;
+		status?: number;
+		latencyMs?: number;
+		evalModel?: string;
+		attempts?: number;
+	}>;
 	totalGenerationFailures: number;
 	totalScoringFailures: number;
+	totalFrontierEvalFailures: number;
 }
 
 /**
@@ -269,6 +300,9 @@ export interface FailureStats {
 export function computeFailureStats(items: MatrixItemResult[]): FailureStats {
 	const generationFailures = new Map<string, number>();
 	const scoringFailures = new Map<string, number>();
+	const frontierEvalFailures = new Map<string, number>();
+	const frontierEvalFailureDetails: FailureStats["frontierEvalFailureDetails"] =
+		[];
 
 	for (const item of items) {
 		if (item.generationFailure) {
@@ -279,16 +313,48 @@ export function computeFailureStats(items: MatrixItemResult[]): FailureStats {
 			const count = scoringFailures.get(item.scoringFailure.type) || 0;
 			scoringFailures.set(item.scoringFailure.type, count + 1);
 		}
+		if (item.frontierEvalFailure) {
+			const count =
+				frontierEvalFailures.get(item.frontierEvalFailure.type) || 0;
+			frontierEvalFailures.set(item.frontierEvalFailure.type, count + 1);
+			frontierEvalFailureDetails.push({
+				id: item.id,
+				runtime: item.runtime,
+				model: item.model,
+				harness: item.harness,
+				test: item.test,
+				passType: item.passType,
+				type: item.frontierEvalFailure.type,
+				...(item.frontierEvalFailure.status !== undefined
+					? { status: item.frontierEvalFailure.status }
+					: {}),
+				...(item.frontierEvalFailure.latencyMs !== undefined
+					? { latencyMs: item.frontierEvalFailure.latencyMs }
+					: {}),
+				...(item.frontierEvalFailure.model
+					? { evalModel: item.frontierEvalFailure.model }
+					: {}),
+				...(item.frontierEvalFailure.attempts !== undefined
+					? { attempts: item.frontierEvalFailure.attempts }
+					: {}),
+			});
+		}
 	}
 
 	return {
 		generationFailures,
 		scoringFailures,
+		frontierEvalFailures,
+		frontierEvalFailureDetails,
 		totalGenerationFailures: Array.from(generationFailures.values()).reduce(
 			(a, b) => a + b,
 			0,
 		),
 		totalScoringFailures: Array.from(scoringFailures.values()).reduce(
+			(a, b) => a + b,
+			0,
+		),
+		totalFrontierEvalFailures: Array.from(frontierEvalFailures.values()).reduce(
 			(a, b) => a + b,
 			0,
 		),

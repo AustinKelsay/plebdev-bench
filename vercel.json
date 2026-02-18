@@ -1,7 +1,7 @@
 {
-  "routes": [
-    { "src": "/results/(.*)", "dest": "/results/$1" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+	"routes": [
+		{ "src": "/results/(.*)", "dest": "/results/$1" },
+		{ "handle": "filesystem" },
+		{ "src": "/(.*)", "dest": "/index.html" }
+	]
 }

@@ -15,7 +15,6 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execa } from "execa";
 import { logger } from "../lib/logger.js";
-import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -23,6 +22,7 @@ import {
 	hasRetryMarker,
 	stripRetryMarker,
 } from "./code-output-policy.js";
+import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import {
 	buildOpenCodeConfig,
 	buildOpenCodeEnv,
@@ -149,7 +149,10 @@ export function createOpenCodeAdapter(): Harness {
 				runtimeName: runtime.name,
 			});
 
-			const fullPrompt = buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
+			const fullPrompt = buildCodeOnlyPrompt(
+				promptWithoutMarker,
+				isRetryAttempt,
+			);
 
 			const args = [
 				"run",
@@ -467,8 +470,7 @@ export function createOpenCodeAdapter(): Harness {
 				if (!codeFilePath) {
 					fs.promises
 						.rm(workDir, { recursive: true, force: true })
-						.catch(() => {
-						});
+						.catch(() => {});
 				}
 			}
 		},

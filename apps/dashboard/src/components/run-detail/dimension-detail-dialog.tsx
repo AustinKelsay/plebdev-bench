@@ -281,7 +281,11 @@ function BlindVsInformedSection({ items }: { items: MatrixItemResult[] }) {
 function FailureSection({ items }: { items: MatrixItemResult[] }) {
 	const stats = computeFailureStats(items);
 
-	if (stats.totalGenerationFailures === 0 && stats.totalScoringFailures === 0) {
+	if (
+		stats.totalGenerationFailures === 0 &&
+		stats.totalScoringFailures === 0 &&
+		stats.totalFrontierEvalFailures === 0
+	) {
 		return null;
 	}
 
@@ -320,6 +324,22 @@ function FailureSection({ items }: { items: MatrixItemResult[] }) {
 										variant="outline"
 										className="text-xs text-warning"
 									>
+										{type}: {count}
+									</Badge>
+								),
+							)}
+						</div>
+					</div>
+				)}
+				{stats.totalFrontierEvalFailures > 0 && (
+					<div className="p-3 bg-background-raised rounded border border-border">
+						<p className="text-xs text-foreground-faint mb-1">
+							Frontier Eval ({stats.totalFrontierEvalFailures})
+						</p>
+						<div className="flex flex-wrap gap-1">
+							{Array.from(stats.frontierEvalFailures.entries()).map(
+								([type, count]) => (
+									<Badge key={type} variant="outline" className="text-xs">
 										{type}: {count}
 									</Badge>
 								),

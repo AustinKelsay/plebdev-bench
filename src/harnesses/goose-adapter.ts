@@ -130,7 +130,10 @@ export function createGooseAdapter(): Harness {
 				...extraEnv,
 			};
 
-			const fullPrompt = buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
+			const fullPrompt = buildCodeOnlyPrompt(
+				promptWithoutMarker,
+				isRetryAttempt,
+			);
 
 			// CRITICAL: Use --provider and --model flags to override Goose's config file
 			const args = [

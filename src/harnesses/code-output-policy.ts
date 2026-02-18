@@ -8,7 +8,7 @@
  * - Off-task/non-code outputs are explicitly identified for retry
  */
 
-import { extractCode, type ExtractedCode } from "../lib/code-extractor.js";
+import { type ExtractedCode, extractCode } from "../lib/code-extractor.js";
 
 /** Internal marker used to prevent infinite retry loops across recursive adapter calls. */
 const RETRY_MARKER = "[PLEBDEV_BENCH_CODE_ONLY_RETRY_ONCE]";

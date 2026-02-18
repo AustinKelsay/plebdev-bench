@@ -32,8 +32,8 @@ import type {
 	GenerationResult,
 	MatrixItem,
 	MatrixItemResult,
-	ScoringResult,
 	ScoringMetrics,
+	ScoringResult,
 } from "../schemas/index.js";
 
 /**
@@ -116,7 +116,9 @@ interface CompileRetryContext {
  */
 async function runCompileFeedbackRetry(
 	context: CompileRetryContext,
-): Promise<{ generation: GenerationResult; scoringResult: ScoringResult } | undefined> {
+): Promise<
+	{ generation: GenerationResult; scoringResult: ScoringResult } | undefined
+> {
 	const retryPrompt = buildCompileRetryPrompt(
 		context.promptForRetry,
 		context.compileError,
@@ -211,9 +213,7 @@ export async function executeItem(
 	let generationFailure: MatrixItemResult["generationFailure"];
 	let generationStartTime: number | undefined;
 	let promptForRetry = "";
-	let runtimeForRetry:
-		| ReturnType<typeof createRuntime>
-		| undefined;
+	let runtimeForRetry: ReturnType<typeof createRuntime> | undefined;
 	let harnessForRetry: ReturnType<typeof createHarness> | undefined;
 
 	try {

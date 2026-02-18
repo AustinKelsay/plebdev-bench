@@ -25,7 +25,9 @@ const DEFAULT_RESULTS_DIR = resolve(import.meta.dir, "../public/results");
  */
 function resolveResultsDir(argv: string[]): string {
 	if (argv.includes("--help") || argv.includes("-h")) {
-		console.log("Usage: bun run apps/dashboard/scripts/build-index.ts [--dir <path>]");
+		console.log(
+			"Usage: bun run apps/dashboard/scripts/build-index.ts [--dir <path>]",
+		);
 		console.log("");
 		console.log("Default directory: apps/dashboard/public/results");
 		process.exit(0);

@@ -18,6 +18,7 @@ import { formatDate, formatDuration, formatPercent } from "@/lib/utils";
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { CoverageDiagnostics } from "./coverage-diagnostics";
 import {
 	DimensionDetailDialog,
 	type DimensionType,
@@ -163,6 +164,8 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 					</CardContent>
 				</Card>
 			</div>
+
+			<CoverageDiagnostics run={run} plan={plan} />
 
 			{/* Matrix Table */}
 			<Card>
