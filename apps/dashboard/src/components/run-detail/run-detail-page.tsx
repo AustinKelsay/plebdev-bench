@@ -1,3 +1,7 @@
+/**
+ * Purpose: Run detail page component displaying a single run's results.
+ * Shows summary, matrix table, scoring breakdown, and timing stats.
+ */
 import { BlindVsInformedChart } from "@/components/charts/blind-vs-informed-chart";
 import { CompositeScoreChart } from "@/components/charts/composite-score-chart";
 import { FrontierEvalScatter } from "@/components/charts/frontier-eval-scatter";
@@ -13,10 +17,6 @@ import { computeFrontierStats, computePassRate } from "@/lib/aggregations";
 import { summary as summaryTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult, RunPlan, RunResult } from "@/lib/types";
 import { formatDate, formatDuration, formatPercent } from "@/lib/utils";
-/**
- * Purpose: Run detail page component displaying a single run's results.
- * Shows summary, matrix table, scoring breakdown, and timing stats.
- */
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CoverageDiagnostics } from "./coverage-diagnostics";
@@ -37,6 +37,15 @@ interface RunDetailPageProps {
 	plan: RunPlan;
 }
 
+/**
+ * Renders the run detail page with summary metrics, charts, and item-level drill-down.
+ *
+ * @param props - Component props (see `RunDetailPageProps`).
+ * @param props.run - The resolved run result containing summary and matrix items.
+ * @param props.plan - The run plan/environment snapshot associated with `run`.
+ * @returns React element containing the full run detail layout.
+ * @throws none
+ */
 export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 	const [selectedItem, setSelectedItem] = useState<MatrixItemResult | null>(
 		null,
@@ -238,6 +247,12 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 	);
 }
 
+/**
+ * Renders a loading-state skeleton for the run detail page layout.
+ *
+ * @returns React element that mirrors the run detail structure while data is loading.
+ * @throws none
+ */
 export function RunDetailPageSkeleton() {
 	const skeletonKeys = ["s1", "s2", "s3", "s4"] as const;
 

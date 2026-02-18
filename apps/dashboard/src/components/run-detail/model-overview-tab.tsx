@@ -152,6 +152,7 @@ function findWeakestTest(
  *
  * @param props - Component props
  * @returns React element
+ * @throws none
  */
 export function ModelOverviewTab({
 	items,
@@ -198,6 +199,10 @@ export function ModelOverviewTab({
 		() => findWeakestTest(testSummaries),
 		[testSummaries],
 	);
+	const isStrongestWeakestSameTest =
+		strongestTest?.test !== undefined &&
+		weakestTest?.test !== undefined &&
+		strongestTest.test === weakestTest.test;
 	const filteredItems = useMemo(
 		() =>
 			focusedTest
@@ -320,7 +325,7 @@ export function ModelOverviewTab({
 								{formatPercent(strongestTest.passRate)})
 							</Badge>
 						)}
-						{weakestTest && (
+						{weakestTest && !isStrongestWeakestSameTest && (
 							<Badge variant="destructive">
 								Weakest: {weakestTest.test} (
 								{formatPercent(weakestTest.passRate)})
