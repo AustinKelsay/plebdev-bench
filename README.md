@@ -11,6 +11,10 @@ For each benchmark run, `plebdev-bench` executes a matrix:
   - harness: interface adapter (direct HTTP, Goose CLI, OpenCode CLI)
   - passType: **blind** + **informed**
 
+Test categories:
+- `coding`
+- `computer-use`
+
 Scoring:
 - **Automated**: runs a test suite against generated code (Vitest).
 - **Optional frontier eval**: rubric scoring via **OpenRouter** (auto-enabled when API key is present).
@@ -87,6 +91,7 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 - `src/runtimes/` — runtime adapters (inference backends like Ollama)
 - `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI)
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
+  - includes `test.meta.json` for category metadata
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
 - `results/` — local runtime output (ignored by git)
@@ -113,6 +118,9 @@ bun pb
 
 # Run with specific options
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
+
+# Run only coding category tests
+bun pb --categories coding
 
 # Run with specific runtime and harness
 bun pb --runtimes ollama --harnesses direct

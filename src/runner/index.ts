@@ -65,8 +65,12 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Print plan summary
 	console.log("");
 	console.log(`Run: ${plan.runId}`);
+	const categorySummary =
+		typeof plan.summary.categories === "number"
+			? `, categories: ${plan.summary.categories}`
+			: "";
 	console.log(
-		`Items: ${plan.summary.totalItems} (runtimes: ${plan.summary.runtimes}, models: ${plan.summary.models}, harnesses: ${plan.summary.harnesses}, tests: ${plan.summary.tests})`,
+		`Items: ${plan.summary.totalItems} (runtimes: ${plan.summary.runtimes}, models: ${plan.summary.models}, harnesses: ${plan.summary.harnesses}, tests: ${plan.summary.tests}${categorySummary})`,
 	);
 	console.log(
 		`Frontier eval: ${frontierEvalEnabled ? "enabled" : "disabled (no OPENROUTER_API_KEY)"}`,

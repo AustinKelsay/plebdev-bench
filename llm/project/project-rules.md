@@ -15,7 +15,7 @@ They are optimized for:
 - `src/` — application code (runner, harness adapters, schemas, utilities)
 - `src/runtimes/` — runtime adapters (inference backends: Ollama, vLLM)
 - `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI) + tool-prompt builder
-- `src/tests/` — benchmark test catalog (8 tests: smoke, calculator-basic, calculator-stateful, todo-app, tool-smoke, rate-limiter, ttl-cache, event-emitter)
+- `src/tests/` — benchmark test catalog (8 tests: smoke, calculator-basic, calculator-stateful, todo-app, tool-smoke, rate-limiter, ttl-cache, event-emitter) with categories (`coding`, `computer-use`)
 - `src/results/` — result schema + read/write helpers + compare logic
 - `src/cli/` — CLI entrypoint(s) and argument parsing
 - `src/lib/` — reusable helpers (scoring, code extraction, failure classification, logging, timing)
@@ -34,6 +34,7 @@ They are optimized for:
 Each benchmark test lives in its own directory:
 
 - `src/tests/<test-slug>/`
+  - `test.meta.json` — required metadata (`category`, optional `description`/`tags`)
   - `README.md` — what the test is, what “pass” means
   - `prompt.blind.md` — blind prompt
   - `prompt.informed.md` — informed prompt
@@ -155,7 +156,10 @@ Every file must start with a short header describing:
   - Runner/library unit tests (fast, pure)
   - Test-catalog scoring tests (validate generated code against specs)
 - When adding a new benchmark test, include:
+  - `test.meta.json` with a valid category (`coding` or `computer-use`)
   - `README.md` describing acceptance criteria
+  - `prompt.blind.md` and `prompt.informed.md`
+  - `rubric.md` for frontier eval (if applicable)
   - one `scoring.spec.ts` that defines expected exports + executable test cases
 
 ## Development Workflow Expectations

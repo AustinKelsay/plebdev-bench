@@ -204,6 +204,7 @@ export async function executeItem(
 		model: item.model,
 		harness: item.harness,
 		test: item.test,
+		category: item.category,
 		passType: item.passType,
 	});
 
@@ -523,6 +524,7 @@ export async function executeItem(
 		model: item.model,
 		harness: item.harness,
 		test: item.test,
+		category: item.category,
 		passType: item.passType,
 		status: generation.success ? "completed" : "failed",
 		startedAt,

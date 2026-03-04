@@ -13,6 +13,7 @@ import {
 	RunResultSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	TestCategorySchema,
 	defaultConfig,
 } from "../src/schemas/index.js";
 
@@ -24,7 +25,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.2.2");
+		expect(SCHEMA_VERSION).toBe("0.2.3");
 	});
 
 	it("should validate runtime names", () => {
@@ -37,6 +38,12 @@ describe("common schemas", () => {
 		expect(FrontierEvalFailureTypeSchema.parse("timeout")).toBe("timeout");
 		expect(() => FrontierEvalFailureTypeSchema.parse("not-a-type")).toThrow();
 	});
+
+	it("should validate test categories", () => {
+		expect(TestCategorySchema.parse("coding")).toBe("coding");
+		expect(TestCategorySchema.parse("computer-use")).toBe("computer-use");
+		expect(() => TestCategorySchema.parse("ops")).toThrow();
+	});
 });
 
 describe("BenchConfigSchema", () => {
@@ -46,6 +53,7 @@ describe("BenchConfigSchema", () => {
 		expect(config.models).toEqual([]);
 		expect(config.harnesses).toEqual([]); // Auto-discover all available
 		expect(config.tests).toEqual([]);
+		expect(config.categories).toEqual([]);
 		expect(config.passTypes).toEqual(["blind", "informed"]);
 		expect(config.ollamaBaseUrl).toBe("http://localhost:11434");
 		expect(config.generateTimeoutMs).toBe(300_000);
@@ -58,12 +66,14 @@ describe("BenchConfigSchema", () => {
 			runtimes: ["ollama"],
 			models: ["llama3.2:3b"],
 			tests: ["smoke"],
+			categories: ["coding"],
 			passTypes: ["blind"],
 			generateTimeoutMs: 60_000,
 		});
 		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual(["llama3.2:3b"]);
 		expect(config.tests).toEqual(["smoke"]);
+		expect(config.categories).toEqual(["coding"]);
 		expect(config.passTypes).toEqual(["blind"]);
 		expect(config.generateTimeoutMs).toBe(60_000);
 	});
@@ -87,6 +97,7 @@ describe("MatrixItemSchema", () => {
 			model: "llama3.2:3b",
 			harness: "direct",
 			test: "smoke",
+			category: "coding",
 			passType: "blind",
 		});
 		expect(item.id).toBe("01");
@@ -109,6 +120,7 @@ describe("RunPlanSchema", () => {
 				ollamaBaseUrl: "http://localhost:11434",
 				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 120_000,
+				categories: ["coding"],
 				passTypes: ["blind", "informed"],
 			},
 			items: [
@@ -118,6 +130,7 @@ describe("RunPlanSchema", () => {
 					model: "llama3.2:3b",
 					harness: "direct",
 					test: "smoke",
+					category: "coding",
 					passType: "blind",
 				},
 			],
@@ -127,6 +140,7 @@ describe("RunPlanSchema", () => {
 				models: 1,
 				harnesses: 1,
 				tests: 1,
+				categories: 1,
 			},
 		});
 		expect(plan.schemaVersion).toBe(SCHEMA_VERSION);
@@ -143,6 +157,7 @@ describe("MatrixItemResultSchema", () => {
 			model: "llama3.2:3b",
 			harness: "direct",
 			test: "smoke",
+			category: "coding",
 			passType: "blind",
 			status: "completed",
 			startedAt: "2026-01-14T14:30:52.000Z",
@@ -166,6 +181,7 @@ describe("MatrixItemResultSchema", () => {
 			model: "llama3.2:3b",
 			harness: "direct",
 			test: "smoke",
+			category: "coding",
 			passType: "informed",
 			status: "failed",
 			startedAt: "2026-01-14T14:31:02.000Z",
@@ -192,6 +208,7 @@ describe("MatrixItemResultSchema", () => {
 			model: "llama3.2:3b",
 			harness: "direct",
 			test: "smoke",
+			category: "coding",
 			passType: "blind",
 			status: "completed",
 			generation: {
@@ -230,6 +247,7 @@ describe("RunResultSchema", () => {
 					model: "llama3.2:3b",
 					harness: "direct",
 					test: "smoke",
+					category: "coding",
 					passType: "blind",
 					status: "completed",
 					generation: {
@@ -244,6 +262,7 @@ describe("RunResultSchema", () => {
 					model: "llama3.2:3b",
 					harness: "direct",
 					test: "smoke",
+					category: "coding",
 					passType: "informed",
 					status: "failed",
 					generation: {

@@ -40,6 +40,10 @@ export const runCommand = new Command("run")
 		"Limit to specific tests (default: all in src/tests/)",
 	)
 	.option(
+		"-c, --categories <categories...>",
+		"Limit to specific categories: coding, computer-use (default: all)",
+	)
+	.option(
 		"-p, --pass-types <types...>",
 		"Limit pass types: blind, informed (default: both)",
 	)
@@ -150,6 +154,9 @@ export const runCommand = new Command("run")
 			}
 			if (options.tests) {
 				configInput.tests = options.tests;
+			}
+			if (options.categories) {
+				configInput.categories = options.categories;
 			}
 			if (options.passTypes) {
 				configInput.passTypes = options.passTypes;

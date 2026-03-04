@@ -1,0 +1,5 @@
+{
+  "category": "coding",
+  "description": "Event emitter listener lifecycle semantics",
+  "tags": ["stateful", "events"]
+}

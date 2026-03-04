@@ -7,6 +7,9 @@
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
 
+/** Benchmark test category */
+export type TestCategory = "coding" | "computer-use";
+
 /** Execution status for matrix items */
 export type ItemStatus = "pending" | "running" | "completed" | "failed";
 
@@ -104,6 +107,7 @@ export interface MatrixItem {
 	modelAlias?: string;
 	harness: string;
 	test: string;
+	category?: TestCategory;
 	passType: PassType;
 }
 
@@ -132,6 +136,7 @@ export interface PlanConfig {
 	ollamaBaseUrl: string;
 	vllmBaseUrl: string;
 	generateTimeoutMs: number;
+	categories?: TestCategory[];
 	passTypes: PassType[];
 }
 
@@ -149,6 +154,7 @@ export interface RunPlan {
 		models: number;
 		harnesses: number;
 		tests: number;
+		categories?: number;
 	};
 }
 

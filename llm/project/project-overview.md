@@ -11,6 +11,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 
 ## Core Objectives
 - Test every model against every harness for each test
+- Support category-based test selection (`coding`, `computer-use`)
 - Run two passes per test: **blind** (no hints) and **informed** (test name/definition)
 - Score with both automated test suites and a frontier-eval rubric
 - Store results in a stable, machine-readable format for analysis
@@ -32,6 +33,10 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
   - `event-emitter` - Listener lifecycle and event isolation semantics
 - Expandable test catalog over time
 
+## Test Categories
+- `coding` — implementation-focused developer tasks (current catalog default)
+- `computer-use` — bounded machine/sandbox orchestration tasks
+
 ## Scoring & Evaluation
 - **Automated:** run test suite (vitest/jest) against generated code → pass/fail/total
 - **Frontier eval:** send code + rubric to GPT-5.2 xhigh via OpenRouter → score 1–10 + reasoning
@@ -46,7 +51,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 ## File Structure
 - `src/runtimes/` — Runtime adapters (inference backends: Ollama, vLLM)
 - `src/harnesses/` — Harness adapters (direct, goose, opencode) + tool-prompt builder
-- `src/tests/{test-name}/` — Benchmark tests (prompts, scoring specs, rubrics)
+- `src/tests/{test-name}/` — Benchmark tests (metadata, prompts, scoring specs, rubrics)
 - `src/runner/` — Orchestration, plan building, item execution
 - `src/lib/` — Scoring, code extraction, failure classification, utilities
 - `src/schemas/` — Zod schemas (config, plan, result, scoring)

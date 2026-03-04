@@ -50,6 +50,7 @@ progress output, and generated artifacts on disk.
 - **Artifacts**: Optional cached discovery output.
 - **Decision points**:
   - Which test(s) to run?
+  - Which category/categories to run (`coding`, `computer-use`)?
   - Which runtime(s) to use?
   - Which harness(es) to run through?
   - Which model(s) to benchmark?

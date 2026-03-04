@@ -1,0 +1,5 @@
+{
+  "category": "coding",
+  "description": "Chainable calculator with state and memory behavior",
+  "tags": ["stateful", "api-design"]
+}

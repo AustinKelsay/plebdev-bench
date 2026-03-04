@@ -3,8 +3,8 @@
  * Exports: BenchConfigSchema, BenchConfig, defaultConfig
  *
  * Invariants:
- * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes
- * - Use flags to limit which models/tests/harnesses/runtimes to run
+ * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes/categories
+ * - Use flags to limit which models/tests/harnesses/runtimes/categories to run
  */
 
 import { z } from "zod";
@@ -12,6 +12,7 @@ import {
 	PassTypeSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	TestCategorySchema,
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
 
@@ -67,6 +68,9 @@ export const BenchConfigSchema = z.object({
 
 	/** Test slugs to run. Empty array runs all tests in src/tests/. */
 	tests: z.array(z.string()).default([]),
+
+	/** Test categories to run. Empty array runs all categories. */
+	categories: z.array(TestCategorySchema).default([]),
 
 	/** Pass types to run for each model/test combination. */
 	passTypes: z.array(PassTypeSchema).default(["blind", "informed"]),

@@ -2,13 +2,14 @@
  * Purpose: Shared primitives and constants for the benchmark domain.
  * Exports: SCHEMA_VERSION, passTypes, PassTypeSchema, PassType,
  *          itemStatusTypes, ItemStatusSchema, ItemStatus,
- *          runtimeNames, RuntimeNameSchema, RuntimeName
+ *          runtimeNames, RuntimeNameSchema, RuntimeName,
+ *          testCategories, TestCategorySchema, TestCategory
  */
 
 import { z } from "zod";
 
 /** Current schema version for all result/plan files. */
-export const SCHEMA_VERSION = "0.2.2";
+export const SCHEMA_VERSION = "0.2.3";
 
 /** Valid runtime names (inference backends). */
 export const runtimeNames = ["ollama", "vllm"] as const;
@@ -27,6 +28,15 @@ export const PassTypeSchema = z.enum(passTypes);
 
 /** Pass type: 'blind' (no hints) or 'informed' (with context). */
 export type PassType = z.infer<typeof PassTypeSchema>;
+
+/** Valid benchmark test categories. */
+export const testCategories = ["coding", "computer-use"] as const;
+
+/** Zod schema for benchmark test categories. */
+export const TestCategorySchema = z.enum(testCategories);
+
+/** Benchmark test category. */
+export type TestCategory = z.infer<typeof TestCategorySchema>;
 
 /** Valid statuses for matrix items. */
 export const itemStatusTypes = [
