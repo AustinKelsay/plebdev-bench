@@ -12,11 +12,24 @@ Output contract:
 Export a factory `createTtlCache` for an in-memory cache with expiration.
 Use deterministic timestamps passed in by the caller (`nowMs`) instead of `Date.now()`.
 
+Required API:
+```ts
+export function createTtlCache(): {
+  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void
+  get(key: string, nowMs: number): unknown
+  has(key: string, nowMs: number): boolean
+  delete(key: string): boolean
+  size(nowMs: number): number
+  clear(): void
+}
+```
+
 Requirements:
-- Default TTL should be 1000ms.
-- `set` supports an optional per-entry TTL override.
-- Expiration boundary should be deterministic and strict.
-- The cache should correctly support `undefined` as a stored value.
-- `size(nowMs)` should represent only currently live entries.
-- `clear()` removes everything.
 - Must export `createTtlCache` as a function (no classes as the primary exported API).
+- Default TTL is 1000ms when `ttlMs` is omitted.
+- `set` overwrites existing values and refreshes expiration.
+- Expiration is strict and deterministic: entries are expired when `nowMs >= expiresAt`.
+- Storing `undefined` is valid; `has(...)` must still report presence correctly for live entries.
+- `delete(key)` returns `true` only when an entry existed and was removed.
+- `size(nowMs)` counts only currently live (non-expired) entries at that timestamp.
+- `clear()` removes all entries.
