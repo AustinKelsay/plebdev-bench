@@ -45,6 +45,7 @@ function formatDelta(base: number, actual: number): string {
  *
  * @param props - Run and plan payloads for a single run detail page
  * @returns React element
+ * @throws none
  */
 export function CoverageDiagnostics({ run, plan }: CoverageDiagnosticsProps) {
 	const coverage = computeCoverageStats(run.items);

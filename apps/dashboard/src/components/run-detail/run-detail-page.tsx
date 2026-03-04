@@ -1,3 +1,7 @@
+/**
+ * Purpose: Run detail page component displaying a single run's results.
+ * Shows summary, matrix table, scoring breakdown, and timing stats.
+ */
 import { BlindVsInformedChart } from "@/components/charts/blind-vs-informed-chart";
 import { CompositeScoreChart } from "@/components/charts/composite-score-chart";
 import { FrontierEvalScatter } from "@/components/charts/frontier-eval-scatter";
@@ -8,14 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { computeFrontierStats, computePassRate } from "@/lib/aggregations";
 import { summary as summaryTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult, RunPlan, RunResult } from "@/lib/types";
 import { formatDate, formatDuration, formatPercent } from "@/lib/utils";
-/**
- * Purpose: Run detail page component displaying a single run's results.
- * Shows summary, matrix table, scoring breakdown, and timing stats.
- */
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CoverageDiagnostics } from "./coverage-diagnostics";
@@ -26,6 +27,7 @@ import {
 import { FailureBreakdown } from "./failure-breakdown";
 import { ItemDetailDialog } from "./item-detail-dialog";
 import { MatrixTable } from "./matrix-table";
+import { ModelOverviewTab } from "./model-overview-tab";
 import { ScoringBreakdown } from "./scoring-breakdown";
 import { TimingStats } from "./timing-stats";
 import { ToolingBreakdown } from "./tooling-breakdown";
@@ -35,6 +37,15 @@ interface RunDetailPageProps {
 	plan: RunPlan;
 }
 
+/**
+ * Renders the run detail page with summary metrics, charts, and item-level drill-down.
+ *
+ * @param props - Component props (see `RunDetailPageProps`).
+ * @param props.run - The resolved run result containing summary and matrix items.
+ * @param props.plan - The run plan/environment snapshot associated with `run`.
+ * @returns React element containing the full run detail layout.
+ * @throws none
+ */
 export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 	const [selectedItem, setSelectedItem] = useState<MatrixItemResult | null>(
 		null,
@@ -165,44 +176,57 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 				</Card>
 			</div>
 
-			<CoverageDiagnostics run={run} plan={plan} />
+			<Tabs defaultValue="overview">
+				<TabsList>
+					<TabsTrigger value="overview">Overview</TabsTrigger>
+					<TabsTrigger value="model">Model View</TabsTrigger>
+				</TabsList>
 
-			{/* Matrix Table */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-base">Results Matrix</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<MatrixTable items={run.items} onRowClick={setSelectedItem} />
-				</CardContent>
-			</Card>
+				<TabsContent value="overview" className="mt-4 space-y-6">
+					<CoverageDiagnostics run={run} plan={plan} />
 
-			{/* Breakdowns */}
-			<div className="grid gap-4 md:grid-cols-2">
-				<ScoringBreakdown items={run.items} />
-				<ToolingBreakdown items={run.items} />
-			</div>
+					{/* Matrix Table */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Results Matrix</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<MatrixTable items={run.items} onRowClick={setSelectedItem} />
+						</CardContent>
+					</Card>
 
-			<div className="grid gap-4 md:grid-cols-2">
-				<TimingStats items={run.items} />
-				<FailureBreakdown items={run.items} />
-			</div>
+					{/* Breakdowns */}
+					<div className="grid gap-4 md:grid-cols-2">
+						<ScoringBreakdown items={run.items} />
+						<ToolingBreakdown items={run.items} />
+					</div>
 
-			{/* Primary Chart - Composite Scores */}
-			<CompositeScoreChart
-				items={run.items}
-				onDimensionClick={(dim, name) =>
-					setSelectedDimension({ dimension: dim, name })
-				}
-			/>
+					<div className="grid gap-4 md:grid-cols-2">
+						<TimingStats items={run.items} />
+						<FailureBreakdown items={run.items} />
+					</div>
 
-			{/* Comparison Charts */}
-			<div className="grid gap-4 lg:grid-cols-2">
-				<BlindVsInformedChart items={run.items} />
-				<TimingDistribution items={run.items} />
-			</div>
+					{/* Primary Chart - Composite Scores */}
+					<CompositeScoreChart
+						items={run.items}
+						onDimensionClick={(dim, name) =>
+							setSelectedDimension({ dimension: dim, name })
+						}
+					/>
 
-			<FrontierEvalScatter items={run.items} />
+					{/* Comparison Charts */}
+					<div className="grid gap-4 lg:grid-cols-2">
+						<BlindVsInformedChart items={run.items} />
+						<TimingDistribution items={run.items} />
+					</div>
+
+					<FrontierEvalScatter items={run.items} />
+				</TabsContent>
+
+				<TabsContent value="model" className="mt-4">
+					<ModelOverviewTab items={run.items} onItemClick={setSelectedItem} />
+				</TabsContent>
+			</Tabs>
 
 			{/* Item Detail Dialog */}
 			<ItemDetailDialog
@@ -223,6 +247,12 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 	);
 }
 
+/**
+ * Renders a loading-state skeleton for the run detail page layout.
+ *
+ * @returns React element that mirrors the run detail structure while data is loading.
+ * @throws none
+ */
 export function RunDetailPageSkeleton() {
 	const skeletonKeys = ["s1", "s2", "s3", "s4"] as const;
 
