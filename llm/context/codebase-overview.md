@@ -77,10 +77,13 @@ src/
 │   └── compare.ts        # Compare two runs + delta computation
 └── tests/
     ├── smoke/            # Basic add() function
+    ├── tool-smoke/       # Tool-calling preflight test
     ├── calculator-basic/ # Stateless arithmetic functions
     ├── calculator-stateful/ # Calculator with memory
     ├── todo-app/         # CRUD todo manager
-    └── tool-smoke/       # Tool-calling preflight test
+    ├── rate-limiter/     # Per-key fixed-window limiter
+    ├── ttl-cache/        # Deterministic TTL cache
+    └── event-emitter/    # Listener lifecycle semantics
 ```
 
 ## Architecture: Runtimes vs Harnesses
