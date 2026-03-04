@@ -4,11 +4,10 @@
  * Source of truth: src/schemas/result.schema.ts, plan.schema.ts, common.schema.ts
  */
 
+import type { TestCategory } from "../../../../src/schemas/common.schema.js";
+
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
-
-/** Benchmark test category */
-export type TestCategory = "coding" | "computer-use";
 
 /** Execution status for matrix items */
 export type ItemStatus = "pending" | "running" | "completed" | "failed";

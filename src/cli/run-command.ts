@@ -22,7 +22,11 @@ import {
 	type BenchConfig,
 	BenchConfigSchema,
 	type ModelAliasMap,
+	testCategories,
 } from "../schemas/index.js";
+
+/** Human-readable category list for CLI help text. */
+const CATEGORY_LIST = testCategories.join(", ");
 
 /** CLI run command. */
 export const runCommand = new Command("run")
@@ -41,7 +45,7 @@ export const runCommand = new Command("run")
 	)
 	.option(
 		"-c, --categories <categories...>",
-		"Limit to specific categories: coding, computer-use (default: all)",
+		`Limit to specific categories: ${CATEGORY_LIST} (default: all)`,
 	)
 	.option(
 		"-p, --pass-types <types...>",

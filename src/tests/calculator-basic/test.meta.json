@@ -1,5 +1,9 @@
 {
   "category": "coding",
   "description": "Stateless arithmetic function implementation",
-  "tags": ["math", "stateless"]
+  "tags": [
+    "math",
+    "stateless"
+  ],
+  "schemaVersion": 1
 }

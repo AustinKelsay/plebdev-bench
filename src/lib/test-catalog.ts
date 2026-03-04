@@ -123,11 +123,8 @@ export function selectTests(
 		}
 
 		selected = requestedSlugs.map((slug) => {
-			const test = bySlug.get(slug);
-			if (!test) {
-				throw new Error(`Unknown test: ${slug}`);
-			}
-			return test;
+			// Safe due to unknown-slug validation above.
+			return bySlug.get(slug)!;
 		});
 	}
 

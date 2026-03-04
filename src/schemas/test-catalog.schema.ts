@@ -10,6 +10,9 @@ import { TestCategorySchema } from "./common.schema.js";
 
 /** Zod schema for per-test metadata file contents. */
 export const TestMetadataSchema = z.object({
+	/** Schema version for metadata evolution. */
+	schemaVersion: z.literal(1).default(1),
+
 	/** Category used for test selection and reporting. */
 	category: TestCategorySchema,
 
