@@ -1,6 +1,12 @@
 /**
  * Purpose: Run detail page component displaying a single run's results.
  * Shows summary, matrix table, scoring breakdown, and timing stats.
+ * Exports: RunDetailPage, RunDetailPageSkeleton
+ *
+ * Invariants:
+ * - `run` and `plan` conform to the dashboard result/plan schemas.
+ * - `run` and `plan` represent the same benchmark run context.
+ * - Must render within a router provider so `Link` can resolve navigation.
  */
 import { BlindVsInformedChart } from "@/components/charts/blind-vs-informed-chart";
 import { CompositeScoreChart } from "@/components/charts/composite-score-chart";
