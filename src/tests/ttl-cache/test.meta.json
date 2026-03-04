@@ -1,0 +1,10 @@
+{
+  "category": "coding",
+  "description": "Deterministic in-memory TTL cache semantics",
+  "tags": [
+    "stateful",
+    "cache",
+    "expiration"
+  ],
+  "schemaVersion": 1
+}

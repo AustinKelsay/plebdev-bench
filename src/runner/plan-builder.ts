@@ -5,13 +5,11 @@
  * Discovery:
  * - Runtimes: check available inference backends (Ollama, etc.)
  * - Models: fetch from runtime API
- * - Tests: scan src/tests/ directory for subdirectories
+ * - Tests: scan src/tests/ directory and load metadata from test.meta.json
  * - Harnesses: detect available CLIs
  */
 
-import * as fs from "node:fs";
 import * as os from "node:os";
-import * as path from "node:path";
 import {
 	type HarnessName,
 	discoverHarnesses,
@@ -23,10 +21,10 @@ import { logger } from "../lib/logger.js";
 import { isAlias, resolveModelForRuntime } from "../lib/model-aliases.js";
 import { generateRunId } from "../lib/run-id.js";
 import {
-	TOOL_SMOKE_TEST_SLUG,
 	isToolSmokeTest,
 	selectToolSmokePassType,
 } from "../lib/tool-smoke.js";
+import { discoverTestCatalog, selectTests } from "../lib/test-catalog.js";
 import {
 	RUNTIME_NAMES,
 	type RuntimeName,
@@ -35,46 +33,6 @@ import {
 } from "../runtimes/index.js";
 import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
-
-/**
- * Discovers available tests by scanning src/tests/ directory.
- *
- * @returns Array of test slugs (directory names)
- */
-function discoverTests(): string[] {
-	const testsDir = path.join(process.cwd(), "src", "tests");
-
-	if (!fs.existsSync(testsDir)) {
-		throw new Error(`Tests directory not found: ${testsDir}`);
-	}
-
-	const entries = fs.readdirSync(testsDir, { withFileTypes: true });
-	const tests = entries
-		.filter((entry) => entry.isDirectory())
-		.map((entry) => entry.name);
-
-	if (tests.length === 0) {
-		throw new Error(`No tests found in ${testsDir}`);
-	}
-
-	return tests;
-}
-
-/**
- * Ensures tool-smoke runs first if present.
- *
- * @param tests - Discovered or configured test list
- * @returns Ordered test list
- */
-function orderTests(tests: string[]): string[] {
-	if (!tests.includes(TOOL_SMOKE_TEST_SLUG)) {
-		return tests;
-	}
-	return [
-		TOOL_SMOKE_TEST_SLUG,
-		...tests.filter((test) => test !== TOOL_SMOKE_TEST_SLUG),
-	];
-}
 
 /**
  * Gets the current Bun version.
@@ -272,16 +230,20 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		);
 	}
 
-	// Discover tests if not specified
-	let tests = config.tests;
-	if (tests.length === 0) {
-		log.info("Auto-discovering tests from src/tests/...");
-		tests = discoverTests();
-		tests = orderTests(tests);
-		log.info({ tests }, `Found ${tests.length} test(s)`);
-	} else {
-		tests = orderTests(tests);
-	}
+	// Load and select tests from catalog
+	log.info("Loading test catalog from src/tests/...");
+	const testCatalog = discoverTestCatalog();
+	const selectedTests = selectTests(
+		testCatalog,
+		config.tests,
+		config.categories,
+	);
+	const selectedTestSlugs = selectedTests.map((test) => test.slug);
+	const selectedTestCategories = [...new Set(selectedTests.map((t) => t.category))];
+	log.info(
+		{ tests: selectedTestSlugs, categories: selectedTestCategories },
+		`Using ${selectedTests.length} test(s) across ${selectedTestCategories.length} categor${selectedTestCategories.length === 1 ? "y" : "ies"}`,
+	);
 
 	// Discover available harnesses
 	const availableHarnesses = await discoverHarnesses();
@@ -351,8 +313,8 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				// Look up canonical alias if this model was resolved from one
 				const modelAlias = modelCanonicalMap.get(`${runtime}::${model}`);
 
-				for (const test of tests) {
-					const passTypes = isToolSmokeTest(test)
+				for (const test of selectedTests) {
+					const passTypes = isToolSmokeTest(test.slug)
 						? [selectToolSmokePassType(config.passTypes)]
 						: config.passTypes;
 
@@ -364,7 +326,8 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 							harness,
 							model,
 							...(modelAlias ? { modelAlias } : {}),
-							test,
+							test: test.slug,
+							category: test.category,
 							passType,
 						});
 					}
@@ -383,6 +346,14 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const summaryModels = new Set(items.map((item) => item.model));
 	const summaryHarnesses = new Set(items.map((item) => item.harness));
 	const summaryTests = new Set(items.map((item) => item.test));
+	const summaryCategories = new Set(
+		items
+			.map((item) => item.category)
+			.filter(
+				(category): category is NonNullable<MatrixItem["category"]> =>
+					category !== undefined,
+			),
+	);
 
 	// Build the plan
 	const plan: RunPlan = {
@@ -398,6 +369,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			vllmBaseUrl: config.vllmBaseUrl,
 			generateTimeoutMs: config.generateTimeoutMs,
 			passTypes: config.passTypes,
+			categories: config.categories,
 			...(managedVllm ? { managedVllm } : {}),
 		},
 		items,
@@ -407,6 +379,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			models: summaryModels.size,
 			harnesses: summaryHarnesses.size,
 			tests: summaryTests.size,
+			categories: summaryCategories.size,
 		},
 	};
 

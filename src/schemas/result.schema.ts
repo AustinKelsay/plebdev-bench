@@ -16,6 +16,7 @@ import {
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
+	TestCategorySchema,
 } from "./common.schema.js";
 
 /** Zod schema for generation output from a harness. */
@@ -154,6 +155,9 @@ export const MatrixItemResultSchema = z.object({
 
 	/** Test slug. */
 	test: z.string(),
+
+	/** Test category (e.g., 'coding', 'computer-use'). */
+	category: TestCategorySchema.optional(),
 
 	/** Pass type. */
 	passType: PassTypeSchema,

@@ -1,0 +1,9 @@
+{
+  "category": "coding",
+  "description": "Stateful CRUD todo manager implementation",
+  "tags": [
+    "crud",
+    "stateful"
+  ],
+  "schemaVersion": 1
+}

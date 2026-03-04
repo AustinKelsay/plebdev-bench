@@ -11,6 +11,9 @@ export {
 	passTypes,
 	PassTypeSchema,
 	type PassType,
+	testCategories,
+	TestCategorySchema,
+	type TestCategory,
 	itemStatusTypes,
 	ItemStatusSchema,
 	type ItemStatus,
@@ -82,3 +85,10 @@ export {
 	ModelAliasMapSchema,
 	type ModelAliasMap,
 } from "./model-alias.schema.js";
+
+export {
+	TestMetadataSchema,
+	type TestMetadata,
+	TestDefinitionSchema,
+	type TestDefinition,
+} from "./test-catalog.schema.js";

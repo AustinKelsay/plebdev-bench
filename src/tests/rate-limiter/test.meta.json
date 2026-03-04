@@ -1,0 +1,9 @@
+{
+  "category": "coding",
+  "description": "Per-key fixed-window rate limiter semantics",
+  "tags": [
+    "stateful",
+    "time-window"
+  ],
+  "schemaVersion": 1
+}

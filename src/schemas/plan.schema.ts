@@ -10,6 +10,7 @@ import {
 	PassTypeSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	TestCategorySchema,
 } from "./common.schema.js";
 import { ManagedVllmSchema } from "./config.schema.js";
 
@@ -32,6 +33,9 @@ export const MatrixItemSchema = z.object({
 
 	/** Test slug (e.g., 'smoke'). */
 	test: z.string(),
+
+	/** Test category (e.g., 'coding', 'computer-use'). */
+	category: TestCategorySchema.optional(),
 
 	/** Pass type: 'blind' or 'informed'. */
 	passType: PassTypeSchema,
@@ -72,6 +76,7 @@ export const RunPlanSchema = z.object({
 		vllmBaseUrl: z.string().url(),
 		generateTimeoutMs: z.number(),
 		passTypes: z.array(PassTypeSchema),
+		categories: z.array(TestCategorySchema).optional(),
 		managedVllm: ManagedVllmSchema.optional(),
 	}),
 
@@ -85,6 +90,7 @@ export const RunPlanSchema = z.object({
 		models: z.number(),
 		harnesses: z.number(),
 		tests: z.number(),
+		categories: z.number().optional(),
 	}),
 });
 

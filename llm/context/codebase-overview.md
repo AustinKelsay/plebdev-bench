@@ -4,12 +4,17 @@ Purpose: Quick reference for the current codebase structure and key commands.
 
 Local-first CLI benchmark runner for local LLMs. Runs matrix of `runtimes × harnesses × models × tests × passTypes` and writes reproducible artifacts.
 
+Test categories:
+- `coding`
+- `computer-use`
+
 ## Key Commands
 
 ```bash
 bun pb                              # Run all (auto-discovers runtimes/harnesses/models/tests)
 bun pb --models llama3.2:3b         # Limit to specific model
 bun pb --tests smoke                # Limit to specific test
+bun pb --categories coding          # Limit to specific category
 bun pb --pass-types blind           # Limit to blind pass only
 bun pb --harnesses direct           # Limit to direct harness only
 bun pb --runtimes ollama            # Limit to ollama runtime
@@ -66,6 +71,7 @@ src/
 │   ├── openrouter-client.ts # Frontier eval via OpenRouter API
 │   ├── stats.ts          # Run statistics calculation + formatting
 │   ├── failure-classifier.ts # Classify generation/scoring errors
+│   ├── test-catalog.ts   # Test catalog discovery + category filtering
 │   └── tool-smoke.ts     # Tool-smoke test generation + scoring
 ├── runner/
 │   ├── index.ts          # Orchestration
@@ -84,6 +90,7 @@ src/
     ├── rate-limiter/     # Per-key fixed-window limiter
     ├── ttl-cache/        # Deterministic TTL cache
     └── event-emitter/    # Listener lifecycle semantics
+    # each test directory also includes test.meta.json with category metadata
 ```
 
 ## Architecture: Runtimes vs Harnesses
@@ -145,11 +152,12 @@ Each run creates `results/<run-id>/`:
 
 ## Schemas
 
-Schema version: `0.2.1`
+Schema version: `0.2.3`
 
 | Schema | File | Purpose |
 |--------|------|---------|
 | `RuntimeNameSchema` | common.schema.ts | Valid runtime names ("ollama") |
+| `TestCategorySchema` | common.schema.ts | Test categories ("coding", "computer-use") |
 | `BenchConfig` | config.schema.ts | CLI input, defaults |
 | `RunPlan` | plan.schema.ts | Expanded matrix (plan.json) |
 | `RunResult` | result.schema.ts | Execution output (run.json) |
@@ -164,8 +172,8 @@ Schema version: `0.2.1`
 
 ## Key Behaviors
 
-- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/`
-- **Limiting flags**: Use `--models`, `--harnesses`, `--tests` to limit which items to run
+- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/` (with categories from `test.meta.json`)
+- **Limiting flags**: Use `--models`, `--harnesses`, `--tests`, `--categories` to limit which items to run
 - **Sequential execution**: One item at a time
 - **Dynamic timeouts**: Timeout scales with model size and harness:
   - Base: 60s + ceil(params/10) * 60s
@@ -192,6 +200,7 @@ Schema version: `0.2.1`
   models: []                  // Auto-discover all from runtimes
   harnesses: []               // Auto-discover all available
   tests: []                   // Auto-discover all from src/tests/
+  categories: []              // Auto-discover all categories
   passTypes: ["blind", "informed"]
   ollamaBaseUrl: "http://localhost:11434"
   generateTimeoutMs: 300_000  // 5 minutes (for large models)

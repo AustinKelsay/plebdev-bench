@@ -4,6 +4,8 @@
  * Source of truth: src/schemas/result.schema.ts, plan.schema.ts, common.schema.ts
  */
 
+import type { TestCategory } from "../../../../src/schemas/common.schema.js";
+
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
 
@@ -104,6 +106,7 @@ export interface MatrixItem {
 	modelAlias?: string;
 	harness: string;
 	test: string;
+	category?: TestCategory;
 	passType: PassType;
 }
 
@@ -132,6 +135,7 @@ export interface PlanConfig {
 	ollamaBaseUrl: string;
 	vllmBaseUrl: string;
 	generateTimeoutMs: number;
+	categories?: TestCategory[];
 	passTypes: PassType[];
 }
 
@@ -149,6 +153,7 @@ export interface RunPlan {
 		models: number;
 		harnesses: number;
 		tests: number;
+		categories?: number;
 	};
 }
 
