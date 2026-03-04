@@ -21,12 +21,15 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - **Experimenters** tracking progress over time
 
 ## What It Tests
-- **5 benchmark tests:**
+- **8 benchmark tests:**
   - `smoke` - Basic add() function (simplest possible test)
   - `calculator-basic` - Stateless arithmetic functions
   - `calculator-stateful` - Calculator with memory operations
   - `todo-app` - CRUD todo manager with state management
   - `tool-smoke` - Tool-calling preflight test for Goose/OpenCode
+  - `rate-limiter` - Stateful per-key fixed-window rate limiting
+  - `ttl-cache` - Deterministic in-memory TTL cache behavior
+  - `event-emitter` - Listener lifecycle and event isolation semantics
 - Expandable test catalog over time
 
 ## Scoring & Evaluation
@@ -65,7 +68,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - Results must include full metadata for reproducibility
 
 ## Success Criteria
-- All 5 tests run end-to-end across all harnesses
+- All 8 tests run end-to-end across all harnesses
 - Both blind and informed passes captured per model/harness/test
 - Automated tests run and score correctly
 - Frontier eval returns score + reasoning and is logged

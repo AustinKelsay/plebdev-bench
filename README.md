@@ -22,6 +22,16 @@ Outputs (per run):
 Built-ins:
 - **compare**: diff two runs and print deltas (pass rate, rubric, time/energy, etc.)
 
+Current benchmark tests:
+- `smoke` — basic add function sanity check
+- `tool-smoke` — tool-calling preflight for tool harnesses
+- `calculator-basic` — stateless arithmetic operations
+- `calculator-stateful` — chainable calculator + memory semantics
+- `todo-app` — CRUD/stateful todo management
+- `rate-limiter` — per-key fixed-window quota semantics
+- `ttl-cache` — deterministic cache expiration and mutation semantics
+- `event-emitter` — listener lifecycle and ordering semantics
+
 ## Status
 
 **MVP complete + hardening applied.** Multi-harness runs, automated scoring, frontier eval, compare, and dashboard are implemented.
