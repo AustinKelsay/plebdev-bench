@@ -1,6 +1,6 @@
 /**
  * Purpose: Zod schemas for dashboard API boundary validation.
- * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema
+ * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema, RunListSchema, DashboardCheckpointSummarySchema, DashboardIndexSchema, DashboardIndexLegacyOrV2Schema, LeaderboardAggregateSchema
  *
  * These schemas validate JSON fetched from the results directory.
  * They mirror the CLI schemas but are kept local to avoid cross-package imports.

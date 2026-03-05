@@ -28,7 +28,6 @@ const OFF_TASK_PATTERNS = [
 const TURN_LIMIT_PATTERNS = [
 	/\breached the maximum number of actions\b/i,
 	/\bwithout user input\b/i,
-	/\bwould you like me to continue\b/i,
 ] as const;
 
 /** Minimal code-like signals for accepting raw (non-extracted) text. */

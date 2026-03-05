@@ -73,7 +73,14 @@ async function main(): Promise<void> {
 		writeResponse({ ok: true, result });
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		writeResponse({ ok: false, error: errorMessage });
+		try {
+			writeResponse({ ok: false, error: errorMessage });
+		} catch (writeError) {
+			process.stderr.write(
+				`scorer-worker: failed to write error response: ${writeError instanceof Error ? writeError.message : String(writeError)}\n`,
+			);
+			process.stderr.write(`original error: ${errorMessage}\n`);
+		}
 		process.exitCode = 1;
 	}
 }

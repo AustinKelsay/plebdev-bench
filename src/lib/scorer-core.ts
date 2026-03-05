@@ -38,6 +38,12 @@ function getTempFilePath(): string {
 /**
  * Compares two values for equality, with tolerance for floats.
  *
+ * Limitations:
+ * - Object/array comparison uses `JSON.stringify`, so key order differences fail equality.
+ * - `undefined` object fields may differ from omitted fields.
+ * - Complex runtime types (Date, Map, Set, class instances) are not normalized.
+ * - Tolerance applies only when both values are finite numbers.
+ *
  * @param actual - Actual value from function call
  * @param expected - Expected value from test case
  * @param tolerance - Optional tolerance for float comparison
@@ -166,13 +172,19 @@ function createInstance(
 	const factory = module[factoryFn];
 
 	if (typeof factory === "function") {
-		// Check if it's a class (has prototype with constructor)
-		if (factory.prototype && factory.prototype.constructor === factory) {
-			// It's a class, use new
+		const factorySource = Function.prototype.toString.call(factory).trim();
+		if (factorySource.startsWith("class")) {
 			return new (factory as new () => unknown)();
 		}
-		// It's a factory function
-		return (factory as () => unknown)();
+
+		try {
+			return (factory as () => unknown)();
+		} catch (error) {
+			if (error instanceof TypeError) {
+				return new (factory as new () => unknown)();
+			}
+			throw error;
+		}
 	}
 
 	return undefined;

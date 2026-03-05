@@ -14,12 +14,12 @@ const ORIGINAL_ENV = process.env.PLEBDEV_BENCH_SCORER_MODE;
 
 beforeEach(() => {
 	execaMock.mockReset();
-	process.env.PLEBDEV_BENCH_SCORER_MODE = undefined;
+	Reflect.deleteProperty(process.env, "PLEBDEV_BENCH_SCORER_MODE");
 });
 
 afterEach(() => {
 	if (ORIGINAL_ENV === undefined) {
-		process.env.PLEBDEV_BENCH_SCORER_MODE = undefined;
+		Reflect.deleteProperty(process.env, "PLEBDEV_BENCH_SCORER_MODE");
 	} else {
 		process.env.PLEBDEV_BENCH_SCORER_MODE = ORIGINAL_ENV;
 	}

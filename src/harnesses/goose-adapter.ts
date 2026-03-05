@@ -78,10 +78,17 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 		options?.maxTurns,
 		DEFAULT_GOOSE_MAX_TURNS,
 	);
-	const retryMaxTurns = Math.max(
-		maxTurns,
-		normalizeTurnLimit(options?.retryMaxTurns, DEFAULT_GOOSE_RETRY_MAX_TURNS),
+	const requestedRetryMaxTurns = normalizeTurnLimit(
+		options?.retryMaxTurns,
+		DEFAULT_GOOSE_RETRY_MAX_TURNS,
 	);
+	const retryMaxTurns = Math.max(maxTurns, requestedRetryMaxTurns);
+	if (requestedRetryMaxTurns < maxTurns) {
+		logger.debug(
+			{ maxTurns, requestedRetryMaxTurns, retryMaxTurns },
+			"Adjusted Goose retry max turns to avoid values lower than initial max turns",
+		);
+	}
 
 	return {
 		name: "goose" as const,

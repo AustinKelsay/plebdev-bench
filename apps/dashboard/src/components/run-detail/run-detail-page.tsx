@@ -191,7 +191,10 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 							</p>
 						)}
 						{checkpointId && (
-							<p className="text-xs text-foreground-faint mt-1 truncate">
+							<p
+								className="text-xs text-foreground-faint mt-1 truncate"
+								title={checkpointId}
+							>
 								{checkpointId}
 							</p>
 						)}

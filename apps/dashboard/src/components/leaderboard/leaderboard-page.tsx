@@ -34,15 +34,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
 	ALL_FILTER_VALUE,
+	type FilterState,
 	buildMachineFilterOptions,
 	createDefaultFilterState,
 	filterItems,
-	type FilterState,
 	uniqueValues,
 } from "./leaderboard-filters";
 
 /**
  * Renders the latest-checkpoint leaderboard page.
+ *
+ * @returns JSX element showing aggregated benchmark rankings and filters
+ * @throws {Error} Does not throw directly; surfaced fetch/render errors are shown via local error state
  */
 export function LeaderboardPage() {
 	const [index, setIndex] = useState<DashboardIndex | null>(null);
@@ -90,7 +93,10 @@ export function LeaderboardPage() {
 		[filteredItems],
 	);
 
-	const machineOptions = useMemo(() => buildMachineFilterOptions(items), [items]);
+	const machineOptions = useMemo(
+		() => buildMachineFilterOptions(items),
+		[items],
+	);
 	const runtimeOptions = useMemo(
 		() => uniqueValues(items, (item) => item.runtime),
 		[items],
@@ -218,15 +224,15 @@ export function LeaderboardPage() {
 							<SelectTrigger>
 								<SelectValue placeholder="Machine" />
 							</SelectTrigger>
-								<SelectContent>
-									<SelectItem value={ALL_FILTER_VALUE}>All machines</SelectItem>
-									{machineOptions.map((option) => (
-										<SelectItem key={option.value} value={option.value}>
-											{option.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<SelectContent>
+								<SelectItem value={ALL_FILTER_VALUE}>All machines</SelectItem>
+								{machineOptions.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 
 						<Select
 							value={filters.runtime}

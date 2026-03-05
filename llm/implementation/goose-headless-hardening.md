@@ -29,5 +29,5 @@ Purpose: Document Goose reliability hardening for non-interactive benchmark runs
 ## Operational guidance
 
 - Start with defaults (`1` and `3`) for throughput.
-- If a model still frequently emits turn-limit chatter on Goose informed passes, increase retry turns first.
+- If a model still frequently emits turn-limit chatter on Goose-informed passes, increase retry turns first.
 - Keep initial turns low to avoid long exploratory/off-task Goose sessions.

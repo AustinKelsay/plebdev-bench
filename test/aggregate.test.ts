@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import {
-	aggregateRunsForCheckpoint,
 	type AggregateRunInput,
+	aggregateRunsForCheckpoint,
 } from "../src/results/aggregate.js";
 import type { MatrixItemResult, RunResult } from "../src/schemas/index.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
@@ -96,7 +96,7 @@ describe("aggregateRunsForCheckpoint", () => {
 		const olderItem = createItem("01", "2026-03-04T12:00:00.000Z", {
 			automatedScore: { passed: 3, failed: 3, total: 6 },
 		});
-		const newerItem = createItem("02", "2026-03-04T12:10:00.000Z", {
+		const newerItem = createItem("01", "2026-03-04T12:10:00.000Z", {
 			automatedScore: { passed: 6, failed: 0, total: 6 },
 		});
 

@@ -44,7 +44,7 @@ export async function writePlan(outputDir: string, plan: RunPlan): Promise<void>
 
 	const planPath = path.join(runDir, "plan.json");
 	const content = JSON.stringify(plan, null, 2);
-	fs.writeFileSync(planPath, content, "utf-8");
+	await fs.promises.writeFile(planPath, content, "utf-8");
 }
 
 /**
@@ -65,7 +65,7 @@ export async function writeResult(
 
 	const resultPath = path.join(runDir, "run.json");
 	const content = JSON.stringify(result, null, 2);
-	fs.writeFileSync(resultPath, content, "utf-8");
+	await fs.promises.writeFile(resultPath, content, "utf-8");
 }
 
 /**
@@ -85,8 +85,10 @@ export async function writePartialResult(
 	ensureDir(runDir);
 
 	const partialPath = path.join(runDir, "run.partial.json");
+	const tempPath = `${partialPath}.tmp`;
 	const content = JSON.stringify(result, null, 2);
-	fs.writeFileSync(partialPath, content, "utf-8");
+	await fs.promises.writeFile(tempPath, content, "utf-8");
+	await fs.promises.rename(tempPath, partialPath);
 }
 
 /**

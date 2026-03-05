@@ -7,14 +7,15 @@
  */
 
 import { Command } from "commander";
+import { logger } from "../lib/logger.js";
 import {
 	type CompareResult,
 	type MatchedItem,
 	compareRuns,
 	formatDelta,
 } from "../results/compare.js";
-import type { RunPlan, RunResult } from "../schemas/index.js";
 import { findRunDir, readPlan, readResult } from "../results/reader.js";
+import type { RunPlan, RunResult } from "../schemas/index.js";
 
 /** Default output directory for results. */
 const DEFAULT_OUTPUT_DIR = "results";
@@ -55,8 +56,12 @@ export function readPlanBestEffort(runDir: string): RunPlan | undefined {
 	try {
 		return readPlan(runDir);
 	} catch (error) {
-		console.warn(
-			`Warning: Unable to read plan metadata from ${runDir}: ${error instanceof Error ? error.message : String(error)}. Continuing with run.json metadata.`,
+		logger.warn(
+			{
+				runDir,
+				error: error instanceof Error ? error.message : String(error),
+			},
+			"Unable to read plan metadata; continuing with run.json metadata",
 		);
 		return undefined;
 	}
@@ -73,7 +78,10 @@ export function resolveCheckpointId(
 	run: RunResult,
 	plan: RunPlan | undefined,
 ): string | undefined {
-	return run.benchmarkCheckpoint?.checkpointId ?? plan?.benchmarkCheckpoint?.checkpointId;
+	return (
+		run.benchmarkCheckpoint?.checkpointId ??
+		plan?.benchmarkCheckpoint?.checkpointId
+	);
 }
 
 /**
@@ -358,12 +366,12 @@ export const compareCommand = new Command("compare")
 			try {
 				// Find and read run A
 				const dirA = findRunDir(options.output, runA);
-				const resultA = await readResult(dirA);
+				const resultA = readResult(dirA);
 				const planA = readPlanBestEffort(dirA);
 
 				// Find and read run B
 				const dirB = findRunDir(options.output, runB);
-				const resultB = await readResult(dirB);
+				const resultB = readResult(dirB);
 				const planB = readPlanBestEffort(dirB);
 
 				const checkpointA = resolveCheckpointId(resultA, planA);
