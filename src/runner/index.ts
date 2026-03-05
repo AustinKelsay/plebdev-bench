@@ -311,6 +311,14 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 							results,
 						);
 						await writePartialResult(config.outputDir, partialSnapshot);
+						log.info(
+							{
+								completedItems: itemCount,
+								totalItems: total,
+								checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
+							},
+							"Wrote run checkpoint",
+						);
 						lastCheckpointItemCount = itemCount;
 					}
 					continue;
@@ -348,6 +356,14 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 					results,
 				);
 				await writePartialResult(config.outputDir, partialSnapshot);
+				log.info(
+					{
+						completedItems: itemCount,
+						totalItems: total,
+						checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
+					},
+					"Wrote run checkpoint",
+				);
 				lastCheckpointItemCount = itemCount;
 			}
 
@@ -436,6 +452,10 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	log.info("Writing run.json...");
 	await writeResult(config.outputDir, runResult);
 	deletePartialResult(config.outputDir, plan.runId);
+	log.info(
+		{ checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json` },
+		"Removed run checkpoint after successful run.json write",
+	);
 
 	// Calculate and print detailed stats
 	const stats = calculateRunStats(results);

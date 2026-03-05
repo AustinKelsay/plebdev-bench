@@ -114,10 +114,13 @@ interface CompileRetryContext {
  * @param context - Retry context and dependencies
  * @returns Retry result or undefined if retry attempt fails
  */
-async function runCompileFeedbackRetry(
-	context: CompileRetryContext,
-): Promise<
-	{ generation: GenerationResult; scoringResult: ScoringResult } | undefined
+async function runCompileFeedbackRetry(context: CompileRetryContext): Promise<
+	| {
+			generation: GenerationResult;
+			scoringResult: ScoringResult;
+			scoringDurationMs: number;
+	  }
+	| undefined
 > {
 	const retryPrompt = buildCompileRetryPrompt(
 		context.promptForRetry,
@@ -154,15 +157,20 @@ async function runCompileFeedbackRetry(
 			completionTokens: retryResult.completionTokens,
 			codeFilePath: retryResult.codeFilePath,
 		};
+		const retryScoringStartTime = performance.now();
 		const retryScoringResult = await scoreGeneration(
 			context.item.test,
 			retryGeneration.output ?? "",
 			undefined,
 			retryGeneration.codeFilePath,
 		);
+		const retryScoringDurationMs = Math.round(
+			performance.now() - retryScoringStartTime,
+		);
 		return {
 			generation: retryGeneration,
 			scoringResult: retryScoringResult,
+			scoringDurationMs: retryScoringDurationMs,
 		};
 	} catch (retryError) {
 		const retryMessage =
@@ -316,14 +324,18 @@ export async function executeItem(
 				item.harness === "goose" || item.harness === "opencode";
 			let compileRetryUsed = false;
 			let scoringResult: ScoringResult;
+			let scoringOnlyDurationMs = 0;
+			let retryGenerationDurationMs = 0;
 
 			try {
+				const initialScoringStartTime = performance.now();
 				scoringResult = await scoreGeneration(
 					item.test,
 					generation.output ?? "", // empty string OK when codeFilePath is set
 					undefined, // use default timeout
 					generation.codeFilePath, // pass file path from tool-calling harness
 				);
+				scoringOnlyDurationMs += performance.now() - initialScoringStartTime;
 			} catch (scoringError) {
 				const scoringErrorMessage =
 					scoringError instanceof Error
@@ -350,6 +362,9 @@ export async function executeItem(
 						compileRetryUsed = true;
 						generation = retryFromException.generation;
 						scoringResult = retryFromException.scoringResult;
+						scoringOnlyDurationMs += retryFromException.scoringDurationMs;
+						retryGenerationDurationMs +=
+							retryFromException.generation.durationMs;
 					} else {
 						throw scoringError;
 					}
@@ -383,6 +398,8 @@ export async function executeItem(
 					compileError,
 				});
 				if (retryAttempt) {
+					scoringOnlyDurationMs += retryAttempt.scoringDurationMs;
+					retryGenerationDurationMs += retryAttempt.generation.durationMs;
 					const previousPassed = scoringResult.passed;
 					const shouldPromoteRetry =
 						retryAttempt.scoringResult.passed > previousPassed ||
@@ -420,6 +437,7 @@ export async function executeItem(
 			const scoringDurationMs = Math.round(
 				performance.now() - scoringStartTime,
 			);
+			const scoringOnlyDurationMsRounded = Math.round(scoringOnlyDurationMs);
 
 			automatedScore = {
 				passed: scoringResult.passed,
@@ -429,6 +447,8 @@ export async function executeItem(
 
 			scoringMetrics = {
 				durationMs: scoringDurationMs,
+				scoringDurationMs: scoringOnlyDurationMsRounded,
+				...(retryGenerationDurationMs > 0 ? { retryGenerationDurationMs } : {}),
 			};
 
 			if (scoringResult.failureType && scoringResult.error) {
@@ -443,6 +463,10 @@ export async function executeItem(
 					passed: scoringResult.passed,
 					total: scoringResult.total,
 					durationMs: scoringDurationMs,
+					scoringDurationMs: scoringOnlyDurationMsRounded,
+					...(retryGenerationDurationMs > 0
+						? { retryGenerationDurationMs }
+						: {}),
 				},
 				"Scoring completed",
 			);
