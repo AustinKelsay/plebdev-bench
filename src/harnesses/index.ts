@@ -28,20 +28,33 @@ export { discoverHarnesses, isHarnessAvailable } from "./discovery.js";
 
 import { logger } from "../lib/logger.js";
 import { createDirectAdapter } from "./direct-adapter.js";
-import { createGooseAdapter } from "./goose-adapter.js";
+import {
+	type GooseAdapterOptions,
+	createGooseAdapter,
+} from "./goose-adapter.js";
 // Import adapters
 import type { Harness, HarnessName } from "./harness.js";
 import { LEGACY_HARNESS_ALIAS, normalizeHarnessName } from "./harness.js";
 import { createOpenCodeAdapter } from "./opencode-adapter.js";
 
+/** Optional factory settings for harness adapter creation. */
+export interface HarnessFactoryOptions {
+	/** Goose-specific adapter settings. */
+	goose?: GooseAdapterOptions;
+}
+
 /**
  * Creates a harness instance by name.
  *
  * @param name - Harness name ("direct", "goose", "opencode", or legacy "ollama")
+ * @param options - Optional adapter settings
  * @returns Harness instance
  * @throws {Error} If harness name is unknown
  */
-export function createHarness(name: string): Harness {
+export function createHarness(
+	name: string,
+	options?: HarnessFactoryOptions,
+): Harness {
 	// Handle legacy "ollama" name with deprecation warning
 	if (name === LEGACY_HARNESS_ALIAS) {
 		logger.warn(
@@ -57,7 +70,7 @@ export function createHarness(name: string): Harness {
 			return createDirectAdapter();
 
 		case "goose":
-			return createGooseAdapter();
+			return createGooseAdapter(options?.goose);
 
 		case "opencode":
 			return createOpenCodeAdapter();

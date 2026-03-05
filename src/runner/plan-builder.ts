@@ -17,14 +17,16 @@ import {
 	isValidHarnessName,
 	normalizeHarnessName,
 } from "../harnesses/index.js";
+import { computeBenchmarkCheckpoint } from "../lib/benchmark-checkpoint.js";
+import {
+	type ResolvedMachineProfile,
+	collectMachineProfile,
+} from "../lib/hardware-profile.js";
 import { logger } from "../lib/logger.js";
 import { isAlias, resolveModelForRuntime } from "../lib/model-aliases.js";
 import { generateRunId } from "../lib/run-id.js";
-import {
-	isToolSmokeTest,
-	selectToolSmokePassType,
-} from "../lib/tool-smoke.js";
 import { discoverTestCatalog, selectTests } from "../lib/test-catalog.js";
+import { isToolSmokeTest, selectToolSmokePassType } from "../lib/tool-smoke.js";
 import {
 	RUNTIME_NAMES,
 	type RuntimeName,
@@ -57,6 +59,33 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	log.info("Building run plan...");
 	const managedVllm =
 		config.managedVllm?.enabled === true ? config.managedVllm : undefined;
+	const benchmarkCheckpoint = computeBenchmarkCheckpoint();
+	const resolvedMachine: ResolvedMachineProfile = collectMachineProfile({
+		machineProfileId: config.machineProfileId,
+		machineLabel: config.machineLabel,
+	});
+
+	if (resolvedMachine.isAnonymous) {
+		log.warn(
+			{ machineProfileId: resolvedMachine.machine.profileId },
+			"Machine profile ID not provided; using deterministic anonymous machine ID",
+		);
+	} else {
+		log.info(
+			{
+				machineProfileId: resolvedMachine.machine.profileId,
+				identitySource: resolvedMachine.identitySource,
+			},
+			"Using explicit machine profile identity",
+		);
+	}
+	log.info(
+		{
+			checkpointId: benchmarkCheckpoint.checkpointId,
+			assetCount: benchmarkCheckpoint.assetCount,
+		},
+		"Computed benchmark checkpoint",
+	);
 
 	// Discover runtimes if not specified
 	let runtimes: RuntimeName[];
@@ -239,7 +268,9 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		config.categories,
 	);
 	const selectedTestSlugs = selectedTests.map((test) => test.slug);
-	const selectedTestCategories = [...new Set(selectedTests.map((t) => t.category))];
+	const selectedTestCategories = [
+		...new Set(selectedTests.map((t) => t.category)),
+	];
 	log.info(
 		{ tests: selectedTestSlugs, categories: selectedTestCategories },
 		`Using ${selectedTests.length} test(s) across ${selectedTestCategories.length} categor${selectedTestCategories.length === 1 ? "y" : "ies"}`,
@@ -360,14 +391,22 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		schemaVersion: SCHEMA_VERSION,
 		runId,
 		createdAt: new Date().toISOString(),
-		environment: {
+		runtimeEnvironment: {
 			platform: os.platform(),
 			bunVersion: getBunVersion(),
+		},
+		machine: resolvedMachine.machine,
+		benchmarkCheckpoint,
+		provenance: {
+			verificationStatus: "self_reported",
+			source: "local_cli",
 		},
 		config: {
 			ollamaBaseUrl: config.ollamaBaseUrl,
 			vllmBaseUrl: config.vllmBaseUrl,
 			generateTimeoutMs: config.generateTimeoutMs,
+			gooseMaxTurns: config.gooseMaxTurns,
+			gooseRetryMaxTurns: config.gooseRetryMaxTurns,
 			passTypes: config.passTypes,
 			categories: config.categories,
 			...(managedVllm ? { managedVllm } : {}),

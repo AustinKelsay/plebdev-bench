@@ -35,13 +35,54 @@ const MIN_OUTPUT_LENGTH = 10;
 /** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
 
+/** Default Goose turn limit for first attempt. */
+const DEFAULT_GOOSE_MAX_TURNS = 1;
+
+/** Default Goose turn limit for retry attempt. */
+const DEFAULT_GOOSE_RETRY_MAX_TURNS = 3;
+
+/** Configuration for Goose turn limits across attempts. */
+export interface GooseAdapterOptions {
+	/** Maximum Goose turns for the first attempt. */
+	maxTurns?: number;
+	/** Maximum Goose turns for the retry attempt. */
+	retryMaxTurns?: number;
+}
+
+/**
+ * Normalizes turn limits to safe positive integers.
+ *
+ * @param value - User-supplied turn limit
+ * @param fallback - Fallback turn limit when input is invalid
+ * @returns Positive integer turn limit
+ */
+function normalizeTurnLimit(
+	value: number | undefined,
+	fallback: number,
+): number {
+	if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
+		return fallback;
+	}
+	return value;
+}
+
 /**
  * Creates a Goose harness adapter.
  *
+ * @param options - Optional Goose adapter settings
  * @returns Harness instance for Goose
  * @throws {Error} If Goose execution fails, times out, or output directory setup fails
  */
-export function createGooseAdapter(): Harness {
+export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
+	const maxTurns = normalizeTurnLimit(
+		options?.maxTurns,
+		DEFAULT_GOOSE_MAX_TURNS,
+	);
+	const retryMaxTurns = Math.max(
+		maxTurns,
+		normalizeTurnLimit(options?.retryMaxTurns, DEFAULT_GOOSE_RETRY_MAX_TURNS),
+	);
+
 	return {
 		name: "goose" as const,
 
@@ -61,6 +102,7 @@ export function createGooseAdapter(): Harness {
 			const startTime = performance.now();
 			const isRetryAttempt = hasRetryMarker(prompt);
 			const promptWithoutMarker = stripRetryMarker(prompt);
+			const maxTurnsForAttempt = isRetryAttempt ? retryMaxTurns : maxTurns;
 
 			// Create unique temp directory for this generation
 			const runId = crypto.randomBytes(8).toString("hex");
@@ -140,7 +182,7 @@ export function createGooseAdapter(): Harness {
 				"run",
 				"--no-session",
 				"--max-turns",
-				"1", // Keep Goose on a single completion turn
+				String(maxTurnsForAttempt),
 				"--provider",
 				provider, // Override config - use determined provider
 				"--model",
@@ -151,7 +193,13 @@ export function createGooseAdapter(): Harness {
 				"-", // Read prompt from stdin
 			];
 			log.debug(
-				{ cmd: "goose", model, executionCwd, runtimeBaseUrl: runtime.baseUrl },
+				{
+					cmd: "goose",
+					model,
+					executionCwd,
+					runtimeBaseUrl: runtime.baseUrl,
+					maxTurnsForAttempt,
+				},
 				"Executing Goose command",
 			);
 
@@ -260,15 +308,27 @@ export function createGooseAdapter(): Harness {
 						const elapsedMs = Math.round(performance.now() - startTime);
 						const remainingMs = timeoutMs - elapsedMs;
 						if (!isRetryAttempt && remainingMs > 1000) {
-							log.warn(
-								{
-									reason: decision.reason,
-									remainingMs,
-									outputPreview: output.slice(0, 200),
-								},
-								"Goose returned off-task/non-code output, retrying once",
-							);
-							const retryResult = await createGooseAdapter().generate({
+							const retryContext = {
+								reason: decision.reason,
+								remainingMs,
+								outputPreview: output.slice(0, 200),
+								retryMaxTurns,
+							};
+							if (decision.reason === "turn_limit") {
+								log.warn(
+									retryContext,
+									"Goose hit turn/input limit, retrying once with higher max turns",
+								);
+							} else {
+								log.warn(
+									retryContext,
+									"Goose returned off-task/non-code output, retrying once",
+								);
+							}
+							const retryResult = await createGooseAdapter({
+								maxTurns,
+								retryMaxTurns,
+							}).generate({
 								...opts,
 								prompt: appendRetryMarker(promptWithoutMarker),
 								timeoutMs: remainingMs,

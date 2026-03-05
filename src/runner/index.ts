@@ -337,6 +337,8 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				{
 					ollamaBaseUrl: config.ollamaBaseUrl,
 					vllmBaseUrl: config.vllmBaseUrl,
+					gooseMaxTurns: config.gooseMaxTurns,
+					gooseRetryMaxTurns: config.gooseRetryMaxTurns,
 				},
 				dynamicTimeout,
 				isLastForModel,

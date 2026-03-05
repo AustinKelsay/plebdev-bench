@@ -61,10 +61,12 @@ function loadPrompt(test: string, passType: string): string {
 	return fs.readFileSync(promptPath, "utf-8");
 }
 
-/** Runtime configuration for creating runtime instances. */
+/** Runtime and harness configuration for item execution. */
 interface RuntimeUrls {
 	ollamaBaseUrl: string;
 	vllmBaseUrl: string;
+	gooseMaxTurns: number;
+	gooseRetryMaxTurns: number;
 }
 
 /** Max compile error length embedded in retry prompt. */
@@ -241,7 +243,12 @@ export async function executeItem(
 
 		// Create harness adapter
 		log.debug({ harness: item.harness }, "Creating harness...");
-		const harness = createHarness(item.harness);
+		const harness = createHarness(item.harness, {
+			goose: {
+				maxTurns: runtimeConfig.gooseMaxTurns,
+				retryMaxTurns: runtimeConfig.gooseRetryMaxTurns,
+			},
+		});
 		harnessForRetry = harness;
 
 		// Generate completion (pass runtime to harness)

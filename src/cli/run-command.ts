@@ -58,7 +58,18 @@ export const runCommand = new Command("run")
 	.option("--ollama-url <url>", "Ollama API base URL", "http://localhost:11434")
 	.option("--vllm-url <url>", "vLLM API base URL", "http://localhost:8000")
 	.option("--timeout <ms>", "Generation timeout in milliseconds", "300000")
+	.option("--goose-max-turns <n>", "Goose max turns for initial attempt", "1")
+	.option(
+		"--goose-retry-max-turns <n>",
+		"Goose max turns for retry attempt",
+		"3",
+	)
 	.option("-o, --output <dir>", "Output directory", "results")
+	.option(
+		"--machine-id <id>",
+		"Machine profile ID for cross-run aggregation (default: BENCH_MACHINE_ID env or deterministic anonymous ID)",
+	)
+	.option("--machine-label <label>", "Optional machine display label")
 	.option(
 		"--manage-vllm",
 		"Manage vLLM lifecycle during a single run (docker compose up/down around the vLLM segment)",
@@ -124,7 +135,19 @@ export const runCommand = new Command("run")
 				ollamaBaseUrl: options.ollamaUrl,
 				vllmBaseUrl: options.vllmUrl,
 				generateTimeoutMs: Number.parseInt(options.timeout, 10),
+				gooseMaxTurns: Number.parseInt(options.gooseMaxTurns, 10),
+				gooseRetryMaxTurns: Number.parseInt(options.gooseRetryMaxTurns, 10),
 				outputDir: options.output,
+				machineProfileId:
+					typeof options.machineId === "string" &&
+					options.machineId.trim().length > 0
+						? options.machineId.trim()
+						: undefined,
+				machineLabel:
+					typeof options.machineLabel === "string" &&
+					options.machineLabel.trim().length > 0
+						? options.machineLabel.trim()
+						: undefined,
 				modelAliases,
 			};
 

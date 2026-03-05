@@ -25,7 +25,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.2.3");
+		expect(SCHEMA_VERSION).toBe("0.3.0");
 	});
 
 	it("should validate runtime names", () => {
@@ -57,6 +57,8 @@ describe("BenchConfigSchema", () => {
 		expect(config.passTypes).toEqual(["blind", "informed"]);
 		expect(config.ollamaBaseUrl).toBe("http://localhost:11434");
 		expect(config.generateTimeoutMs).toBe(300_000);
+		expect(config.gooseMaxTurns).toBe(1);
+		expect(config.gooseRetryMaxTurns).toBe(3);
 		expect(config.outputDir).toBe("results");
 		expect(config.managedVllm).toBeUndefined();
 	});
@@ -69,6 +71,8 @@ describe("BenchConfigSchema", () => {
 			categories: ["coding"],
 			passTypes: ["blind"],
 			generateTimeoutMs: 60_000,
+			gooseMaxTurns: 2,
+			gooseRetryMaxTurns: 4,
 		});
 		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual(["llama3.2:3b"]);
@@ -76,12 +80,23 @@ describe("BenchConfigSchema", () => {
 		expect(config.categories).toEqual(["coding"]);
 		expect(config.passTypes).toEqual(["blind"]);
 		expect(config.generateTimeoutMs).toBe(60_000);
+		expect(config.gooseMaxTurns).toBe(2);
+		expect(config.gooseRetryMaxTurns).toBe(4);
 	});
 
 	it("should reject invalid URL", () => {
 		expect(() =>
 			BenchConfigSchema.parse({ ollamaBaseUrl: "not-a-url" }),
 		).toThrow();
+	});
+
+	it("should reject goose retry turns lower than initial turns", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				gooseMaxTurns: 4,
+				gooseRetryMaxTurns: 2,
+			}),
+		).toThrow(/gooseRetryMaxTurns/);
 	});
 
 	it("should provide default config", () => {
@@ -111,15 +126,39 @@ describe("RunPlanSchema", () => {
 		const plan = RunPlanSchema.parse({
 			runId: "20260114-143052-abc123",
 			createdAt: "2026-01-14T14:30:52.000Z",
-			environment: {
+			runtimeEnvironment: {
 				platform: "darwin",
 				bunVersion: "1.0.0",
-				hostname: "test-host",
+			},
+			machine: {
+				profileId: "mac-mini-m4-pro",
+				label: "Mac Mini M4 Pro",
+				hardware: {
+					platform: "darwin",
+					arch: "arm64",
+					osRelease: "24.3.0",
+					cpuModel: "Apple M4 Pro",
+					logicalCores: 14,
+					totalMemoryBytes: 68_719_476_736,
+				},
+			},
+			benchmarkCheckpoint: {
+				checkpointId: "chk_sha256v1_abc123def456",
+				algorithm: "sha256v1",
+				manifestHash: "abc123def456",
+				assetCount: 42,
+				computedAt: "2026-01-14T14:30:52.000Z",
+			},
+			provenance: {
+				verificationStatus: "self_reported",
+				source: "local_cli",
 			},
 			config: {
 				ollamaBaseUrl: "http://localhost:11434",
 				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 120_000,
+				gooseMaxTurns: 1,
+				gooseRetryMaxTurns: 3,
 				categories: ["coding"],
 				passTypes: ["blind", "informed"],
 			},
@@ -231,6 +270,28 @@ describe("RunResultSchema", () => {
 	it("should validate a complete run result", () => {
 		const result = RunResultSchema.parse({
 			runId: "20260114-143052-abc123",
+			machine: {
+				profileId: "mac-mini-m4-pro",
+				hardware: {
+					platform: "darwin",
+					arch: "arm64",
+					osRelease: "24.3.0",
+					cpuModel: "Apple M4 Pro",
+					logicalCores: 14,
+					totalMemoryBytes: 68_719_476_736,
+				},
+			},
+			benchmarkCheckpoint: {
+				checkpointId: "chk_sha256v1_abc123def456",
+				algorithm: "sha256v1",
+				manifestHash: "abc123def456",
+				assetCount: 42,
+				computedAt: "2026-01-14T14:30:52.000Z",
+			},
+			provenance: {
+				verificationStatus: "self_reported",
+				source: "local_cli",
+			},
 			startedAt: "2026-01-14T14:30:52.000Z",
 			completedAt: "2026-01-14T14:35:00.000Z",
 			durationMs: 248000,
