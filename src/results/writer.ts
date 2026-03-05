@@ -1,19 +1,27 @@
 /**
- * Purpose: Write plan.json and run.json to the results directory.
- * Exports: writePlan, writeResult
+ * Purpose: Write plan and result artifacts to the results directory.
+ * Exports: writePlan, writeResult, writePartialResult, deletePartialResult
  *
  * Output structure:
  * results/<runId>/
- *   plan.json  - Expanded matrix plan (for reproducibility)
- *   run.json   - Execution results
+ *   plan.json         - Expanded matrix plan (reproducibility)
+ *   run.json          - Final execution results
+ *   run.partial.json  - Periodic crash-safe snapshot during execution
  */
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { RunPlanSchema, RunResultSchema, type RunPlan, type RunResult } from "../schemas/index.js";
+import {
+	RunPlanSchema,
+	RunResultSchema,
+	type RunPlan,
+	type RunResult,
+} from "../schemas/index.js";
 
 /**
  * Ensures the output directory exists.
+ *
+ * @param dirPath - Directory to create when missing
  */
 function ensureDir(dirPath: string): void {
 	if (!fs.existsSync(dirPath)) {
@@ -22,15 +30,13 @@ function ensureDir(dirPath: string): void {
 }
 
 /**
- * Writes the run plan to plan.json.
+ * Writes the run plan to `plan.json`.
  *
- * @param outputDir - Base output directory (e.g., 'results')
- * @param plan - The run plan to write
- *
- * @throws {Error} On file system errors
+ * @param outputDir - Base output directory (e.g., `results`)
+ * @param plan - Run plan payload
+ * @throws {Error} On validation or filesystem errors
  */
 export async function writePlan(outputDir: string, plan: RunPlan): Promise<void> {
-	// Validate before writing
 	RunPlanSchema.parse(plan);
 
 	const runDir = path.join(outputDir, plan.runId);
@@ -38,23 +44,20 @@ export async function writePlan(outputDir: string, plan: RunPlan): Promise<void>
 
 	const planPath = path.join(runDir, "plan.json");
 	const content = JSON.stringify(plan, null, 2);
-
 	fs.writeFileSync(planPath, content, "utf-8");
 }
 
 /**
- * Writes the run result to run.json.
+ * Writes final run results to `run.json`.
  *
- * @param outputDir - Base output directory (e.g., 'results')
- * @param result - The run result to write
- *
- * @throws {Error} On file system errors or schema validation failure
+ * @param outputDir - Base output directory (e.g., `results`)
+ * @param result - Final run result payload
+ * @throws {Error} On validation or filesystem errors
  */
 export async function writeResult(
 	outputDir: string,
 	result: RunResult,
 ): Promise<void> {
-	// Validate before writing
 	RunResultSchema.parse(result);
 
 	const runDir = path.join(outputDir, result.runId);
@@ -62,6 +65,41 @@ export async function writeResult(
 
 	const resultPath = path.join(runDir, "run.json");
 	const content = JSON.stringify(result, null, 2);
-
 	fs.writeFileSync(resultPath, content, "utf-8");
+}
+
+/**
+ * Writes a crash-safe snapshot to `run.partial.json`.
+ *
+ * @param outputDir - Base output directory (e.g., `results`)
+ * @param result - Current run snapshot payload
+ * @throws {Error} On validation or filesystem errors
+ */
+export async function writePartialResult(
+	outputDir: string,
+	result: RunResult,
+): Promise<void> {
+	RunResultSchema.parse(result);
+
+	const runDir = path.join(outputDir, result.runId);
+	ensureDir(runDir);
+
+	const partialPath = path.join(runDir, "run.partial.json");
+	const content = JSON.stringify(result, null, 2);
+	fs.writeFileSync(partialPath, content, "utf-8");
+}
+
+/**
+ * Deletes `run.partial.json` after successful completion.
+ *
+ * @param outputDir - Base output directory (e.g., `results`)
+ * @param runId - Run identifier
+ * @throws {Error} On filesystem errors except missing file
+ */
+export function deletePartialResult(outputDir: string, runId: string): void {
+	const partialPath = path.join(outputDir, runId, "run.partial.json");
+	if (!fs.existsSync(partialPath)) {
+		return;
+	}
+	fs.unlinkSync(partialPath);
 }
