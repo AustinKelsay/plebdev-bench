@@ -239,6 +239,7 @@ async function importWithTimeout(
  * @param timeoutMs - Timeout for scoring (default: 5s)
  * @param codeFilePath - Optional path to code file written by tool-calling harness
  * @returns Scoring result with pass/fail counts
+ * @throws {Error} Unexpected internal failures outside normal scoring result flow
  */
 export async function scoreGenerationInProcess(
 	testSlug: string,
@@ -263,8 +264,18 @@ export async function scoreGenerationInProcess(
 	// Extract code - prioritize file if provided by tool-calling harness
 	let extracted: ExtractedCode;
 	try {
-		if (codeFilePath && fs.existsSync(codeFilePath)) {
-			const code = await fs.promises.readFile(codeFilePath, "utf-8");
+		if (codeFilePath) {
+			if (!fs.existsSync(codeFilePath)) {
+				throw new Error(`Code file not found: ${codeFilePath}`);
+			}
+			let code: string;
+			try {
+				code = await fs.promises.readFile(codeFilePath, "utf-8");
+			} catch (error) {
+				throw new Error(
+					`Failed to read code file at ${codeFilePath}: ${error instanceof Error ? error.message : String(error)}`,
+				);
+			}
 			extracted = { code, method: "file" };
 			log.debug(
 				{ method: "file", codeLength: code.length, codeFilePath },

@@ -47,15 +47,81 @@ export function assertComparableCheckpoints(
 }
 
 /**
+ * Returns a checkpoint guard error message for CLI flow control.
+ *
+ * @param checkpointA - Baseline checkpoint ID
+ * @param checkpointB - Comparison checkpoint ID
+ * @param allowCrossCheckpoint - Whether guardrail bypass is enabled
+ * @returns Guard failure message when checkpoints are not comparable
+ */
+function getCheckpointGuardMessage(
+	checkpointA: string | undefined,
+	checkpointB: string | undefined,
+	allowCrossCheckpoint: boolean,
+): string | undefined {
+	if (allowCrossCheckpoint) {
+		return undefined;
+	}
+	if (!checkpointA || !checkpointB) {
+		return "Checkpoint metadata missing in one or both run artifacts. Re-run with --allow-cross-checkpoint to force compare.";
+	}
+	if (checkpointA !== checkpointB) {
+		return `Checkpoint mismatch: ${checkpointA} vs ${checkpointB}. Re-run with --allow-cross-checkpoint to force compare.`;
+	}
+	return undefined;
+}
+
+/**
+ * Determines whether a plan-read error is a benign IO condition.
+ *
+ * @param error - Error thrown from readPlan
+ * @returns True when compare should continue without plan metadata
+ */
+function isBenignPlanReadError(error: unknown): boolean {
+	if (error && typeof error === "object" && "code" in error) {
+		const code = (error as { code?: unknown }).code;
+		if (typeof code === "string") {
+			return true;
+		}
+	}
+
+	if (!(error instanceof Error)) {
+		return false;
+	}
+
+	if (error instanceof SyntaxError) {
+		return false;
+	}
+
+	if (error.name === "ZodError") {
+		return false;
+	}
+
+	if (/schema|validation|invalid json|json parse/i.test(error.message)) {
+		return false;
+	}
+
+	if (/plan file not found/i.test(error.message)) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * Reads `plan.json` for a run directory and tolerates missing/invalid plans.
  *
  * @param runDir - Absolute run directory path
- * @returns Parsed plan when available and valid, otherwise undefined
+ * @returns Parsed plan when available and valid, otherwise undefined for benign IO cases
+ * @throws {Error} If plan exists but is invalid JSON/schema data
  */
 export function readPlanBestEffort(runDir: string): RunPlan | undefined {
 	try {
 		return readPlan(runDir);
 	} catch (error) {
+		if (!isBenignPlanReadError(error)) {
+			throw error;
+		}
 		logger.warn(
 			{
 				runDir,
@@ -377,11 +443,16 @@ export const compareCommand = new Command("compare")
 				const checkpointA = resolveCheckpointId(resultA, planA);
 				const checkpointB = resolveCheckpointId(resultB, planB);
 				const allowCrossCheckpoint = options.allowCrossCheckpoint === true;
-				assertComparableCheckpoints(
+				const checkpointGuardMessage = getCheckpointGuardMessage(
 					checkpointA,
 					checkpointB,
 					allowCrossCheckpoint,
 				);
+				if (checkpointGuardMessage) {
+					console.error(`Error: ${checkpointGuardMessage}`);
+					process.exitCode = 1;
+					return;
+				}
 
 				// Compare runs
 				const comparison = compareRuns(resultA, resultB);

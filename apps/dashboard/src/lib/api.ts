@@ -27,6 +27,11 @@ import type {
  */
 const RESULTS_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/results`;
 
+/** Optional fetch request options for cancellation support. */
+interface FetchRequestOptions {
+	signal?: AbortSignal;
+}
+
 /**
  * Normalizes legacy and v2 index payloads to a stable v2 shape.
  *
@@ -80,11 +85,16 @@ function createEmptyAggregate(
  *
  * Supports legacy array-based `index.json` and v2 object format.
  *
+ * @param options - Optional fetch options
  * @returns Promise resolving to normalized dashboard index metadata
  * @throws {Error} When index fetch fails (except 404 fallback) or schema validation fails
  */
-export async function fetchDashboardIndex(): Promise<DashboardIndex> {
-	const response = await fetch(`${RESULTS_BASE}/index.json`);
+export async function fetchDashboardIndex(
+	options?: FetchRequestOptions,
+): Promise<DashboardIndex> {
+	const response = await fetch(`${RESULTS_BASE}/index.json`, {
+		signal: options?.signal,
+	});
 	if (!response.ok) {
 		if (response.status === 404) {
 			console.warn(
@@ -108,11 +118,14 @@ export async function fetchDashboardIndex(): Promise<DashboardIndex> {
 /**
  * Fetches the list of all available runs from index.json.
  *
+ * @param options - Optional fetch options
  * @returns Promise resolving to list of run summary items
  * @throws {Error} When index fetch/validation fails
  */
-export async function fetchRuns(): Promise<RunListItem[]> {
-	const index = await fetchDashboardIndex();
+export async function fetchRuns(
+	options?: FetchRequestOptions,
+): Promise<RunListItem[]> {
+	const index = await fetchDashboardIndex(options);
 	return index.runs;
 }
 
@@ -120,11 +133,17 @@ export async function fetchRuns(): Promise<RunListItem[]> {
  * Fetches a single run result artifact.
  *
  * @param runId - Run identifier (directory name in `results/`)
+ * @param options - Optional fetch options
  * @returns Promise resolving to parsed run result payload
  * @throws {Error} When fetch fails or schema validation fails
  */
-export async function fetchRun(runId: string): Promise<RunResult> {
-	const response = await fetch(`${RESULTS_BASE}/${runId}/run.json`);
+export async function fetchRun(
+	runId: string,
+	options?: FetchRequestOptions,
+): Promise<RunResult> {
+	const response = await fetch(`${RESULTS_BASE}/${runId}/run.json`, {
+		signal: options?.signal,
+	});
 	if (!response.ok) {
 		throw new Error(`Failed to fetch run ${runId}: ${response.status}`);
 	}
@@ -136,11 +155,17 @@ export async function fetchRun(runId: string): Promise<RunResult> {
  * Fetches a single run plan artifact.
  *
  * @param runId - Run identifier (directory name in `results/`)
+ * @param options - Optional fetch options
  * @returns Promise resolving to parsed run plan payload
  * @throws {Error} When fetch fails or schema validation fails
  */
-export async function fetchPlan(runId: string): Promise<RunPlan> {
-	const response = await fetch(`${RESULTS_BASE}/${runId}/plan.json`);
+export async function fetchPlan(
+	runId: string,
+	options?: FetchRequestOptions,
+): Promise<RunPlan> {
+	const response = await fetch(`${RESULTS_BASE}/${runId}/plan.json`, {
+		signal: options?.signal,
+	});
 	if (!response.ok) {
 		throw new Error(`Failed to fetch plan ${runId}: ${response.status}`);
 	}
@@ -152,26 +177,36 @@ export async function fetchPlan(runId: string): Promise<RunPlan> {
  * Fetches both run and plan artifacts for a run.
  *
  * @param runId - Run identifier (directory name in `results/`)
+ * @param options - Optional fetch options
  * @returns Promise resolving to paired run + plan payloads
  * @throws {Error} When either fetch fails or schema validation fails
  */
 export async function fetchRunWithPlan(
 	runId: string,
+	options?: FetchRequestOptions,
 ): Promise<{ run: RunResult; plan: RunPlan }> {
-	const [run, plan] = await Promise.all([fetchRun(runId), fetchPlan(runId)]);
+	const [run, plan] = await Promise.all([
+		fetchRun(runId, options),
+		fetchPlan(runId, options),
+	]);
 	return { run, plan };
 }
 
 /**
  * Fetches the latest checkpoint aggregate payload used by leaderboard view.
  *
+ * @param options - Optional fetch options
  * @returns Promise resolving to latest aggregate payload
  * @throws {Error} When aggregate artifacts are missing for existing runs, fetch fails, or validation fails
  */
-export async function fetchLatestAggregate(): Promise<LeaderboardAggregate> {
-	const response = await fetch(`${RESULTS_BASE}/aggregates/latest.json`);
+export async function fetchLatestAggregate(
+	options?: FetchRequestOptions,
+): Promise<LeaderboardAggregate> {
+	const response = await fetch(`${RESULTS_BASE}/aggregates/latest.json`, {
+		signal: options?.signal,
+	});
 	if (response.status === 404) {
-		const index = await fetchDashboardIndex();
+		const index = await fetchDashboardIndex(options);
 		if (index.runs.length > 0) {
 			throw new Error(
 				`Missing aggregates/latest.json for indexed runs (runs=${index.runs.length}, latestCheckpointId=${index.latestCheckpointId ?? "null"}). Rebuild dashboard artifacts with \`bun dashboard:index\`.`,

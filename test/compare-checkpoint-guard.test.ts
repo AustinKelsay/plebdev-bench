@@ -97,13 +97,13 @@ describe("readPlanBestEffort", () => {
 		}
 	});
 
-	it("returns undefined when plan file is invalid", () => {
+	it("throws when plan file JSON is invalid", () => {
 		const root = fs.mkdtempSync(
 			path.join(os.tmpdir(), "plebdev-compare-plan-"),
 		);
 		try {
 			fs.writeFileSync(path.join(root, "plan.json"), "{invalid", "utf-8");
-			expect(readPlanBestEffort(root)).toBeUndefined();
+			expect(() => readPlanBestEffort(root)).toThrow();
 		} finally {
 			fs.rmSync(root, { recursive: true, force: true });
 		}

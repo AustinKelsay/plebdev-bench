@@ -72,14 +72,21 @@ async function main(): Promise<void> {
 		);
 		writeResponse({ ok: true, result });
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const rawErrorMessage =
+			error instanceof Error ? error.message : String(error);
+		const finalErrorMessage =
+			typeof rawErrorMessage === "string" && rawErrorMessage.trim().length > 0
+				? rawErrorMessage
+				: error instanceof Error && error.name.trim().length > 0
+					? error.name
+					: "Unknown error";
 		try {
-			writeResponse({ ok: false, error: errorMessage });
+			writeResponse({ ok: false, error: finalErrorMessage });
 		} catch (writeError) {
 			process.stderr.write(
 				`scorer-worker: failed to write error response: ${writeError instanceof Error ? writeError.message : String(writeError)}\n`,
 			);
-			process.stderr.write(`original error: ${errorMessage}\n`);
+			process.stderr.write(`original error: ${finalErrorMessage}\n`);
 		}
 		process.exitCode = 1;
 	}

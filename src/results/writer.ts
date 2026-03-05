@@ -85,10 +85,28 @@ export async function writePartialResult(
 	ensureDir(runDir);
 
 	const partialPath = path.join(runDir, "run.partial.json");
-	const tempPath = `${partialPath}.tmp`;
+	const tempPath = `${partialPath}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2, 10)}.tmp`;
 	const content = JSON.stringify(result, null, 2);
-	await fs.promises.writeFile(tempPath, content, "utf-8");
-	await fs.promises.rename(tempPath, partialPath);
+	try {
+		await fs.promises.writeFile(tempPath, content, "utf-8");
+		await fs.promises.rename(tempPath, partialPath);
+	} catch (error) {
+		try {
+			fs.unlinkSync(tempPath);
+		} catch (cleanupError) {
+			if (
+				!(
+					cleanupError &&
+					typeof cleanupError === "object" &&
+					"code" in cleanupError &&
+					(cleanupError as { code?: unknown }).code === "ENOENT"
+				)
+			) {
+				throw cleanupError;
+			}
+		}
+		throw error;
+	}
 }
 
 /**
@@ -100,8 +118,17 @@ export async function writePartialResult(
  */
 export function deletePartialResult(outputDir: string, runId: string): void {
 	const partialPath = path.join(outputDir, runId, "run.partial.json");
-	if (!fs.existsSync(partialPath)) {
-		return;
+	try {
+		fs.unlinkSync(partialPath);
+	} catch (error) {
+		if (
+			error &&
+			typeof error === "object" &&
+			"code" in error &&
+			(error as { code?: unknown }).code === "ENOENT"
+		) {
+			return;
+		}
+		throw error;
 	}
-	fs.unlinkSync(partialPath);
 }

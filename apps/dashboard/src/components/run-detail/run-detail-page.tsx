@@ -64,6 +64,16 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 	const passRate = computePassRate(run.items);
 	const frontierStats = computeFrontierStats(run.items);
 	const runtimeEnvironment = plan.runtimeEnvironment ?? plan.environment;
+	const runtimeEnvironmentSummary = [
+		runtimeEnvironment?.platform,
+		runtimeEnvironment?.bunVersion
+			? `Bun ${runtimeEnvironment.bunVersion}`
+			: undefined,
+	]
+		.filter(
+			(part): part is string => typeof part === "string" && part.length > 0,
+		)
+		.join(" · ");
 	const machineLabel = plan.machine?.label ?? plan.machine?.profileId;
 	const machineHardware = plan.machine?.hardware;
 	const checkpointId = plan.benchmarkCheckpoint?.checkpointId;
@@ -179,10 +189,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 								runtimeEnvironment?.platform ??
 								"unknown-machine"}
 						</p>
-						{runtimeEnvironment && (
+						{runtimeEnvironmentSummary.length > 0 && (
 							<p className="text-sm text-foreground-faint">
-								{runtimeEnvironment.platform} · Bun{" "}
-								{runtimeEnvironment.bunVersion}
+								{runtimeEnvironmentSummary}
 							</p>
 						)}
 						{machineHardware && (

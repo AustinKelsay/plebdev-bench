@@ -57,17 +57,24 @@ export function LeaderboardPage() {
 	);
 
 	useEffect(() => {
+		const controller = new AbortController();
 		const fetchData = async () => {
 			setLoading(true);
 			setError(null);
 			try {
 				const [dashboardIndex, latestAggregate] = await Promise.all([
-					fetchDashboardIndex(),
-					fetchLatestAggregate(),
+					fetchDashboardIndex({ signal: controller.signal }),
+					fetchLatestAggregate({ signal: controller.signal }),
 				]);
+				if (controller.signal.aborted) {
+					return;
+				}
 				setIndex(dashboardIndex);
 				setAggregate(latestAggregate);
 			} catch (fetchError) {
+				if (controller.signal.aborted) {
+					return;
+				}
 				setError(
 					fetchError instanceof Error
 						? fetchError.message
@@ -76,11 +83,16 @@ export function LeaderboardPage() {
 				setIndex(null);
 				setAggregate(null);
 			} finally {
-				setLoading(false);
+				if (!controller.signal.aborted) {
+					setLoading(false);
+				}
 			}
 		};
 
 		void fetchData();
+		return () => {
+			controller.abort();
+		};
 	}, []);
 
 	const items = aggregate?.items ?? [];
