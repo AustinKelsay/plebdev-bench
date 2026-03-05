@@ -17,6 +17,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { execa } from "execa";
+import { z } from "zod";
 import { logger } from "../lib/logger.js";
 import {
 	appendRetryMarker,
@@ -49,12 +50,18 @@ export interface GooseAdapterOptions {
 	retryMaxTurns?: number;
 }
 
+/** Runtime-validated Goose adapter options. */
+const GooseAdapterOptionsSchema = z.object({
+	maxTurns: z.number().optional(),
+	retryMaxTurns: z.number().optional(),
+});
+
 /**
  * Normalizes turn limits to safe positive integers.
  *
  * @param paramName - Option name for error context
  * @param value - User-supplied turn limit
- * @param fallback - Fallback turn limit when input is invalid
+ * @param fallback - Fallback turn limit when input is undefined
  * @returns Positive integer turn limit
  * @throws {TypeError} If value is provided but is not a positive integer
  */
@@ -106,23 +113,23 @@ function sanitizeRuntimeBaseUrl(baseUrl: string): string {
  * @throws {Error} If Goose execution fails, times out, or output directory setup fails
  */
 export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
+	const parsedOptions = GooseAdapterOptionsSchema.parse(options ?? {});
 	const maxTurns = normalizeTurnLimit(
 		"goose.maxTurns",
-		options?.maxTurns,
+		parsedOptions.maxTurns,
 		DEFAULT_GOOSE_MAX_TURNS,
 	);
 	const requestedRetryMaxTurns = normalizeTurnLimit(
 		"goose.retryMaxTurns",
-		options?.retryMaxTurns,
+		parsedOptions.retryMaxTurns,
 		DEFAULT_GOOSE_RETRY_MAX_TURNS,
 	);
-	const retryMaxTurns = Math.max(maxTurns, requestedRetryMaxTurns);
 	if (requestedRetryMaxTurns < maxTurns) {
-		logger.debug(
-			{ maxTurns, requestedRetryMaxTurns, retryMaxTurns },
-			"Adjusted Goose retry max turns to avoid values lower than initial max turns",
+		throw new TypeError(
+			`goose.retryMaxTurns must be greater than or equal to goose.maxTurns (maxTurns=${maxTurns}, requestedRetryMaxTurns=${requestedRetryMaxTurns})`,
 		);
 	}
+	const retryMaxTurns = requestedRetryMaxTurns;
 
 	return {
 		name: "goose" as const,

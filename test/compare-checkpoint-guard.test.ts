@@ -1,5 +1,11 @@
 /**
  * Purpose: Validate checkpoint guardrail behavior for compare command.
+ * Exports: none
+ *
+ * Invariants:
+ * - Tests are deterministic and filesystem-scoped to temporary directories.
+ * - Tests do not depend on network access or mutable external services.
+ * - Temporary artifacts are always cleaned up so CI runs remain isolated.
  */
 
 import * as fs from "node:fs";

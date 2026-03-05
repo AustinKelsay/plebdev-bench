@@ -33,16 +33,13 @@ export function assertComparableCheckpoints(
 	checkpointB: string | undefined,
 	allowCrossCheckpoint: boolean,
 ): void {
-	if (allowCrossCheckpoint) return;
-	if (!checkpointA || !checkpointB) {
-		throw new Error(
-			"Checkpoint metadata missing in one or both run artifacts. Re-run with --allow-cross-checkpoint to force compare.",
-		);
-	}
-	if (checkpointA !== checkpointB) {
-		throw new Error(
-			`Checkpoint mismatch: ${checkpointA} vs ${checkpointB}. Re-run with --allow-cross-checkpoint to force compare.`,
-		);
+	const message = getCheckpointGuardMessage(
+		checkpointA,
+		checkpointB,
+		allowCrossCheckpoint,
+	);
+	if (message) {
+		throw new Error(message);
 	}
 }
 
@@ -78,15 +75,15 @@ function getCheckpointGuardMessage(
  * @returns True when compare should continue without plan metadata
  */
 function isBenignPlanReadError(error: unknown): boolean {
-	if (error && typeof error === "object" && "code" in error) {
-		const code = (error as { code?: unknown }).code;
-		if (typeof code === "string") {
-			return true;
-		}
-	}
-
 	if (!(error instanceof Error)) {
 		return false;
+	}
+
+	if (error && typeof error === "object" && "code" in error) {
+		const code = (error as { code?: unknown }).code;
+		if (code === "ENOENT" || code === "ENOTDIR") {
+			return true;
+		}
 	}
 
 	if (error instanceof SyntaxError) {
@@ -109,11 +106,11 @@ function isBenignPlanReadError(error: unknown): boolean {
 }
 
 /**
- * Reads `plan.json` for a run directory and tolerates missing/invalid plans.
+ * Reads `plan.json` for a run directory with best-effort handling.
  *
  * @param runDir - Absolute run directory path
- * @returns Parsed plan when available and valid, otherwise undefined for benign IO cases
- * @throws {Error} If plan exists but is invalid JSON/schema data
+ * @returns Parsed plan when available and valid; undefined only for benign IO/missing-file cases
+ * @throws {Error} If `plan.json` is invalid JSON, fails schema validation, or any non-benign read error occurs
  */
 export function readPlanBestEffort(runDir: string): RunPlan | undefined {
 	try {
@@ -450,7 +447,6 @@ export const compareCommand = new Command("compare")
 				);
 				if (checkpointGuardMessage) {
 					console.error(`Error: ${checkpointGuardMessage}`);
-					process.exitCode = 1;
 					return;
 				}
 

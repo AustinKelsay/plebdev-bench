@@ -233,7 +233,7 @@ export function LeaderboardPage() {
 								setFilters((prev) => ({ ...prev, machine: value }))
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger aria-label="Machine filter">
 								<SelectValue placeholder="Machine" />
 							</SelectTrigger>
 							<SelectContent>
@@ -252,7 +252,7 @@ export function LeaderboardPage() {
 								setFilters((prev) => ({ ...prev, runtime: value }))
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger aria-label="Runtime filter">
 								<SelectValue placeholder="Runtime" />
 							</SelectTrigger>
 							<SelectContent>
@@ -271,7 +271,7 @@ export function LeaderboardPage() {
 								setFilters((prev) => ({ ...prev, harness: value }))
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger aria-label="Harness filter">
 								<SelectValue placeholder="Harness" />
 							</SelectTrigger>
 							<SelectContent>
@@ -290,7 +290,7 @@ export function LeaderboardPage() {
 								setFilters((prev) => ({ ...prev, passType: value }))
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger aria-label="Pass type filter">
 								<SelectValue placeholder="Pass Type" />
 							</SelectTrigger>
 							<SelectContent>
@@ -309,7 +309,7 @@ export function LeaderboardPage() {
 								setFilters((prev) => ({ ...prev, test: value }))
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger aria-label="Test filter">
 								<SelectValue placeholder="Test" />
 							</SelectTrigger>
 							<SelectContent>

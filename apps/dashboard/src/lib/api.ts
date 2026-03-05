@@ -141,7 +141,8 @@ export async function fetchRun(
 	runId: string,
 	options?: FetchRequestOptions,
 ): Promise<RunResult> {
-	const response = await fetch(`${RESULTS_BASE}/${runId}/run.json`, {
+	const safeRunId = encodeURIComponent(runId);
+	const response = await fetch(`${RESULTS_BASE}/${safeRunId}/run.json`, {
 		signal: options?.signal,
 	});
 	if (!response.ok) {
@@ -163,7 +164,8 @@ export async function fetchPlan(
 	runId: string,
 	options?: FetchRequestOptions,
 ): Promise<RunPlan> {
-	const response = await fetch(`${RESULTS_BASE}/${runId}/plan.json`, {
+	const safeRunId = encodeURIComponent(runId);
+	const response = await fetch(`${RESULTS_BASE}/${safeRunId}/plan.json`, {
 		signal: options?.signal,
 	});
 	if (!response.ok) {

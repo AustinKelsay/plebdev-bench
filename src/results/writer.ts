@@ -34,6 +34,7 @@ function ensureDir(dirPath: string): void {
  *
  * @param outputDir - Base output directory (e.g., `results`)
  * @param plan - Run plan payload
+ * @returns {Promise<void>} Resolves when the file has been written.
  * @throws {Error} On validation or filesystem errors
  */
 export async function writePlan(outputDir: string, plan: RunPlan): Promise<void> {
@@ -52,6 +53,7 @@ export async function writePlan(outputDir: string, plan: RunPlan): Promise<void>
  *
  * @param outputDir - Base output directory (e.g., `results`)
  * @param result - Final run result payload
+ * @returns {Promise<void>} Resolves when the file has been written.
  * @throws {Error} On validation or filesystem errors
  */
 export async function writeResult(
@@ -73,6 +75,7 @@ export async function writeResult(
  *
  * @param outputDir - Base output directory (e.g., `results`)
  * @param result - Current run snapshot payload
+ * @returns {Promise<void>} Resolves when the file has been written.
  * @throws {Error} On validation or filesystem errors
  */
 export async function writePartialResult(
@@ -91,6 +94,8 @@ export async function writePartialResult(
 		await fs.promises.writeFile(tempPath, content, "utf-8");
 		await fs.promises.rename(tempPath, partialPath);
 	} catch (error) {
+		const originalError =
+			error instanceof Error ? error : new Error(String(error));
 		try {
 			fs.unlinkSync(tempPath);
 		} catch (cleanupError) {
@@ -102,10 +107,14 @@ export async function writePartialResult(
 					(cleanupError as { code?: unknown }).code === "ENOENT"
 				)
 			) {
-				throw cleanupError;
+				(
+					originalError as Error & {
+						cleanupError?: unknown;
+					}
+				).cleanupError = cleanupError;
 			}
 		}
-		throw error;
+		throw originalError;
 	}
 }
 
@@ -114,6 +123,7 @@ export async function writePartialResult(
  *
  * @param outputDir - Base output directory (e.g., `results`)
  * @param runId - Run identifier
+ * @returns {void}
  * @throws {Error} On filesystem errors except missing file
  */
 export function deletePartialResult(outputDir: string, runId: string): void {

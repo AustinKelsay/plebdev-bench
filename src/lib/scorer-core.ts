@@ -385,10 +385,30 @@ export async function scoreGenerationInProcess(
 			};
 		}
 
+		const buildFactoryInitFailure = (error: unknown): ScoringResult => {
+			const errorText =
+				error instanceof Error
+					? (error.stack?.trim() ?? error.message)
+					: String(error);
+			return {
+				passed: exportResults.length,
+				failed: expectedTotal - exportResults.length,
+				total: expectedTotal,
+				details: exportResults,
+				error: `Failed to create instance from "${spec.factoryFn}": ${errorText}`,
+				extractionMethod: extracted.method,
+				failureType: "factory_init_failed",
+			};
+		};
+
 		// Create instance if factory specified (suppress stdout from generated code)
 		let instance: unknown;
 		if (spec.factoryFn) {
-			instance = suppressStdout(() => createInstance(module, spec.factoryFn));
+			try {
+				instance = suppressStdout(() => createInstance(module, spec.factoryFn));
+			} catch (error) {
+				return buildFactoryInitFailure(error);
+			}
 			if (!instance) {
 				return {
 					passed: exportResults.length,
@@ -407,7 +427,13 @@ export async function scoreGenerationInProcess(
 		for (const testCase of spec.testCases) {
 			// Create fresh instance if needed
 			if (spec.freshInstancePerTest && spec.factoryFn) {
-				instance = suppressStdout(() => createInstance(module, spec.factoryFn));
+				try {
+					instance = suppressStdout(() =>
+						createInstance(module, spec.factoryFn),
+					);
+				} catch (error) {
+					return buildFactoryInitFailure(error);
+				}
 			}
 
 			const result = suppressStdout(() =>
