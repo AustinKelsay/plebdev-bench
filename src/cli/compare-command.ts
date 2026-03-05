@@ -450,7 +450,7 @@ export const compareCommand = new Command("compare")
 					allowCrossCheckpoint,
 				);
 				if (checkpointGuardMessage) {
-					console.error(`Error: ${checkpointGuardMessage}`);
+					console.error(`✗ FAIL: ${checkpointGuardMessage}`);
 					return;
 				}
 

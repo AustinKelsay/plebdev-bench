@@ -112,10 +112,13 @@ function sanitizeRuntimeBaseUrl(baseUrl: string): string {
  *
  * @param options - Optional Goose adapter settings
  * @returns Harness instance for Goose
+ * @throws {TypeError} If options parsing/normalization fails due to invalid Goose config values
  * @throws {Error} If Goose execution fails, times out, or output directory setup fails
  */
 export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
-	const parsedOptions = GooseAdapterOptionsSchema.parse(options ?? {});
+	const parsedOptions = GooseAdapterOptionsSchema.parse(
+		options === undefined ? {} : options,
+	);
 	const maxTurns = normalizeTurnLimit(
 		"goose.maxTurns",
 		parsedOptions.maxTurns,

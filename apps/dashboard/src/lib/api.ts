@@ -100,13 +100,21 @@ export async function fetchDashboardIndex(
 			console.warn(
 				"No runs index found. Run `bun dashboard:index` to generate apps/dashboard/public/results/index.json.",
 			);
-			return {
+			const fallbackIndex = {
 				schemaVersion: 2,
 				generatedAt: new Date(0).toISOString(),
 				latestCheckpointId: null,
 				runs: [],
 				checkpoints: [],
 			};
+			const fallbackParse =
+				DashboardIndexLegacyOrV2Schema.safeParse(fallbackIndex);
+			if (!fallbackParse.success) {
+				throw new Error(
+					`Invalid dashboard index fallback payload: ${fallbackParse.error.message}`,
+				);
+			}
+			return normalizeDashboardIndex(fallbackParse.data);
 		}
 		throw new Error(`Failed to fetch runs index: ${response.status}`);
 	}
@@ -214,7 +222,14 @@ export async function fetchLatestAggregate(
 				`Missing aggregates/latest.json for indexed runs (runs=${index.runs.length}, latestCheckpointId=${index.latestCheckpointId ?? "null"}). Rebuild dashboard artifacts with \`bun dashboard:index\`.`,
 			);
 		}
-		return createEmptyAggregate(index.latestCheckpointId);
+		const emptyAggregate = createEmptyAggregate(index.latestCheckpointId);
+		const fallbackParse = LeaderboardAggregateSchema.safeParse(emptyAggregate);
+		if (!fallbackParse.success) {
+			throw new Error(
+				`Invalid latest aggregate fallback payload: ${fallbackParse.error.message}`,
+			);
+		}
+		return fallbackParse.data;
 	}
 	if (!response.ok) {
 		throw new Error(`Failed to fetch latest aggregate: ${response.status}`);
