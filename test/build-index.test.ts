@@ -1,5 +1,10 @@
 /**
  * Purpose: Validate dashboard index v2 and aggregate artifact generation.
+ * Exports: none
+ *
+ * Invariants:
+ * - Temporary project roots include all benchmark-defining assets required for checkpointing
+ * - Published result fixtures remain deterministic and isolated per test
  */
 
 import * as fs from "node:fs";
@@ -11,6 +16,29 @@ import { computeBenchmarkCheckpoint } from "../src/lib/benchmark-checkpoint.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const tempRoots: string[] = [];
+const REQUIRED_LIB_ASSETS = [
+	"benchmark-checkpoint.ts",
+	"scorer.ts",
+	"scorer-core.ts",
+	"scorer-worker.ts",
+	"scoring-spec.ts",
+	"code-extractor.ts",
+	"stdout-suppressor.ts",
+	"test-catalog.ts",
+	"timeout.ts",
+	"tool-smoke.ts",
+	"failure-classifier.ts",
+	"model-aliases.ts",
+	"ollama-client.ts",
+	"openai-compat-client.ts",
+	"openrouter-client.ts",
+] as const;
+
+const REQUIRED_SOURCE_DIR_FIXTURES = [
+	["src/harnesses", "direct-adapter.ts", "export const directAdapter = 1;\n"],
+	["src/runtimes", "ollama-runtime.ts", "export const ollamaRuntime = 1;\n"],
+	["src/runner", "index.ts", "export const runnerIndex = 1;\n"],
+] as const;
 
 /**
  * Creates a temporary benchmark project root with minimal benchmark assets.
@@ -37,23 +65,19 @@ function createProjectRoot(): string {
 
 	const libRoot = path.join(root, "src", "lib");
 	fs.mkdirSync(libRoot, { recursive: true });
-	fs.writeFileSync(path.join(libRoot, "scorer.ts"), "export const scorer = 1;");
-	fs.writeFileSync(
-		path.join(libRoot, "scorer-core.ts"),
-		"export const scorerCore = 1;",
-	);
-	fs.writeFileSync(
-		path.join(libRoot, "scorer-worker.ts"),
-		"export const scorerWorker = 1;",
-	);
-	fs.writeFileSync(
-		path.join(libRoot, "scoring-spec.ts"),
-		"export const spec = 1;",
-	);
-	fs.writeFileSync(
-		path.join(libRoot, "code-extractor.ts"),
-		"export const code = 1;",
-	);
+	for (const filename of REQUIRED_LIB_ASSETS) {
+		const exportName = filename.replaceAll(/[^a-zA-Z0-9]+/g, "_");
+		fs.writeFileSync(
+			path.join(libRoot, filename),
+			`export const ${exportName} = ${JSON.stringify(filename)};\n`,
+		);
+	}
+
+	for (const [dirPath, filename, content] of REQUIRED_SOURCE_DIR_FIXTURES) {
+		const absoluteDir = path.join(root, dirPath);
+		fs.mkdirSync(absoluteDir, { recursive: true });
+		fs.writeFileSync(path.join(absoluteDir, filename), content);
+	}
 
 	return root;
 }

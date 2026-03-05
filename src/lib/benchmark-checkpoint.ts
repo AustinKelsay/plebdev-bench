@@ -25,13 +25,30 @@ const REQUIRED_TEST_ASSETS = [
 /** Optional benchmark asset filenames under each test directory. */
 const OPTIONAL_TEST_ASSETS = ["rubric.md", "scoring.spec.ts"] as const;
 
-/** Shared scoring pipeline assets that affect benchmark behavior. */
-const SCORING_PIPELINE_ASSETS = [
+/** Benchmark-core library assets that affect execution, scoring, or evaluation semantics. */
+const CORE_BENCHMARK_LIB_ASSETS = [
+	"src/lib/benchmark-checkpoint.ts",
 	"src/lib/scorer.ts",
 	"src/lib/scorer-core.ts",
 	"src/lib/scorer-worker.ts",
 	"src/lib/scoring-spec.ts",
 	"src/lib/code-extractor.ts",
+	"src/lib/stdout-suppressor.ts",
+	"src/lib/test-catalog.ts",
+	"src/lib/timeout.ts",
+	"src/lib/tool-smoke.ts",
+	"src/lib/failure-classifier.ts",
+	"src/lib/model-aliases.ts",
+	"src/lib/ollama-client.ts",
+	"src/lib/openai-compat-client.ts",
+	"src/lib/openrouter-client.ts",
+] as const;
+
+/** Benchmark-core source directories whose implementation changes should roll the checkpoint. */
+const CORE_BENCHMARK_SOURCE_DIRS = [
+	"src/harnesses",
+	"src/runtimes",
+	"src/runner",
 ] as const;
 
 /** Manifest entry for one benchmark-defining file. */
@@ -74,6 +91,45 @@ function hashString(value: string): string {
  */
 function normalizeRelativePath(relPath: string): string {
 	return relPath.split(path.sep).join("/");
+}
+
+/**
+ * Recursively collects file paths beneath a benchmark-core source directory.
+ *
+ * @param rootDir - Project root
+ * @param relDir - Relative directory path under the project root
+ * @returns Sorted relative file paths under the directory
+ * @throws {Error} If the source directory is missing
+ */
+function collectFilesUnderDirectory(rootDir: string, relDir: string): string[] {
+	const absoluteDir = path.join(rootDir, relDir);
+	if (!fs.existsSync(absoluteDir)) {
+		throw new Error(`Required benchmark source directory missing: ${absoluteDir}`);
+	}
+
+	const collected: string[] = [];
+	const stack = [absoluteDir];
+	while (stack.length > 0) {
+		const currentDir = stack.pop();
+		if (!currentDir) continue;
+		const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+		for (const entry of entries) {
+			const absolutePath = path.join(currentDir, entry.name);
+			if (entry.isDirectory()) {
+				stack.push(absolutePath);
+				continue;
+			}
+			if (!entry.isFile()) {
+				continue;
+			}
+			collected.push(
+				normalizeRelativePath(path.relative(rootDir, absolutePath)),
+			);
+		}
+	}
+
+	collected.sort((a, b) => a.localeCompare(b));
+	return collected;
 }
 
 /**
@@ -121,7 +177,7 @@ export function collectBenchmarkAssetPaths(
 		}
 	}
 
-	for (const relPath of SCORING_PIPELINE_ASSETS) {
+	for (const relPath of CORE_BENCHMARK_LIB_ASSETS) {
 		const absolutePath = path.join(rootDir, relPath);
 		if (!fs.existsSync(absolutePath)) {
 			throw new Error(
@@ -129,6 +185,10 @@ export function collectBenchmarkAssetPaths(
 			);
 		}
 		assets.push(normalizeRelativePath(relPath));
+	}
+
+	for (const relDir of CORE_BENCHMARK_SOURCE_DIRS) {
+		assets.push(...collectFilesUnderDirectory(rootDir, relDir));
 	}
 
 	assets.sort((a, b) => a.localeCompare(b));

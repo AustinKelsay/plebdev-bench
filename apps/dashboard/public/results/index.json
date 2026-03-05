@@ -1,22 +1,32 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-04T19:50:04.672Z",
-  "latestCheckpointId": "chk_sha256v1_517a25afd25b",
+  "generatedAt": "2026-03-05T22:25:39.214Z",
+  "latestCheckpointId": "chk_sha256v1_61a037f87105",
   "runs": [
     {
-      "runId": "20260213-075756-7dc316",
-      "startedAt": "2026-02-13T15:57:56.054Z",
-      "completedAt": "2026-02-14T01:38:41.264Z",
-      "durationMs": 27786998,
+      "runId": "20260305-135118-b11d08",
+      "startedAt": "2026-03-05T21:51:18.583Z",
+      "completedAt": "2026-03-05T22:12:21.228Z",
+      "durationMs": 1262650,
       "summary": {
-        "total": 567,
-        "completed": 553,
-        "failed": 14,
+        "total": 45,
+        "completed": 45,
+        "failed": 0,
         "pending": 0
       },
+      "checkpointId": "chk_sha256v1_61a037f87105",
+      "machineProfileId": "anon_6fe55c56c31d",
       "verificationStatus": "self_reported",
-      "isLegacy": true
+      "isLegacy": false
     }
   ],
-  "checkpoints": []
+  "checkpoints": [
+    {
+      "checkpointId": "chk_sha256v1_61a037f87105",
+      "runCount": 1,
+      "rawItemCount": 45,
+      "machineCount": 1,
+      "latestRunAt": "2026-03-05T22:12:21.228Z"
+    }
+  ]
 }

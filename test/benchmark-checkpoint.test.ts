@@ -1,5 +1,10 @@
 /**
  * Purpose: Validate deterministic benchmark checkpoint computation.
+ * Exports: none
+ *
+ * Invariants:
+ * - Temporary benchmark roots include the full required checkpoint asset surface
+ * - Tests remain deterministic and isolated via per-test temp directories
  */
 
 import * as fs from "node:fs";
@@ -12,6 +17,29 @@ import {
 } from "../src/lib/benchmark-checkpoint.js";
 
 const tempRoots: string[] = [];
+const REQUIRED_LIB_ASSETS = [
+	"benchmark-checkpoint.ts",
+	"scorer.ts",
+	"scorer-core.ts",
+	"scorer-worker.ts",
+	"scoring-spec.ts",
+	"code-extractor.ts",
+	"stdout-suppressor.ts",
+	"test-catalog.ts",
+	"timeout.ts",
+	"tool-smoke.ts",
+	"failure-classifier.ts",
+	"model-aliases.ts",
+	"ollama-client.ts",
+	"openai-compat-client.ts",
+	"openrouter-client.ts",
+] as const;
+
+const REQUIRED_SOURCE_DIR_FIXTURES = [
+	["src/harnesses", "direct-adapter.ts", "export const directAdapter = 1;\n"],
+	["src/runtimes", "ollama-runtime.ts", "export const ollamaRuntime = 1;\n"],
+	["src/runner", "index.ts", "export const runnerIndex = 1;\n"],
+] as const;
 
 /**
  * Creates a temporary benchmark root with minimal required benchmark assets.
@@ -43,23 +71,19 @@ function createBenchmarkRoot(): string {
 
 	const libRoot = path.join(root, "src", "lib");
 	fs.mkdirSync(libRoot, { recursive: true });
-	fs.writeFileSync(path.join(libRoot, "scorer.ts"), "export const scorer = 1;");
-	fs.writeFileSync(
-		path.join(libRoot, "scorer-core.ts"),
-		"export const scorerCore = 1;",
-	);
-	fs.writeFileSync(
-		path.join(libRoot, "scorer-worker.ts"),
-		"export const scorerWorker = 1;",
-	);
-	fs.writeFileSync(
-		path.join(libRoot, "scoring-spec.ts"),
-		"export const spec = 1;",
-	);
-	fs.writeFileSync(
-		path.join(libRoot, "code-extractor.ts"),
-		"export const code = 1;",
-	);
+	for (const filename of REQUIRED_LIB_ASSETS) {
+		const exportName = filename.replaceAll(/[^a-zA-Z0-9]+/g, "_");
+		fs.writeFileSync(
+			path.join(libRoot, filename),
+			`export const ${exportName} = ${JSON.stringify(filename)};\n`,
+		);
+	}
+
+	for (const [dirPath, filename, content] of REQUIRED_SOURCE_DIR_FIXTURES) {
+		const absoluteDir = path.join(root, dirPath);
+		fs.mkdirSync(absoluteDir, { recursive: true });
+		fs.writeFileSync(path.join(absoluteDir, filename), content);
+	}
 
 	return root;
 }
@@ -100,10 +124,28 @@ describe("benchmark checkpoint", () => {
 		expect(after.checkpointId).not.toBe(before.checkpointId);
 	});
 
+	it("changes manifest hash when harness implementation changes", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		const harnessPath = path.join(
+			root,
+			"src",
+			"harnesses",
+			"direct-adapter.ts",
+		);
+		fs.writeFileSync(harnessPath, "export const directAdapter = 2;\n");
+
+		const after = computeBenchmarkCheckpoint(root);
+		expect(after.manifestHash).not.toBe(before.manifestHash);
+		expect(after.checkpointId).not.toBe(before.checkpointId);
+	});
+
 	it("collects a deterministic sorted asset list", () => {
 		const root = createBenchmarkRoot();
 		const assets = collectBenchmarkAssetPaths(root);
 		expect(assets).toEqual([...assets].sort((a, b) => a.localeCompare(b)));
+		expect(assets).toContain("src/harnesses/direct-adapter.ts");
 		expect(assets).toContain("src/lib/scorer.ts");
 		expect(assets).toContain("src/tests/smoke/prompt.blind.md");
 	});
