@@ -1,6 +1,6 @@
 /**
  * Purpose: Goose CLI adapter implementing the Harness interface.
- * Exports: createGooseAdapter
+ * Exports: createGooseAdapter, GooseAdapterOptions
  *
  * This adapter runs Goose via CLI using execa.
  * Command: goose run --no-session --provider <provider> --model <model> -q --output-format json -i -
@@ -51,10 +51,12 @@ export interface GooseAdapterOptions {
 }
 
 /** Runtime-validated Goose adapter options. */
-const GooseAdapterOptionsSchema = z.object({
-	maxTurns: z.number().optional(),
-	retryMaxTurns: z.number().optional(),
-});
+const GooseAdapterOptionsSchema = z
+	.object({
+		maxTurns: z.number().optional(),
+		retryMaxTurns: z.number().optional(),
+	})
+	.strict();
 
 /**
  * Normalizes turn limits to safe positive integers.

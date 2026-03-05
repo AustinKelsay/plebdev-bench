@@ -1,6 +1,6 @@
 /**
  * Purpose: Fetch run data from static JSON files.
- * Exports: fetchRuns, fetchRun, fetchPlan, fetchDashboardIndex, fetchLatestAggregate
+ * Exports: fetchRuns, fetchRun, fetchPlan, fetchRunWithPlan, fetchDashboardIndex, fetchLatestAggregate
  *
  * Data is loaded from the results directory via Vite's dev server.
  * All fetched JSON is validated with Zod schemas at this boundary.

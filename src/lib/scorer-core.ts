@@ -14,6 +14,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { pathToFileURL } from "node:url";
 import type {
 	ScoringResult,
 	TestCase,
@@ -54,29 +55,45 @@ function valuesMatch(
 	expected: unknown,
 	tolerance?: number,
 ): boolean {
-	// Handle special float cases
 	if (typeof actual === "number" && typeof expected === "number") {
-		// Handle NaN
 		if (Number.isNaN(actual) && Number.isNaN(expected)) {
 			return true;
 		}
-		// Handle Infinity
 		if (!Number.isFinite(actual) || !Number.isFinite(expected)) {
 			return actual === expected;
 		}
-		// Use tolerance if provided
 		if (tolerance !== undefined) {
 			return Math.abs(actual - expected) <= tolerance;
 		}
 	}
 
-	// Deep equality for objects/arrays
 	if (typeof actual === "object" && typeof expected === "object") {
 		return JSON.stringify(actual) === JSON.stringify(expected);
 	}
 
-	// Strict equality
 	return actual === expected;
+}
+
+function getTestCaseName(testCase: TestCase): string {
+	return (
+		testCase.description ||
+		`${testCase.fn}(${JSON.stringify(testCase.args).slice(1, -1)})`
+	);
+}
+
+function buildFactoryInitTestFailure(
+	testCase: TestCase,
+	factoryFn: string,
+	error: unknown,
+): TestCaseResult {
+	const errorMessage =
+		error instanceof Error ? error.message || error.name : String(error);
+	return {
+		name: getTestCaseName(testCase),
+		passed: false,
+		expected: testCase.expected,
+		error: `Failed to create instance from "${factoryFn}": ${errorMessage}`,
+	};
 }
 
 /**
@@ -92,9 +109,7 @@ function runTestCase(
 	testCase: TestCase,
 	instance?: unknown,
 ): TestCaseResult {
-	const name =
-		testCase.description ||
-		`${testCase.fn}(${JSON.stringify(testCase.args).slice(1, -1)})`;
+	const name = getTestCaseName(testCase);
 
 	try {
 		// Determine the target (module export or instance method)
@@ -180,7 +195,12 @@ function createInstance(
 		try {
 			return (factory as () => unknown)();
 		} catch (error) {
-			if (error instanceof TypeError) {
+			if (
+				error instanceof TypeError &&
+				/^\s*Class constructor .* cannot be invoked without ['"]new['"]\s*$/i.test(
+					error.message,
+				)
+			) {
 				return new (factory as new () => unknown)();
 			}
 			throw error;
@@ -203,12 +223,12 @@ async function importWithTimeout(
 ): Promise<Record<string, unknown>> {
 	let timeoutId: ReturnType<typeof setTimeout> | null = null;
 	try {
-		// Add cache-busting query param
-		const cacheBuster = `?t=${Date.now()}`;
+		const fileUrl = pathToFileURL(filePath);
+		fileUrl.searchParams.set("t", String(Date.now()));
 		// Suppress stdout during import (module may have top-level console.log)
 		const { promise: importPromise, restore } = suppressStdoutAsync(
 			async () => {
-				return await import(`${filePath}${cacheBuster}`);
+				return await import(fileUrl.toString());
 			},
 		);
 		// Prevent unhandled rejections if timeout wins the race.
@@ -432,7 +452,19 @@ export async function scoreGenerationInProcess(
 						createInstance(module, spec.factoryFn),
 					);
 				} catch (error) {
-					return buildFactoryInitFailure(error);
+					testResults.push(
+						buildFactoryInitTestFailure(testCase, spec.factoryFn, error),
+					);
+					continue;
+				}
+				if (!instance) {
+					testResults.push({
+						name: getTestCaseName(testCase),
+						passed: false,
+						expected: testCase.expected,
+						error: `Failed to create instance from "${spec.factoryFn}"`,
+					});
+					continue;
 				}
 			}
 

@@ -1,9 +1,13 @@
 /**
  * Purpose: `bench compare` command for comparing two benchmark runs.
- * Exports: compareCommand
+ * Exports: assertComparableCheckpoints, readPlanBestEffort, resolveCheckpointId, compareCommand
  *
  * Reads two run.json files, computes deltas, and prints a terminal-native
  * diff table with status changes, score changes, and duration changes.
+ *
+ * Invariants:
+ * - Checkpoint mismatches are treated as user-facing validation messages in CLI flow.
+ * - Invalid plan JSON/schema data is surfaced as an error rather than silently ignored.
  */
 
 import { Command } from "commander";
