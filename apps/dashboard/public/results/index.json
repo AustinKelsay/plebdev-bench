@@ -1,14 +1,22 @@
-[
-  {
-    "runId": "20260213-075756-7dc316",
-    "startedAt": "2026-02-13T15:57:56.054Z",
-    "completedAt": "2026-02-14T01:38:41.264Z",
-    "durationMs": 27786998,
-    "summary": {
-      "total": 567,
-      "completed": 553,
-      "failed": 14,
-      "pending": 0
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-03-04T19:50:04.672Z",
+  "latestCheckpointId": "chk_sha256v1_517a25afd25b",
+  "runs": [
+    {
+      "runId": "20260213-075756-7dc316",
+      "startedAt": "2026-02-13T15:57:56.054Z",
+      "completedAt": "2026-02-14T01:38:41.264Z",
+      "durationMs": 27786998,
+      "summary": {
+        "total": 567,
+        "completed": 553,
+        "failed": 14,
+        "pending": 0
+      },
+      "verificationStatus": "self_reported",
+      "isLegacy": true
     }
-  }
-]
+  ],
+  "checkpoints": []
+}

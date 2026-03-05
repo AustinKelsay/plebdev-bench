@@ -13,10 +13,68 @@ import {
 	compareRuns,
 	formatDelta,
 } from "../results/compare.js";
-import { findRunDir, readResult } from "../results/reader.js";
+import type { RunPlan, RunResult } from "../schemas/index.js";
+import { findRunDir, readPlan, readResult } from "../results/reader.js";
 
 /** Default output directory for results. */
 const DEFAULT_OUTPUT_DIR = "results";
+
+/**
+ * Ensures two runs are comparable by checkpoint, unless override is enabled.
+ *
+ * @param checkpointA - Baseline checkpoint ID
+ * @param checkpointB - Comparison checkpoint ID
+ * @param allowCrossCheckpoint - Whether to bypass checkpoint guardrails
+ * @throws {Error} If checkpoints are missing or mismatched and override is disabled
+ */
+export function assertComparableCheckpoints(
+	checkpointA: string | undefined,
+	checkpointB: string | undefined,
+	allowCrossCheckpoint: boolean,
+): void {
+	if (allowCrossCheckpoint) return;
+	if (!checkpointA || !checkpointB) {
+		throw new Error(
+			"Checkpoint metadata missing in one or both run artifacts. Re-run with --allow-cross-checkpoint to force compare.",
+		);
+	}
+	if (checkpointA !== checkpointB) {
+		throw new Error(
+			`Checkpoint mismatch: ${checkpointA} vs ${checkpointB}. Re-run with --allow-cross-checkpoint to force compare.`,
+		);
+	}
+}
+
+/**
+ * Reads `plan.json` for a run directory and tolerates missing/invalid plans.
+ *
+ * @param runDir - Absolute run directory path
+ * @returns Parsed plan when available and valid, otherwise undefined
+ */
+export function readPlanBestEffort(runDir: string): RunPlan | undefined {
+	try {
+		return readPlan(runDir);
+	} catch (error) {
+		console.warn(
+			`Warning: Unable to read plan metadata from ${runDir}: ${error instanceof Error ? error.message : String(error)}. Continuing with run.json metadata.`,
+		);
+		return undefined;
+	}
+}
+
+/**
+ * Resolves checkpoint ID from run metadata with plan fallback.
+ *
+ * @param run - Run result artifact
+ * @param plan - Optional run plan artifact
+ * @returns Resolved checkpoint ID, if present
+ */
+export function resolveCheckpointId(
+	run: RunResult,
+	plan: RunPlan | undefined,
+): string | undefined {
+	return run.benchmarkCheckpoint?.checkpointId ?? plan?.benchmarkCheckpoint?.checkpointId;
+}
 
 /**
  * Truncates a string to max length with ellipsis.
@@ -281,21 +339,41 @@ export const compareCommand = new Command("compare")
 		"Output directory for results",
 		DEFAULT_OUTPUT_DIR,
 	)
+	.option(
+		"--allow-cross-checkpoint",
+		"Allow comparisons when benchmark checkpoint metadata is missing or mismatched",
+		false,
+	)
 	.option("--json", "Output raw JSON instead of formatted table")
 	.action(
 		async (
 			runA: string,
 			runB: string,
-			options: { output: string; json?: boolean },
+			options: {
+				output: string;
+				json?: boolean;
+				allowCrossCheckpoint?: boolean;
+			},
 		) => {
 			try {
 				// Find and read run A
 				const dirA = findRunDir(options.output, runA);
 				const resultA = await readResult(dirA);
+				const planA = readPlanBestEffort(dirA);
 
 				// Find and read run B
 				const dirB = findRunDir(options.output, runB);
 				const resultB = await readResult(dirB);
+				const planB = readPlanBestEffort(dirB);
+
+				const checkpointA = resolveCheckpointId(resultA, planA);
+				const checkpointB = resolveCheckpointId(resultB, planB);
+				const allowCrossCheckpoint = options.allowCrossCheckpoint === true;
+				assertComparableCheckpoints(
+					checkpointA,
+					checkpointB,
+					allowCrossCheckpoint,
+				);
 
 				// Compare runs
 				const comparison = compareRuns(resultA, resultB);

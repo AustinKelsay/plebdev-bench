@@ -48,6 +48,13 @@ const FrontierEvalFailureTypeSchema = z.enum([
 	"unknown",
 ]);
 
+/** Verification status schema. */
+const VerificationStatusSchema = z.enum([
+	"self_reported",
+	"verified",
+	"rejected",
+]);
+
 /** Generation result schema. */
 const GenerationResultSchema = z.object({
 	success: z.boolean(),
@@ -78,6 +85,47 @@ const FrontierEvalSchema = z.object({
 /** Scoring metrics schema. */
 const ScoringMetricsSchema = z.object({
 	durationMs: z.number(),
+});
+
+/** Benchmark checkpoint schema. */
+const BenchmarkCheckpointSchema = z.object({
+	checkpointId: z.string(),
+	algorithm: z.string(),
+	manifestHash: z.string(),
+	assetCount: z.number(),
+	computedAt: z.string(),
+});
+
+/** Runtime environment schema. */
+const RuntimeEnvironmentSchema = z.object({
+	platform: z.string(),
+	bunVersion: z.string(),
+});
+
+/** Hardware profile schema. */
+const HardwareProfileSchema = z.object({
+	platform: z.string(),
+	arch: z.string(),
+	osRelease: z.string(),
+	cpuModel: z.string(),
+	logicalCores: z.number(),
+	totalMemoryBytes: z.number(),
+});
+
+/** Machine profile schema. */
+const MachineProfileSchema = z.object({
+	profileId: z.string(),
+	label: z.string().optional(),
+	hardware: HardwareProfileSchema,
+});
+
+/** Run provenance schema. */
+const RunProvenanceSchema = z.object({
+	verificationStatus: VerificationStatusSchema,
+	source: z.string(),
+	submittedBy: z.string().optional(),
+	submittedAt: z.string().optional(),
+	notes: z.string().optional(),
 });
 
 /** Generation failure schema. */
@@ -135,6 +183,9 @@ const RunSummarySchema = z.object({
 export const RunResultSchema = z.object({
 	schemaVersion: z.string(),
 	runId: z.string(),
+	machine: MachineProfileSchema.optional(),
+	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
+	provenance: RunProvenanceSchema.optional(),
 	startedAt: z.string(),
 	completedAt: z.string(),
 	durationMs: z.number(),
@@ -158,10 +209,17 @@ export const RunPlanSchema = z.object({
 	schemaVersion: z.string(),
 	runId: z.string(),
 	createdAt: z.string(),
-	environment: z.object({
-		platform: z.string(),
-		bunVersion: z.string(),
-	}),
+	runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
+	machine: MachineProfileSchema.optional(),
+	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
+	provenance: RunProvenanceSchema.optional(),
+	// Legacy pre-0.3.0 field
+	environment: z
+		.object({
+			platform: z.string(),
+			bunVersion: z.string(),
+		})
+		.optional(),
 	config: z.object({
 		ollamaBaseUrl: z.string(),
 		vllmBaseUrl: z.string(),
@@ -185,7 +243,75 @@ export const RunListItemSchema = z.object({
 	completedAt: z.string(),
 	durationMs: z.number(),
 	summary: RunSummarySchema,
+	checkpointId: z.string().optional(),
+	machineProfileId: z.string().optional(),
+	machineLabel: z.string().optional(),
+	verificationStatus: VerificationStatusSchema.optional(),
+	isLegacy: z.boolean().optional(),
 });
 
-/** Array of run list items (index.json). */
+/** Array of run list items (legacy index.json format). */
 export const RunListSchema = z.array(RunListItemSchema);
+
+/** Checkpoint summary schema for index metadata. */
+export const DashboardCheckpointSummarySchema = z.object({
+	checkpointId: z.string(),
+	runCount: z.number(),
+	rawItemCount: z.number(),
+	machineCount: z.number(),
+	latestRunAt: z.string(),
+});
+
+/** V2 dashboard index schema. */
+export const DashboardIndexSchema = z.object({
+	schemaVersion: z.literal(2),
+	generatedAt: z.string(),
+	latestCheckpointId: z.string().nullable(),
+	runs: z.array(RunListItemSchema),
+	checkpoints: z.array(DashboardCheckpointSummarySchema),
+});
+
+/** Index schema with backward compatibility for legacy array format. */
+export const DashboardIndexLegacyOrV2Schema = z.union([
+	RunListSchema,
+	DashboardIndexSchema,
+]);
+
+/** Aggregated leaderboard item schema. */
+const LeaderboardAggregatedItemSchema = MatrixItemResultSchema.extend({
+	machineProfileId: z.string(),
+	machineLabel: z.string().optional(),
+	verificationStatus: VerificationStatusSchema,
+	sourceRunId: z.string(),
+	sourceCompletedAt: z.string(),
+});
+
+/** Aggregated machine summary schema. */
+const LeaderboardMachineSummarySchema = z.object({
+	machineProfileId: z.string(),
+	machineLabel: z.string().optional(),
+	verificationStatus: VerificationStatusSchema,
+	runCount: z.number(),
+	itemCount: z.number(),
+});
+
+/** Aggregated summary counters schema. */
+const LeaderboardAggregateSummarySchema = z.object({
+	runsConsidered: z.number(),
+	runsMatched: z.number(),
+	rawItems: z.number(),
+	dedupedItems: z.number(),
+	machines: z.number(),
+	automatedScoreItems: z.number(),
+	frontierEvalItems: z.number(),
+});
+
+/** Leaderboard aggregate payload schema. */
+export const LeaderboardAggregateSchema = z.object({
+	schemaVersion: z.literal(1),
+	generatedAt: z.string(),
+	checkpointId: z.string(),
+	summary: LeaderboardAggregateSummarySchema,
+	machines: z.array(LeaderboardMachineSummarySchema),
+	items: z.array(LeaderboardAggregatedItemSchema),
+});

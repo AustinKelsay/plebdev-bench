@@ -12,7 +12,7 @@ export const summary = {
 	frontierEval:
 		"Average score from frontier AI evaluation (0-10 scale). A frontier model grades code quality.",
 	environment:
-		"System environment where the benchmark ran (platform, Bun version).",
+		"Machine/runtime metadata for this run (machine profile, platform, Bun version, checkpoint).",
 } as const;
 
 /** Matrix table column explanations */

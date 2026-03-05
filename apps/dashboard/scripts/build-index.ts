@@ -1,18 +1,45 @@
 #!/usr/bin/env bun
 /**
- * Purpose: Build index.json for the dashboard by scanning results directory.
- * Generates a list of all runs with summary information.
+ * Purpose: Build dashboard index metadata and checkpoint aggregate artifacts.
+ * Exports: buildDashboardIndexArtifacts, resolveResultsDir
  *
  * Usage:
  *   bun run apps/dashboard/scripts/build-index.ts
- *   bun run apps/dashboard/scripts/build-index.ts --dir results
+ *   bun run apps/dashboard/scripts/build-index.ts --dir apps/dashboard/public/results
  */
+
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { RunResultSchema } from "../src/lib/schemas";
-import type { RunListItem } from "../src/lib/types";
+import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
+import {
+	type AggregateRunInput,
+	aggregateRunsForCheckpoint,
+	resolveRunMetadata,
+	summarizeCheckpoints,
+} from "../../../src/results/aggregate.js";
+import { RunPlanSchema, RunResultSchema } from "../../../src/schemas/index.js";
+import type {
+	DashboardIndex,
+	LeaderboardAggregate,
+	RunListItem,
+} from "../src/lib/types.js";
 
 const DEFAULT_RESULTS_DIR = resolve(import.meta.dir, "../public/results");
+const DEFAULT_PROJECT_ROOT = resolve(import.meta.dir, "../../..");
+
+/** Output metadata from dashboard index build. */
+export interface BuildDashboardIndexArtifactsResult {
+	index: DashboardIndex;
+	aggregatesWritten: number;
+	latestAggregate: LeaderboardAggregate;
+}
+
+/** Build options for dashboard index generation. */
+export interface BuildDashboardIndexArtifactsOptions {
+	resultsDir: string;
+	projectRoot?: string;
+	latestCheckpointId?: string;
+}
 
 /**
  * Resolves the results directory to scan.
@@ -21,9 +48,11 @@ const DEFAULT_RESULTS_DIR = resolve(import.meta.dir, "../public/results");
  * - Default: apps/dashboard/public/results
  * - Optional: `--dir <path>` resolved from process cwd
  *
- * @throws Error if `--dir` is provided without a path
+ * @param argv - CLI argv values after script path
+ * @returns Absolute results directory path
+ * @throws {Error} If `--dir` is supplied without a value
  */
-function resolveResultsDir(argv: string[]): string {
+export function resolveResultsDir(argv: string[]): string {
 	if (argv.includes("--help") || argv.includes("-h")) {
 		console.log(
 			"Usage: bun run apps/dashboard/scripts/build-index.ts [--dir <path>]",
@@ -40,76 +69,188 @@ function resolveResultsDir(argv: string[]): string {
 	if (typeof dirArg !== "string" || dirArg.trim().length === 0) {
 		throw new Error("--dir requires a path");
 	}
-
 	return resolve(process.cwd(), dirArg);
 }
 
-async function buildIndex(): Promise<void> {
-	const resultsDir = resolveResultsDir(process.argv.slice(2));
-	const indexPath = join(resultsDir, "index.json");
-
-	console.log(`Scanning ${resultsDir} for runs...`);
-
-	const runs: RunListItem[] = [];
-
+/**
+ * Reads `run.json` and optional `plan.json` from a run directory.
+ *
+ * @param runDir - Absolute run directory path
+ * @returns Parsed run bundle or undefined when run.json is missing/invalid
+ */
+async function readRunBundle(
+	runDir: string,
+): Promise<AggregateRunInput | undefined> {
+	const runJsonPath = join(runDir, "run.json");
 	try {
-		// Ensure directory exists so first-time setups succeed deterministically.
-		await mkdir(resultsDir, { recursive: true });
+		const content = await readFile(runJsonPath, "utf-8");
+		const runParsed = RunResultSchema.safeParse(JSON.parse(content) as unknown);
+		if (!runParsed.success) {
+			return undefined;
+		}
 
-		const entries = await readdir(resultsDir, { withFileTypes: true });
-
-		for (const entry of entries) {
-			if (!entry.isDirectory()) continue;
-
-			const runDir = join(resultsDir, entry.name);
-			const runJsonPath = join(runDir, "run.json");
-
-			try {
-				const content = await readFile(runJsonPath, "utf-8");
-				const parsedJson = JSON.parse(content) as unknown;
-				const parsedRun = RunResultSchema.safeParse(parsedJson);
-				if (!parsedRun.success) {
-					console.log(`  Skipped: ${entry.name} (invalid run.json schema)`);
-					continue;
-				}
-				const run = parsedRun.data;
-
-				runs.push({
-					runId: run.runId,
-					startedAt: run.startedAt,
-					completedAt: run.completedAt,
-					durationMs: run.durationMs,
-					summary: run.summary,
-				});
-
-				console.log(`  Found: ${run.runId}`);
-			} catch {
-				// Skip directories without valid run.json
-				console.log(`  Skipped: ${entry.name} (no valid run.json)`);
+		const planJsonPath = join(runDir, "plan.json");
+		let plan: AggregateRunInput["plan"] | undefined;
+		try {
+			const planContent = await readFile(planJsonPath, "utf-8");
+			const planParsed = RunPlanSchema.safeParse(
+				JSON.parse(planContent) as unknown,
+			);
+			if (planParsed.success) {
+				plan = planParsed.data;
 			}
+		} catch {
+			plan = undefined;
 		}
 
-		// Sort by startedAt descending (newest first)
-		runs.sort(
-			(a, b) =>
-				new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
-		);
-
-		// Write index.json
-		await writeFile(indexPath, JSON.stringify(runs, null, 2));
-
-		console.log(`\nWrote ${runs.length} runs to ${indexPath}`);
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-			// Should be rare (we mkdir -p), but keep deterministic behavior.
-			console.log("Results directory not found; creating empty index.");
-			await mkdir(resultsDir, { recursive: true });
-			await writeFile(indexPath, "[]");
-			console.log(`Created empty index at ${indexPath}`);
-		} else {
-			throw error;
-		}
+		return {
+			run: runParsed.data,
+			...(plan ? { plan } : {}),
+		};
+	} catch {
+		return undefined;
 	}
 }
 
-buildIndex().catch(console.error);
+/**
+ * Maps parsed runs to dashboard run-list entries with checkpoint/machine metadata.
+ *
+ * @param bundles - Parsed run bundles
+ * @returns Run-list entries sorted newest-first by startedAt
+ */
+function buildRunListItems(bundles: AggregateRunInput[]): RunListItem[] {
+	const runs = bundles.map((bundle) => {
+		const metadata = resolveRunMetadata(bundle);
+		return {
+			runId: bundle.run.runId,
+			startedAt: bundle.run.startedAt,
+			completedAt: bundle.run.completedAt,
+			durationMs: bundle.run.durationMs,
+			summary: bundle.run.summary,
+			...(metadata.checkpointId ? { checkpointId: metadata.checkpointId } : {}),
+			...(metadata.machineProfileId
+				? { machineProfileId: metadata.machineProfileId }
+				: {}),
+			...(metadata.machineLabel ? { machineLabel: metadata.machineLabel } : {}),
+			...(metadata.verificationStatus
+				? { verificationStatus: metadata.verificationStatus }
+				: {}),
+			isLegacy: metadata.isLegacy,
+		};
+	});
+
+	runs.sort(
+		(a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+	);
+	return runs;
+}
+
+/**
+ * Builds dashboard index metadata and checkpoint aggregate files.
+ *
+ * @param options - Build options
+ * @returns Generated index + latest aggregate metadata
+ */
+export async function buildDashboardIndexArtifacts(
+	options: BuildDashboardIndexArtifactsOptions,
+): Promise<BuildDashboardIndexArtifactsResult> {
+	const resultsDir = resolve(options.resultsDir);
+	const projectRoot = resolve(options.projectRoot ?? DEFAULT_PROJECT_ROOT);
+	const indexPath = join(resultsDir, "index.json");
+	const aggregatesDir = join(resultsDir, "aggregates");
+
+	await mkdir(resultsDir, { recursive: true });
+	await mkdir(aggregatesDir, { recursive: true });
+
+	const entries = await readdir(resultsDir, { withFileTypes: true });
+	const bundles: AggregateRunInput[] = [];
+	for (const entry of entries) {
+		if (!entry.isDirectory() || entry.name === "aggregates") continue;
+		const runDir = join(resultsDir, entry.name);
+		const bundle = await readRunBundle(runDir);
+		if (bundle) {
+			bundles.push(bundle);
+		}
+	}
+
+	const checkpoints = summarizeCheckpoints(bundles);
+	const latestCheckpointId =
+		options.latestCheckpointId ??
+		computeBenchmarkCheckpoint(projectRoot).checkpointId;
+	const runs = buildRunListItems(bundles);
+
+	const index: DashboardIndex = {
+		schemaVersion: 2,
+		generatedAt: new Date().toISOString(),
+		latestCheckpointId,
+		runs,
+		checkpoints,
+	};
+
+	await writeFile(indexPath, JSON.stringify(index, null, 2), "utf-8");
+
+	let aggregatesWritten = 0;
+	for (const checkpoint of checkpoints) {
+		const aggregate = aggregateRunsForCheckpoint(
+			bundles,
+			checkpoint.checkpointId,
+		);
+		await writeFile(
+			join(aggregatesDir, `${checkpoint.checkpointId}.json`),
+			JSON.stringify(aggregate, null, 2),
+			"utf-8",
+		);
+		aggregatesWritten += 1;
+	}
+
+	const latestAggregate = aggregateRunsForCheckpoint(
+		bundles,
+		latestCheckpointId,
+	);
+	await writeFile(
+		join(aggregatesDir, `${latestCheckpointId}.json`),
+		JSON.stringify(latestAggregate, null, 2),
+		"utf-8",
+	);
+	if (
+		!checkpoints.some(
+			(checkpoint) => checkpoint.checkpointId === latestCheckpointId,
+		)
+	) {
+		aggregatesWritten += 1;
+	}
+	await writeFile(
+		join(aggregatesDir, "latest.json"),
+		JSON.stringify(latestAggregate, null, 2),
+		"utf-8",
+	);
+
+	return {
+		index,
+		aggregatesWritten,
+		latestAggregate,
+	};
+}
+
+/**
+ * CLI entrypoint wrapper for dashboard index generation.
+ */
+async function runCli(): Promise<void> {
+	const resultsDir = resolveResultsDir(process.argv.slice(2));
+	console.log(`Scanning ${resultsDir} for runs...`);
+	const result = await buildDashboardIndexArtifacts({ resultsDir });
+	console.log(
+		`Wrote index with ${result.index.runs.length} runs (${result.index.checkpoints.length} checkpoints)`,
+	);
+	console.log(
+		`Wrote ${result.aggregatesWritten + 1} aggregate files (including latest.json)`,
+	);
+	console.log(`Latest checkpoint: ${result.index.latestCheckpointId}`);
+}
+
+if (import.meta.main) {
+	runCli().catch((error) => {
+		console.error(error);
+		process.exit(1);
+	});
+}

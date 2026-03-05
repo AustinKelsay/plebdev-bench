@@ -63,6 +63,10 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 
 	const passRate = computePassRate(run.items);
 	const frontierStats = computeFrontierStats(run.items);
+	const runtimeEnvironment = plan.runtimeEnvironment ?? plan.environment;
+	const machineLabel = plan.machine?.label ?? plan.machine?.profileId;
+	const machineHardware = plan.machine?.hardware;
+	const checkpointId = plan.benchmarkCheckpoint?.checkpointId;
 
 	return (
 		<PageContainer>
@@ -170,10 +174,27 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-sm">{plan.environment.platform}</p>
-						<p className="text-sm text-foreground-faint">
-							Bun {plan.environment.bunVersion}
+						<p className="text-sm">
+							{machineLabel ??
+								runtimeEnvironment?.platform ??
+								"unknown-machine"}
 						</p>
+						{runtimeEnvironment && (
+							<p className="text-sm text-foreground-faint">
+								{runtimeEnvironment.platform} · Bun{" "}
+								{runtimeEnvironment.bunVersion}
+							</p>
+						)}
+						{machineHardware && (
+							<p className="text-xs text-foreground-faint mt-1">
+								{machineHardware.arch} · {machineHardware.logicalCores} cores
+							</p>
+						)}
+						{checkpointId && (
+							<p className="text-xs text-foreground-faint mt-1 truncate">
+								{checkpointId}
+							</p>
+						)}
 						<p className="text-xs text-foreground-faint mt-1">
 							{plan.summary.runtimes} runtimes · {plan.summary.harnesses}{" "}
 							harnesses · {plan.summary.tests} tests

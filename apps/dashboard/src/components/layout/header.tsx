@@ -9,6 +9,7 @@ export function Header() {
 	const location = useLocation();
 
 	const navItems = [
+		{ href: "/leaderboard", label: "Leaderboard" },
 		{ href: "/runs", label: "Runs" },
 		{ href: "/compare", label: "Compare" },
 	];
