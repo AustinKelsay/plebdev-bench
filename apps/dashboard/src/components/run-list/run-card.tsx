@@ -15,7 +15,16 @@ interface RunCardProps {
 }
 
 export function RunCard({ run, passRate }: RunCardProps) {
-	const { runId, startedAt, durationMs, summary } = run;
+	const {
+		runId,
+		startedAt,
+		durationMs,
+		summary,
+		checkpointId,
+		machineLabel,
+		machineProfileId,
+		isLegacy,
+	} = run;
 	const hasFailures = summary.failed > 0;
 
 	return (
@@ -37,6 +46,27 @@ export function RunCard({ run, passRate }: RunCardProps) {
 					<p className="text-xs text-foreground-faint">
 						{formatDate(startedAt)}
 					</p>
+					<div className="mt-1 flex flex-wrap gap-1">
+						{checkpointId ? (
+							<Badge variant="secondary" className="text-[10px]">
+								{checkpointId}
+							</Badge>
+						) : (
+							<Badge variant="warning" className="text-[10px]">
+								no-checkpoint
+							</Badge>
+						)}
+						{(machineLabel || machineProfileId) && (
+							<Badge variant="secondary" className="text-[10px]">
+								{machineLabel ?? machineProfileId}
+							</Badge>
+						)}
+						{isLegacy && (
+							<Badge variant="warning" className="text-[10px]">
+								legacy
+							</Badge>
+						)}
+					</div>
 				</CardHeader>
 				<CardContent>
 					<div className="grid grid-cols-2 gap-2 text-sm">

@@ -12,8 +12,14 @@ import type { MatrixItemResult } from "../schemas/index.js";
 export interface TimingStats {
 	/** Average generation time in ms. */
 	avgGenerationMs: number;
-	/** Average scoring time in ms (if available). */
+	/** Average total scoring pipeline time in ms (includes retry generation when used). */
 	avgScoringMs: number | null;
+	/** Average pure scoring evaluation time in ms (excludes retry generation). */
+	avgScoringOnlyMs?: number | null;
+	/** Average compile-retry generation time in ms across items that retried. */
+	avgRetryGenerationMs?: number | null;
+	/** Number of items that used compile-retry generation. */
+	scoringItemsWithRetry?: number;
 	/** Average frontier eval time in ms (if available). */
 	avgFrontierEvalMs: number | null;
 	/** Min/max generation time. */
@@ -143,6 +149,19 @@ function calculateTimingStats(results: MatrixItemResult[]): TimingStats {
 	const scoringTimes = results
 		.filter((r) => r.scoringMetrics?.durationMs !== undefined)
 		.map((r) => r.scoringMetrics!.durationMs);
+	const scoringOnlyTimes = results
+		.filter(
+			(r) =>
+				r.scoringMetrics?.scoringDurationMs !== undefined ||
+				r.scoringMetrics?.durationMs !== undefined,
+		)
+		.map(
+			(r) =>
+				r.scoringMetrics?.scoringDurationMs ?? r.scoringMetrics!.durationMs,
+		);
+	const retryGenerationTimes = results
+		.filter((r) => r.scoringMetrics?.retryGenerationDurationMs !== undefined)
+		.map((r) => r.scoringMetrics!.retryGenerationDurationMs!);
 
 	const frontierTimes = results
 		.filter((r) => r.frontierEval?.latencyMs !== undefined)
@@ -151,6 +170,11 @@ function calculateTimingStats(results: MatrixItemResult[]): TimingStats {
 	return {
 		avgGenerationMs: avg(generationTimes),
 		avgScoringMs: scoringTimes.length > 0 ? avg(scoringTimes) : null,
+		avgScoringOnlyMs:
+			scoringOnlyTimes.length > 0 ? avg(scoringOnlyTimes) : null,
+		avgRetryGenerationMs:
+			retryGenerationTimes.length > 0 ? avg(retryGenerationTimes) : null,
+		scoringItemsWithRetry: retryGenerationTimes.length,
 		avgFrontierEvalMs: frontierTimes.length > 0 ? avg(frontierTimes) : null,
 		minGenerationMs:
 			generationTimes.length > 0 ? Math.min(...generationTimes) : 0,
@@ -446,9 +470,24 @@ export function formatRunStats(
 	lines.push(
 		`  Avg generation:    ${formatDuration(stats.timing.avgGenerationMs)}`,
 	);
-	if (stats.timing.avgScoringMs !== null) {
+	const avgScoringForDisplay =
+		stats.timing.avgScoringOnlyMs ?? stats.timing.avgScoringMs;
+	if (avgScoringForDisplay !== null) {
+		lines.push(`  Avg scoring:       ${formatDuration(avgScoringForDisplay)}`);
+	}
+	if (stats.timing.avgRetryGenerationMs != null) {
 		lines.push(
-			`  Avg scoring:       ${formatDuration(stats.timing.avgScoringMs)}`,
+			`  Avg retry gen:     ${formatDuration(stats.timing.avgRetryGenerationMs)} (${stats.timing.scoringItemsWithRetry ?? 0} items)`,
+		);
+	}
+	if (
+		stats.timing.avgScoringMs !== null &&
+		stats.timing.avgScoringOnlyMs !== undefined &&
+		stats.timing.avgScoringOnlyMs !== null &&
+		stats.timing.avgScoringMs > stats.timing.avgScoringOnlyMs
+	) {
+		lines.push(
+			`  Avg scoring total: ${formatDuration(stats.timing.avgScoringMs)}`,
 		);
 	}
 	if (stats.timing.avgFrontierEvalMs !== null) {

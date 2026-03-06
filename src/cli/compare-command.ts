@@ -1,22 +1,155 @@
 /**
  * Purpose: `bench compare` command for comparing two benchmark runs.
- * Exports: compareCommand
+ * Exports: assertComparableCheckpoints, readPlanBestEffort, resolveCheckpointId, compareCommand
  *
  * Reads two run.json files, computes deltas, and prints a terminal-native
  * diff table with status changes, score changes, and duration changes.
+ *
+ * Invariants:
+ * - Checkpoint mismatches are treated as user-facing validation messages in CLI flow.
+ * - Invalid plan JSON/schema data is surfaced as an error rather than silently ignored.
  */
 
 import { Command } from "commander";
+import { logger } from "../lib/logger.js";
 import {
 	type CompareResult,
 	type MatchedItem,
 	compareRuns,
 	formatDelta,
 } from "../results/compare.js";
-import { findRunDir, readResult } from "../results/reader.js";
+import { findRunDir, readPlan, readResult } from "../results/reader.js";
+import type { RunPlan, RunResult } from "../schemas/index.js";
 
 /** Default output directory for results. */
 const DEFAULT_OUTPUT_DIR = "results";
+
+/**
+ * Ensures two runs are comparable by checkpoint, unless override is enabled.
+ *
+ * @param checkpointA - Baseline checkpoint ID
+ * @param checkpointB - Comparison checkpoint ID
+ * @param allowCrossCheckpoint - Whether to bypass checkpoint guardrails
+ * @throws {Error} If checkpoints are missing or mismatched and override is disabled
+ */
+export function assertComparableCheckpoints(
+	checkpointA: string | undefined,
+	checkpointB: string | undefined,
+	allowCrossCheckpoint: boolean,
+): void {
+	const message = getCheckpointGuardMessage(
+		checkpointA,
+		checkpointB,
+		allowCrossCheckpoint,
+	);
+	if (message) {
+		throw new Error(message);
+	}
+}
+
+/**
+ * Returns a checkpoint guard error message for CLI flow control.
+ *
+ * @param checkpointA - Baseline checkpoint ID
+ * @param checkpointB - Comparison checkpoint ID
+ * @param allowCrossCheckpoint - Whether guardrail bypass is enabled
+ * @returns Guard failure message when checkpoints are not comparable
+ */
+function getCheckpointGuardMessage(
+	checkpointA: string | undefined,
+	checkpointB: string | undefined,
+	allowCrossCheckpoint: boolean,
+): string | undefined {
+	if (allowCrossCheckpoint) {
+		return undefined;
+	}
+	if (!checkpointA || !checkpointB) {
+		return "Checkpoint metadata missing in one or both run artifacts. Re-run with --allow-cross-checkpoint to force compare.";
+	}
+	if (checkpointA !== checkpointB) {
+		return `Checkpoint mismatch: ${checkpointA} vs ${checkpointB}. Re-run with --allow-cross-checkpoint to force compare.`;
+	}
+	return undefined;
+}
+
+/**
+ * Determines whether a plan-read error is a benign IO condition.
+ *
+ * @param error - Error thrown from readPlan
+ * @returns True when compare should continue without plan metadata
+ */
+function isBenignPlanReadError(error: unknown): boolean {
+	if (!(error instanceof Error)) {
+		return false;
+	}
+
+	if (error && typeof error === "object" && "code" in error) {
+		const code = (error as { code?: unknown }).code;
+		if (code === "ENOENT" || code === "ENOTDIR") {
+			return true;
+		}
+	}
+
+	if (error instanceof SyntaxError) {
+		return false;
+	}
+
+	if (error.name === "ZodError") {
+		return false;
+	}
+
+	if (/schema|validation|invalid json|json parse/i.test(error.message)) {
+		return false;
+	}
+
+	if (/plan file not found/i.test(error.message)) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * Reads `plan.json` for a run directory with best-effort handling.
+ *
+ * @param runDir - Absolute run directory path
+ * @returns Parsed plan when available and valid; undefined only for benign IO/missing-file cases
+ * @throws {Error} If `plan.json` is invalid JSON, fails schema validation, or any non-benign read error occurs
+ */
+export function readPlanBestEffort(runDir: string): RunPlan | undefined {
+	try {
+		return readPlan(runDir);
+	} catch (error) {
+		if (!isBenignPlanReadError(error)) {
+			throw error;
+		}
+		logger.warn(
+			{
+				runDir,
+				error: error instanceof Error ? error.message : String(error),
+			},
+			"Unable to read plan metadata; continuing with run.json metadata",
+		);
+		return undefined;
+	}
+}
+
+/**
+ * Resolves checkpoint ID from run metadata with plan fallback.
+ *
+ * @param run - Run result artifact
+ * @param plan - Optional run plan artifact
+ * @returns Resolved checkpoint ID, if present
+ */
+export function resolveCheckpointId(
+	run: RunResult,
+	plan: RunPlan | undefined,
+): string | undefined {
+	return (
+		run.benchmarkCheckpoint?.checkpointId ??
+		plan?.benchmarkCheckpoint?.checkpointId
+	);
+}
 
 /**
  * Truncates a string to max length with ellipsis.
@@ -281,21 +414,45 @@ export const compareCommand = new Command("compare")
 		"Output directory for results",
 		DEFAULT_OUTPUT_DIR,
 	)
+	.option(
+		"--allow-cross-checkpoint",
+		"Allow comparisons when benchmark checkpoint metadata is missing or mismatched",
+		false,
+	)
 	.option("--json", "Output raw JSON instead of formatted table")
 	.action(
 		async (
 			runA: string,
 			runB: string,
-			options: { output: string; json?: boolean },
+			options: {
+				output: string;
+				json?: boolean;
+				allowCrossCheckpoint?: boolean;
+			},
 		) => {
 			try {
 				// Find and read run A
 				const dirA = findRunDir(options.output, runA);
-				const resultA = await readResult(dirA);
+				const resultA = readResult(dirA);
+				const planA = readPlanBestEffort(dirA);
 
 				// Find and read run B
 				const dirB = findRunDir(options.output, runB);
-				const resultB = await readResult(dirB);
+				const resultB = readResult(dirB);
+				const planB = readPlanBestEffort(dirB);
+
+				const checkpointA = resolveCheckpointId(resultA, planA);
+				const checkpointB = resolveCheckpointId(resultB, planB);
+				const allowCrossCheckpoint = options.allowCrossCheckpoint === true;
+				const checkpointGuardMessage = getCheckpointGuardMessage(
+					checkpointA,
+					checkpointB,
+					allowCrossCheckpoint,
+				);
+				if (checkpointGuardMessage) {
+					console.error(`✗ FAIL: ${checkpointGuardMessage}`);
+					return;
+				}
 
 				// Compare runs
 				const comparison = compareRuns(resultA, resultB);

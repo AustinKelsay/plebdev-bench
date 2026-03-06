@@ -28,6 +28,33 @@ import {
 /** Human-readable category list for CLI help text. */
 const CATEGORY_LIST = testCategories.join(", ");
 
+/**
+ * Parses a CLI integer option using strict digit-only validation.
+ *
+ * @param optionName - Human-readable option label for error messages
+ * @param rawValue - Raw CLI value
+ * @returns Parsed integer
+ * @throws {Error} If value is not a strict integer string
+ */
+function parseStrictIntegerOption(
+	optionName: string,
+	rawValue: unknown,
+): number {
+	const normalized = String(rawValue).trim();
+	if (!/^\d+$/.test(normalized)) {
+		throw new Error(
+			`${optionName} must be a positive integer, received "${String(rawValue)}"`,
+		);
+	}
+	const parsed = Number.parseInt(normalized, 10);
+	if (parsed < 1) {
+		throw new Error(
+			`${optionName} must be greater than zero, received "${String(rawValue)}"`,
+		);
+	}
+	return parsed;
+}
+
 /** CLI run command. */
 export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
@@ -58,7 +85,18 @@ export const runCommand = new Command("run")
 	.option("--ollama-url <url>", "Ollama API base URL", "http://localhost:11434")
 	.option("--vllm-url <url>", "vLLM API base URL", "http://localhost:8000")
 	.option("--timeout <ms>", "Generation timeout in milliseconds", "300000")
+	.option("--goose-max-turns <n>", "Goose max turns for initial attempt", "1")
+	.option(
+		"--goose-retry-max-turns <n>",
+		"Goose max turns for retry attempt",
+		"3",
+	)
 	.option("-o, --output <dir>", "Output directory", "results")
+	.option(
+		"--machine-id <id>",
+		"Machine profile ID for cross-run aggregation (default: BENCH_MACHINE_ID env or deterministic anonymous ID)",
+	)
+	.option("--machine-label <label>", "Optional machine display label")
 	.option(
 		"--manage-vllm",
 		"Manage vLLM lifecycle during a single run (docker compose up/down around the vLLM segment)",
@@ -124,7 +162,25 @@ export const runCommand = new Command("run")
 				ollamaBaseUrl: options.ollamaUrl,
 				vllmBaseUrl: options.vllmUrl,
 				generateTimeoutMs: Number.parseInt(options.timeout, 10),
+				gooseMaxTurns: parseStrictIntegerOption(
+					"--goose-max-turns",
+					options.gooseMaxTurns,
+				),
+				gooseRetryMaxTurns: parseStrictIntegerOption(
+					"--goose-retry-max-turns",
+					options.gooseRetryMaxTurns,
+				),
 				outputDir: options.output,
+				machineProfileId:
+					typeof options.machineId === "string" &&
+					options.machineId.trim().length > 0
+						? options.machineId.trim()
+						: undefined,
+				machineLabel:
+					typeof options.machineLabel === "string" &&
+					options.machineLabel.trim().length > 0
+						? options.machineLabel.trim()
+						: undefined,
 				modelAliases,
 			};
 

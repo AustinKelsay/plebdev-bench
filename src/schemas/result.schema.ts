@@ -9,10 +9,13 @@
 
 import { z } from "zod";
 import {
+	BenchmarkCheckpointSchema,
 	FrontierEvalFailureTypeSchema,
 	GenerationFailureTypeSchema,
 	ItemStatusSchema,
+	MachineProfileSchema,
 	PassTypeSchema,
+	RunProvenanceSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
@@ -84,8 +87,14 @@ export type FrontierEval = z.infer<typeof FrontierEvalSchema>;
 
 /** Zod schema for scoring metrics (timing). */
 export const ScoringMetricsSchema = z.object({
-	/** Scoring duration in milliseconds. */
+	/** Total scoring pipeline duration in milliseconds (includes compile-retry generation if used). */
 	durationMs: z.number(),
+
+	/** Pure scoring evaluation duration in milliseconds (excludes retry generation). */
+	scoringDurationMs: z.number().optional(),
+
+	/** Compile-feedback retry generation time in milliseconds (when retry path is used). */
+	retryGenerationDurationMs: z.number().optional(),
 });
 
 /** Scoring metrics type. */
@@ -203,6 +212,15 @@ export const RunResultSchema = z.object({
 
 	/** Unique run identifier (matches plan). */
 	runId: z.string(),
+
+	/** Machine profile metadata snapshot. */
+	machine: MachineProfileSchema.optional(),
+
+	/** Benchmark checkpoint metadata for this run. */
+	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
+
+	/** Provenance metadata for this run. */
+	provenance: RunProvenanceSchema.optional(),
 
 	/** ISO 8601 timestamp when run started. */
 	startedAt: z.string().datetime(),

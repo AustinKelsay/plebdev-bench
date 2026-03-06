@@ -44,6 +44,9 @@ export type FrontierEvalFailureType =
 	| "truncated"
 	| "unknown";
 
+/** Verification status for run provenance */
+export type VerificationStatus = "self_reported" | "verified" | "rejected";
+
 /** Generation failure record */
 export interface GenerationFailure {
 	type: GenerationFailureType;
@@ -98,6 +101,47 @@ export interface ScoringMetrics {
 	durationMs: number;
 }
 
+/** Benchmark checkpoint identity metadata */
+export interface BenchmarkCheckpoint {
+	checkpointId: string;
+	algorithm: string;
+	manifestHash: string;
+	assetCount: number;
+	computedAt: string;
+}
+
+/** Runtime environment metadata */
+export interface RuntimeEnvironment {
+	platform: string;
+	bunVersion: string;
+}
+
+/** Sanitized machine hardware metadata */
+export interface HardwareProfile {
+	platform: string;
+	arch: string;
+	osRelease: string;
+	cpuModel: string;
+	logicalCores: number;
+	totalMemoryBytes: number;
+}
+
+/** Machine profile metadata for aggregation */
+export interface MachineProfile {
+	profileId: string;
+	label?: string;
+	hardware: HardwareProfile;
+}
+
+/** Provenance metadata attached to plans/runs */
+export interface RunProvenance {
+	verificationStatus: VerificationStatus;
+	source: string;
+	submittedBy?: string;
+	submittedAt?: string;
+	notes?: string;
+}
+
 /** Single matrix item in plan */
 export interface MatrixItem {
 	id: string;
@@ -124,8 +168,8 @@ export interface MatrixItemResult extends MatrixItem {
 	frontierEvalFailure?: FrontierEvalFailure;
 }
 
-/** Run plan environment info */
-export interface Environment {
+/** Legacy run plan environment info (pre-0.3.0 artifacts) */
+export interface LegacyEnvironment {
 	platform: string;
 	bunVersion: string;
 }
@@ -144,7 +188,12 @@ export interface RunPlan {
 	schemaVersion: string;
 	runId: string;
 	createdAt: string;
-	environment: Environment;
+	runtimeEnvironment?: RuntimeEnvironment;
+	machine?: MachineProfile;
+	benchmarkCheckpoint?: BenchmarkCheckpoint;
+	provenance?: RunProvenance;
+	/** Legacy field for pre-0.3.0 plans */
+	environment?: LegacyEnvironment;
 	config: PlanConfig;
 	items: MatrixItem[];
 	summary: {
@@ -169,6 +218,9 @@ export interface RunSummary {
 export interface RunResult {
 	schemaVersion: string;
 	runId: string;
+	machine?: MachineProfile;
+	benchmarkCheckpoint?: BenchmarkCheckpoint;
+	provenance?: RunProvenance;
 	startedAt: string;
 	completedAt: string;
 	durationMs: number;
@@ -183,6 +235,68 @@ export interface RunListItem {
 	completedAt: string;
 	durationMs: number;
 	summary: RunSummary;
+	checkpointId?: string;
+	machineProfileId?: string;
+	machineLabel?: string;
+	verificationStatus?: VerificationStatus;
+	isLegacy?: boolean;
+}
+
+/** Per-checkpoint summary entry in dashboard index metadata */
+export interface DashboardCheckpointSummary {
+	checkpointId: string;
+	runCount: number;
+	rawItemCount: number;
+	machineCount: number;
+	latestRunAt: string;
+}
+
+/** Dashboard index format v2 */
+export interface DashboardIndex {
+	schemaVersion: 2;
+	generatedAt: string;
+	latestCheckpointId: string | null;
+	runs: RunListItem[];
+	checkpoints: DashboardCheckpointSummary[];
+}
+
+/** Aggregated leaderboard item from checkpoint aggregate payloads */
+export interface LeaderboardAggregatedItem extends MatrixItemResult {
+	machineProfileId: string;
+	machineLabel?: string;
+	verificationStatus: VerificationStatus;
+	sourceRunId: string;
+	sourceCompletedAt: string;
+}
+
+/** Per-machine summary in checkpoint aggregate payload */
+export interface LeaderboardMachineSummary {
+	machineProfileId: string;
+	machineLabel?: string;
+	verificationStatus: VerificationStatus;
+	runCount: number;
+	itemCount: number;
+}
+
+/** Aggregate summary counters for leaderboard payload */
+export interface LeaderboardAggregateSummary {
+	runsConsidered: number;
+	runsMatched: number;
+	rawItems: number;
+	dedupedItems: number;
+	machines: number;
+	automatedScoreItems: number;
+	frontierEvalItems: number;
+}
+
+/** Checkpoint aggregate payload rendered by leaderboard page */
+export interface LeaderboardAggregate {
+	schemaVersion: 1;
+	generatedAt: string;
+	checkpointId: string;
+	summary: LeaderboardAggregateSummary;
+	machines: LeaderboardMachineSummary[];
+	items: LeaderboardAggregatedItem[];
 }
 
 // ============================================================

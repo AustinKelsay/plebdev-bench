@@ -18,7 +18,12 @@ import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
 import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { TOOL_SMOKE_TEST_SLUG, isToolSmokeTest } from "../lib/tool-smoke.js";
-import { writePlan, writeResult } from "../results/writer.js";
+import {
+	deletePartialResult,
+	writePartialResult,
+	writePlan,
+	writeResult,
+} from "../results/writer.js";
 import {
 	type ModelInfo,
 	type RuntimeName,
@@ -39,6 +44,61 @@ import { buildRunPlan } from "./plan-builder.js";
 
 /** Warn if run.json exceeds this size (bytes). */
 const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
+/** Write crash-safe run checkpoints every N completed items. */
+const PARTIAL_RESULT_CHECKPOINT_INTERVAL = 20;
+
+/**
+ * Builds a run result snapshot from current progress.
+ *
+ * @param plan - Run plan metadata source
+ * @param startedAt - Run start timestamp
+ * @param total - Total planned items
+ * @param results - Completed item results so far
+ * @returns Run result snapshot payload
+ */
+function buildRunResultSnapshot(
+	plan: Awaited<ReturnType<typeof buildRunPlan>>,
+	startedAt: string,
+	runStartTimeMs: number,
+	total: number,
+	results: MatrixItemResult[],
+): RunResult {
+	const completed = results.filter((r) => r.status === "completed").length;
+	const failed = results.filter((r) => r.status === "failed").length;
+	const pending = Math.max(0, total - results.length);
+	const completedAt = new Date().toISOString();
+	const durationMs = Math.round(performance.now() - runStartTimeMs);
+
+	return {
+		schemaVersion: SCHEMA_VERSION,
+		runId: plan.runId,
+		...(plan.machine ? { machine: plan.machine } : {}),
+		...(plan.benchmarkCheckpoint
+			? { benchmarkCheckpoint: plan.benchmarkCheckpoint }
+			: {}),
+		provenance: {
+			verificationStatus: "self_reported",
+			source: plan.provenance?.source ?? "local_cli",
+			...(plan.provenance?.submittedBy
+				? { submittedBy: plan.provenance.submittedBy }
+				: {}),
+			...(plan.provenance?.submittedAt
+				? { submittedAt: plan.provenance.submittedAt }
+				: {}),
+			...(plan.provenance?.notes ? { notes: plan.provenance.notes } : {}),
+		},
+		startedAt,
+		completedAt,
+		durationMs,
+		summary: {
+			total,
+			completed,
+			failed,
+			pending,
+		},
+		items: results,
+	};
+}
 
 /**
  * Runs the complete benchmark workflow.
@@ -147,6 +207,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		string,
 		{ status: "passed" | "failed"; skip: boolean; message?: string }
 	>();
+	let lastCheckpointItemCount = 0;
 
 	if (!plan.items.some((item) => item.test === TOOL_SMOKE_TEST_SLUG)) {
 		log.warn("tool-smoke test not present in plan; tool preflight is disabled");
@@ -236,6 +297,30 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 							message: `Skipped: ${message}`,
 						},
 					});
+					const itemCount = results.length;
+					const shouldCheckpoint =
+						itemCount === total ||
+						itemCount - lastCheckpointItemCount >=
+							PARTIAL_RESULT_CHECKPOINT_INTERVAL;
+					if (shouldCheckpoint) {
+						const partialSnapshot = buildRunResultSnapshot(
+							plan,
+							startedAt,
+							startTime,
+							total,
+							results,
+						);
+						await writePartialResult(config.outputDir, partialSnapshot);
+						log.info(
+							{
+								completedItems: itemCount,
+								totalItems: total,
+								checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
+							},
+							"Wrote run checkpoint",
+						);
+						lastCheckpointItemCount = itemCount;
+					}
 					continue;
 				}
 			}
@@ -252,11 +337,37 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				{
 					ollamaBaseUrl: config.ollamaBaseUrl,
 					vllmBaseUrl: config.vllmBaseUrl,
+					gooseMaxTurns: config.gooseMaxTurns,
+					gooseRetryMaxTurns: config.gooseRetryMaxTurns,
 				},
 				dynamicTimeout,
 				isLastForModel,
 			);
 			results.push(result);
+			const itemCount = results.length;
+			const shouldCheckpoint =
+				itemCount === total ||
+				itemCount - lastCheckpointItemCount >=
+					PARTIAL_RESULT_CHECKPOINT_INTERVAL;
+			if (shouldCheckpoint) {
+				const partialSnapshot = buildRunResultSnapshot(
+					plan,
+					startedAt,
+					startTime,
+					total,
+					results,
+				);
+				await writePartialResult(config.outputDir, partialSnapshot);
+				log.info(
+					{
+						completedItems: itemCount,
+						totalItems: total,
+						checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
+					},
+					"Wrote run checkpoint",
+				);
+				lastCheckpointItemCount = itemCount;
+			}
 
 			if (isToolHarness && isToolSmoke) {
 				const failureMessage =
@@ -315,26 +426,16 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Calculate summary
 	const completed = results.filter((r) => r.status === "completed").length;
 	const failed = results.filter((r) => r.status === "failed").length;
-	const pending = results.filter((r) => r.status === "pending").length;
-
-	const completedAt = new Date().toISOString();
 	const durationMs = Math.round(performance.now() - startTime);
 
 	// Build run result
-	const runResult: RunResult = {
-		schemaVersion: SCHEMA_VERSION,
-		runId: plan.runId,
+	const runResult = buildRunResultSnapshot(
+		plan,
 		startedAt,
-		completedAt,
-		durationMs,
-		summary: {
-			total,
-			completed,
-			failed,
-			pending,
-		},
-		items: results,
-	};
+		startTime,
+		total,
+		results,
+	);
 
 	// Warn on very large run.json payloads (runaway output)
 	try {
@@ -352,6 +453,11 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	// Write run.json
 	log.info("Writing run.json...");
 	await writeResult(config.outputDir, runResult);
+	deletePartialResult(config.outputDir, plan.runId);
+	log.info(
+		{ checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json` },
+		"Removed run checkpoint after successful run.json write",
+	);
 
 	// Calculate and print detailed stats
 	const stats = calculateRunStats(results);

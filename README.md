@@ -22,9 +22,15 @@ Scoring:
 Outputs (per run):
 - `results/<run-id>/plan.json` — resolved config + expanded matrix plan (reproducibility)
 - `results/<run-id>/run.json` — single run JSON with summary + per-item details
+- `results/<run-id>/run.partial.json` — periodic crash-safe snapshot during execution (removed on success)
+- each artifact now includes:
+  - benchmark checkpoint metadata (`checkpointId`, manifest hash, asset count)
+  - machine profile + sanitized hardware metadata
+  - run provenance metadata (`verificationStatus`, source)
 
 Built-ins:
 - **compare**: diff two runs and print deltas (pass rate, rubric, time/energy, etc.)
+- **checkpointed aggregation**: `dashboard:index` builds latest-checkpoint leaderboard artifacts
 
 Current benchmark tests:
 - `smoke` — basic add function sanity check
@@ -119,6 +125,9 @@ bun pb
 # Run with specific options
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
+# Run with explicit machine identity metadata (recommended for shared aggregation)
+bun pb --machine-id mac-mini-m4-pro --machine-label "Austin Mac Mini"
+
 # Run only coding category tests
 bun pb --categories coding
 
@@ -172,11 +181,25 @@ Optional: start/stop OrbStack around the vLLM segment too (disruptive if you use
 
 Full vLLM setup/troubleshooting: `llm/implementation/vllm-orbstack-setup.md`.
 
+### Long-Run Stability
+
+- Scoring is process-isolated by default to avoid Bun memory growth from repeated dynamic imports during long runs.
+- Override mode (debugging only): `PLEBDEV_BENCH_SCORER_MODE=in-process bun pb ...`
+- During execution, the runner writes periodic snapshots to `results/<run-id>/run.partial.json` and removes it after a successful final write.
+- If the process crashes, inspect `run.partial.json` for recovered progress.
+- Goose headless turn controls:
+  - `--goose-max-turns <n>` controls first attempt turns (default: `1`)
+  - `--goose-retry-max-turns <n>` controls retry turns after off-task/turn-limit output (default: `3`)
+  - `--goose-retry-max-turns` must be greater than or equal to `--goose-max-turns`
+
 ## Core CLI Commands
 
 ```bash
 # Compare two runs
 bun run src/index.ts compare <run-a> <run-b>
+
+# Force compare across checkpoint mismatches (normally blocked)
+bun run src/index.ts compare <run-a> <run-b> --allow-cross-checkpoint
 
 # Run tests
 bun test
@@ -190,6 +213,7 @@ bun run typecheck
 Each run creates:
 - `results/<run-id>/plan.json` — expanded matrix plan
 - `results/<run-id>/run.json` — execution results
+- `results/<run-id>/run.partial.json` — periodic in-flight checkpoint (deleted after successful completion)
 
 ## Interpreting Results Fairly
 
@@ -217,9 +241,13 @@ High level:
 - Bench runs produce `plan.json` + `run.json` in an output directory.
 - Published runs live in `apps/dashboard/public/results/<runId>/`.
 - An index (`apps/dashboard/public/results/index.json`) is generated from the published runs.
+- Checkpoint aggregate artifacts are generated in `apps/dashboard/public/results/aggregates/`:
+  - `<checkpointId>.json` for each discovered checkpoint
+  - `latest.json` for the checkpoint computed from current benchmark source
 - The dashboard fetches:
   - `/results/index.json` (run list)
   - `/results/<runId>/run.json` and `/results/<runId>/plan.json` (details)
+  - `/results/aggregates/latest.json` (leaderboard)
 
 Local vs hosted:
 - Local dev: Vite serves the app and serves `/results/*` from the filesystem.
@@ -228,6 +256,8 @@ Local vs hosted:
 Design constraints:
 - Runs are treated as append-only facts: publishing is a copy/commit action, not a mutation of prior runs.
 - The dashboard validates fetched JSON at the boundary (Zod) and fails loudly on schema mismatch.
+- Latest leaderboard view is strict to the currently computed benchmark checkpoint.
+- Legacy runs (missing checkpoint/machine metadata) remain visible in run history and are excluded from latest-checkpoint leaderboard aggregation.
 
 ## Hosted dashboard (what we implemented)
 

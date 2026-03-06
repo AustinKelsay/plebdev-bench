@@ -7,7 +7,11 @@
 
 import { z } from "zod";
 import {
+	BenchmarkCheckpointSchema,
+	MachineProfileSchema,
 	PassTypeSchema,
+	RunProvenanceSchema,
+	RuntimeEnvironmentSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	TestCategorySchema,
@@ -44,18 +48,6 @@ export const MatrixItemSchema = z.object({
 /** A single matrix item representing one benchmark execution. */
 export type MatrixItem = z.infer<typeof MatrixItemSchema>;
 
-/** Zod schema for environment metadata. */
-export const EnvironmentSchema = z.object({
-	/** Platform (e.g., 'darwin', 'linux'). */
-	platform: z.string(),
-
-	/** Bun version. */
-	bunVersion: z.string(),
-});
-
-/** Environment metadata type. */
-export type Environment = z.infer<typeof EnvironmentSchema>;
-
 /** Zod schema for the run plan. */
 export const RunPlanSchema = z.object({
 	/** Schema version for migrations. */
@@ -67,14 +59,25 @@ export const RunPlanSchema = z.object({
 	/** ISO 8601 timestamp when plan was created. */
 	createdAt: z.string().datetime(),
 
-	/** Environment metadata snapshot. */
-	environment: EnvironmentSchema,
+	/** Runtime environment metadata snapshot. */
+	runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
+
+	/** Machine profile metadata snapshot. */
+	machine: MachineProfileSchema.optional(),
+
+	/** Benchmark checkpoint metadata for this run plan. */
+	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
+
+	/** Provenance metadata for this run plan. */
+	provenance: RunProvenanceSchema.optional(),
 
 	/** Resolved configuration snapshot (subset relevant to reproducibility). */
 	config: z.object({
 		ollamaBaseUrl: z.string().url(),
 		vllmBaseUrl: z.string().url(),
 		generateTimeoutMs: z.number(),
+		gooseMaxTurns: z.number().int().positive().optional(),
+		gooseRetryMaxTurns: z.number().int().positive().optional(),
 		passTypes: z.array(PassTypeSchema),
 		categories: z.array(TestCategorySchema).optional(),
 		managedVllm: ManagedVllmSchema.optional(),

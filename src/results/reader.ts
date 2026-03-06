@@ -10,6 +10,37 @@ import * as path from "node:path";
 import { RunPlanSchema, RunResultSchema, type RunPlan, type RunResult } from "../schemas/index.js";
 
 /**
+ * Migrates legacy plan payloads to the current schema shape before validation.
+ *
+ * @param raw - Parsed JSON payload
+ * @returns Migrated payload
+ */
+function migrateLegacyPlanPayload(raw: unknown): unknown {
+	if (!raw || typeof raw !== "object") {
+		return raw;
+	}
+	const plan = raw as {
+		runtimeEnvironment?: unknown;
+		environment?: unknown;
+	};
+	if (plan.runtimeEnvironment !== undefined) {
+		return raw;
+	}
+	if (
+		plan.environment &&
+		typeof plan.environment === "object" &&
+		"platform" in plan.environment &&
+		"bunVersion" in plan.environment
+	) {
+		return {
+			...plan,
+			runtimeEnvironment: plan.environment,
+		};
+	}
+	return raw;
+}
+
+/**
  * Finds a run directory by run ID or path.
  *
  * @param outputDir - Base output directory (e.g., 'results')
@@ -52,7 +83,7 @@ export function readPlan(runDir: string): RunPlan {
 	}
 
 	const content = fs.readFileSync(planPath, "utf-8");
-	const data = JSON.parse(content);
+	const data = migrateLegacyPlanPayload(JSON.parse(content) as unknown);
 
 	return RunPlanSchema.parse(data);
 }

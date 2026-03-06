@@ -26,6 +26,19 @@ export {
 	frontierEvalFailureTypes,
 	FrontierEvalFailureTypeSchema,
 	type FrontierEvalFailureType,
+	verificationStatusTypes,
+	VerificationStatusSchema,
+	type VerificationStatus,
+	BenchmarkCheckpointSchema,
+	type BenchmarkCheckpoint,
+	RuntimeEnvironmentSchema,
+	type RuntimeEnvironment,
+	HardwareProfileSchema,
+	type HardwareProfile,
+	MachineProfileSchema,
+	type MachineProfile,
+	RunProvenanceSchema,
+	type RunProvenance,
 } from "./common.schema.js";
 
 export {
@@ -39,8 +52,6 @@ export {
 export {
 	MatrixItemSchema,
 	type MatrixItem,
-	EnvironmentSchema,
-	type Environment,
 	RunPlanSchema,
 	type RunPlan,
 } from "./plan.schema.js";

@@ -32,6 +32,15 @@ describe("evaluateCodeOnlyOutput", () => {
 		expect(decision.reason).toBe("off_task");
 	});
 
+	it("classifies Goose turn-limit prompts as retriable turn_limit", () => {
+		const decision = evaluateCodeOnlyOutput(
+			"I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+			10,
+		);
+		expect(decision.shouldRetry).toBe(true);
+		expect(decision.reason).toBe("turn_limit");
+	});
+
 	it("accepts raw code-like output", () => {
 		const decision = evaluateCodeOnlyOutput(
 			"export function createValue(): number { return 42; }",
@@ -102,6 +111,9 @@ describe("buildCodeOnlyPrompt", () => {
 		const first = buildCodeOnlyPrompt("Write code", false);
 		const retry = buildCodeOnlyPrompt("Write code", true);
 		expect(first).toContain("Output contract:");
+		expect(first).toContain(
+			"Never ask for user input, confirmation, approval, or whether to continue.",
+		);
 		expect(first).not.toContain("Previous output was unusable");
 		expect(retry).toContain("Previous output was unusable");
 	});

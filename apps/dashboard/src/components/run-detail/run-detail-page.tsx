@@ -14,7 +14,6 @@ import { FrontierEvalScatter } from "@/components/charts/frontier-eval-scatter";
 import { TimingDistribution } from "@/components/charts/timing-distribution";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +23,6 @@ import { summary as summaryTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult, RunPlan, RunResult } from "@/lib/types";
 import { formatDate, formatDuration, formatPercent } from "@/lib/utils";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { CoverageDiagnostics } from "./coverage-diagnostics";
 import {
 	DimensionDetailDialog,
@@ -63,19 +61,27 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 
 	const passRate = computePassRate(run.items);
 	const frontierStats = computeFrontierStats(run.items);
+	const runtimeEnvironment = plan.runtimeEnvironment ?? plan.environment;
+	const runtimeEnvironmentSummary = [
+		runtimeEnvironment?.platform,
+		runtimeEnvironment?.bunVersion
+			? `Bun ${runtimeEnvironment.bunVersion}`
+			: undefined,
+	]
+		.filter(
+			(part): part is string => typeof part === "string" && part.length > 0,
+		)
+		.join(" · ");
+	const machineLabel = plan.machine?.label ?? plan.machine?.profileId;
+	const machineHardware = plan.machine?.hardware;
+	const checkpointId = plan.benchmarkCheckpoint?.checkpointId;
 
 	return (
 		<PageContainer>
 			<PageHeader
 				title={run.runId}
 				description={`${formatDate(run.startedAt)} · ${formatDuration(run.durationMs)}`}
-			>
-				<Link to="/compare">
-					<Button variant="outline" size="sm">
-						Compare
-					</Button>
-				</Link>
-			</PageHeader>
+			/>
 
 			{/* Summary Cards */}
 			<div className="grid gap-4 md:grid-cols-4">
@@ -170,10 +176,29 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-sm">{plan.environment.platform}</p>
-						<p className="text-sm text-foreground-faint">
-							Bun {plan.environment.bunVersion}
+						<p className="text-sm">
+							{machineLabel ??
+								runtimeEnvironment?.platform ??
+								"unknown-machine"}
 						</p>
+						{runtimeEnvironmentSummary.length > 0 && (
+							<p className="text-sm text-foreground-faint">
+								{runtimeEnvironmentSummary}
+							</p>
+						)}
+						{machineHardware && (
+							<p className="text-xs text-foreground-faint mt-1">
+								{machineHardware.arch} · {machineHardware.logicalCores} cores
+							</p>
+						)}
+						{checkpointId && (
+							<p
+								className="text-xs text-foreground-faint mt-1 truncate"
+								title={checkpointId}
+							>
+								{checkpointId}
+							</p>
+						)}
 						<p className="text-xs text-foreground-faint mt-1">
 							{plan.summary.runtimes} runtimes · {plan.summary.harnesses}{" "}
 							harnesses · {plan.summary.tests} tests

@@ -24,6 +24,12 @@ const OFF_TASK_PATTERNS = [
 	/\bthis repo has no todo comments\b/i,
 ] as const;
 
+/** Patterns indicating Goose hit headless turn/input limits and asked for confirmation. */
+const TURN_LIMIT_PATTERNS = [
+	/\breached the maximum number of actions\b/i,
+	/\bwithout user input\b/i,
+] as const;
+
 /** Minimal code-like signals for accepting raw (non-extracted) text. */
 const RAW_CODE_SIGNAL_PATTERNS = [
 	/(^|\n)\s*(export\s+)?(async\s+)?function\b/,
@@ -41,6 +47,7 @@ export interface CodeOnlyOutputDecision {
 	reason:
 		| "ok"
 		| "too_short"
+		| "turn_limit"
 		| "off_task"
 		| "no_code_detected"
 		| "suspicious_code_pattern";
@@ -68,6 +75,7 @@ export function buildCodeOnlyPrompt(prompt: string, isRetry: boolean): string {
 		"Output contract:",
 		"- Return only final TypeScript source code.",
 		"- Do not include markdown fences, analysis, status messages, or repository exploration text.",
+		"- Never ask for user input, confirmation, approval, or whether to continue.",
 		"- If uncertain, still return your best complete TypeScript implementation.",
 		...testSpecificLines,
 		retryLine,
@@ -142,6 +150,18 @@ export function evaluateCodeOnlyOutput(
 		return {
 			shouldRetry: false,
 			reason: "ok",
+			code,
+			method: extracted.method,
+		};
+	}
+
+	const isTurnLimit = TURN_LIMIT_PATTERNS.some((pattern) =>
+		pattern.test(trimmed),
+	);
+	if (isTurnLimit) {
+		return {
+			shouldRetry: true,
+			reason: "turn_limit",
 			code,
 			method: extracted.method,
 		};

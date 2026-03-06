@@ -71,6 +71,33 @@ describe("calculateRunStats", () => {
 			const stats = calculateRunStats(results);
 
 			expect(stats.timing.avgScoringMs).toBe(150);
+			expect(stats.timing.avgScoringOnlyMs).toBe(150);
+			expect(stats.timing.avgRetryGenerationMs).toBeNull();
+			expect(stats.timing.scoringItemsWithRetry).toBe(0);
+		});
+
+		it("should split pure scoring from retry generation timing", () => {
+			const results: MatrixItemResult[] = [
+				createResult({
+					generation: { success: true, output: "code", durationMs: 1000 },
+					scoringMetrics: {
+						durationMs: 5000,
+						scoringDurationMs: 120,
+						retryGenerationDurationMs: 4880,
+					},
+				}),
+				createResult({
+					generation: { success: true, output: "code", durationMs: 1000 },
+					scoringMetrics: { durationMs: 200, scoringDurationMs: 200 },
+				}),
+			];
+
+			const stats = calculateRunStats(results);
+
+			expect(stats.timing.avgScoringMs).toBe(2600);
+			expect(stats.timing.avgScoringOnlyMs).toBe(160);
+			expect(stats.timing.avgRetryGenerationMs).toBe(4880);
+			expect(stats.timing.scoringItemsWithRetry).toBe(1);
 		});
 
 		it("should calculate frontier eval time average", () => {
@@ -467,6 +494,9 @@ describe("formatRunStats", () => {
 			timing: {
 				avgGenerationMs: 1000,
 				avgScoringMs: 100,
+				avgScoringOnlyMs: 80,
+				avgRetryGenerationMs: 4000,
+				scoringItemsWithRetry: 1,
 				avgFrontierEvalMs: null,
 				minGenerationMs: 1000,
 				maxGenerationMs: 1000,
@@ -490,6 +520,8 @@ describe("formatRunStats", () => {
 		expect(output).toContain("Pass rate: 75.0%");
 		expect(output).toContain("15/20 tests");
 		expect(output).toContain("Avg scoring:");
+		expect(output).toContain("Avg retry gen:");
+		expect(output).toContain("Avg scoring total:");
 	});
 
 	it("should include frontier stats when available", () => {

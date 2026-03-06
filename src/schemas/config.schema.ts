@@ -53,46 +53,69 @@ export const ManagedVllmSchema = z.object({
 export type ManagedVllmConfig = z.infer<typeof ManagedVllmSchema>;
 
 /** Zod schema for benchmark configuration. */
-export const BenchConfigSchema = z.object({
-	/** Schema version for config evolution. */
-	schemaVersion: z.string().default(SCHEMA_VERSION),
+export const BenchConfigSchema = z
+	.object({
+		/** Schema version for config evolution. */
+		schemaVersion: z.string().default(SCHEMA_VERSION),
 
-	/** Runtimes to use. Empty array triggers auto-discovery. */
-	runtimes: z.array(RuntimeNameSchema).default([]),
+		/** Runtimes to use. Empty array triggers auto-discovery. */
+		runtimes: z.array(RuntimeNameSchema).default([]),
 
-	/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
-	models: z.array(z.string()).default([]),
+		/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
+		models: z.array(z.string()).default([]),
 
-	/** Harness adapters to use. Empty array triggers auto-discovery of all available. */
-	harnesses: z.array(z.string()).default([]),
+		/** Harness adapters to use. Empty array triggers auto-discovery of all available. */
+		harnesses: z.array(z.string()).default([]),
 
-	/** Test slugs to run. Empty array runs all tests in src/tests/. */
-	tests: z.array(z.string()).default([]),
+		/** Test slugs to run. Empty array runs all tests in src/tests/. */
+		tests: z.array(z.string()).default([]),
 
-	/** Test categories to run. Empty array runs all categories. */
-	categories: z.array(TestCategorySchema).default([]),
+		/** Test categories to run. Empty array runs all categories. */
+		categories: z.array(TestCategorySchema).default([]),
 
-	/** Pass types to run for each model/test combination. */
-	passTypes: z.array(PassTypeSchema).default(["blind", "informed"]),
+		/** Pass types to run for each model/test combination. */
+		passTypes: z.array(PassTypeSchema).default(["blind", "informed"]),
 
-	/** Ollama API base URL. */
-	ollamaBaseUrl: z.string().url().default("http://localhost:11434"),
+		/** Ollama API base URL. */
+		ollamaBaseUrl: z.string().url().default("http://localhost:11434"),
 
-	/** vLLM API base URL. */
-	vllmBaseUrl: z.string().url().default("http://localhost:8000"),
+		/** vLLM API base URL. */
+		vllmBaseUrl: z.string().url().default("http://localhost:8000"),
 
-	/** Generation timeout in milliseconds (5 min default for large models). */
-	generateTimeoutMs: z.number().positive().default(300_000),
+		/** Generation timeout in milliseconds (5 min default for large models). */
+		generateTimeoutMs: z.number().positive().default(300_000),
 
-	/** Output directory for results. */
-	outputDir: z.string().default("results"),
+		/** Goose first-attempt max turns in headless mode. */
+		gooseMaxTurns: z.number().int().positive().default(1),
 
-	/** Model aliases for cross-runtime mapping. */
-	modelAliases: ModelAliasMapSchema.default({}),
+		/** Goose retry-attempt max turns in headless mode. */
+		gooseRetryMaxTurns: z.number().int().positive().default(3),
 
-	/** Optional managed vLLM lifecycle configuration. */
-	managedVllm: ManagedVllmSchema.optional(),
-});
+		/** Output directory for results. */
+		outputDir: z.string().default("results"),
+
+		/** Optional machine profile identifier used for cross-run aggregation. */
+		machineProfileId: z.string().min(1).optional(),
+
+		/** Optional human-readable machine label for dashboard display. */
+		machineLabel: z.string().min(1).optional(),
+
+		/** Model aliases for cross-runtime mapping. */
+		modelAliases: ModelAliasMapSchema.default({}),
+
+		/** Optional managed vLLM lifecycle configuration. */
+		managedVllm: ManagedVllmSchema.optional(),
+	})
+	.superRefine((config, context) => {
+		if (config.gooseRetryMaxTurns < config.gooseMaxTurns) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["gooseRetryMaxTurns"],
+				message:
+					"gooseRetryMaxTurns must be greater than or equal to gooseMaxTurns",
+			});
+		}
+	});
 
 /** Benchmark configuration type. */
 export type BenchConfig = z.infer<typeof BenchConfigSchema>;

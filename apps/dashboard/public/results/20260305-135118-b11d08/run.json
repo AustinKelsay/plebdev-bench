@@ -1,0 +1,1538 @@
+{
+  "schemaVersion": "0.3.0",
+  "runId": "20260305-135118-b11d08",
+  "machine": {
+    "profileId": "mac-mini-m4-pro-64gb",
+    "label": "Mac Mini M4 Pro 64GB",
+    "hardware": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "osRelease": "25.3.0",
+      "cpuModel": "Apple M4 Pro",
+      "logicalCores": 12,
+      "totalMemoryBytes": 68719476736
+    }
+  },
+  "benchmarkCheckpoint": {
+    "checkpointId": "chk_sha256v1_61a037f87105",
+    "algorithm": "sha256v1",
+    "manifestHash": "61a037f87105bb0d5c7d53b296110ff521542e04d70df86132dd4f93d103bdc9",
+    "assetCount": 79,
+    "computedAt": "2026-03-05T21:51:18.586Z"
+  },
+  "provenance": {
+    "verificationStatus": "self_reported",
+    "source": "local_cli"
+  },
+  "startedAt": "2026-03-05T21:51:18.583Z",
+  "completedAt": "2026-03-05T22:12:21.228Z",
+  "durationMs": 1262650,
+  "summary": {
+    "total": 45,
+    "completed": 45,
+    "failed": 0,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "01",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "tool-smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:51:18.730Z",
+      "completedAt": "2026-03-05T21:51:23.627Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
+        "durationMs": 3592,
+        "promptTokens": 246,
+        "completionTokens": 137
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 78,
+        "scoringDurationMs": 78
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correct add implementation with proper TypeScript types, exported cleanly; pure and concise, handles all number cases.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1226
+      }
+    },
+    {
+      "id": "02",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:51:23.627Z",
+      "completedAt": "2026-03-05T21:51:34.429Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n    return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n    return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n    return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n    if (b === 0) return Infinity;\n    return a / b;\n}\n```",
+        "durationMs": 9586,
+        "promptTokens": 265,
+        "completionTokens": 433
+      },
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 91,
+        "scoringDurationMs": 91
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four functions correct with proper TS types/exports. Clean, pure arithmetic; divide-by-zero returns Infinity as expected.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1121
+      }
+    },
+    {
+      "id": "03",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:51:34.432Z",
+      "completedAt": "2026-03-05T21:51:39.827Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n    return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n    return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n    return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n    return a / b;\n}\n```\n",
+        "durationMs": 3993,
+        "promptTokens": 353,
+        "completionTokens": 162
+      },
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 78,
+        "scoringDurationMs": 78
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four functions are correctly implemented, typed, exported, and pure. Division uses JS behavior so divide by zero yields Infinity; handles negatives/zero/floats.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1322
+      }
+    },
+    {
+      "id": "04",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:51:39.827Z",
+      "completedAt": "2026-03-05T21:52:01.848Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createCalculator() {\n  let value = 0;\n  let memory = 0;\n\n  const calculator = {\n    add(n: number) {\n      value += n;\n      return calculator;\n    },\n    subtract(n: number) {\n      value -= n;\n      return calculator;\n    },\n    multiply(n: number) {\n      value *= n;\n      return calculator;\n    },\n    divide(n: number) {\n      value /= n;\n      return calculator;\n    },\n    clear() {\n      value = 0;\n      return calculator;\n    },\n    result() {\n      return value;\n    },\n    memoryStore() {\n      memory = value;\n      return calculator;\n    },\n    memoryAdd() {\n      memory += value;\n      return calculator;\n    },\n    memoryClear() {\n      memory = 0;\n      return calculator;\n    },\n    memoryRecall() {\n      return memory;\n    },\n  };\n\n  return calculator;\n}\n```\n",
+        "durationMs": 12619,
+        "promptTokens": 381,
+        "completionTokens": 558
+      },
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 87,
+        "scoringDurationMs": 87
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Meets API, chaining, encapsulation, and memory/clear behavior; separate instance state. Division by zero isn’t handled (yields Infinity/NaN).",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 9313
+      }
+    },
+    {
+      "id": "05",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:52:01.848Z",
+      "completedAt": "2026-03-05T21:52:25.742Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ninterface Calculator {\n  add(n: number): Calculator;\n  subtract(n: number): Calculator;\n  multiply(n: number): Calculator;\n  divide(n: number): Calculator;\n  clear(): Calculator;\n  result(): number;\n  memoryStore(): Calculator;\n  memoryRecall(): number;\n  memoryClear(): Calculator;\n  memoryAdd(): Calculator;\n}\n\nclass CalculatorImpl implements Calculator {\n  private value: number = 0;\n  private memory: number = 0;\n\n  add(n: number): this {\n    this.value += n;\n    return this;\n  }\n  subtract(n: number): this {\n    this.value -= n;\n    return this;\n  }\n  multiply(n: number): this {\n    this.value *= n;\n    return this;\n  }\n  divide(n: number): this {\n    this.value /= n;\n    return this;\n  }\n  clear(): this {\n    this.value = 0;\n    return this;\n  }\n  result(): number {\n    return this.value;\n  }\n  memoryStore(): this {\n    this.memory = this.value;\n    return this;\n  }\n  memoryRecall(): number {\n    return this.memory;\n  }\n  memoryClear(): this {\n    this.memory = 0;\n    return this;\n  }\n  memoryAdd(): this {\n    this.memory += this.value;\n    return this;\n  }\n}\n\nexport function createCalculator(): Calculator {\n  return new CalculatorImpl();\n}\n```",
+        "durationMs": 19162,
+        "promptTokens": 378,
+        "completionTokens": 869
+      },
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 89,
+        "scoringDurationMs": 89
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Meets API, chaining, encapsulation, and memory/state separation; clear/memoryClear reset correctly. Only notable gap: divide-by-zero isn’t explicitly handled.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4642
+      }
+    },
+    {
+      "id": "06",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:52:25.742Z",
+      "completedAt": "2026-03-05T21:52:54.147Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ntype Listener = (...args: any[]) => any;\n\ninterface EventEmitter {\n  on(event: string | symbol, listener: Listener): void;\n  once(event: string | symbol, listener: Listener): void;\n  off(event: string | symbol, listener: Listener): void;\n  emit(event: string | symbol, ...args: any[]): any[];\n}\n\ninterface ListenerEntry {\n  fn: Listener;\n  once: boolean;\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const events = new Map<string | symbol, ListenerEntry[]>();\n\n  const on = (event: string | symbol, listener: Listener) => {\n    const arr = events.get(event) ?? [];\n    arr.push({ fn: listener, once: false });\n    events.set(event, arr);\n  };\n\n  const once = (event: string | symbol, listener: Listener) => {\n    const arr = events.get(event) ?? [];\n    arr.push({ fn: listener, once: true });\n    events.set(event, arr);\n  };\n\n  const off = (event: string | symbol, listener: Listener) => {\n    const arr = events.get(event);\n    if (!arr) return;\n    const index = arr.findIndex(entry => entry.fn === listener);\n    if (index !== -1) {\n      arr.splice(index, 1);\n      if (arr.length === 0) {\n        events.delete(event);\n      } else {\n        events.set(event, arr);\n      }\n    }\n  };\n\n  const emit = (event: string | symbol, ...args: any[]): any[] => {\n    const arr = events.get(event);\n    if (!arr) return [];\n    const results: any[] = [];\n    const remaining: ListenerEntry[] = [];\n    for (const entry of arr) {\n      results.push(entry.fn(...args));\n      if (!entry.once) {\n        remaining.push(entry);\n      }\n    }\n    if (remaining.length > 0) {\n      events.set(event, remaining);\n    } else {\n      events.delete(event);\n    }\n    return results;\n  };\n\n  return { on, once, off, emit };\n}\n```",
+        "durationMs": 24828,
+        "promptTokens": 306,
+        "completionTokens": 1129
+      },
+      "automatedScore": {
+        "passed": 9,
+        "failed": 13,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 94,
+        "scoringDurationMs": 94
+      },
+      "frontierEval": {
+        "score": 5,
+        "reasoning": "Core on/once/emit order works, but listenerCount is missing and off has wrong API (void, no false on missing). These break spec despite basic behavior.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 3483
+      }
+    },
+    {
+      "id": "07",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:52:54.148Z",
+      "completedAt": "2026-03-05T21:53:21.662Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ntype Listener = (payload: unknown) => unknown;\n\ninterface EventEmitter {\n  on(event: string, listener: Listener): number;\n  once(event: string, listener: Listener): number;\n  off(event: string, listener: Listener): boolean;\n  emit(event: string, payload: unknown): unknown[];\n  listenerCount(event: string): number;\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const events = new Map<\n    string,\n    Array<{ fn: Listener; once: boolean }>\n  >();\n\n  return {\n    on(event, listener) {\n      const arr = events.get(event) ?? [];\n      arr.push({ fn: listener, once: false });\n      events.set(event, arr);\n      return arr.length;\n    },\n\n    once(event, listener) {\n      const arr = events.get(event) ?? [];\n      arr.push({ fn: listener, once: true });\n      events.set(event, arr);\n      return arr.length;\n    },\n\n    off(event, listener) {\n      const arr = events.get(event);\n      if (!arr) return false;\n      const index = arr.findIndex((l) => l.fn === listener);\n      if (index === -1) return false;\n      arr.splice(index, 1);\n      if (arr.length === 0) events.delete(event);\n      else events.set(event, arr);\n      return true;\n    },\n\n    emit(event, payload) {\n      const arr = events.get(event);\n      if (!arr) return [];\n      const results: unknown[] = [];\n      for (let i = 0; i < arr.length; i++) {\n        const { fn, once } = arr[i];\n        results.push(fn(payload));\n        if (once) {\n          arr.splice(i, 1);\n          i--;\n        }\n      }\n      if (arr.length === 0) events.delete(event);\n      else events.set(event, arr);\n      return results;\n    },\n\n    listenerCount(event) {\n      const arr = events.get(event);\n      return arr ? arr.length : 0;\n    },\n  };\n}\n```",
+        "durationMs": 22840,
+        "promptTokens": 415,
+        "completionTokens": 1047
+      },
+      "automatedScore": {
+        "passed": 22,
+        "failed": 0,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 76,
+        "scoringDurationMs": 76
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements full API correctly: ordered listeners, once runs once, off removes one match, accurate counts, isolated per event, and proper edge-case returns.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4597
+      }
+    },
+    {
+      "id": "08",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:53:21.663Z",
+      "completedAt": "2026-03-05T21:53:39.767Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createRateLimiter() {\n  const windows = new Map<string, { windowStart: number; count: number }>();\n\n  const allow = (key: string, nowMs: number): boolean => {\n    const WINDOW_MS = 1000;\n    const MAX_REQUESTS = 3;\n    const windowStart = Math.floor(nowMs / WINDOW_MS) * WINDOW_MS;\n    const entry = windows.get(key);\n\n    if (!entry || entry.windowStart !== windowStart) {\n      windows.set(key, { windowStart, count: 0 });\n    }\n\n    const current = windows.get(key)!;\n    if (current.count < MAX_REQUESTS) {\n      current.count += 1;\n      return true;\n    }\n\n    return false;\n  };\n\n  const reset = (key: string): void => {\n    windows.delete(key);\n  };\n\n  return { allow, reset };\n}\n```\n",
+        "durationMs": 11722,
+        "promptTokens": 322,
+        "completionTokens": 533
+      },
+      "automatedScore": {
+        "passed": 14,
+        "failed": 7,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 75,
+        "scoringDurationMs": 75
+      },
+      "frontierEval": {
+        "score": 5,
+        "reasoning": "Per-key limiting and reset work, and boundaries reset cleanly, but API lacks required `remaining` reporting and uses epoch-aligned windows (may not match expected semantics).",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 6306
+      }
+    },
+    {
+      "id": "09",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:53:39.767Z",
+      "completedAt": "2026-03-05T21:54:08.341Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport interface RateLimiter {\n  allow(key: string, nowMs: number): boolean;\n  remaining(key: string, nowMs: number): number;\n  reset(key: string): void;\n}\n\nexport function createRateLimiter(): RateLimiter {\n  const limit = 3;\n  const windowMs = 1000;\n\n  type State = { windowStart: number; count: number };\n  const states = new Map<string, State>();\n\n  const getState = (key: string, nowMs: number): State => {\n    const existing = states.get(key);\n    if (!existing) {\n      const newState: State = { windowStart: nowMs, count: 0 };\n      states.set(key, newState);\n      return newState;\n    }\n    if (nowMs - existing.windowStart >= windowMs) {\n      existing.windowStart = nowMs;\n      existing.count = 0;\n    }\n    return existing;\n  };\n\n  return {\n    allow(key, nowMs) {\n      const state = getState(key, nowMs);\n      if (state.count < limit) {\n        state.count++;\n        return true;\n      }\n      return false;\n    },\n\n    remaining(key, nowMs) {\n      const state = getState(key, nowMs);\n      const remaining = limit - state.count;\n      return remaining > 0 ? remaining : 0;\n    },\n\n    reset(key) {\n      states.delete(key);\n    },\n  };\n}\n```",
+        "durationMs": 22489,
+        "promptTokens": 381,
+        "completionTokens": 1040
+      },
+      "automatedScore": {
+        "passed": 21,
+        "failed": 0,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 90,
+        "scoringDurationMs": 90
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Correct per-key fixed-window limiting with >= boundary reset, accurate remaining, and key-only reset. Minor concern: remaining() creates state for unseen keys/time regressions.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 5994
+      }
+    },
+    {
+      "id": "10",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:54:08.342Z",
+      "completedAt": "2026-03-05T21:54:12.955Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```\n",
+        "durationMs": 3384,
+        "promptTokens": 229,
+        "completionTokens": 139
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 92,
+        "scoringDurationMs": 92
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add(a:number,b:number):number correctly with a pure, concise return a+b; handles all numeric values.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1136
+      }
+    },
+    {
+      "id": "11",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:54:12.955Z",
+      "completedAt": "2026-03-05T21:54:17.689Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```\n",
+        "durationMs": 2785,
+        "promptTokens": 230,
+        "completionTokens": 111
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 78,
+        "scoringDurationMs": 78
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correct add implementation with proper TypeScript types, exported function, concise and pure; handles all numeric cases.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1870
+      }
+    },
+    {
+      "id": "12",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:54:17.690Z",
+      "completedAt": "2026-03-05T21:54:35.247Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport type Todo = { id: number; text: string; completed: boolean };\n\nexport function createTodoApp() {\n  let nextId = 1;\n  const todos: Todo[] = [];\n\n  function addTodo(text: string): Todo {\n    const todo: Todo = { id: nextId++, text, completed: false };\n    todos.push(todo);\n    return todo;\n  }\n\n  function getTodo(id: number): Todo | undefined {\n    return todos.find((t) => t.id === id);\n  }\n\n  function toggleTodo(id: number): void {\n    const todo = getTodo(id);\n    if (todo) {\n      todo.completed = !todo.completed;\n    }\n  }\n\n  function deleteTodo(id: number): boolean {\n    const index = todos.findIndex((t) => t.id === id);\n    if (index !== -1) {\n      todos.splice(index, 1);\n      return true;\n    }\n    return false;\n  }\n\n  function listTodos(): Todo[] {\n    return [...todos];\n  }\n\n  function listCompleted(): Todo[] {\n    return todos.filter((t) => t.completed);\n  }\n\n  function listPending(): Todo[] {\n    return todos.filter((t) => !t.completed);\n  }\n\n  function clearCompleted(): void {\n    for (let i = todos.length - 1; i >= 0; i--) {\n      if (todos[i].completed) {\n        todos.splice(i, 1);\n      }\n    }\n  }\n\n  return {\n    addTodo,\n    getTodo,\n    toggleTodo,\n    deleteTodo,\n    listTodos,\n    listCompleted,\n    listPending,\n    clearCompleted,\n  };\n}\n```",
+        "durationMs": 12574,
+        "promptTokens": 462,
+        "completionTokens": 565
+      },
+      "automatedScore": {
+        "passed": 15,
+        "failed": 0,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 88,
+        "scoringDurationMs": 88
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Meets CRUD/filtering requirements with encapsulated state and incrementing unique IDs. Minor API concerns: toggleTodo returns void and getTodo exposes internal object refs.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4894
+      }
+    },
+    {
+      "id": "13",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:54:35.248Z",
+      "completedAt": "2026-03-05T21:54:57.527Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport interface Todo {\n  id: number\n  text: string\n  completed: boolean\n}\n\nexport interface TodoApp {\n  addTodo(text: string): Todo\n  getTodo(id: number): Todo | undefined\n  toggleTodo(id: number): void\n  deleteTodo(id: number): boolean\n  listTodos(): Todo[]\n  listCompleted(): Todo[]\n  listPending(): Todo[]\n  clearCompleted(): void\n}\n\nexport function createTodoApp(): TodoApp {\n  const todos = new Map<number, Todo>()\n  let nextId = 1\n\n  return {\n    addTodo(text: string): Todo {\n      const todo: Todo = { id: nextId++, text, completed: false }\n      todos.set(todo.id, todo)\n      return todo\n    },\n\n    getTodo(id: number): Todo | undefined {\n      return todos.get(id)\n    },\n\n    toggleTodo(id: number): void {\n      const todo = todos.get(id)\n      if (todo) {\n        todo.completed = !todo.completed\n      }\n    },\n\n    deleteTodo(id: number): boolean {\n      return todos.delete(id)\n    },\n\n    listTodos(): Todo[] {\n      return Array.from(todos.values())\n    },\n\n    listCompleted(): Todo[] {\n      return Array.from(todos.values()).filter(t => t.completed)\n    },\n\n    listPending(): Todo[] {\n      return Array.from(todos.values()).filter(t => !t.completed)\n    },\n\n    clearCompleted(): void {\n      for (const [id, todo] of todos.entries()) {\n        if (todo.completed) {\n          todos.delete(id)\n        }\n      }\n    },\n  }\n}\n```",
+        "durationMs": 17713,
+        "promptTokens": 429,
+        "completionTokens": 814
+      },
+      "automatedScore": {
+        "passed": 15,
+        "failed": 0,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 91,
+        "scoringDurationMs": 91
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Implements createTodoApp and full CRUD with unique incrementing ids, correct toggling/deleting, and proper filters. Minor concern: returns internal Todo references (no defensive copies).",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4474
+      }
+    },
+    {
+      "id": "14",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:54:57.528Z",
+      "completedAt": "2026-03-05T21:55:21.281Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTtlCache() {\n  type CacheEntry = {\n    value: unknown;\n    expiresAt: number;\n  };\n\n  const map = new Map<string, CacheEntry>();\n\n  const cleanupExpired = (nowMs: number) => {\n    const expiredKeys: string[] = [];\n    for (const [key, entry] of map.entries()) {\n      if (nowMs >= entry.expiresAt) {\n        expiredKeys.push(key);\n      }\n    }\n    for (const key of expiredKeys) {\n      map.delete(key);\n    }\n  };\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs: number = 1000): void {\n      const expiresAt = nowMs + ttlMs;\n      map.set(key, { value, expiresAt });\n    },\n\n    get(key: string, nowMs: number): unknown {\n      const entry = map.get(key);\n      if (!entry) return undefined;\n      if (nowMs >= entry.expiresAt) {\n        map.delete(key);\n        return undefined;\n      }\n      return entry.value;\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = map.get(key);\n      if (!entry) return false;\n      if (nowMs >= entry.expiresAt) {\n        map.delete(key);\n        return false;\n      }\n      return true;\n    },\n\n    delete(key: string): boolean {\n      return map.delete(key);\n    },\n\n    size(nowMs: number): number {\n      cleanupExpired(nowMs);\n      return map.size;\n    },\n\n    clear(): void {\n      map.clear();\n    },\n  };\n}\n```",
+        "durationMs": 16038,
+        "promptTokens": 468,
+        "completionTokens": 730
+      },
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 91,
+        "scoringDurationMs": 91
+      },
+      "frontierEval": {
+        "score": 6,
+        "reasoning": "Core TTL logic and >= expiry semantics are correct, and expired items aren’t returned. But default TTL is hardcoded (not configurable via factory), which may break expected API.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 7623
+      }
+    },
+    {
+      "id": "15",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "direct",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:55:21.282Z",
+      "completedAt": "2026-03-05T21:55:46.610Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTtlCache(): TtlCache {\n  const DEFAULT_TTL = 1000; // ms\n  const store = new Map<string, { value: unknown; expiresAt: number }>();\n\n  const cleanIfExpired = (key: string, nowMs: number): boolean => {\n    const entry = store.get(key);\n    if (!entry) return false;\n    if (nowMs >= entry.expiresAt) {\n      store.delete(key);\n      return true;\n    }\n    return false;\n  };\n\n  const cache: TtlCache = {\n    set(key, value, nowMs, ttlMs = DEFAULT_TTL) {\n      const expiresAt = nowMs + ttlMs;\n      store.set(key, { value, expiresAt });\n    },\n    get(key, nowMs) {\n      if (cleanIfExpired(key, nowMs)) return undefined;\n      const entry = store.get(key);\n      return entry ? entry.value : undefined;\n    },\n    has(key, nowMs) {\n      if (cleanIfExpired(key, nowMs)) return false;\n      return store.has(key);\n    },\n    delete(key) {\n      return store.delete(key);\n    },\n    size(nowMs) {\n      let count = 0;\n      for (const [key, entry] of store.entries()) {\n        if (nowMs >= entry.expiresAt) {\n          store.delete(key);\n        } else {\n          count++;\n        }\n      }\n      return count;\n    },\n    clear() {\n      store.clear();\n    },\n  };\n\n  return cache;\n}\n\nexport interface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void;\n  get(key: string, nowMs: number): unknown;\n  has(key: string, nowMs: number): boolean;\n  delete(key: string): boolean;\n  size(nowMs: number): number;\n  clear(): void;\n}\n```",
+        "durationMs": 16974,
+        "promptTokens": 419,
+        "completionTokens": 772
+      },
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 91,
+        "scoringDurationMs": 91
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Core TTL semantics, overwrite refresh, and >= expiry handling look correct; size/get/has purge expired entries. Potential mismatch if benchmark expects configurable default TTL or delete to respect expiry.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 8261
+      }
+    },
+    {
+      "id": "16",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "tool-smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:55:46.611Z",
+      "completedAt": "2026-03-05T21:56:05.671Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n    return a + b;\n}",
+        "durationMs": 18000,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-1b1657cd6eee1c89/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 66,
+        "scoringDurationMs": 66
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correct add implementation with proper typing, export, concise and pure; handles positive, negative, and zero.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 989
+      }
+    },
+    {
+      "id": "17",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:56:05.671Z",
+      "completedAt": "2026-03-05T21:56:21.599Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return b === 0 ? Infinity : a / b;\n}",
+        "durationMs": 14598,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-6d2c5066f8737a8e/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 68,
+        "scoringDurationMs": 68
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four functions correctly implemented with proper TS types/exports. Clean, pure, handles negatives/zero/floats; divide by zero returns Infinity as expected.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1261
+      }
+    },
+    {
+      "id": "18",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:56:21.600Z",
+      "completedAt": "2026-03-05T21:56:36.999Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return a / b;\n}",
+        "durationMs": 14153,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-df88fe465baf7bb3/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 67,
+        "scoringDurationMs": 67
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four exported functions are correctly typed and implement basic arithmetic; division uses JS behavior so divide by zero yields Infinity. Clean, pure, concise code.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1178
+      }
+    },
+    {
+      "id": "19",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:56:37.000Z",
+      "completedAt": "2026-03-05T21:57:11.495Z",
+      "generation": {
+        "success": true,
+        "output": "export interface Calculator {\n    add: (x: number) => Calculator;\n    subtract: (x: number) => Calculator;\n    multiply: (x: number) => Calculator;\n    divide: (x: number) => Calculator;\n    clear: () => Calculator;\n    result: () => number;\n    memoryStore: () => Calculator;\n    memoryAdd: () => Calculator;\n    memoryClear: () => Calculator;\n    memoryRecall: () => number;\n}\n\nexport function createCalculator(): Calculator {\n    let value = 0;\n    let memory = 0;\n    let calc: Calculator;\n\n    calc = {\n        add: (x: number) => {\n            value += x;\n            return calc;\n        },\n        subtract: (x: number) => {\n            value -= x;\n            return calc;\n        },\n        multiply: (x: number) => {\n            value *= x;\n            return calc;\n        },\n        divide: (x: number) => {\n            value /= x;\n            return calc;\n        },\n        clear: () => {\n            value = 0;\n            return calc;\n        },\n        result: () => value,\n        memoryStore: () => {\n            memory = value;\n            return calc;\n        },\n        memoryAdd: () => {\n            memory += value;\n            return calc;\n        },\n        memoryClear: () => {\n            memory = 0;\n            return calc;\n        },\n        memoryRecall: () => memory,\n    };\n\n    return calc;\n}",
+        "durationMs": 28995,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-6f5bb4fb13b3b4f9/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 68,
+        "scoringDurationMs": 68
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Meets API, chaining, per-instance state, and memory behavior; clear/memoryClear reset correctly. Only notable gap: divide by zero isn’t handled (yields Infinity/NaN).",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 5430
+      }
+    },
+    {
+      "id": "20",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:57:11.496Z",
+      "completedAt": "2026-03-05T21:57:46.771Z",
+      "generation": {
+        "success": true,
+        "output": "interface Calculator {\n  add(n: number): Calculator;\n  subtract(n: number): Calculator;\n  multiply(n: number): Calculator;\n  divide(n: number): Calculator;\n  clear(): Calculator;\n  result(): number;\n  memoryStore(): Calculator;\n  memoryRecall(): number;\n  memoryClear(): Calculator;\n  memoryAdd(): Calculator;\n}\n\nexport function createCalculator(): Calculator {\n  let current = 0;\n  let memory = 0;\n\n  const calculator: Calculator = {\n    add: (n: number) => {\n      current += n;\n      return calculator;\n    },\n    subtract: (n: number) => {\n      current -= n;\n      return calculator;\n    },\n    multiply: (n: number) => {\n      current *= n;\n      return calculator;\n    },\n    divide: (n: number) => {\n      if (n === 0) {\n        throw new Error(\"Division by zero\");\n      }\n      current /= n;\n      return calculator;\n    },\n    clear: () => {\n      current = 0;\n      return calculator;\n    },\n    result: () => current,\n    memoryStore: () => {\n      memory = current;\n      return calculator;\n    },\n    memoryRecall: () => memory,\n    memoryClear: () => {\n      memory = 0;\n      return calculator;\n    },\n    memoryAdd: () => {\n      memory += current;\n      return calculator;\n    },\n  };\n\n  return calculator;\n}\n",
+        "durationMs": 30807,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-e60b526377147883/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 70,
+        "scoringDurationMs": 70
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Meets spec: chaining works, state/memory encapsulated, clear and memoryClear reset to 0, memory ops don't alter current; division by zero throws error.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4396
+      }
+    },
+    {
+      "id": "21",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:57:46.777Z",
+      "completedAt": "2026-03-05T21:58:17.006Z",
+      "generation": {
+        "success": true,
+        "output": "export type Listener = (...args: any[]) => any;\n\nexport function createEventEmitter() {\n  type ListenerEntry = { fn: Listener; once: boolean };\n  const events = new Map<string, ListenerEntry[]>();\n\n  function on(event: string, listener: Listener) {\n    const list = events.get(event) ?? [];\n    list.push({ fn: listener, once: false });\n    events.set(event, list);\n    return this;\n  }\n\n  function once(event: string, listener: Listener) {\n    const list = events.get(event) ?? [];\n    list.push({ fn: listener, once: true });\n    events.set(event, list);\n    return this;\n  }\n\n  function off(event: string, listener: Listener) {\n    const list = events.get(event);\n    if (!list) return this;\n    for (let i = 0; i < list.length; i++) {\n      if (list[i].fn === listener) {\n        list.splice(i, 1);\n        break;\n      }\n    }\n    if (list.length === 0) events.delete(event);\n    return this;\n  }\n\n  function emit(event: string, ...args: any[]): any[] {\n    const list = events.get(event);\n    if (!list) return [];\n    const results: any[] = [];\n    // Since we might modify list during iteration, make a copy of indices\n    const listeners = [...list];\n    for (const entry of listeners) {\n      results.push(entry.fn(...args));\n      if (entry.once) {\n        off(event, entry.fn);\n      }\n    }\n    return results;\n  }\n\n  return {\n    on,\n    once,\n    off,\n    emit,\n  };\n}\n",
+        "durationMs": 22593,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-6d832d3aafc6ddfc/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 9,
+        "failed": 13,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 69,
+        "scoringDurationMs": 69
+      },
+      "frontierEval": {
+        "score": 3,
+        "reasoning": "Missing listenerCount; off returns emitter (not boolean) and can't report false. once removal breaks with duplicate same fn (may remove wrong entry), and on/once return this likely undefined.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 7564
+      }
+    },
+    {
+      "id": "22",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:58:17.007Z",
+      "completedAt": "2026-03-05T21:59:09.306Z",
+      "generation": {
+        "success": true,
+        "output": "export type Listener = (payload: unknown) => unknown\n\nexport interface EventEmitter {\n  on(event: string, listener: Listener): number\n  once(event: string, listener: Listener): number\n  off(event: string, listener: Listener): boolean\n  emit(event: string, payload: unknown): unknown[]\n  listenerCount(event: string): number\n}\n\nexport function createEventEmitter(): EventEmitter {\n  type InternalListener = { listener: Listener; once: boolean }\n\n  const listenersMap = new Map<string, InternalListener[]>()\n\n  const emitter: EventEmitter = {\n    on(event, listener) {\n      const evListeners = listenersMap.get(event) ?? []\n      evListeners.push({ listener, once: false })\n      listenersMap.set(event, evListeners)\n      return evListeners.length\n    },\n\n    once(event, listener) {\n      const evListeners = listenersMap.get(event) ?? []\n      evListeners.push({ listener, once: true })\n      listenersMap.set(event, evListeners)\n      return evListeners.length\n    },\n\n    off(event, listener) {\n      const evListeners = listenersMap.get(event)\n      if (!evListeners) return false\n      const idx = evListeners.findIndex(l => l.listener === listener)\n      if (idx === -1) return false\n      evListeners.splice(idx, 1)\n      if (evListeners.length === 0) listenersMap.delete(event)\n      else listenersMap.set(event, evListeners)\n      return true\n    },\n\n    emit(event, payload) {\n      const evListeners = listenersMap.get(event)\n      if (!evListeners) return []\n      const snapshot = evListeners.slice()\n      const results = snapshot.map(l => l.listener(payload))\n      const hasOnce = snapshot.some(l => l.once)\n      if (hasOnce) {\n        const remaining = evListeners.filter(l => !l.once)\n        if (remaining.length === 0) listenersMap.delete(event)\n        else listenersMap.set(event, remaining)\n      }\n      return results\n    },\n\n    listenerCount(event) {\n      return listenersMap.get(event)?.length ?? 0\n    }\n  }\n\n  return emitter\n}\n",
+        "durationMs": 42676,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-494b71229b836a25/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 22,
+        "failed": 0,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 81,
+        "scoringDurationMs": 81
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "API and core semantics are correct (order, once, off, counts). Minor edge-case: once listeners added during an emit may be removed without firing.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 9539
+      }
+    },
+    {
+      "id": "23",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:59:09.306Z",
+      "completedAt": "2026-03-05T21:59:46.197Z",
+      "generation": {
+        "success": true,
+        "output": "export function createRateLimiter() {\n    const WINDOW_MS = 1000;\n    const LIMIT = 3;\n    const state = new Map<string, { windowStart: number; count: number }>();\n\n    return {\n        allow(key: string, nowMs: number): boolean {\n            const windowStart = Math.floor(nowMs / WINDOW_MS) * WINDOW_MS;\n            const entry = state.get(key);\n            if (!entry || entry.windowStart !== windowStart) {\n                state.set(key, { windowStart, count: 1 });\n                return true;\n            }\n            if (entry.count < LIMIT) {\n                entry.count += 1;\n                return true;\n            }\n            return false;\n        },\n        reset(key: string): void {\n            state.delete(key);\n        }\n    };\n}",
+        "durationMs": 30785,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-e51a8c7093399445/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 14,
+        "failed": 7,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 79,
+        "scoringDurationMs": 79
+      },
+      "frontierEval": {
+        "score": 6,
+        "reasoning": "Per-key fixed-window limiting and reset work, but required `remaining` API/state reporting is missing; window semantics may not match non-bucketed >= reset expectations.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 6025
+      }
+    },
+    {
+      "id": "24",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T21:59:46.198Z",
+      "completedAt": "2026-03-05T22:00:49.365Z",
+      "generation": {
+        "success": true,
+        "output": "export interface RateLimiter {\n  allow(key: string, nowMs: number): boolean\n  remaining(key: string, nowMs: number): number\n  reset(key: string): void\n}\n\nexport function createRateLimiter(): RateLimiter {\n  const limit = 3\n  const windowMs = 1000\n  const states = new Map<string, { windowStart: number; count: number }>()\n\n  function getState(key: string, nowMs: number) {\n    let state = states.get(key)\n    if (!state) {\n      state = { windowStart: nowMs, count: 0 }\n      states.set(key, state)\n    } else if (nowMs - state.windowStart >= windowMs) {\n      state.windowStart = nowMs\n      state.count = 0\n    }\n    return state\n  }\n\n  return {\n    allow(key, nowMs) {\n      const state = getState(key, nowMs)\n      if (state.count < limit) {\n        state.count += 1\n        return true\n      }\n      return false\n    },\n\n    remaining(key, nowMs) {\n      const state = states.get(key)\n      if (!state) return limit\n      if (nowMs - state.windowStart >= windowMs) return limit\n      const remaining = limit - state.count\n      return remaining > 0 ? remaining : 0\n    },\n\n    reset(key) {\n      states.delete(key)\n    }\n  }\n}",
+        "durationMs": 56209,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-74eccbd34f0e93e1/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 21,
+        "failed": 0,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 84,
+        "scoringDurationMs": 84
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Correct per-key fixed-window limiting with >= reset, deterministic state, no clock reliance. Minor: remaining() doesn't update expired state, though returned value is correct.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 6873
+      }
+    },
+    {
+      "id": "25",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:00:49.366Z",
+      "completedAt": "2026-03-05T22:01:03.525Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n    return a + b;\n}",
+        "durationMs": 12953,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-bb463bb02839b8db/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 65,
+        "scoringDurationMs": 65
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correct add implementation with proper TS types, exported, concise and pure; sums any numbers including negative and zero.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1139
+      }
+    },
+    {
+      "id": "26",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:01:03.526Z",
+      "completedAt": "2026-03-05T22:01:10.216Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n    return a + b;\n}",
+        "durationMs": 5493,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-b73020ccd7f4bb7a/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 68,
+        "scoringDurationMs": 67
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add(a:number,b:number):number correctly, returns a+b, pure and concise. Works for positive, negative, and zero.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1128
+      }
+    },
+    {
+      "id": "27",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:01:10.216Z",
+      "completedAt": "2026-03-05T22:01:49.560Z",
+      "generation": {
+        "success": true,
+        "output": "export type Todo = { id: number; text: string; completed: boolean };\n\nexport function createTodoApp() {\n  let todos: Todo[] = [];\n  let nextId = 1;\n\n  const addTodo = (text: string): Todo => {\n    const todo: Todo = { id: nextId++, text, completed: false };\n    todos.push(todo);\n    return todo;\n  };\n\n  const getTodo = (id: number): Todo | undefined => {\n    return todos.find(t => t.id === id);\n  };\n\n  const toggleTodo = (id: number): void => {\n    const t = todos.find(t => t.id === id);\n    if (t) {\n      t.completed = !t.completed;\n    }\n  };\n\n  const deleteTodo = (id: number): boolean => {\n    const index = todos.findIndex(t => t.id === id);\n    if (index !== -1) {\n      todos.splice(index, 1);\n      return true;\n    }\n    return false;\n  };\n\n  const listTodos = (): Todo[] => [...todos];\n\n  const listCompleted = (): Todo[] => todos.filter(t => t.completed);\n\n  const listPending = (): Todo[] => todos.filter(t => !t.completed);\n\n  const clearCompleted = (): void => {\n    todos = todos.filter(t => !t.completed);\n  };\n\n  return {\n    addTodo,\n    getTodo,\n    toggleTodo,\n    deleteTodo,\n    listTodos,\n    listCompleted,\n    listPending,\n    clearCompleted,\n  };\n}",
+        "durationMs": 35280,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-3d899efc7fa08480/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 15,
+        "failed": 0,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 78,
+        "scoringDurationMs": 78
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Meets CRUD and filtering; IDs increment uniquely and state is encapsulated per instance. Minor: getTodo/filter results expose internal todo objects (no defensive copy).",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 3983
+      }
+    },
+    {
+      "id": "28",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:01:49.561Z",
+      "completedAt": "2026-03-05T22:02:43.519Z",
+      "generation": {
+        "success": true,
+        "output": "interface Todo {\n  id: number\n  text: string\n  completed: boolean\n}\n\ninterface TodoApp {\n  addTodo(text: string): Todo\n  getTodo(id: number): Todo | undefined\n  toggleTodo(id: number): void\n  deleteTodo(id: number): boolean\n  listTodos(): Todo[]\n  listCompleted(): Todo[]\n  listPending(): Todo[]\n  clearCompleted(): void\n}\n\nexport function createTodoApp(): TodoApp {\n  let todos: Todo[] = []\n  let nextId = 0\n\n  return {\n    addTodo(text: string): Todo {\n      const todo: Todo = { id: nextId++, text, completed: false }\n      todos.push(todo)\n      return todo\n    },\n    getTodo(id: number): Todo | undefined {\n      return todos.find(t => t.id === id)\n    },\n    toggleTodo(id: number): void {\n      const todo = todos.find(t => t.id === id)\n      if (todo) todo.completed = !todo.completed\n    },\n    deleteTodo(id: number): boolean {\n      const index = todos.findIndex(t => t.id === id)\n      if (index === -1) return false\n      todos.splice(index, 1)\n      return true\n    },\n    listTodos(): Todo[] {\n      return todos.slice()\n    },\n    listCompleted(): Todo[] {\n      return todos.filter(t => t.completed)\n    },\n    listPending(): Todo[] {\n      return todos.filter(t => !t.completed)\n    },\n    clearCompleted(): void {\n      todos = todos.filter(t => !t.completed)\n    }\n  }\n}",
+        "durationMs": 48903,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-c4e1fe37c9f8b941/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 8,
+        "failed": 7,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 80,
+        "scoringDurationMs": 80
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Meets core CRUD/filtering; ids unique/incrementing; state encapsulated per instance. Minor risk if spec expects ids start at 1 or toggleTodo to return a value.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4974
+      }
+    },
+    {
+      "id": "29",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:02:43.519Z",
+      "completedAt": "2026-03-05T22:03:22.889Z",
+      "generation": {
+        "success": true,
+        "output": "export function createTtlCache() {\n  const DEFAULT_TTL_MS = 1000;\n  const store = new Map<string, { value: unknown; expiresAt: number }>();\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs?: number): void {\n      const ttl = ttlMs !== undefined ? ttlMs : DEFAULT_TTL_MS;\n      const expiresAt = nowMs + ttl;\n      store.set(key, { value, expiresAt });\n    },\n\n    get(key: string, nowMs: number): unknown {\n      const entry = store.get(key);\n      if (!entry) return undefined;\n      if (entry.expiresAt <= nowMs) {\n        store.delete(key);\n        return undefined;\n      }\n      return entry.value;\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = store.get(key);\n      if (!entry) return false;\n      if (entry.expiresAt <= nowMs) {\n        store.delete(key);\n        return false;\n      }\n      return true;\n    },\n\n    delete(key: string): boolean {\n      return store.delete(key);\n    },\n\n    size(nowMs: number): number {\n      let count = 0;\n      for (const [key, entry] of store.entries()) {\n        if (entry.expiresAt > nowMs) {\n          count++;\n        } else {\n          store.delete(key);\n        }\n      }\n      return count;\n    },\n\n    clear(): void {\n      store.clear();\n    },\n  };\n}",
+        "durationMs": 30471,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-b1e63e2dcd3a83c7/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 65,
+        "scoringDurationMs": 65
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Core TTL behavior is correct (>= expiry, refresh on overwrite, ttl=0, cleanup in get/has/size). Main risk: hardcoded default TTL and delete() ignores expiry state.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 8831
+      }
+    },
+    {
+      "id": "30",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "goose",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:03:22.890Z",
+      "completedAt": "2026-03-05T22:04:25.147Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTtlCache(): TtlCache {\n  const store = new Map<\n    string,\n    { value: unknown; expiresAt: number }\n  >();\n  const DEFAULT_TTL = 1000;\n\n  const ttlCache: TtlCache = {\n    set(key: string, value: unknown, nowMs: number, ttlMs?: number): void {\n      const ttl = ttlMs !== undefined ? ttlMs : DEFAULT_TTL;\n      const expiresAt = nowMs + ttl;\n      store.set(key, { value, expiresAt });\n    },\n\n    get(key: string, nowMs: number): unknown {\n      const entry = store.get(key);\n      if (!entry) return undefined;\n      if (nowMs >= entry.expiresAt) {\n        store.delete(key);\n        return undefined;\n      }\n      return entry.value;\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = store.get(key);\n      if (!entry) return false;\n      if (nowMs >= entry.expiresAt) {\n        store.delete(key);\n        return false;\n      }\n      return true;\n    },\n\n    delete(key: string): boolean {\n      return store.delete(key);\n    },\n\n    size(nowMs: number): number {\n      let count = 0;\n      for (const [key, entry] of store.entries()) {\n        if (nowMs < entry.expiresAt) {\n          count++;\n        } else {\n          store.delete(key);\n        }\n      }\n      return count;\n    },\n\n    clear(): void {\n      store.clear();\n    },\n  };\n\n  return ttlCache;\n}\n\nexport interface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void;\n  get(key: string, nowMs: number): unknown;\n  has(key: string, nowMs: number): boolean;\n  delete(key: string): boolean;\n  size(nowMs: number): number;\n  clear(): void;\n}\n```\n",
+        "durationMs": 55531,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-19d2bd9725a0c2e0/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 68,
+        "scoringDurationMs": 68
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Implements required API with correct >= expiry, refresh-on-overwrite, TTL overrides, cleanup on get/has/size, and supports undefined values; only minor risk if default TTL must be configurable.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 6657
+      }
+    },
+    {
+      "id": "31",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "tool-smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:04:25.147Z",
+      "completedAt": "2026-03-05T22:04:48.888Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n    return a + b;\n}",
+        "durationMs": 22484,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-d1c2712fe1eccbae/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correct add implementation with proper TypeScript types, exported, concise, pure, and works for all numeric values.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1193
+      }
+    },
+    {
+      "id": "32",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:04:48.890Z",
+      "completedAt": "2026-03-05T22:05:00.651Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return b === 0 ? Infinity : a / b;\n}",
+        "durationMs": 10554,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-8fd4ce44aeb5d48b/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 57,
+        "scoringDurationMs": 57
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four functions correctly implemented with proper TS types/exports. Division by zero returns Infinity; handles negatives, zero, floats; clean and pure.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1147
+      }
+    },
+    {
+      "id": "33",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:05:00.651Z",
+      "completedAt": "2026-03-05T22:05:13.359Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n    return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n    return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n    return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n    return a / b;\n}",
+        "durationMs": 11368,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-9c84af196247aa9d/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 58,
+        "scoringDurationMs": 58
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four functions correctly implemented with proper TS types and exports. Division uses JS behavior (Infinity on 0); clean, pure, handles negatives/zero/floats.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1280
+      }
+    },
+    {
+      "id": "34",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:05:13.360Z",
+      "completedAt": "2026-03-05T22:05:52.618Z",
+      "generation": {
+        "success": true,
+        "output": "export function createCalculator() {\n  let currentValue = 0;\n  let memoryValue = 0;\n\n  const calculator: any = {\n    add: (n: number) => {\n      currentValue += n;\n      return calculator;\n    },\n    subtract: (n: number) => {\n      currentValue -= n;\n      return calculator;\n    },\n    multiply: (n: number) => {\n      currentValue *= n;\n      return calculator;\n    },\n    divide: (n: number) => {\n      if (n === 0) {\n        throw new Error('Division by zero');\n      }\n      currentValue /= n;\n      return calculator;\n    },\n    clear: () => {\n      currentValue = 0;\n      return calculator;\n    },\n    result: () => currentValue,\n    memoryStore: () => {\n      memoryValue = currentValue;\n      return calculator;\n    },\n    memoryAdd: () => {\n      memoryValue += currentValue;\n      return calculator;\n    },\n    memoryClear: () => {\n      memoryValue = 0;\n      return calculator;\n    },\n    memoryRecall: () => memoryValue,\n  };\n\n  return calculator;\n}",
+        "durationMs": 32986,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-b91e7cda55262a26/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "All ops, chaining, state/memory separation, and resets work; division by zero handled. Main issue is weak TS typing via `any` and no explicit API types.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 6211
+      }
+    },
+    {
+      "id": "35",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:05:52.618Z",
+      "completedAt": "2026-03-05T22:06:25.454Z",
+      "generation": {
+        "success": true,
+        "output": "export interface Calculator {\n  add(n: number): Calculator\n  subtract(n: number): Calculator\n  multiply(n: number): Calculator\n  divide(n: number): Calculator\n  clear(): Calculator\n  result(): number\n  memoryStore(): Calculator\n  memoryRecall(): number\n  memoryClear(): Calculator\n  memoryAdd(): Calculator\n}\n\nexport function createCalculator(): Calculator {\n  let value = 0\n  let memory = 0\n\n  const calculator: Calculator = {\n    add(n: number) {\n      value += n\n      return this\n    },\n    subtract(n: number) {\n      value -= n\n      return this\n    },\n    multiply(n: number) {\n      value *= n\n      return this\n    },\n    divide(n: number) {\n      value /= n\n      return this\n    },\n    clear() {\n      value = 0\n      return this\n    },\n    result() {\n      return value\n    },\n    memoryStore() {\n      memory = value\n      return this\n    },\n    memoryRecall() {\n      return memory\n    },\n    memoryClear() {\n      memory = 0\n      return this\n    },\n    memoryAdd() {\n      memory += value\n      return this\n    },\n  }\n\n  return calculator\n}",
+        "durationMs": 26342,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-8b7be0d55b3dac3c/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 57,
+        "scoringDurationMs": 57
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Core arithmetic, chaining, state encapsulation, and memory ops work and are independent of clear(). Lacks explicit division-by-zero handling (Infinity/NaN).",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 6435
+      }
+    },
+    {
+      "id": "36",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:06:25.455Z",
+      "completedAt": "2026-03-05T22:07:12.679Z",
+      "generation": {
+        "success": true,
+        "output": "type Listener = (...args: any[]) => any;\ntype ListenerEntry = { fn: Listener; once: boolean };\n\nexport function createEventEmitter() {\n  const events = new Map<string, ListenerEntry[]>();\n\n  const on = (event: string, fn: Listener) => {\n    const arr = events.get(event) ?? [];\n    arr.push({ fn, once: false });\n    events.set(event, arr);\n  };\n\n  const once = (event: string, fn: Listener) => {\n    const arr = events.get(event) ?? [];\n    arr.push({ fn, once: true });\n    events.set(event, arr);\n  };\n\n  const off = (event: string, fn: Listener) => {\n    const arr = events.get(event);\n    if (!arr) return;\n    for (let i = 0; i < arr.length; i++) {\n      if (arr[i].fn === fn) {\n        arr.splice(i, 1);\n        if (arr.length === 0) events.delete(event);\n        else events.set(event, arr);\n        return;\n      }\n    }\n  };\n\n  const emit = (event: string, ...args: any[]) => {\n    const arr = events.get(event);\n    if (!arr) return [];\n    const results: any[] = [];\n    const remaining: ListenerEntry[] = [];\n    for (const entry of arr) {\n      const res = entry.fn(...args);\n      results.push(res);\n      if (!entry.once) remaining.push(entry);\n    }\n    if (remaining.length === 0) events.delete(event);\n    else events.set(event, remaining);\n    return results;\n  };\n\n  return { on, once, off, emit };\n}",
+        "durationMs": 42601,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-a04420651ae2c8bd/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 9,
+        "failed": 13,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 58,
+        "scoringDurationMs": 58
+      },
+      "frontierEval": {
+        "score": 5,
+        "reasoning": "Core on/once/emit work with correct order and once cleanup, but listenerCount is missing and off has wrong return semantics (should return false when not found).",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4563
+      }
+    },
+    {
+      "id": "37",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:07:12.679Z",
+      "completedAt": "2026-03-05T22:08:21.094Z",
+      "generation": {
+        "success": true,
+        "output": "export type Listener = (payload: unknown) => unknown;\n\nexport interface EventEmitter {\n  on(event: string, listener: Listener): number;\n  once(event: string, listener: Listener): number;\n  off(event: string, listener: Listener): boolean;\n  emit(event: string, payload: unknown): unknown[];\n  listenerCount(event: string): number;\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const listeners = new Map<string, Array<{ listener: Listener; once: boolean }>>();\n\n  const on = (event: string, listener: Listener): number => {\n    const arr = listeners.get(event) ?? [];\n    arr.push({ listener, once: false });\n    listeners.set(event, arr);\n    return arr.length;\n  };\n\n  const once = (event: string, listener: Listener): number => {\n    const arr = listeners.get(event) ?? [];\n    arr.push({ listener, once: true });\n    listeners.set(event, arr);\n    return arr.length;\n  };\n\n  const off = (event: string, listener: Listener): boolean => {\n    const arr = listeners.get(event);\n    if (!arr) return false;\n    const index = arr.findIndex((r) => r.listener === listener);\n    if (index === -1) return false;\n    arr.splice(index, 1);\n    if (arr.length === 0) {\n      listeners.delete(event);\n    } else {\n      listeners.set(event, arr);\n    }\n    return true;\n  };\n\n  const emit = (event: string, payload: unknown): unknown[] => {\n    const arr = listeners.get(event);\n    if (!arr) return [];\n    const results: unknown[] = [];\n    const toCall = [...arr];\n    for (const { listener, once } of toCall) {\n      results.push(listener(payload));\n      if (once) {\n        const idx = arr.findIndex((r) => r.listener === listener && r.once);\n        if (idx !== -1) {\n          arr.splice(idx, 1);\n        }\n      }\n    }\n    if (arr.length === 0) {\n      listeners.delete(event);\n    }\n    return results;\n  };\n\n  const listenerCount = (event: string): number => {\n    const arr = listeners.get(event);\n    return arr ? arr.length : 0;\n  };\n\n  return { on, once, off, emit, listenerCount };\n}",
+        "durationMs": 60453,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-816201b1d97332d1/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 22,
+        "failed": 0,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 56,
+        "scoringDurationMs": 56
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Implements required API with correct ordering, once semantics, per-event isolation, and accurate counts; edge cases handled. Minor unspecified behavior if listeners mutate during emit.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 7905
+      }
+    },
+    {
+      "id": "38",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:08:21.094Z",
+      "completedAt": "2026-03-05T22:08:55.401Z",
+      "generation": {
+        "success": true,
+        "output": "export function createRateLimiter() {\n  const data = new Map<string, number[]>();\n  const MAX_REQUESTS = 3;\n  const WINDOW_MS = 1000;\n\n  function tryRequest(key: string, nowMs: number): boolean {\n    let timestamps = data.get(key) ?? [];\n    // Remove timestamps outside the current window\n    timestamps = timestamps.filter((ts) => ts > nowMs - WINDOW_MS);\n    if (timestamps.length < MAX_REQUESTS) {\n      timestamps.push(nowMs);\n      data.set(key, timestamps);\n      return true;\n    } else {\n      data.set(key, timestamps);\n      return false;\n    }\n  }\n\n  function reset(key: string): void {\n    data.delete(key);\n  }\n\n  return {\n    tryRequest,\n    reset,\n  };\n}",
+        "durationMs": 28893,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-7a3ff007c825dcc2/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 2,
+        "failed": 19,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 58,
+        "scoringDurationMs": 58
+      },
+      "frontierEval": {
+        "score": 5,
+        "reasoning": "Per-key fixed-window limiting mostly works and reset is per key, but API lacks remaining and configurable policy; hardcoded quota/window likely fails spec.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 5355
+      }
+    },
+    {
+      "id": "39",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:08:55.401Z",
+      "completedAt": "2026-03-05T22:09:28.260Z",
+      "generation": {
+        "success": true,
+        "output": "export interface RateLimiter {\n  allow(key: string, nowMs: number): boolean;\n  remaining(key: string, nowMs: number): number;\n  reset(key: string): void;\n}\n\nexport function createRateLimiter(): RateLimiter {\n  const limit = 3;\n  const windowMs = 1000;\n  const state = new Map<string, { windowStart: number; count: number }>();\n\n  const allow = (key: string, nowMs: number): boolean => {\n    let entry = state.get(key);\n    if (!entry) {\n      entry = { windowStart: nowMs, count: 0 };\n      state.set(key, entry);\n    }\n    if (nowMs - entry.windowStart >= windowMs) {\n      entry.windowStart = nowMs;\n      entry.count = 0;\n    }\n    if (entry.count < limit) {\n      entry.count += 1;\n      return true;\n    }\n    return false;\n  };\n\n  const remaining = (key: string, nowMs: number): number => {\n    let entry = state.get(key);\n    if (!entry) {\n      return limit;\n    }\n    if (nowMs - entry.windowStart >= windowMs) {\n      entry.windowStart = nowMs;\n      entry.count = 0;\n    }\n    const rem = limit - entry.count;\n    return rem >= 0 ? rem : 0;\n  };\n\n  const reset = (key: string): void => {\n    state.delete(key);\n  };\n\n  return { allow, remaining, reset };\n}",
+        "durationMs": 28496,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-4a35acc1f6e39462/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 21,
+        "failed": 0,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 57,
+        "scoringDurationMs": 57
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Meets API, enforces per-key quotas with correct >= window reset, accurate remaining, key-only reset, deterministic state, and no negative quotas or cross-key leakage.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4303
+      }
+    },
+    {
+      "id": "40",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:09:28.260Z",
+      "completedAt": "2026-03-05T22:09:36.295Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number { return a + b; }",
+        "durationMs": 6192,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-d048d0961a9d872b/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 55,
+        "scoringDurationMs": 55
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correct add implementation with proper TypeScript types, exported, concise, pure, and handles all numeric values.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1787
+      }
+    },
+    {
+      "id": "41",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:09:36.301Z",
+      "completedAt": "2026-03-05T22:09:44.692Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n  return a + b;\n}",
+        "durationMs": 7233,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-47117740e8b20088/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 57,
+        "scoringDurationMs": 57
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correct add implementation with proper TS types, exported, concise and pure; works for positive, negative, and zero values.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 1100
+      }
+    },
+    {
+      "id": "42",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:09:44.692Z",
+      "completedAt": "2026-03-05T22:10:28.980Z",
+      "generation": {
+        "success": true,
+        "output": "export function createTodoApp() {\n    type Todo = { id: number; text: string; completed: boolean };\n\n    let todos: Todo[] = [];\n    let nextId = 1;\n\n    function addTodo(text: string): Todo {\n        const todo: Todo = { id: nextId++, text, completed: false };\n        todos.push(todo);\n        return todo;\n    }\n\n    function getTodo(id: number): Todo | undefined {\n        return todos.find(t => t.id === id);\n    }\n\n    function toggleTodo(id: number): void {\n        const todo = todos.find(t => t.id === id);\n        if (todo) {\n            todo.completed = !todo.completed;\n        }\n    }\n\n    function deleteTodo(id: number): boolean {\n        const index = todos.findIndex(t => t.id === id);\n        if (index !== -1) {\n            todos.splice(index, 1);\n            return true;\n        }\n        return false;\n    }\n\n    function listTodos(): Todo[] {\n        return todos.map(t => ({ ...t }));\n    }\n\n    function listCompleted(): Todo[] {\n        return todos.filter(t => t.completed).map(t => ({ ...t }));\n    }\n\n    function listPending(): Todo[] {\n        return todos.filter(t => !t.completed).map(t => ({ ...t }));\n    }\n\n    function clearCompleted(): void {\n        todos = todos.filter(t => !t.completed);\n    }\n\n    return {\n        addTodo,\n        getTodo,\n        toggleTodo,\n        deleteTodo,\n        listTodos,\n        listCompleted,\n        listPending,\n        clearCompleted,\n    };\n}",
+        "durationMs": 39699,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-02d48c9b62bbb494/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 15,
+        "failed": 0,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 56,
+        "scoringDurationMs": 56
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Meets core CRUD/filtering; ids increment uniquely and state is per-instance. Minor API concern: getTodo returns internal object and toggleTodo returns void.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 4531
+      }
+    },
+    {
+      "id": "43",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:10:28.980Z",
+      "completedAt": "2026-03-05T22:11:04.229Z",
+      "generation": {
+        "success": true,
+        "output": "export function createTodoApp(): TodoApp {\n  let nextId = 1;\n  const todos: Todo[] = [];\n\n  function addTodo(text: string): Todo {\n    const todo: Todo = { id: nextId++, text, completed: false };\n    todos.push(todo);\n    return todo;\n  }\n\n  function getTodo(id: number): Todo | undefined {\n    return todos.find(t => t.id === id);\n  }\n\n  function toggleTodo(id: number): void {\n    const todo = getTodo(id);\n    if (todo) {\n      todo.completed = !todo.completed;\n    }\n  }\n\n  function deleteTodo(id: number): boolean {\n    const index = todos.findIndex(t => t.id === id);\n    if (index !== -1) {\n      todos.splice(index, 1);\n      return true;\n    }\n    return false;\n  }\n\n  function listTodos(): Todo[] {\n    return [...todos];\n  }\n\n  function listCompleted(): Todo[] {\n    return [...todos.filter(t => t.completed)];\n  }\n\n  function listPending(): Todo[] {\n    return [...todos.filter(t => !t.completed)];\n  }\n\n  function clearCompleted(): void {\n    for (let i = todos.length - 1; i >= 0; i--) {\n      if (todos[i].completed) {\n        todos.splice(i, 1);\n      }\n    }\n  }\n\n  return {\n    addTodo,\n    getTodo,\n    toggleTodo,\n    deleteTodo,\n    listTodos,\n    listCompleted,\n    listPending,\n    clearCompleted,\n  };\n}\n\ninterface Todo {\n  id: number;\n  text: string;\n  completed: boolean;\n}\n\ninterface TodoApp {\n  addTodo(text: string): Todo;\n  getTodo(id: number): Todo | undefined;\n  toggleTodo(id: number): void;\n  deleteTodo(id: number): boolean;\n  listTodos(): Todo[];\n  listCompleted(): Todo[];\n  listPending(): Todo[];\n  clearCompleted(): void;\n}",
+        "durationMs": 31996,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-3c917c8fa572c5c5/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 15,
+        "failed": 0,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 55,
+        "scoringDurationMs": 55
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Meets spec: exported factory, unique incrementing ids, correct toggle/delete/filters, encapsulated per instance. Minor: getTodo/addTodo return internal object refs.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 3197
+      }
+    },
+    {
+      "id": "44",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:11:04.230Z",
+      "completedAt": "2026-03-05T22:11:36.516Z",
+      "generation": {
+        "success": true,
+        "output": "export function createTtlCache() {\n  const store = new Map<string, { value: unknown; expiresAt: number }>();\n\n  function set(\n    key: string,\n    value: unknown,\n    nowMs: number,\n    ttlMs?: number\n  ): void {\n    const expiresAt = nowMs + (ttlMs ?? 1000);\n    store.set(key, { value, expiresAt });\n  }\n\n  function get(key: string, nowMs: number): unknown {\n    const item = store.get(key);\n    if (!item) return undefined;\n    if (nowMs >= item.expiresAt) {\n      store.delete(key);\n      return undefined;\n    }\n    return item.value;\n  }\n\n  function has(key: string, nowMs: number): boolean {\n    const item = store.get(key);\n    if (!item) return false;\n    if (nowMs >= item.expiresAt) {\n      store.delete(key);\n      return false;\n    }\n    return true;\n  }\n\n  function deleteKey(key: string): boolean {\n    return store.delete(key);\n  }\n\n  function size(nowMs: number): number {\n    let count = 0;\n    for (const [_, item] of store.entries()) {\n      if (nowMs >= item.expiresAt) {\n        store.delete(item);\n        continue;\n      }\n      count++;\n    }\n    return count;\n  }\n\n  function clear(): void {\n    store.clear();\n  }\n\n  return {\n    set,\n    get,\n    has,\n    delete: deleteKey,\n    size,\n    clear,\n  };\n}",
+        "durationMs": 26018,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-37a6c7ed51619de0/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 56,
+        "scoringDurationMs": 56
+      },
+      "frontierEval": {
+        "score": 4,
+        "reasoning": "Core set/get/has TTL logic ok (>= expires), but size() is buggy: deletes using item not key, so expired entries persist and state becomes inconsistent; default TTL is hardcoded.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 6210
+      }
+    },
+    {
+      "id": "45",
+      "runtime": "ollama",
+      "model": "gpt-oss:20b",
+      "harness": "opencode",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-05T22:11:36.516Z",
+      "completedAt": "2026-03-05T22:12:21.223Z",
+      "generation": {
+        "success": true,
+        "output": "export interface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void;\n  get(key: string, nowMs: number): unknown;\n  has(key: string, nowMs: number): boolean;\n  delete(key: string): boolean;\n  size(nowMs: number): number;\n  clear(): void;\n}\n\nexport function createTtlCache(): TtlCache {\n  const store = new Map<string, { value: unknown; expiresAt: number }>();\n\n  return {\n    set(key, value, nowMs, ttlMs = 1000): void {\n      const expiresAt = nowMs + ttlMs;\n      store.set(key, { value, expiresAt });\n    },\n\n    get(key, nowMs): unknown {\n      const entry = store.get(key);\n      if (!entry) return undefined;\n      if (nowMs >= entry.expiresAt) return undefined;\n      return entry.value;\n    },\n\n    has(key, nowMs): boolean {\n      const entry = store.get(key);\n      if (!entry) return false;\n      if (nowMs >= entry.expiresAt) return false;\n      return true;\n    },\n\n    delete(key): boolean {\n      return store.delete(key);\n    },\n\n    size(nowMs): number {\n      let count = 0;\n      for (const { expiresAt } of store.values()) {\n        if (nowMs < expiresAt) count++;\n      }\n      return count;\n    },\n\n    clear(): void {\n      store.clear();\n    },\n  };\n}",
+        "durationMs": 36905,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-a89ceb9b0bfd6325/solution.ts"
+      },
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 62,
+        "scoringDurationMs": 62
+      },
+      "frontierEval": {
+        "score": 7,
+        "reasoning": "Core TTL logic and >= expiry boundary are correct; set refreshes TTL. Main gap: default TTL is hardcoded (not configurable via factory), and expired entries linger in Map.",
+        "model": "openai/gpt-5.2",
+        "latencyMs": 7738
+      }
+    }
+  ]
+}
