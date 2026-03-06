@@ -7,7 +7,8 @@
     "bunVersion": "1.3.3"
   },
   "machine": {
-    "profileId": "anon_6fe55c56c31d",
+    "profileId": "mac-mini-m4-pro-64gb",
+    "label": "Mac Mini M4 Pro 64GB",
     "hardware": {
       "platform": "darwin",
       "arch": "arm64",

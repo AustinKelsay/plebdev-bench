@@ -17,6 +17,7 @@ export const ALL_FILTER_VALUE = "all";
 /** Active leaderboard filter state. */
 export interface FilterState {
 	machine: string;
+	models: string[];
 	runtime: string;
 	harness: string;
 	passType: string;
@@ -37,6 +38,7 @@ export interface MachineFilterOption {
 export function createDefaultFilterState(): FilterState {
 	return {
 		machine: ALL_FILTER_VALUE,
+		models: [],
 		runtime: ALL_FILTER_VALUE,
 		harness: ALL_FILTER_VALUE,
 		passType: ALL_FILTER_VALUE,
@@ -115,6 +117,9 @@ export function filterItems(
 	return items.filter((item) => {
 		if (filters.machine !== ALL_FILTER_VALUE) {
 			if (item.machineProfileId !== filters.machine) return false;
+		}
+		if (filters.models.length > 0 && !filters.models.includes(item.model)) {
+			return false;
 		}
 		if (
 			filters.runtime !== ALL_FILTER_VALUE &&

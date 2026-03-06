@@ -2,7 +2,8 @@
   "schemaVersion": "0.3.0",
   "runId": "20260305-135118-b11d08",
   "machine": {
-    "profileId": "anon_6fe55c56c31d",
+    "profileId": "mac-mini-m4-pro-64gb",
+    "label": "Mac Mini M4 Pro 64GB",
     "hardware": {
       "platform": "darwin",
       "arch": "arm64",

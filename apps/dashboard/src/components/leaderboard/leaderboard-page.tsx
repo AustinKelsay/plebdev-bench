@@ -7,8 +7,13 @@
  * - Aggregation is precomputed using machine+matrix-key latest-wins semantics
  */
 
+import { LeaderboardChartGallery } from "@/components/leaderboard/leaderboard-chart-gallery";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
-import { Badge } from "@/components/ui/badge";
+import { LeaderboardLatestRuns } from "@/components/leaderboard/leaderboard-latest-runs";
+import { LeaderboardResultsTable } from "@/components/leaderboard/leaderboard-results-table";
+import { LeaderboardSummaryCards } from "@/components/leaderboard/leaderboard-summary-cards";
+import { ModelFilterDropdown } from "@/components/leaderboard/model-filter-dropdown";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Select,
@@ -18,18 +23,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { computePassRate } from "@/lib/aggregations";
 import { fetchDashboardIndex, fetchLatestAggregate } from "@/lib/api";
 import type { DashboardIndex, LeaderboardAggregate } from "@/lib/types";
-import { formatDate, formatDuration, formatPercent } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -104,6 +100,7 @@ export function LeaderboardPage() {
 		() => computePassRate(filteredItems),
 		[filteredItems],
 	);
+	const latestRuns = useMemo(() => index?.runs.slice(0, 6) ?? [], [index]);
 
 	const machineOptions = useMemo(
 		() => buildMachineFilterOptions(items),
@@ -111,6 +108,10 @@ export function LeaderboardPage() {
 	);
 	const runtimeOptions = useMemo(
 		() => uniqueValues(items, (item) => item.runtime),
+		[items],
+	);
+	const modelOptions = useMemo(
+		() => uniqueValues(items, (item) => item.model),
 		[items],
 	);
 	const harnessOptions = useMemo(
@@ -136,6 +137,12 @@ export function LeaderboardPage() {
 					<Skeleton className="h-24" />
 					<Skeleton className="h-24" />
 				</div>
+				<Skeleton className="h-[32rem]" />
+				<div className="grid gap-4 lg:grid-cols-3">
+					<Skeleton className="h-40" />
+					<Skeleton className="h-40" />
+					<Skeleton className="h-40" />
+				</div>
 				<Skeleton className="h-80" />
 			</PageContainer>
 		);
@@ -159,74 +166,23 @@ export function LeaderboardPage() {
 				title="Leaderboard"
 				description={
 					aggregate
-						? `Latest checkpoint: ${aggregate.checkpointId}`
+						? `Latest checkpoint ${aggregate.checkpointId} across ${aggregate.summary.runsMatched} matched runs`
 						: "Latest checkpoint aggregate"
 				}
-			/>
-
-			<div className="grid gap-4 md:grid-cols-4">
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm text-foreground-muted">
-							Matched Runs
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="text-2xl font-semibold tabular-nums">
-							{aggregate?.summary.runsMatched ?? 0}
-						</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm text-foreground-muted">
-							Machines
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="text-2xl font-semibold tabular-nums">
-							{aggregate?.summary.machines ?? 0}
-						</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm text-foreground-muted">
-							Deduped Items
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="text-2xl font-semibold tabular-nums">
-							{filteredItems.length}
-						</p>
-						<p className="text-xs text-foreground-faint">
-							of {aggregate?.summary.dedupedItems ?? 0} total
-						</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm text-foreground-muted">
-							Pass Rate
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="text-2xl font-semibold tabular-nums">
-							{formatPercent(passRate.passRate)}
-						</p>
-						<p className="text-xs text-foreground-faint">
-							{passRate.passed}/{passRate.total} tests
-						</p>
-					</CardContent>
-				</Card>
-			</div>
+			>
+				<Link to="/runs">
+					<Button variant="outline" size="sm">
+						All Runs
+					</Button>
+				</Link>
+			</PageHeader>
 
 			<Card>
 				<CardHeader className="pb-3">
 					<CardTitle className="text-base">Filters</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid gap-3 md:grid-cols-5">
+					<div className="grid gap-3 md:grid-cols-6">
 						<Select
 							value={filters.machine}
 							onValueChange={(value) =>
@@ -245,6 +201,14 @@ export function LeaderboardPage() {
 								))}
 							</SelectContent>
 						</Select>
+
+						<ModelFilterDropdown
+							models={modelOptions}
+							selectedModels={filters.models}
+							onSelectionChange={(models) =>
+								setFilters((prev) => ({ ...prev, models }))
+							}
+						/>
 
 						<Select
 							value={filters.runtime}
@@ -325,6 +289,19 @@ export function LeaderboardPage() {
 				</CardContent>
 			</Card>
 
+			<LeaderboardSummaryCards
+				aggregate={aggregate}
+				filteredItemCount={filteredItems.length}
+				passRate={passRate}
+			/>
+
+			<LeaderboardChartGallery items={filteredItems} />
+
+			<LeaderboardLatestRuns
+				runs={latestRuns}
+				latestCheckpointId={index?.latestCheckpointId ?? null}
+			/>
+
 			{(aggregate?.summary.runsMatched ?? 0) === 0 &&
 				(index?.runs.length ?? 0) > 0 && (
 					<div className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
@@ -333,96 +310,7 @@ export function LeaderboardPage() {
 					</div>
 				)}
 
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-base">Aggregated Results</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Machine</TableHead>
-								<TableHead>Runtime</TableHead>
-								<TableHead>Model</TableHead>
-								<TableHead>Harness</TableHead>
-								<TableHead>Test</TableHead>
-								<TableHead>Pass</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead>Score</TableHead>
-								<TableHead>Duration</TableHead>
-								<TableHead>Source Run</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{filteredItems.map((item) => (
-								<TableRow
-									key={`${item.machineProfileId}|${item.id}|${item.sourceRunId}`}
-								>
-									<TableCell>
-										<div className="flex flex-col gap-1">
-											<span className="font-medium">
-												{item.machineLabel ?? item.machineProfileId}
-											</span>
-											<Badge variant="secondary" className="w-fit">
-												{item.verificationStatus}
-											</Badge>
-										</div>
-									</TableCell>
-									<TableCell>{item.runtime}</TableCell>
-									<TableCell className="max-w-[240px] truncate">
-										{item.model}
-									</TableCell>
-									<TableCell>{item.harness}</TableCell>
-									<TableCell>{item.test}</TableCell>
-									<TableCell>{item.passType}</TableCell>
-									<TableCell>
-										<Badge
-											variant={
-												item.status === "completed" ? "success" : "destructive"
-											}
-										>
-											{item.status}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										{item.automatedScore
-											? `${item.automatedScore.passed}/${item.automatedScore.total}`
-											: "—"}
-									</TableCell>
-									<TableCell>
-										{item.generation?.durationMs !== undefined
-											? formatDuration(item.generation.durationMs)
-											: "—"}
-									</TableCell>
-									<TableCell>
-										<div className="flex flex-col gap-1">
-											<Link
-												to={`/runs/${item.sourceRunId}`}
-												className="underline underline-offset-2 hover:text-foreground"
-											>
-												{item.sourceRunId}
-											</Link>
-											<span className="text-xs text-foreground-faint">
-												{formatDate(item.sourceCompletedAt)}
-											</span>
-										</div>
-									</TableCell>
-								</TableRow>
-							))}
-							{filteredItems.length === 0 && (
-								<TableRow>
-									<TableCell
-										colSpan={10}
-										className="text-center text-foreground-muted"
-									>
-										No items match current filters.
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				</CardContent>
-			</Card>
+			<LeaderboardResultsTable items={filteredItems} />
 		</PageContainer>
 	);
 }
