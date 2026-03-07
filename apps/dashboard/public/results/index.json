@@ -1,8 +1,25 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-06T20:44:32.192Z",
+  "generatedAt": "2026-03-07T19:02:13.494Z",
   "latestCheckpointId": "chk_sha256v1_61a037f87105",
   "runs": [
+    {
+      "runId": "20260306-135715-91b0ee",
+      "startedAt": "2026-03-06T21:57:15.296Z",
+      "completedAt": "2026-03-07T18:49:30.602Z",
+      "durationMs": 67921880,
+      "summary": {
+        "total": 360,
+        "completed": 318,
+        "failed": 42,
+        "pending": 0
+      },
+      "checkpointId": "chk_sha256v1_61a037f87105",
+      "machineProfileId": "mac-mini-m4-pro-64gb",
+      "machineLabel": "Mac Mini M4 Pro 64GB",
+      "verificationStatus": "self_reported",
+      "isLegacy": false
+    },
     {
       "runId": "20260305-144041-4d5950",
       "startedAt": "2026-03-05T22:40:41.027Z",
@@ -41,10 +58,10 @@
   "checkpoints": [
     {
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "runCount": 2,
-      "rawItemCount": 720,
+      "runCount": 3,
+      "rawItemCount": 1080,
       "machineCount": 1,
-      "latestRunAt": "2026-03-06T19:43:01.197Z"
+      "latestRunAt": "2026-03-07T18:49:30.602Z"
     }
   ]
 }
