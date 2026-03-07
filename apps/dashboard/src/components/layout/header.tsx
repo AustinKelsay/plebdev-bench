@@ -1,6 +1,6 @@
 /**
  * Purpose: Application header with navigation.
- * Provides links to leaderboard and run history views.
+ * Provides links to the main dashboard views.
  */
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
@@ -16,6 +16,7 @@ export function Header() {
 	const navItems = [
 		{ href: "/leaderboard", label: "Leaderboard" },
 		{ href: "/runs", label: "Runs" },
+		{ href: "/about", label: "About" },
 	];
 
 	return (
