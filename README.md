@@ -29,8 +29,8 @@ Outputs (per run):
   - run provenance metadata (`verificationStatus`, source)
 
 Built-ins:
-- **compare**: diff two runs and print deltas (pass rate, rubric, time/energy, etc.)
-- **checkpointed aggregation**: `dashboard:index` builds latest-checkpoint leaderboard artifacts
+- **compare**: diff two runs and print deltas (pass rate, frontier eval, duration, status changes, etc.)
+- **checkpointed aggregation**: `dashboard:index` builds latest-checkpoint leaderboard artifacts with machine-aware best-result selection
 
 Current benchmark tests:
 - `smoke` — basic add function sanity check
@@ -257,6 +257,7 @@ Design constraints:
 - Runs are treated as append-only facts: publishing is a copy/commit action, not a mutation of prior runs.
 - The dashboard validates fetched JSON at the boundary (Zod) and fails loudly on schema mismatch.
 - Latest leaderboard view is strict to the currently computed benchmark checkpoint.
+- Checkpoint aggregates group by machine + runtime + model + harness + test + passType, prefer the strongest result for each key, and only use recency as a later tiebreaker.
 - Legacy runs (missing checkpoint/machine metadata) remain visible in run history and are excluded from latest-checkpoint leaderboard aggregation.
 
 ## Hosted dashboard (what we implemented)

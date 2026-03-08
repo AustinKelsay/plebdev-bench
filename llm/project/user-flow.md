@@ -79,7 +79,7 @@ This is the core loop executed per matrix item.
   - Generated code snapshot (inline in JSON and/or separate file)
   - Automated test results (passed/failed/total + logs)
   - Frontier eval score + reasoning (if enabled)
-  - Resource metrics (memory + energy usage)
+  - Timing, token counts, and failure metadata when available
 - **Decision points**:
   - On generation failure: retry with sensible defaults, then mark item failed and continue.
   - On test failure: record failure and continue matrix.
@@ -100,20 +100,20 @@ This is the core loop executed per matrix item.
   - Generated code
   - Failing tests + logs
   - Frontier eval reasoning (if present)
-  - Metadata (model, harness, durations, tokens, resource usage)
+  - Metadata (model, harness, durations, tokens, checkpoint/machine info)
 - **Artifacts**: None new (read-only), unless exporting subsets.
 - **Decision points**:
   - If a regression is found: rerun with a narrower plan? pin versions? open an issue?
 
 ### State S7 — Compare / Analyze (Across Runs)
 - **User sees**:
-  - Diffs between two runs (score deltas, failure deltas, resource deltas)
+  - Diffs between two runs (score deltas, failure deltas, duration deltas)
   - Aggregations (best-of per model, stability across harnesses, etc.)
 - **Artifacts**:
-  - Exported reports (CSV/JSON) for notebooks, and/or a `reports/` directory.
+  - Terminal diff output and optional raw JSON from the compare command.
 - **Decision points**:
   - Which dimension is the “control” (model vs harness vs test vs pass type)?
-  - Which metrics matter most (pass rate vs rubric vs energy/time)?
+  - Which metrics matter most (pass rate vs frontier eval vs duration)?
 
 ## Core Journey (Shared Happy Path)
 
@@ -138,7 +138,7 @@ This is the canonical “end-to-end” flow that all personas use, with differen
   - **Include frontier eval** to get a qualitative score even when tests are noisy.
 - **Key decision points**:
   - If two models tie on tests, use frontier eval as tie-breaker.
-  - If a model is slow/energy-heavy, decide whether to keep it in the candidate pool.
+  - If a model is much slower on the same matrix, decide whether the quality gain is worth it.
 - **Typical transitions**:
   - **S2 → S3**: choose “all models” × “all harnesses” for one test.
   - **S4 → S6**: inspect failures to understand whether issues are model competence vs harness quirks.
@@ -198,10 +198,9 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 ## Result Artifacts (What Users Expect to Find)
 
 - **Per run (directory under `results/`)**:
-  - Run metadata: timestamp, git revision (if available), host info, config snapshot
-  - A single `run.json` containing:
-    - A run-level summary (counts, aggregates)
-    - A list of all matrix items (each with full details)
+  - `plan.json` with checkpoint, machine metadata, config snapshot, and full matrix plan
+  - `run.json` with a run-level summary and all matrix items
+  - `run.partial.json` checkpoints during long runs until final write succeeds
 
 ## MVP Defaults (Resolved)
 

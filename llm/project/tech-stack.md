@@ -8,7 +8,6 @@ This project is a **CLI-driven local benchmark runner** (single command, non-int
 - Automated test scoring
 - Optional frontier-eval via **OpenRouter** (auto-enabled when API key is present)
 - Stable results stored as **one `run.json` per run**
-- Best-effort local resource metrics (memory + energy) on macOS
 
 ## Design Goals (Stack Drivers)
 - **Simple MVP**: minimal dependencies, boring defaults, easy to run locally.
@@ -129,12 +128,12 @@ This section captures “how we use the stack” so the codebase stays consisten
 
 ## Dashboard Stack (`apps/dashboard/`)
 
-The dashboard provides a visual interface for browsing and comparing benchmark results.
+The dashboard provides a visual interface for browsing benchmark results, inspecting latest-checkpoint aggregates, and explaining benchmark semantics.
 
 - **Vite** - Build tool with React plugin, hot module replacement
 - **React 18** - UI framework with hooks
 - **TypeScript** - Type safety
-- **React Router** - Client-side routing (`/runs`, `/runs/:id`, `/compare/:a/:b`)
+- **React Router** - Client-side routing (`/leaderboard`, `/runs`, `/runs/:id`, `/about`)
 - **Tailwind CSS** - Utility-first styling
 - **Custom components built on Radix UI primitives** (following shadcn/ui patterns, dark theme, terminal-inspired palette)
 - **Recharts** - Chart library for visualizations
@@ -149,8 +148,8 @@ The dashboard provides a visual interface for browsing and comparing benchmark r
 
 **Custom Components:**
 - StatusBadge (✓ PASS / ✗ FAIL with semantic colors)
-- DeltaBadge (Δ +5% with directional coloring)
 - InfoTooltip (hover explanations)
+- Header + page containers for shared dashboard navigation/layout
 
 **Charts:**
 - CompositeScoreChart (multi-bar with effective score)
@@ -163,4 +162,3 @@ The dashboard provides a visual interface for browsing and comparing benchmark r
 - **Config file name**: `bench.config.json` vs `plebdev-bench.config.json`
 - **Compare UX**: compare by run ID (search under `results/`) vs explicit file paths
 - **Result schema versioning**: add `schemaVersion` early to avoid future migrations
-

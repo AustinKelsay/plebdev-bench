@@ -66,13 +66,15 @@ src/
 │   ├── run-id.ts         # ID generator
 │   ├── timeout.ts        # Dynamic timeout calculation
 │   ├── code-extractor.ts # Extract code from LLM markdown output
-│   ├── scorer.ts         # Run automated scoring via dynamic import
-│   ├── scoring-spec.ts   # Scoring spec types + loader
+│   ├── scorer.ts         # Run automated scoring via isolated worker/in-process fallback
+│   ├── scoring-spec.ts   # Scoring spec loader + rubric helpers
+│   ├── benchmark-checkpoint.ts # Checkpoint manifest hashing
+│   ├── hardware-profile.ts # Machine profile collection
 │   ├── openrouter-client.ts # Frontier eval via OpenRouter API
 │   ├── stats.ts          # Run statistics calculation + formatting
 │   ├── failure-classifier.ts # Classify generation/scoring errors
 │   ├── test-catalog.ts   # Test catalog discovery + category filtering
-│   └── tool-smoke.ts     # Tool-smoke test generation + scoring
+│   └── tool-smoke.ts     # Tool-smoke constants + pass-type selection
 ├── runner/
 │   ├── index.ts          # Orchestration
 │   ├── plan-builder.ts   # Discovery + matrix expansion
@@ -149,14 +151,15 @@ opencode run "<prompt>" --model ollama/<model> --agent build --format json
 Each run creates `results/<run-id>/`:
 - `plan.json` - Expanded matrix plan (for reproducibility)
 - `run.json` - Execution results with per-item details
+- `run.partial.json` - Crash-safe checkpoint written periodically during long runs
 
 ## Schemas
 
-Schema version: `0.2.3`
+Schema version: `0.3.0`
 
 | Schema | File | Purpose |
 |--------|------|---------|
-| `RuntimeNameSchema` | common.schema.ts | Valid runtime names ("ollama") |
+| `RuntimeNameSchema` | common.schema.ts | Valid runtime names ("ollama", "vllm") |
 | `TestCategorySchema` | common.schema.ts | Test categories ("coding", "computer-use") |
 | `BenchConfig` | config.schema.ts | CLI input, defaults |
 | `RunPlan` | plan.schema.ts | Expanded matrix (plan.json) |
@@ -167,7 +170,7 @@ Schema version: `0.2.3`
 | `AutomatedScore` | result.schema.ts | Passed/failed/total counts |
 | `FrontierEval` | result.schema.ts | GPT-5.2 score + reasoning |
 | `GenerationFailureType` | common.schema.ts | 6 types: timeout, api_error, tool_missing, harness_error, prompt_not_found, unknown |
-| `ScoringFailureType` | common.schema.ts | 7 types: extraction, import, export_validation, test_execution, spec_load, no_spec, unknown |
+| `ScoringFailureType` | common.schema.ts | 9 types: extraction, import, missing_export, factory_init_failed, export_validation, test_execution, spec_load, no_spec, unknown |
 | `FrontierEvalFailureType` | common.schema.ts | 8 types: timeout, auth_error, rate_limited, http_error, invalid_response, parse_error, truncated, unknown |
 
 ## Key Behaviors
@@ -185,7 +188,7 @@ Schema version: `0.2.3`
 - **Fail-fast validation**: Empty or very short output throws error immediately (catches silent failures)
 - **Stderr fallback**: If stdout is empty but stderr has meaningful content, uses stderr as output
 - **Model recognition errors**: Fast empty responses (<2s) indicate model not recognized by OpenCode (check config)
-- **Tool-smoke preflight**: If `tool-smoke` is present, it runs first per model/harness; failures skip remaining items for that model/harness as tool failures
+- **Tool-smoke preflight**: If `tool-smoke` is present, it runs first per runtime/model/harness; failures can skip remaining tool-dependent items for that same slice as tool failures
 - **Failure handling**: Item failures recorded, don't crash run, exit 0
 - **Failure categorization**: Errors classified as generation failures (timeout, api_error, harness_error, prompt_not_found) or scoring failures (extraction, import, export_validation, test_execution, spec_load, no_spec)
 - **Frontier eval failures**: Recorded per-item in `frontierEvalFailure` with type/message/status when OpenRouter calls fail
@@ -210,7 +213,7 @@ Schema version: `0.2.3`
 
 ## Dashboard (`apps/dashboard/`)
 
-React-based visual dashboard for browsing and comparing benchmark results.
+React-based visual dashboard for browsing benchmark results, inspecting latest-checkpoint aggregates, and explaining benchmark semantics.
 
 ```
 apps/dashboard/src/
@@ -228,12 +231,8 @@ apps/dashboard/src/
 │   │   ├── dimension-detail-dialog.tsx
 │   │   ├── failure-breakdown.tsx
 │   │   └── tooling-breakdown.tsx
-│   ├── compare/               # Compare view (5 components)
-│   │   ├── compare-page.tsx
-│   │   ├── compare-summary.tsx
-│   │   ├── compare-table.tsx
-│   │   ├── delta-badge.tsx
-│   │   └── run-selector.tsx
+│   ├── leaderboard/           # Leaderboard UI (filters, table, cards, charts)
+│   ├── about/                 # Benchmark/about page content
 │   └── charts/                # Recharts visualizations (5 charts)
 │       ├── composite-score-chart.tsx   # Effective score + pass rate + tool success
 │       ├── blind-vs-informed-chart.tsx # Paired bar comparison
@@ -250,9 +249,10 @@ apps/dashboard/src/
 ```
 
 **Features:**
+- Leaderboard with latest-checkpoint aggregate, filters, summary cards, and charts
 - Run list with summary cards
 - Run detail with matrix table, scoring breakdown, timing stats
-- Compare view with delta badges and tabbed tables
+- About page describing benchmark, scoring, aggregation, and test semantics
 - Drill-down dialogs for items and dimensions
 - Failure and tooling breakdown panels
 
@@ -285,7 +285,7 @@ effectiveScore = passRate × 0.4 + completionRate × 0.3 + toolSuccessRate × 0.
 Tool-calling harnesses (Goose, OpenCode) use `buildToolPrompt()` to wrap task prompts:
 - `TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"]`
 - Tool success tracked via `tool_missing` failure type
-- Tool-smoke test runs first per model/harness to verify tool support
+- Tool-smoke test runs first per runtime/model/harness to verify tool support
 
 ## Current Status
 

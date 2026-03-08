@@ -7,7 +7,7 @@ Purpose: Post-MVP phase focused on a results dashboard and harness performance o
 This phase builds on the MVP to add a visual dashboard for exploring results and optimize harness performance for faster runs.
 
 ## Goals
-- Provide a beautiful, terminal-inspired dashboard for browsing and comparing benchmark results.
+- Provide a beautiful, terminal-inspired dashboard for browsing benchmark results and latest-checkpoint aggregates.
 - Reduce run times through harness interface optimizations and smarter timeout calculations.
 - Maintain the core contract: CLI-first, stable schemas, deterministic compare.
 
@@ -96,7 +96,7 @@ This phase builds on the MVP to add a visual dashboard for exploring results and
 
 All criteria met:
 
-- ✓ Dashboard renders run list, detail, and compare views with shadcn styling
+- ✓ Dashboard renders leaderboard, run list, and detail views with shadcn styling
 - ✓ Charts display pass rates, timing, and scores using Recharts (5 charts implemented)
 - ✓ Harness optimizations reduce multi-harness run time by 10-20%
 - ✓ Lower default timeouts (60s min, scaled OpenCode overhead) work reliably

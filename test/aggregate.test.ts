@@ -91,13 +91,23 @@ function createRun(
 }
 
 describe("aggregateRunsForCheckpoint", () => {
-	it("uses latest-run-wins for duplicate machine+matrix keys", () => {
+	it("uses best-result-wins for duplicate machine+matrix keys", () => {
 		const checkpointId = "chk_sha256v1_latest";
 		const olderItem = createItem("01", "2026-03-04T12:00:00.000Z", {
-			automatedScore: { passed: 3, failed: 3, total: 6 },
+			automatedScore: { passed: 6, failed: 0, total: 6 },
+			frontierEval: {
+				score: 9,
+				reasoning: "best",
+				model: "grader",
+			},
 		});
 		const newerItem = createItem("01", "2026-03-04T12:10:00.000Z", {
-			automatedScore: { passed: 6, failed: 0, total: 6 },
+			automatedScore: { passed: 3, failed: 3, total: 6 },
+			frontierEval: {
+				score: 4,
+				reasoning: "worse",
+				model: "grader",
+			},
 		});
 
 		const runs: AggregateRunInput[] = [
@@ -107,8 +117,23 @@ describe("aggregateRunsForCheckpoint", () => {
 
 		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
 		expect(aggregate.items).toHaveLength(1);
-		expect(aggregate.items[0].sourceRunId).toBe("run-new");
+		expect(aggregate.items[0].sourceRunId).toBe("run-old");
 		expect(aggregate.items[0].automatedScore?.passed).toBe(6);
+	});
+
+	it("falls back to latest item when duplicate results are equally strong", () => {
+		const checkpointId = "chk_sha256v1_tie";
+		const olderItem = createItem("01", "2026-03-04T12:00:00.000Z");
+		const newerItem = createItem("01", "2026-03-04T12:10:00.000Z");
+
+		const runs: AggregateRunInput[] = [
+			{ run: createRun("run-old", checkpointId, "machine-a", [olderItem]) },
+			{ run: createRun("run-new", checkpointId, "machine-a", [newerItem]) },
+		];
+
+		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
+		expect(aggregate.items).toHaveLength(1);
+		expect(aggregate.items[0].sourceRunId).toBe("run-new");
 	});
 
 	it("does not dedupe across different machines", () => {

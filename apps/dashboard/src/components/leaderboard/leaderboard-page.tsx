@@ -4,7 +4,7 @@
  *
  * Invariants:
  * - Renders only aggregate payload from `/results/aggregates/latest.json`
- * - Aggregation is precomputed using machine+matrix-key latest-wins semantics
+ * - Aggregation is precomputed using machine+matrix-key best-result semantics
  */
 
 import { LeaderboardChartGallery } from "@/components/leaderboard/leaderboard-chart-gallery";

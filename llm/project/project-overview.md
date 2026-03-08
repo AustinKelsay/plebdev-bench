@@ -38,7 +38,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - `computer-use` — bounded machine/sandbox orchestration tasks
 
 ## Scoring & Evaluation
-- **Automated:** run test suite (vitest/jest) against generated code → pass/fail/total
+- **Automated:** import generated code, validate required exports, then run scoring-spec test cases → pass/fail/total
 - **Frontier eval:** send code + rubric to GPT-5.2 xhigh via OpenRouter → score 1–10 + reasoning
 
 ## Architecture & Stack (High Level)
@@ -77,16 +77,18 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - Both blind and informed passes captured per model/harness/test
 - Automated tests run and score correctly
 - Frontier eval returns score + reasoning and is logged
-- Dashboard displays runs with full scoring and comparison
+- Dashboard displays runs with full scoring plus latest-checkpoint leaderboard views
+- CLI compare reports cross-run deltas with checkpoint guardrails
 
 ## Dashboard
 
-React-based visual dashboard at `apps/dashboard/` for browsing and comparing benchmark results.
+React-based visual dashboard at `apps/dashboard/` for browsing benchmark results, inspecting latest-checkpoint aggregates, and explaining benchmark semantics.
 
 **Views:**
+- **Leaderboard** - Latest-checkpoint aggregate with filters, charts, and machine-aware ranking
 - **Run List** - Browse all runs with summary cards
 - **Run Detail** - Matrix table, scoring breakdown, timing stats, failure/tooling analysis
-- **Compare** - Side-by-side diff with deltas
+- **About** - Explains benchmark mechanics, scoring, aggregation, and test catalog details
 
 **Charts:**
 - Composite score (effective score + pass rate + tool success + frontier)

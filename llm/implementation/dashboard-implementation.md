@@ -4,7 +4,7 @@ Purpose: Document the dashboard frontend implementation from the Scale & Polish 
 
 ## Summary
 
-The dashboard provides a visual interface for browsing and comparing benchmark results. It's built with React, TypeScript, Vite, shadcn/ui components, and Recharts for visualizations.
+The dashboard provides a visual interface for browsing benchmark results, inspecting latest-checkpoint aggregates, and explaining benchmark semantics. It's built with React, TypeScript, Vite, shadcn/ui components, and Recharts for visualizations.
 
 ## Architecture
 
@@ -18,9 +18,10 @@ apps/dashboard/
 │   ├── components/
 │   │   ├── ui/              # shadcn/ui components
 │   │   ├── layout/          # Header, page containers
+│   │   ├── about/           # About page content
+│   │   ├── leaderboard/     # Leaderboard page + filters/cards/table
 │   │   ├── run-list/        # Run list page + cards
 │   │   ├── run-detail/      # Run detail page + matrix table
-│   │   ├── compare/         # Compare page + delta badges
 │   │   └── charts/          # Recharts visualizations
 │   ├── hooks/               # Data fetching hooks
 │   ├── lib/                 # Types, API, utils, aggregations
@@ -47,6 +48,14 @@ apps/dashboard/
 
 ## Features
 
+### Leaderboard View (`/leaderboard`)
+
+- Latest-checkpoint aggregate with machine/runtime/model/harness/test/passType filtering
+- Summary cards for pass rate, eval coverage, machine count, and run coverage
+- Latest runs panel with links back to source runs
+- Aggregated results table with machine-aware provenance
+- Chart gallery for effective score, blind vs informed deltas, timing, and frontier correlation
+
 ### Run List View (`/runs`)
 
 - Grid of summary cards showing all benchmark runs
@@ -72,16 +81,11 @@ apps/dashboard/
   - ItemDetailDialog: Click any row to see generation output, scores, and frontier reasoning
   - DimensionDetailDialog: Click chart bars to see dimension details
 
-### Compare View (`/compare`)
+### About View (`/about`)
 
-- Two dropdown selectors to choose runs
-- URL updates to `/compare/:runA/:runB` for shareability
-- **Summary Cards**: matched items, status changes, pass rate delta, frontier eval delta
-- **Tabbed Tables**:
-  - All matched items with deltas
-  - Changes only (items with differences)
-  - Regressions (completed → failed)
-  - Improvements (failed → completed)
+- Explains the benchmark matrix, prompt modes, scoring pipeline, checkpoint semantics, and current test catalog
+- Documents how leaderboard effective score differs from raw automated pass rate
+- Links readers back to run history and leaderboard views
 
 ## Design System
 
@@ -120,16 +124,6 @@ apps/dashboard/
 
 <StatusBadge status="failed" />
 // Renders: ✗ FAIL (red)
-```
-
-### DeltaBadge
-
-```tsx
-<DeltaBadge value={5.2} suffix="%" />
-// Renders: Δ +5.2% (green)
-
-<DeltaBadge value={-12} suffix="s" invert />
-// Renders: Δ -12s (green, inverted for time)
 ```
 
 ### InfoTooltip
@@ -241,9 +235,10 @@ The Vite config includes a custom plugin to serve the results directory:
 
 ## Exit Criteria Status
 
+- [x] Leaderboard renders latest-checkpoint aggregate with filters and charts
 - [x] Dashboard renders run list with summary cards
 - [x] Run detail shows matrix table with status badges and scoring breakdowns
-- [x] Compare view shows deltas with dropdown run selection
+- [x] About page explains benchmark and scoring semantics
 - [x] Pass rate bar chart renders by model/harness/test
 - [x] Timing distribution chart shows generation durations
 - [x] Frontier eval scatter plot shows score vs pass rate

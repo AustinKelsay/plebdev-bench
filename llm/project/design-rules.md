@@ -23,7 +23,7 @@ Purpose: Define Terminal-Native / ANSI-Inspired design rules for `plebdev-bench`
 
 ### Principle 4 — Comparisons are a first-class view
 - Design every result so it can be diffed deterministically.
-- Comparison output should prioritize deltas: pass-rate changes, rubric changes, time/energy changes.
+- Comparison output should prioritize deltas: pass-rate changes, frontier-eval changes, and duration changes.
 - Always preserve original evidence (logs, reasoning) so diffs can be explained.
 
 ### Principle 5 — "Matrix thinking" should feel simple
@@ -110,7 +110,7 @@ Even without a UI, these conventions guide how data is shaped and displayed.
 
 - **Matrix Table (runtime × harness × model × test × passType)**
   - Default view is a table; group rows by runtime, then harness, then model, then test.
-  - Columns (minimum): status, runtime, harness, model, test, passType, tests (p/f/t), rubric score (if any), duration, energy/memory (best-effort).
+  - Columns (minimum): status, runtime, harness, model, test, passType, tests (p/f/t), rubric score (if any), duration, and source/provenance metadata where relevant.
   - Use monospace alignment; truncate long names with ellipsis but preserve full value on hover/copy (UI) or `--verbose` (CLI).
 
 - **Status Badge**
@@ -163,7 +163,8 @@ Even without a UI, these conventions guide how data is shaped and displayed.
 ### Interaction Patterns (Dashboard - Implemented)
 
 - **Drill-down** from matrix rows into detail dialogs (ItemDetailDialog for items, DimensionDetailDialog for chart bars)
-- **Compare** is a first-class route (`/compare/:runA/:runB`); users pick two runs and see deltas immediately
+- **Leaderboard** is the primary aggregate view; users filter the latest-checkpoint aggregate and drill into source runs
+- **About** explains benchmark semantics, scoring, aggregation, and the current test catalog
 - **Copy-first**: run IDs and file paths are easily selectable
 
 ### Chart Components (Dashboard)

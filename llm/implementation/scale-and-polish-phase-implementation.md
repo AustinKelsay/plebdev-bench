@@ -5,7 +5,7 @@ Purpose: Document the Scale & Polish phase implementation - dashboard frontend a
 ## Summary
 
 The Scale & Polish phase delivers:
-- **Feature A: Dashboard Frontend** - Visual interface for browsing and comparing benchmark results (COMPLETE)
+- **Feature A: Dashboard Frontend** - Visual interface for browsing benchmark results and latest-checkpoint aggregates (COMPLETE)
 - **Feature B: Harness Performance Optimizations** - Reduced run times through adapter cleanup and timeout tuning (COMPLETE)
 
 ## Feature A: Dashboard Frontend
@@ -76,16 +76,12 @@ apps/dashboard/
   - **ItemDetailDialog**: Click any row to see generation output, scores, and frontier reasoning
   - **DimensionDetailDialog**: Click chart bars to see dimension details
 
-#### Compare View (`/compare`)
+#### Leaderboard + Run Views
 
-- Two dropdown selectors to choose runs
-- URL updates to `/compare/:runA/:runB` for shareability
-- **Summary Cards**: matched items, status changes (improved/regressed), pass rate delta, frontier eval delta
-- **Tabbed Tables**:
-  - All matched items with deltas
-  - Changes only (items with differences)
-  - Regressions (completed → failed)
-  - Improvements (failed → completed)
+- Leaderboard route (`/leaderboard`) backed by latest-checkpoint aggregate data
+- Run list route (`/runs`) for browsing published runs
+- Run detail route (`/runs/:runId`) for per-run matrix inspection
+- Drill-down dialogs for matrix rows and chart dimensions
 
 ### Design System
 
@@ -125,16 +121,6 @@ apps/dashboard/
 
 <StatusBadge status="failed" />
 // Renders: ✗ FAIL (red background)
-```
-
-#### DeltaBadge
-
-```tsx
-<DeltaBadge value={5.2} suffix="%" />
-// Renders: Δ +5.2% (green for positive)
-
-<DeltaBadge value={-12} suffix="s" invert />
-// Renders: Δ -12s (green, inverted for time decrease)
 ```
 
 #### CompositeScoreChart
@@ -274,12 +260,13 @@ Custom plugin to serve the results directory during development:
 | `apps/dashboard/src/components/ui/` | 9 | shadcn/ui components (incl. info-tooltip) |
 | `apps/dashboard/src/components/layout/` | 2 | Header, page container |
 | `apps/dashboard/src/components/run-list/` | 2 | Run list page + card |
-| `apps/dashboard/src/components/run-detail/` | 9 | Matrix table, status badge, dialogs, stats, breakdowns |
-| `apps/dashboard/src/components/compare/` | 5 | Compare page, selectors, delta badges, tables |
+| `apps/dashboard/src/components/run-detail/` | 11 | Matrix table, status badge, dialogs, stats, breakdowns |
+| `apps/dashboard/src/components/leaderboard/` | 7 | Leaderboard page, filters, latest runs, summary cards, results table, charts |
+| `apps/dashboard/src/components/about/` | 2 | About page content and structured benchmark copy |
 | `apps/dashboard/src/components/charts/` | 5 | Composite score, blind/informed, pass rate, timing, frontier |
-| `apps/dashboard/src/hooks/` | 3 | Data fetching hooks |
+| `apps/dashboard/src/hooks/` | 2 | Data fetching hooks |
 | `apps/dashboard/src/lib/` | 5 | Types, API, utils, aggregations, tooltip-content |
-| `apps/dashboard/src/pages/` | 3 | Route components |
+| `apps/dashboard/src/pages/` | 4 | Route components |
 | `apps/dashboard/` | 7 | Config files (vite, tailwind, tsconfig, etc.) |
 
 ---
@@ -568,7 +555,7 @@ Pre-existing type errors in `openrouter-client.ts` and `scorer.ts` were resolved
 ## Exit Criteria Status
 
 ### Feature A — Dashboard Frontend
-- [x] Dashboard renders run list, detail, and compare views with shadcn styling
+- [x] Dashboard renders leaderboard, run list, and run-detail views with shadcn styling
 - [x] Charts display pass rates, timing, and scores using Recharts
 
 ### Feature B — Harness Performance Optimizations

@@ -8,8 +8,9 @@ Purpose: Document phase-1 implementation for checkpointed cross-run aggregation,
 - Added machine metadata with sanitized hardware profile:
   - `platform`, `arch`, `osRelease`, `cpuModel`, `logicalCores`, `totalMemoryBytes`
 - Added run provenance metadata with `verificationStatus` and `source`.
-- Added latest-wins checkpoint aggregation by:
+- Added machine-aware checkpoint aggregation by:
   - `machineProfileId + runtime + model + harness + test + passType`
+  - strongest-result selection first, with recency only as a tiebreaker
 - Added dashboard leaderboard route (`/leaderboard`) backed by `results/aggregates/latest.json`.
 - Added compare guardrail that blocks cross-checkpoint compares unless `--allow-cross-checkpoint`.
 

@@ -4,7 +4,7 @@
  *
  * Invariants:
  * - Aggregation key is machineProfileId + runtime + model + harness + test + passType
- * - Duplicate keys resolve to latest item by completedAt (fallback startedAt/run timestamps)
+ * - Duplicate keys resolve to the strongest item first, then latest item on exact ties
  * - Outputs are deterministic (stable sorting for items/machines/checkpoints)
  */
 
@@ -148,6 +148,125 @@ function resolveItemTimestamp(run: RunResult, item: MatrixItemResult): number {
 }
 
 /**
+ * Assigns an ordering weight to item execution status for best-result selection.
+ *
+ * @param status - Item execution status
+ * @returns Numeric rank where larger means better
+ */
+function getStatusRank(status: MatrixItemResult["status"]): number {
+	switch (status) {
+		case "completed":
+			return 3;
+		case "failed":
+			return 2;
+		case "running":
+			return 1;
+		case "pending":
+			return 0;
+	}
+}
+
+/**
+ * Produces a comparable pass-rate score for best-result selection.
+ *
+ * @param item - Matrix item candidate
+ * @returns Pass-rate fraction in [0, 1], or -1 when unavailable
+ */
+function getAutomatedPassRate(item: MatrixItemResult): number {
+	if (!item.automatedScore || item.automatedScore.total <= 0) {
+		return -1;
+	}
+	return item.automatedScore.passed / item.automatedScore.total;
+}
+
+/**
+ * Compares two aggregate candidates for the same machine+matrix key.
+ *
+ * Ordering rules:
+ * - Prefer stronger execution outcome and higher automated score
+ * - Prefer higher frontier score when automated results tie
+ * - Prefer successful/faster generations only after score-based comparisons
+ * - Fall back to newer source timestamps to keep the result deterministic
+ *
+ * @param candidate - New candidate entry
+ * @param incumbent - Existing entry
+ * @returns Positive when candidate should replace incumbent
+ */
+function compareAggregateCandidates(
+	candidate: { timestamp: number; aggregated: AggregatedMatrixItem },
+	incumbent: { timestamp: number; aggregated: AggregatedMatrixItem },
+): number {
+	const statusDelta =
+		getStatusRank(candidate.aggregated.status) -
+		getStatusRank(incumbent.aggregated.status);
+	if (statusDelta !== 0) {
+		return statusDelta;
+	}
+
+	const automatedPassRateDelta =
+		getAutomatedPassRate(candidate.aggregated) -
+		getAutomatedPassRate(incumbent.aggregated);
+	if (automatedPassRateDelta !== 0) {
+		return automatedPassRateDelta;
+	}
+
+	const automatedPassedDelta =
+		(candidate.aggregated.automatedScore?.passed ?? -1) -
+		(incumbent.aggregated.automatedScore?.passed ?? -1);
+	if (automatedPassedDelta !== 0) {
+		return automatedPassedDelta;
+	}
+
+	const automatedTotalDelta =
+		(candidate.aggregated.automatedScore?.total ?? -1) -
+		(incumbent.aggregated.automatedScore?.total ?? -1);
+	if (automatedTotalDelta !== 0) {
+		return automatedTotalDelta;
+	}
+
+	const frontierScoreDelta =
+		(candidate.aggregated.frontierEval?.score ?? -1) -
+		(incumbent.aggregated.frontierEval?.score ?? -1);
+	if (frontierScoreDelta !== 0) {
+		return frontierScoreDelta;
+	}
+
+	const generationSuccessDelta =
+		Number(candidate.aggregated.generation?.success === true) -
+		Number(incumbent.aggregated.generation?.success === true);
+	if (generationSuccessDelta !== 0) {
+		return generationSuccessDelta;
+	}
+
+	const candidateDuration = candidate.aggregated.generation?.durationMs;
+	const incumbentDuration = incumbent.aggregated.generation?.durationMs;
+	if (
+		candidateDuration !== undefined &&
+		incumbentDuration !== undefined &&
+		candidateDuration !== incumbentDuration
+	) {
+		return incumbentDuration - candidateDuration;
+	}
+
+	if (candidate.timestamp !== incumbent.timestamp) {
+		return candidate.timestamp - incumbent.timestamp;
+	}
+
+	if (
+		candidate.aggregated.sourceCompletedAt !==
+		incumbent.aggregated.sourceCompletedAt
+	) {
+		return candidate.aggregated.sourceCompletedAt.localeCompare(
+			incumbent.aggregated.sourceCompletedAt,
+		);
+	}
+
+	return candidate.aggregated.sourceRunId.localeCompare(
+		incumbent.aggregated.sourceRunId,
+	);
+}
+
+/**
  * Sorts aggregated items into deterministic order.
  *
  * @param a - First aggregated item
@@ -168,7 +287,7 @@ function sortAggregatedItems(
 }
 
 /**
- * Aggregates run items for a single checkpoint using latest-wins semantics.
+ * Aggregates run items for a single checkpoint using best-result semantics.
  *
  * @param runs - Run inputs containing run and optional plan artifacts
  * @param checkpointId - Target checkpoint to aggregate
@@ -218,12 +337,10 @@ export function aggregateRunsForCheckpoint(
 			}
 
 			const shouldReplace =
-				timestamp > previous.timestamp ||
-				(timestamp === previous.timestamp &&
-					(aggregated.sourceCompletedAt > previous.aggregated.sourceCompletedAt ||
-						(aggregated.sourceCompletedAt ===
-							previous.aggregated.sourceCompletedAt &&
-							aggregated.sourceRunId > previous.aggregated.sourceRunId)));
+				compareAggregateCandidates(
+					{ timestamp, aggregated },
+					previous,
+				) > 0;
 
 			if (shouldReplace) {
 				deduped.set(key, { timestamp, aggregated });

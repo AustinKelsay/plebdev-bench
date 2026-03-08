@@ -493,19 +493,19 @@ After optimizations, typical execution times for a 3B model:
 `src/tests/tool-smoke/` provides a preflight test for tool-calling harnesses.
 
 **Purpose:**
-- Verify that a model/harness combination can successfully use tools
+- Verify that a runtime/model/harness combination can successfully use tools
 - Run before other tests to detect tool failures early
-- Skip remaining items for model/harness if tool-smoke fails
+- Skip remaining tool-dependent items for the same runtime/model/harness slice if tool-smoke fails
 
 **Test Design:**
 - Simple task: write an `add(a, b)` function that returns the sum
 - Minimal complexity to isolate tool-calling from code generation
 - Pass criteria: file created with valid TypeScript function
 
-**Runner Integration** (`src/runner/item-executor.ts`):
-- Tool-smoke items run first per model/harness
+**Runner Integration** (`src/runner/index.ts`, `src/lib/tool-smoke.ts`):
+- Tool-smoke items run first per runtime/model/harness
 - Failures recorded as `tool_missing` generation failure type
-- Subsequent items for same model/harness marked as tool failures
+- Subsequent items for the same runtime/model/harness slice marked as tool failures
 
 **Dashboard Integration:**
 - Tool success rate displayed in CompositeScoreChart

@@ -22,7 +22,7 @@ They are optimized for:
 - `src/runner/` — orchestration, plan building, item execution
 - `src/schemas/` — Zod schemas (config, plan, result, scoring, common)
 - `apps/dashboard/` — React dashboard for browsing results
-  - `src/components/` — UI components (charts, run-detail, compare, layout, ui)
+  - `src/components/` — UI components (about, charts, leaderboard, run-detail, run-list, layout, ui)
   - `src/lib/` — types, API client, aggregations
   - `src/pages/` — route pages
   - `src/hooks/` — data fetching hooks
@@ -105,7 +105,7 @@ Prompt contract convention (recommended across all tests):
 Create a small set of canonical, versioned schemas:
 - `RunPlan` (expanded matrix)
 - `RunResult` (run-level summary + per-item results)
-- `MatrixItemResult` (generation, tests, frontier eval, resource metrics)
+- `MatrixItemResult` (generation, automated scoring, frontier eval, timing/token metadata when available)
 - Include `schemaVersion` early.
 
 ### 4) Harness adapters are isolated and swappable
@@ -121,7 +121,7 @@ Create a small set of canonical, versioned schemas:
 - Store enough evidence to explain outcomes:
   - failing test output
   - frontier eval reasoning (if present)
-  - timing + resource metrics (best-effort)
+  - timing + token metadata (when available)
 
 ### 6) Terminal-native UX constraints
 From `design-rules.md`:
@@ -196,4 +196,3 @@ Before merging changes:
 - Auto-discovery of models/harnesses
 - `plan.json` + one `run.json` per run
 - Frontier eval auto-enabled when API key is present
-- Best-effort resource metrics; never fail runs because metrics are unavailable

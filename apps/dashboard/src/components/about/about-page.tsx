@@ -169,7 +169,7 @@ export function AboutPage() {
 						<CardHeader>
 							<SectionHeading
 								title="Prompt Modes"
-								description="Every selected test can run in one or both pass types."
+								description="Most tests can run in one or both pass types. `tool-smoke` is the exception and uses a single configured pass type."
 							/>
 						</CardHeader>
 						<CardContent>
@@ -186,14 +186,16 @@ export function AboutPage() {
 						</CardHeader>
 						<CardContent className="space-y-3 text-sm leading-6 text-foreground-muted">
 							<p>
-								`tool-smoke` runs once per model and harness pair using a single
-								pass type. Its job is to answer a narrow question: can this
+								`tool-smoke` runs once per runtime, model, and harness
+								combination using a single pass type, preferring `blind` when it
+								is configured. Its job is to answer a narrow question: can this
 								harness actually write code with tools when tools are expected?
 							</p>
 							<p>
 								If the harness fails with `tool_missing` behavior, later
-								tool-dependent items for that pair are skipped so the run does
-								not overstate model weakness when the adapter itself is broken.
+								tool-dependent items for that same runtime/model/harness slice
+								are skipped so the run does not overstate model weakness when the
+								adapter itself is broken.
 							</p>
 						</CardContent>
 					</Card>

@@ -81,7 +81,7 @@ export const aboutSummaryCards: AboutSummaryCard[] = [
 		label: "Failure policy",
 		value: "continue per item",
 		description:
-			"Timeouts, model errors, and eval failures are recorded on the item and the matrix continues. The CLI exits non-zero only on crashes.",
+			"Generation, scoring, and frontier-eval failures are recorded on the item and the matrix continues. The CLI exits non-zero only on crashes.",
 	},
 ];
 
@@ -156,7 +156,7 @@ export const workflowSteps: WorkflowStep[] = [
 	{
 		title: "4. Retry compile failures once",
 		description:
-			"For Goose and OpenCode, compile/import failures can trigger one retry with compiler feedback appended to the original prompt.",
+			"For Goose and OpenCode, import or missing-export failures can trigger one retry with compiler feedback appended to the original prompt.",
 		evidence:
 			"The retry is only promoted if it improves the automated result or fixes an import failure without making the score worse.",
 	},
@@ -229,7 +229,7 @@ export const artifactRows: ArtifactRow[] = [
 	{
 		path: "apps/dashboard/public/results/aggregates/<checkpoint>.json",
 		purpose:
-			"Checkpoint aggregate payload used by the leaderboard for deduped comparison across runs on the same benchmark definition.",
+			"Checkpoint aggregate payload used by the leaderboard for machine-aware comparison across runs on the same benchmark definition.",
 	},
 ];
 
@@ -237,8 +237,8 @@ export const artifactRows: ArtifactRow[] = [
 export const checkpointNotes: string[] = [
 	"Benchmark checkpoints roll whenever benchmark-defining assets change: prompts, metadata, scoring specs, rubrics, harness/runtime code, or core scoring pipeline code.",
 	"The leaderboard reads the latest checkpoint aggregate by default so models are compared against the same benchmark definition.",
-	"Checkpoint aggregates dedupe by machine profile plus runtime/model/harness/test/passType and keep the latest item for that exact key.",
-	"`tool-smoke` is a special preflight test. It can mark a tool harness as missing required tool support before the rest of that model/harness slice runs.",
+	"Checkpoint aggregates group by machine profile plus runtime/model/harness/test/passType, prefer the strongest result for that exact key, and only use recency as a later tiebreaker.",
+	"`tool-smoke` is a special preflight test. It can mark a tool harness as missing required tool support before the rest of that runtime/model/harness slice runs.",
 ];
 
 /** Current test catalog with short contract and scoring focus. */
@@ -256,7 +256,8 @@ export const testCatalog: AboutTestDefinition[] = [
 		slug: "tool-smoke",
 		category: "coding",
 		description: "Tool-calling preflight before the main benchmark suite.",
-		contract: "Still implements a top-level `add(a, b)`, but exercises tool-writing harness behavior first.",
+		contract:
+			"Still implements a top-level `add(a, b)`, but runs as a tool-calling preflight for the runtime/model/harness combination first.",
 		scoringFocus:
 			"Detects tool-missing harness failures early so later tool-dependent items are not misread as model regressions.",
 		tags: ["preflight", "tooling"],

@@ -56,7 +56,7 @@ Run this phase after the MVP is stable and before a public launch, major release
 5. **Release readiness checklist**
    - Audit dependencies (remove unused, pin where needed, document update cadence).
    - Confirm docs are accurate: `README.md`, `llm/project/*`, and key `llm/implementation/*`.
-   - Record a release checklist + known limitations (local-only, best-effort energy metrics).
+   - Record a release checklist + known limitations (local-only scope, static dashboard artifacts, no built-in resource metrics).
 
 ## Exit Criteria
 - High/critical issues resolved or explicitly accepted (documented in a hardening note).
