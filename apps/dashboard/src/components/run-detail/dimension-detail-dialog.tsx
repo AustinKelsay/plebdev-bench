@@ -101,7 +101,7 @@ function SummaryStats({ items }: { items: MatrixItemResult[] }) {
 						Effective
 					</WithInfoTooltip>
 				</p>
-				<p className="text-lg font-bold tabular-nums text-amber-400">
+				<p className="text-lg font-bold tabular-nums text-success">
 					{formatPercent(effectiveScore)}
 				</p>
 			</div>
@@ -148,7 +148,7 @@ function SummaryStats({ items }: { items: MatrixItemResult[] }) {
 						Tool Success
 					</WithInfoTooltip>
 				</p>
-				<p className="text-lg font-bold tabular-nums text-blue-400">
+				<p className="text-lg font-bold tabular-nums text-info">
 					{toolItems.length > 0 ? formatPercent(toolSuccessRate) : "—"}
 				</p>
 			</div>
@@ -209,7 +209,7 @@ function SubDimensionTable({
 								>
 									{formatPercent(m.passRate)}
 								</td>
-								<td className="text-right py-2 px-2 tabular-nums text-blue-400">
+								<td className="text-right py-2 px-2 tabular-nums text-info">
 									{m.toolTotal > 0 ? formatPercent(m.toolSuccessRate) : "—"}
 								</td>
 							</tr>

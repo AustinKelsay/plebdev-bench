@@ -85,7 +85,7 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 
 			{/* Summary Cards */}
 			<div className="grid gap-4 md:grid-cols-4">
-				<Card>
+				<Card className="border-l-2 border-l-success">
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm text-foreground-muted">
 							<WithInfoTooltip tooltip={summaryTooltips.items}>
@@ -108,7 +108,7 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-l-2 border-l-info">
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm text-foreground-muted">
 							<WithInfoTooltip tooltip={summaryTooltips.passRate}>
@@ -134,7 +134,7 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-l-2 border-l-warning">
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm text-foreground-muted">
 							<WithInfoTooltip tooltip={summaryTooltips.frontierEval}>
@@ -167,7 +167,7 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-l-2 border-l-foreground-faint">
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm text-foreground-muted">
 							<WithInfoTooltip tooltip={summaryTooltips.environment}>

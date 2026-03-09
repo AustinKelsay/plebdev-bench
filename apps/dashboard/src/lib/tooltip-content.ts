@@ -164,6 +164,49 @@ export const dimensionDetail = {
 	toolSuccess: "Items with correct tool usage / total tool-expected items.",
 } as const;
 
+/** Model x Test heatmap explanations */
+export const heatmap = {
+	title: "Pass rate matrix showing every model against every test.",
+	description:
+		"Rows = models (sorted by overall pass rate), columns = tests (sorted by difficulty). Color intensity indicates pass rate: green = high, red = low.",
+} as const;
+
+/** Model radar chart explanations */
+export const radar = {
+	title:
+		"Multi-axis comparison of model capabilities across 5 dimensions.",
+	description:
+		"Select 2-5 models to overlay. Axes: Pass Rate, Completion, Tool Success, Frontier, Speed.",
+} as const;
+
+/** Token efficiency scatter explanations */
+export const tokenEfficiency = {
+	title: "Cost-effectiveness: tokens used vs pass rate achieved.",
+	description:
+		"Models in the upper-left quadrant are most efficient (high pass rate, fewer tokens).",
+} as const;
+
+/** Failure breakdown explanations */
+export const failureBreakdown = {
+	title: "Stacked bar showing failure type distribution per model.",
+	description:
+		"Identifies dominant failure modes. Toggle By Model / By Harness tabs.",
+} as const;
+
+/** Test difficulty chart explanations */
+export const testDifficulty = {
+	title: "Which tests are hardest? Sorted by overall failure rate.",
+	description:
+		"Stacked segments show failures by model size bucket (small/medium/large).",
+} as const;
+
+/** Head-to-head comparison explanations */
+export const headToHead = {
+	title: "Direct comparison between two models across all tests.",
+	description:
+		"Diverging bars: left = Model A leads, right = Model B leads. Each row is a test.",
+} as const;
+
 /** Compare page explanations */
 export const compare = {
 	matchedItems:

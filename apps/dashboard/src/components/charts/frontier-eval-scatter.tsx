@@ -1,14 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WithInfoTooltip } from "@/components/ui/info-tooltip";
-import { computeItemPassRate } from "@/lib/aggregations";
-import { scatter as scatterTooltips } from "@/lib/tooltip-content";
-import type { MatrixItemResult } from "@/lib/types";
 /**
  * Purpose: Frontier eval scatter plot using Recharts.
  * Shows relationship between automated pass rate and frontier eval score.
+ * Enhanced with quadrant labels and token-based point sizing.
  */
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WithInfoTooltip } from "@/components/ui/info-tooltip";
+import { computeItemPassRate } from "@/lib/aggregations";
+import { CHART_COLORS } from "@/lib/chart-colors";
+import { scatter as scatterTooltips } from "@/lib/tooltip-content";
+import type { MatrixItemResult } from "@/lib/types";
 import {
 	CartesianGrid,
+	Label,
+	ReferenceLine,
 	ResponsiveContainer,
 	Scatter,
 	ScatterChart,
@@ -22,14 +26,12 @@ interface FrontierEvalScatterProps {
 	items: MatrixItemResult[];
 }
 
-// Colors for different harnesses
 const HARNESS_COLORS: Record<string, string> = {
-	direct: "hsl(212, 100%, 67%)", // info blue
-	goose: "hsl(156, 67%, 55%)", // success green
-	opencode: "hsl(43, 93%, 63%)", // warning yellow
+	direct: "hsl(215, 70%, 62%)",  // steel blue
+	goose: "hsl(142, 60%, 49%)",   // brand green
+	opencode: "hsl(38, 80%, 58%)", // warm amber
 };
 
-// Custom tooltip component
 function CustomTooltip({
 	active,
 	payload,
@@ -42,6 +44,7 @@ function CustomTooltip({
 			test: string;
 			passRate: number;
 			score: number;
+			tokens: number | null;
 		};
 	}>;
 }) {
@@ -57,6 +60,11 @@ function CustomTooltip({
 					Pass rate: {(data.passRate * 100).toFixed(1)}%
 				</p>
 				<p className="text-foreground-muted">Frontier: {data.score}/10</p>
+				{data.tokens !== null && (
+					<p className="text-foreground-faint text-xs">
+						Tokens: {data.tokens.toLocaleString()}
+					</p>
+				)}
 			</div>
 		);
 	}
@@ -64,7 +72,6 @@ function CustomTooltip({
 }
 
 export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
-	// Filter items that have both automated score and frontier eval
 	const dataPoints = items
 		.filter((item) => item.automatedScore && item.frontierEval)
 		.map((item) => ({
@@ -73,6 +80,7 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 			model: item.model,
 			harness: item.harness,
 			test: item.test,
+			tokens: item.generation?.completionTokens ?? null,
 		}));
 
 	if (dataPoints.length === 0) {
@@ -92,13 +100,16 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 		);
 	}
 
-	// Group by harness for coloring
 	const harnesses = [...new Set(dataPoints.map((d) => d.harness))];
 	const dataByHarness = harnesses.map((harness) => ({
 		harness,
 		data: dataPoints.filter((d) => d.harness === harness),
-		color: HARNESS_COLORS[harness] || "hsl(210, 12%, 63%)",
+		color: HARNESS_COLORS[harness] || CHART_COLORS.muted,
 	}));
+
+	// Determine if we have token data for point sizing
+	const hasTokenData = dataPoints.some((d) => d.tokens !== null);
+	const zRange: [number, number] = hasTokenData ? [30, 120] : [60, 60];
 
 	return (
 		<Card>
@@ -125,19 +136,19 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 
 				<ResponsiveContainer width="100%" height={300}>
 					<ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-						<CartesianGrid strokeDasharray="3 3" stroke="hsl(213, 23%, 15%)" />
+						<CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
 						<XAxis
 							type="number"
 							dataKey="passRate"
 							domain={[0, 1]}
 							tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
 							name="Pass Rate"
-							stroke="hsl(210, 12%, 63%)"
-							tick={{ fill: "hsl(210, 12%, 63%)", fontSize: 12 }}
+							stroke={CHART_COLORS.text}
+							tick={{ fill: CHART_COLORS.text, fontSize: 12 }}
 							label={{
 								value: "Automated Pass Rate",
 								position: "bottom",
-								fill: "hsl(210, 12%, 63%)",
+								fill: CHART_COLORS.text,
 								fontSize: 12,
 							}}
 						/>
@@ -146,17 +157,40 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 							dataKey="score"
 							domain={[0, 10]}
 							name="Frontier Score"
-							stroke="hsl(210, 12%, 63%)"
-							tick={{ fill: "hsl(210, 12%, 63%)", fontSize: 12 }}
+							stroke={CHART_COLORS.text}
+							tick={{ fill: CHART_COLORS.text, fontSize: 12 }}
 							label={{
 								value: "Frontier Score",
 								angle: -90,
 								position: "insideLeft",
-								fill: "hsl(210, 12%, 63%)",
+								fill: CHART_COLORS.text,
 								fontSize: 12,
 							}}
 						/>
-						<ZAxis range={[60, 60]} />
+						<ZAxis
+							type="number"
+							dataKey="tokens"
+							range={zRange}
+							name="Tokens"
+						/>
+						{/* Quadrant reference lines */}
+						<ReferenceLine
+							x={0.5}
+							stroke="hsl(210, 12%, 25%)"
+							strokeDasharray="3 3"
+						/>
+						<ReferenceLine
+							y={5}
+							stroke="hsl(210, 12%, 25%)"
+							strokeDasharray="3 3"
+						>
+							<Label
+								value="High Eval"
+								position="insideTopRight"
+								fill="hsl(210, 10%, 35%)"
+								fontSize={9}
+							/>
+						</ReferenceLine>
 						<Tooltip content={<CustomTooltip />} />
 						{dataByHarness.map(({ harness, data, color }) => (
 							<Scatter key={harness} name={harness} data={data} fill={color} />
@@ -164,7 +198,6 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 					</ScatterChart>
 				</ResponsiveContainer>
 
-				{/* Correlation note */}
 				<p className="text-xs text-foreground-faint mt-2 text-center">
 					<WithInfoTooltip tooltip={scatterTooltips.correlation} side="top">
 						Points show correlation between automated test pass rate and

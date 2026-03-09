@@ -2,7 +2,7 @@
  * Purpose: Root App component with React Router setup.
  * Defines routes for leaderboard, run list, run detail, and about views.
  */
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Header } from "./components/layout/header";
 import { AboutRoutePage } from "./pages/about";
 import { LeaderboardRoutePage } from "./pages/leaderboard";
@@ -11,7 +11,7 @@ import { RunsPage } from "./pages/runs";
 
 function App() {
 	return (
-		<BrowserRouter>
+		<HashRouter>
 			<div className="min-h-screen bg-background text-foreground">
 				<Header />
 				<main className="container mx-auto px-4 py-6">
@@ -25,7 +25,7 @@ function App() {
 					</Routes>
 				</main>
 			</div>
-		</BrowserRouter>
+		</HashRouter>
 	);
 }
 

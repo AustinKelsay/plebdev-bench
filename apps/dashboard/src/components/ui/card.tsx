@@ -1,23 +1,27 @@
 import { cn } from "@/lib/utils";
 /**
  * Purpose: Card component for content containers.
- * Based on shadcn/ui Card with terminal-native styling.
+ * Based on shadcn/ui Card with terminal-native styling and optional glow effect.
  */
 import * as React from "react";
 
-const Card = React.forwardRef<
-	HTMLDivElement,
-	React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-	<div
-		ref={ref}
-		className={cn(
-			"rounded border border-border bg-card text-card-foreground",
-			className,
-		)}
-		{...props}
-	/>
-));
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+	glow?: boolean;
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+	({ className, glow, ...props }, ref) => (
+		<div
+			ref={ref}
+			className={cn(
+				"rounded border border-border bg-card text-card-foreground",
+				glow && "card-glow",
+				className,
+			)}
+			{...props}
+		/>
+	),
+);
 Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<

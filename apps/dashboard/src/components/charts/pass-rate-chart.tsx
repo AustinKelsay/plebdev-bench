@@ -50,11 +50,11 @@ function CustomTooltip({
 	return null;
 }
 
-// Get bar color based on pass rate
+// Get bar color based on pass rate — uses chart-colors for consistency
 function getBarColor(passRate: number): string {
-	if (passRate >= 0.8) return "hsl(156, 67%, 55%)"; // success
-	if (passRate >= 0.5) return "hsl(43, 93%, 63%)"; // warning
-	return "hsl(0, 100%, 68%)"; // danger
+	if (passRate >= 0.8) return "hsl(142, 60%, 49%)"; // brand green
+	if (passRate >= 0.5) return "hsl(38, 80%, 58%)";  // warm amber
+	return "hsl(0, 70%, 60%)";                         // soft red
 }
 
 function PassRateBarChart({
@@ -82,7 +82,7 @@ function PassRateBarChart({
 				layout="vertical"
 				margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
 			>
-				<CartesianGrid strokeDasharray="3 3" stroke="hsl(213, 23%, 15%)" />
+				<CartesianGrid strokeDasharray="3 3" stroke="hsl(213, 23%, 18%)" />
 				<XAxis
 					type="number"
 					domain={[0, 1]}

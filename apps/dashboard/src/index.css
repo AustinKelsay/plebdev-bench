@@ -1,6 +1,7 @@
 /**
  * Purpose: Global styles with terminal-native CSS variables.
  * Implements ANSI-inspired color palette from design-rules.md.
+ * Adds glow effects, gradients, noise texture, and stagger animations.
  */
 
 @tailwind base;
@@ -23,11 +24,14 @@
 		--border: 213 23% 15%; /* #1E2630 */
 		--input: 213 23% 15%;
 
-		/* Semantic accents */
-		--success: 156 67% 55%; /* #3DDC97 (PASS) */
-		--warning: 43 93% 63%; /* #F7C948 (WARN) */
-		--danger: 0 100% 68%; /* #FF5C5C (FAIL) */
-		--info: 212 100% 67%; /* #58A6FF (links, selected) */
+		/* Semantic accents — perceptually balanced for dark bg */
+		--success: 142 60% 49%; /* #34c759 (PASS / brand) */
+		--warning: 38 80% 58%; /* warm amber (WARN) */
+		--danger: 0 70% 60%; /* soft red (FAIL) */
+		--info: 215 70% 62%; /* steel blue (links, selected) */
+
+		/* Brand accent — #34c759 */
+		--brand: 142 60% 49%;
 
 		/* shadcn/ui semantic mappings */
 		--card: 213 30% 8%;
@@ -48,6 +52,19 @@
 
 		/* Border radius - crisp terminal feel */
 		--radius: 0.25rem;
+
+		/* Glow & gradient custom properties */
+		--glow-brand: 0 0 20px hsla(142, 60%, 49%, 0.15);
+		--glow-blue: 0 0 20px hsla(212, 100%, 67%, 0.15);
+		--gradient-brand: linear-gradient(
+			135deg,
+			hsl(142, 60%, 49%) 0%,
+			hsl(172, 60%, 45%) 50%,
+			hsl(212, 100%, 67%) 100%
+		);
+
+		/* Inline SVG noise texture */
+		--noise-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
 	}
 }
 
@@ -84,4 +101,76 @@
 
 ::-webkit-scrollbar-thumb:hover {
 	background: hsl(var(--foreground-faint));
+}
+
+/* ── Glow & animation utilities ── */
+
+@keyframes glowPulse {
+	0%,
+	100% {
+		box-shadow: var(--glow-brand);
+	}
+	50% {
+		box-shadow: 0 0 30px hsla(142, 60%, 49%, 0.25);
+	}
+}
+
+.card-glow {
+	transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card-glow:hover {
+	box-shadow: 0 0 24px hsla(142, 60%, 49%, 0.1),
+		0 0 48px hsla(212, 100%, 67%, 0.06);
+	border-color: hsla(210, 30%, 92%, 0.12);
+}
+
+/* Stagger delay utilities for fade-slide-up animation */
+.animate-stagger-1 {
+	animation-delay: 0.05s;
+}
+.animate-stagger-2 {
+	animation-delay: 0.1s;
+}
+.animate-stagger-3 {
+	animation-delay: 0.15s;
+}
+.animate-stagger-4 {
+	animation-delay: 0.2s;
+}
+.animate-stagger-5 {
+	animation-delay: 0.25s;
+}
+.animate-stagger-6 {
+	animation-delay: 0.3s;
+}
+.animate-stagger-7 {
+	animation-delay: 0.35s;
+}
+.animate-stagger-8 {
+	animation-delay: 0.4s;
+}
+
+/* Noise texture overlay for header */
+.noise-overlay::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: var(--noise-texture);
+	background-repeat: repeat;
+	background-size: 128px 128px;
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-delay: 0ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }

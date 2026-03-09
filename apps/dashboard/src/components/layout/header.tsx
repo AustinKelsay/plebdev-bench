@@ -1,5 +1,5 @@
 /**
- * Purpose: Application header with navigation.
+ * Purpose: Application header with navigation, gradient accent bar, and brand styling.
  * Provides links to the main dashboard views.
  */
 import { cn } from "@/lib/utils";
@@ -20,31 +20,52 @@ export function Header() {
 	];
 
 	return (
-		<header className="border-b border-border bg-background-raised">
-			<div className="container mx-auto flex h-14 items-center px-4">
-				<Link to="/" className="mr-8 flex items-center space-x-2">
-					<span className="text-lg font-semibold text-foreground">
-						plebdev-bench
-					</span>
-					<span className="text-xs text-foreground-faint">dashboard</span>
-				</Link>
-				<nav className="flex items-center space-x-6">
-					{navItems.map((item) => (
-						<Link
-							key={item.href}
-							to={item.href}
-							className={cn(
-								"text-sm font-medium transition-colors hover:text-foreground",
-								location.pathname.startsWith(item.href)
-									? "text-foreground"
-									: "text-foreground-muted",
-							)}
-						>
-							{item.label}
-						</Link>
-					))}
-				</nav>
-			</div>
-		</header>
+		<>
+			{/* Thin gradient brand bar */}
+			<div
+				className="h-0.5 w-full"
+				style={{ background: "var(--gradient-brand)" }}
+			/>
+			<header className="relative border-b border-border bg-background-raised noise-overlay">
+				<div className="container mx-auto flex h-14 items-center px-4 relative z-10">
+					<Link to="/" className="mr-8 flex items-center space-x-1">
+						<span className="text-lg font-semibold text-success">
+							pleb
+						</span>
+						<span className="text-lg font-semibold text-foreground">
+							dev-bench
+						</span>
+					</Link>
+					<nav className="flex items-center space-x-6">
+						{navItems.map((item) => {
+							const isActive = location.pathname.startsWith(item.href);
+							return (
+								<Link
+									key={item.href}
+									to={item.href}
+									className={cn(
+										"relative text-sm font-medium transition-colors hover:text-foreground pb-0.5",
+										isActive
+											? "text-foreground"
+											: "text-foreground-muted",
+									)}
+								>
+									{item.label}
+									{isActive && (
+										<span
+											className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+											style={{
+												background: "#34c759",
+												boxShadow: "0 0 8px hsla(142, 60%, 49%, 0.4)",
+											}}
+										/>
+									)}
+								</Link>
+							);
+						})}
+					</nav>
+				</div>
+			</header>
+		</>
 	);
 }

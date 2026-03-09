@@ -29,7 +29,7 @@ export function RunCard({ run, passRate }: RunCardProps) {
 
 	return (
 		<Link to={`/runs/${runId}`}>
-			<Card className="transition-colors hover:bg-accent/50">
+			<Card className="card-glow transition-colors hover:bg-accent/50">
 				<CardHeader className="pb-2">
 					<div className="flex items-start justify-between">
 						<CardTitle className="text-sm truncate">{runId}</CardTitle>

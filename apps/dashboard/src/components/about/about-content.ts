@@ -1,44 +1,37 @@
 /**
  * Purpose: Static content model for the dashboard about page.
- * Exports: aboutSummaryCards, benchmarkDimensions, passTypeDetails, workflowSteps, scoringSystems, artifactRows, checkpointNotes, testCatalog
+ * Exports: aboutFacts, benchmarkDimensions, workflowSteps, scoringSystems, artifactRows, checkpointNotes, testCatalog
  *
  * Invariants:
  * - Copy reflects current local benchmark behavior and dashboard semantics.
  * - Keep content structured so the page can render small reusable sections.
  */
 
-/** Summary card copy shown at the top of the about page. */
-export interface AboutSummaryCard {
+/** Quick-reference fact. */
+export interface AboutFact {
 	label: string;
 	value: string;
-	description: string;
+	detail: string;
 }
 
 /** Matrix dimension description. */
 export interface BenchmarkDimension {
-	name: string;
-	meaning: string;
-	details: string;
-}
-
-/** Pass type explanation row. */
-export interface PassTypeDetail {
 	name: string;
 	description: string;
 }
 
 /** Benchmark workflow stage description. */
 export interface WorkflowStep {
-	title: string;
+	step: string;
 	description: string;
-	evidence: string;
+	detail: string;
 }
 
 /** Scoring system explanation row. */
 export interface ScoringSystem {
 	name: string;
 	scale: string;
-	howItWorks: string;
+	description: string;
 }
 
 /** Artifact explanation row. */
@@ -47,279 +40,179 @@ export interface ArtifactRow {
 	purpose: string;
 }
 
-/** Test catalog entry for about-page rendering. */
+/** Test catalog entry. */
 export interface AboutTestDefinition {
 	slug: string;
-	category: string;
 	description: string;
 	contract: string;
-	scoringFocus: string;
+	scoring: string;
 	tags: string[];
 }
 
 /** Top-level benchmark facts. */
-export const aboutSummaryCards: AboutSummaryCard[] = [
+export const aboutFacts: AboutFact[] = [
 	{
-		label: "Execution matrix",
+		label: "Matrix",
 		value: "runtime x harness x model x test x passType",
-		description:
-			"Every run expands into a reproducible matrix so results are comparable across model and harness combinations.",
+		detail: "Reproducible Cartesian product so results are comparable.",
 	},
 	{
 		label: "Artifacts",
-		value: "plan.json + run.json",
-		description:
-			"Each run writes a resolved plan and a fact-only result bundle, plus a crash-safe partial snapshot while work is in flight.",
+		value: "plan.json + run.json per run",
+		detail: "Resolved plan + fact-only results. Crash-safe partial snapshots in flight.",
 	},
 	{
-		label: "Primary score",
-		value: "automated pass / total",
-		description:
-			"Generated code is imported, export-checked, and executed against a per-test scoring spec before any optional frontier grading happens.",
+		label: "Score",
+		value: "passed / total automated tests",
+		detail: "Code is imported, export-checked, and run against a scoring spec.",
 	},
 	{
-		label: "Failure policy",
-		value: "continue per item",
-		description:
-			"Generation, scoring, and frontier-eval failures are recorded on the item and the matrix continues. The CLI exits non-zero only on crashes.",
+		label: "Failures",
+		value: "Recorded, never fatal",
+		detail: "Generation, scoring, and frontier failures are saved per item. CLI exits 0.",
 	},
 ];
 
-/** Benchmark matrix dimension descriptions. */
+/** Benchmark matrix dimensions. */
 export const benchmarkDimensions: BenchmarkDimension[] = [
-	{
-		name: "runtime",
-		meaning: "Inference backend that serves the model.",
-		details: "Today that is primarily Ollama and vLLM.",
-	},
-	{
-		name: "harness",
-		meaning: "Adapter that talks to the model and captures the output.",
-		details: "Examples: direct HTTP, Goose, and OpenCode.",
-	},
-	{
-		name: "model",
-		meaning: "The concrete model name resolved for a runtime.",
-		details: "Aliases can map one logical model name to different runtime-specific model IDs.",
-	},
-	{
-		name: "test",
-		meaning: "A benchmark task under `src/tests/<slug>`.",
-		details:
-			"Each test owns prompts, metadata, scoring spec, and an optional rubric for frontier evaluation.",
-	},
-	{
-		name: "passType",
-		meaning: "Prompt mode used for the task.",
-		details:
-			"`blind` hides the benchmark framing. `informed` exposes more explicit task/test context to measure prompt sensitivity.",
-	},
+	{ name: "runtime", description: "Inference backend (Ollama, vLLM)." },
+	{ name: "harness", description: "Adapter that calls the model (direct HTTP, Goose, OpenCode)." },
+	{ name: "model", description: "Concrete model name. Aliases map logical names to runtime-specific IDs." },
+	{ name: "test", description: "Task under `src/tests/<slug>` with prompts, scoring spec, and optional rubric." },
+	{ name: "passType", description: "`blind` (task contract only) or `informed` (includes benchmark framing)." },
 ];
 
-/** Prompt-mode details. */
-export const passTypeDetails: PassTypeDetail[] = [
-	{
-		name: "blind",
-		description:
-			"Measures how a model performs from the task contract alone, without benchmark-name hints.",
-	},
-	{
-		name: "informed",
-		description:
-			"Measures how performance changes when the prompt includes the benchmark framing and more explicit expectations.",
-	},
-];
-
-/** Run workflow stages. */
+/** Run pipeline stages. */
 export const workflowSteps: WorkflowStep[] = [
 	{
-		title: "1. Plan the run",
-		description:
-			"The runner resolves config, discovers runtimes/models/tests/harnesses, computes a benchmark checkpoint hash, and expands the full matrix.",
-		evidence:
-			"`plan.json` stores the resolved config, machine metadata, checkpoint metadata, and every matrix item.",
+		step: "Plan",
+		description: "Discover runtimes/models/tests, compute checkpoint hash, expand matrix.",
+		detail: "Writes `plan.json` with config, machine metadata, and every matrix item.",
 	},
 	{
-		title: "2. Generate code",
-		description:
-			"For each matrix item, the selected harness loads `prompt.<passType>.md`, calls the selected runtime/model, and records generation output, timing, and any token counters that are available.",
-		evidence:
-			"Generation failures are classified as structured types such as timeout, API error, tool missing, or harness error.",
+		step: "Generate",
+		description: "Each harness loads the prompt, calls the model, records output + timing.",
+		detail: "Failures classified as timeout, api_error, tool_missing, or harness_error.",
 	},
 	{
-		title: "3. Score automatically",
-		description:
-			"When generation succeeds, the scorer extracts code, writes a temp module, imports it, validates required exports, then runs the per-test cases defined in `scoring.spec.ts`.",
-		evidence:
-			"Automated totals include both export checks and test-case checks, not just the function assertions.",
+		step: "Score",
+		description: "Extract code, import it, validate exports, run `scoring.spec.ts` tests.",
+		detail: "Score = export checks + test assertions. Import/export failures reduce score.",
 	},
 	{
-		title: "4. Retry compile failures once",
-		description:
-			"For Goose and OpenCode, import or missing-export failures can trigger one retry with compiler feedback appended to the original prompt.",
-		evidence:
-			"The retry is only promoted if it improves the automated result or fixes an import failure without making the score worse.",
+		step: "Retry",
+		description: "Goose/OpenCode: one retry with compiler feedback on import failures.",
+		detail: "Only promoted if it improves score or fixes imports without regression.",
 	},
 	{
-		title: "5. Optionally frontier-grade",
-		description:
-			"If `OPENROUTER_API_KEY` is present and a test has `rubric.md`, the generated code is sent to a frontier evaluator through OpenRouter for a rubric score and reasoning.",
-		evidence:
-			"Frontier eval is best-effort: auth, timeout, parse, and rate-limit failures are recorded without crashing the run.",
+		step: "Frontier eval",
+		description: "Optional rubric grading via OpenRouter if API key is set.",
+		detail: "Best-effort: auth/timeout/rate-limit failures recorded without crashing.",
 	},
 	{
-		title: "6. Persist facts",
-		description:
-			"Each item result records status, generation data, automated score, optional frontier eval, and any failures. Aggregation and comparison happen after the run from those saved facts.",
-		evidence:
-			"`run.json` is append-only evidence. The dashboard and CLI compare commands read from saved artifacts rather than mutating past runs.",
+		step: "Persist",
+		description: "Write `run.json` with all item results, scores, and failures.",
+		detail: "Append-only evidence. Dashboard reads artifacts; never mutates past runs.",
 	},
 ];
 
-/** Scoring systems surfaced in the dashboard and CLI. */
+/** Scoring systems surfaced in the dashboard. */
 export const scoringSystems: ScoringSystem[] = [
 	{
-		name: "Automated score",
-		scale: "`passed / total`",
-		howItWorks:
-			"For each item, the scorer counts required export checks plus all declared test cases in `scoring.spec.ts`. Missing exports, import errors, and failing assertions all reduce the score.",
+		name: "Automated",
+		scale: "passed/total",
+		description: "Export checks + test-case assertions from `scoring.spec.ts`.",
 	},
 	{
-		name: "Overall pass rate",
+		name: "Pass rate",
 		scale: "0-100%",
-		howItWorks:
-			"The dashboard sums `automatedScore.passed` and `automatedScore.total` across the selected items, then divides passed by total. Items without automated scores are excluded from that denominator.",
+		description: "Sum of passed / sum of total across selected items.",
 	},
 	{
 		name: "Frontier eval",
 		scale: "1-10",
-		howItWorks:
-			"Optional rubric grading via OpenRouter. It is a separate signal from automated pass rate and includes the evaluator model plus free-form reasoning in the saved result.",
+		description: "Optional rubric grading via OpenRouter. Separate from automated score.",
 	},
 	{
 		name: "Effective score",
 		scale: "0-100%",
-		howItWorks:
-			"Dashboard leaderboard ranking metric: `0.4 * passRate + 0.3 * completionRate + 0.3 * toolSuccessRate`. It complements raw pass rate rather than replacing it.",
+		description: "Ranking metric: 40% pass rate + 30% completion + 30% tool success.",
 	},
 ];
 
-/** Key run and dashboard artifacts. */
+/** Key artifacts on disk. */
 export const artifactRows: ArtifactRow[] = [
-	{
-		path: "results/<run-id>/plan.json",
-		purpose:
-			"Resolved run plan: expanded matrix, benchmark checkpoint, machine metadata, and config snapshot for reproducibility.",
-	},
-	{
-		path: "results/<run-id>/run.json",
-		purpose:
-			"Final run output: per-item results, durations, scores, failures, and run-level summary counters.",
-	},
-	{
-		path: "results/<run-id>/run.partial.json",
-		purpose:
-			"Periodic in-flight checkpoint written during long runs. Removed after a successful final write.",
-	},
-	{
-		path: "apps/dashboard/public/results/index.json",
-		purpose:
-			"Dashboard run index built by `bun dashboard:index`, including checkpoint and machine metadata for navigation.",
-	},
-	{
-		path: "apps/dashboard/public/results/aggregates/<checkpoint>.json",
-		purpose:
-			"Checkpoint aggregate payload used by the leaderboard for machine-aware comparison across runs on the same benchmark definition.",
-	},
+	{ path: "results/<run-id>/plan.json", purpose: "Resolved matrix, checkpoint, machine metadata, config." },
+	{ path: "results/<run-id>/run.json", purpose: "Per-item results, scores, failures, summary counters." },
+	{ path: "results/<run-id>/run.partial.json", purpose: "In-flight checkpoint. Removed after final write." },
+	{ path: "public/results/index.json", purpose: "Dashboard run index built by `bun dashboard:index`." },
+	{ path: "public/results/aggregates/<checkpoint>.json", purpose: "Leaderboard aggregate for cross-run comparison." },
 ];
 
-/** Checkpoint and leaderboard fairness notes. */
+/** Checkpoint fairness notes. */
 export const checkpointNotes: string[] = [
-	"Benchmark checkpoints roll whenever benchmark-defining assets change: prompts, metadata, scoring specs, rubrics, harness/runtime code, or core scoring pipeline code.",
-	"The leaderboard reads the latest checkpoint aggregate by default so models are compared against the same benchmark definition.",
-	"Checkpoint aggregates group by machine profile plus runtime/model/harness/test/passType, prefer the strongest result for that exact key, and only use recency as a later tiebreaker.",
-	"`tool-smoke` is a special preflight test. It can mark a tool harness as missing required tool support before the rest of that runtime/model/harness slice runs.",
+	"Checkpoints roll when benchmark-defining assets change (prompts, specs, rubrics, harness code).",
+	"Leaderboard defaults to the latest checkpoint so models are compared against the same definition.",
+	"Aggregates prefer the strongest result per machine + matrix key; recency is a tiebreaker.",
+	"`tool-smoke` is a preflight: if a harness can't use tools, the rest of that slice is skipped.",
 ];
 
-/** Current test catalog with short contract and scoring focus. */
+/** Current test catalog. */
 export const testCatalog: AboutTestDefinition[] = [
 	{
 		slug: "smoke",
-		category: "coding",
-		description: "Basic add function sanity check.",
-		contract: "Export a top-level `add(a, b)` TypeScript function.",
-		scoringFocus:
-			"Pipeline sanity: correct export shape, simple arithmetic behavior, and clean code extraction/import.",
-		tags: ["baseline", "stateless"],
+		description: "Sanity check — export `add(a, b)`.",
+		contract: "Top-level TypeScript function.",
+		scoring: "Correct export, arithmetic, clean import.",
+		tags: ["baseline"],
 	},
 	{
 		slug: "tool-smoke",
-		category: "coding",
-		description: "Tool-calling preflight before the main benchmark suite.",
-		contract:
-			"Still implements a top-level `add(a, b)`, but runs as a tool-calling preflight for the runtime/model/harness combination first.",
-		scoringFocus:
-			"Detects tool-missing harness failures early so later tool-dependent items are not misread as model regressions.",
-		tags: ["preflight", "tooling"],
+		description: "Tool-calling preflight.",
+		contract: "Same `add(a, b)` but as tool-call test.",
+		scoring: "Detects tool_missing early so later items aren't misread as model failures.",
+		tags: ["preflight"],
 	},
 	{
 		slug: "calculator-basic",
-		category: "coding",
-		description: "Stateless arithmetic function implementation.",
-		contract:
-			"Export four top-level functions: `add`, `subtract`, `multiply`, and `divide`.",
-		scoringFocus:
-			"Export coverage, numeric correctness, zero and negative-number behavior, and division edge cases.",
+		description: "Stateless `add`, `subtract`, `multiply`, `divide`.",
+		contract: "Four top-level exported functions.",
+		scoring: "Numeric correctness, zero/negative handling, division edge cases.",
 		tags: ["math", "stateless"],
 	},
 	{
 		slug: "calculator-stateful",
-		category: "coding",
-		description: "Chainable calculator with state and memory behavior.",
-		contract:
-			"Export `createCalculator()` returning a chainable calculator with core ops, clear, and memory methods.",
-		scoringFocus:
-			"State transitions, chaining semantics, memory isolation, and factory-based API design.",
-		tags: ["stateful", "api-design"],
+		description: "Chainable calculator with memory.",
+		contract: "`createCalculator()` → chainable ops, clear, memory.",
+		scoring: "State transitions, chaining, memory isolation, factory API.",
+		tags: ["stateful"],
 	},
 	{
 		slug: "todo-app",
-		category: "coding",
-		description: "Stateful CRUD todo manager implementation.",
-		contract:
-			"Export `createTodoApp()` returning CRUD, list, filtering, and clear-completed methods.",
-		scoringFocus:
-			"Unique IDs, instance-local state, CRUD correctness, deletion semantics, and filtering behavior.",
+		description: "CRUD todo manager.",
+		contract: "`createTodoApp()` → add, remove, list, filter, clear.",
+		scoring: "Unique IDs, instance isolation, CRUD correctness, filtering.",
 		tags: ["crud", "stateful"],
 	},
 	{
 		slug: "rate-limiter",
-		category: "coding",
-		description: "Per-key fixed-window rate limiter semantics.",
-		contract:
-			"Export `createRateLimiter()` with `allow`, `remaining`, and `reset` methods using deterministic `nowMs` inputs.",
-		scoringFocus:
-			"Window-boundary correctness, per-key isolation, quota accounting, and reset semantics.",
-		tags: ["stateful", "time-window"],
+		description: "Per-key fixed-window rate limiter.",
+		contract: "`createRateLimiter()` → `allow`, `remaining`, `reset` with `nowMs`.",
+		scoring: "Window boundaries, per-key isolation, quota accounting, reset.",
+		tags: ["stateful"],
 	},
 	{
 		slug: "ttl-cache",
-		category: "coding",
-		description: "Deterministic in-memory TTL cache semantics.",
-		contract:
-			"Export `createTtlCache()` with `set`, `get`, `has`, `delete`, `size`, and `clear` methods.",
-		scoringFocus:
-			"Expiry boundaries, overwrite semantics, support for `undefined` values, and non-expired size accounting.",
-		tags: ["stateful", "cache", "expiration"],
+		description: "In-memory TTL cache.",
+		contract: "`createTtlCache()` → `set`, `get`, `has`, `delete`, `size`, `clear`.",
+		scoring: "Expiry boundaries, overwrite, undefined-value support, size accuracy.",
+		tags: ["stateful", "cache"],
 	},
 	{
 		slug: "event-emitter",
-		category: "coding",
-		description: "Event emitter listener lifecycle semantics.",
-		contract:
-			"Export `createEventEmitter()` with `on`, `once`, `off`, `emit`, and `listenerCount`.",
-		scoringFocus:
-			"Registration order, duplicate listeners, once semantics, per-event isolation, and correct return values.",
+		description: "Event emitter with listener lifecycle.",
+		contract: "`createEventEmitter()` → `on`, `once`, `off`, `emit`, `listenerCount`.",
+		scoring: "Registration order, duplicates, once semantics, per-event isolation.",
 		tags: ["stateful", "events"],
 	},
 ];

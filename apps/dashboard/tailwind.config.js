@@ -60,6 +60,7 @@ export default {
 			},
 			fontFamily: {
 				mono: [
+					"JetBrains Mono",
 					"ui-monospace",
 					"SFMono-Regular",
 					"Menlo",
@@ -69,6 +70,15 @@ export default {
 					"Courier New",
 					"monospace",
 				],
+			},
+			animation: {
+				"fade-slide-up": "fadeSlideUp 0.4s ease-out both",
+			},
+			keyframes: {
+				fadeSlideUp: {
+					"0%": { opacity: "0", transform: "translateY(8px)" },
+					"100%": { opacity: "1", transform: "translateY(0)" },
+				},
 			},
 		},
 	},

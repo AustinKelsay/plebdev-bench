@@ -292,6 +292,7 @@ export function LeaderboardPage() {
 			<LeaderboardSummaryCards
 				aggregate={aggregate}
 				filteredItemCount={filteredItems.length}
+				filteredItems={filteredItems}
 				passRate={passRate}
 			/>
 

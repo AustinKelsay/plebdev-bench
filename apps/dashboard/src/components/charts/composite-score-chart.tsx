@@ -1,3 +1,7 @@
+/**
+ * Purpose: Composite score bar chart showing pass rate, tool success, and frontier score.
+ * Enhanced with gradient fills, median reference line, and shared primitives.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,18 +14,19 @@ import {
 	groupByTest,
 	inferToolHarnesses,
 } from "@/lib/aggregations";
+import { CHART_COLORS } from "@/lib/chart-colors";
 import { composite as compositeTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
-import type { KeyboardEvent } from "react";
-/**
- * Purpose: Composite score bar chart showing pass rate, tool success, and frontier score.
- * Replaces simple pass rate chart with multi-metric grouped bars.
- */
+import {
+	ClickableYAxisTick,
+	createRowBackground,
+} from "./chart-primitives";
 import {
 	Bar,
 	BarChart,
 	CartesianGrid,
 	Legend,
+	ReferenceLine,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
@@ -36,15 +41,13 @@ interface CompositeScoreChartProps {
 	) => void;
 }
 
-// Chart colors - match existing design system
 const COLORS = {
-	effectiveScore: "hsl(45, 90%, 55%)", // gold/amber for primary ranking metric
-	passRate: "hsl(156, 67%, 55%)", // success green
-	toolSuccess: "hsl(210, 85%, 60%)", // blue
-	frontier: "hsl(270, 60%, 60%)", // purple
+	effectiveScore: CHART_COLORS.effectiveScore,
+	passRate: CHART_COLORS.passRate,
+	toolSuccess: CHART_COLORS.toolSuccess,
+	frontier: CHART_COLORS.frontier,
 };
 
-// Custom tooltip component
 function CustomTooltip({
 	active,
 	payload,
@@ -64,7 +67,7 @@ function CustomTooltip({
 		return (
 			<div className="bg-background-raised border border-border rounded p-2 text-sm font-mono">
 				<p className="font-medium mb-1">{label}</p>
-				<p className="text-amber-400 font-semibold">
+				<p className="font-semibold text-success">
 					Effective: {(data.effectiveScore * 100).toFixed(1)}%
 				</p>
 				<p className="text-foreground-muted text-xs mb-1">
@@ -76,13 +79,13 @@ function CustomTooltip({
 					tests)
 				</p>
 				{data.toolTotal > 0 && (
-					<p className="text-blue-400">
+					<p className="text-info">
 						Tool: {(data.toolSuccessRate * 100).toFixed(1)}% ({data.toolTotal}{" "}
 						items)
 					</p>
 				)}
 				{data.frontierAvg !== null && (
-					<p className="text-purple-400">
+					<p style={{ color: CHART_COLORS.frontier }}>
 						Frontier: {data.frontierAvg.toFixed(1)}/10 ({data.frontierCount}{" "}
 						evals)
 					</p>
@@ -99,121 +102,18 @@ interface ChartData {
 	passRate: number;
 	toolSuccess: number | null;
 	frontier: number | null;
-	// Keep raw data for tooltip
 	raw: CompositeMetrics;
 }
 
 function prepareChartData(metrics: CompositeMetrics[]): ChartData[] {
 	return metrics.map((m) => ({
 		name: m.name.length > 20 ? `${m.name.slice(0, 18)}...` : m.name,
-		effectiveScore: m.effectiveScore * 100, // Primary ranking metric
-		passRate: m.passRate * 100, // Convert to percentage
+		effectiveScore: m.effectiveScore * 100,
+		passRate: m.passRate * 100,
 		toolSuccess: m.toolTotal > 0 ? m.toolSuccessRate * 100 : null,
-		frontier: m.frontierAvg !== null ? (m.frontierAvg / 10) * 100 : null, // Normalize to 100 scale
+		frontier: m.frontierAvg !== null ? (m.frontierAvg / 10) * 100 : null,
 		raw: m,
 	}));
-}
-
-/** Custom Y-axis tick that's clickable */
-function ClickableYAxisTick({
-	x,
-	y,
-	payload,
-	onClick,
-}: {
-	x: number;
-	y: number;
-	payload: { value: string };
-	onClick?: (name: string) => void;
-}) {
-	const isInteractive = Boolean(onClick);
-
-	const handleActivate = () => {
-		onClick?.(payload.value);
-	};
-
-	const handleKeyDown = (event: KeyboardEvent<SVGGElement>) => {
-		if (!isInteractive) {
-			return;
-		}
-		if (event.key === "Enter" || event.key === " ") {
-			event.preventDefault();
-			handleActivate();
-		}
-	};
-
-	return (
-		<g
-			transform={`translate(${x},${y})`}
-			onClick={isInteractive ? handleActivate : undefined}
-			onKeyDown={handleKeyDown}
-			role={isInteractive ? "button" : undefined}
-			tabIndex={isInteractive ? 0 : undefined}
-			aria-label={isInteractive ? `Select ${payload.value}` : undefined}
-			style={{ cursor: onClick ? "pointer" : "default" }}
-		>
-			<text
-				x={-5}
-				y={0}
-				dy={4}
-				textAnchor="end"
-				fill="hsl(210, 30%, 92%)"
-				fontSize={12}
-				className={onClick ? "hover:fill-amber-400 transition-colors" : ""}
-			>
-				{payload.value}
-			</text>
-		</g>
-	);
-}
-
-/** Creates a custom background component for bar rows - provides full-width clickable area */
-function createRowBackground(onRowClick?: (name: string) => void) {
-	return function RowBackground(props: {
-		x?: number;
-		y?: number;
-		width?: number;
-		height?: number;
-		payload?: ChartData;
-	}) {
-		const { x, y, width, height, payload } = props;
-		const isInteractive = Boolean(onRowClick && payload?.raw?.name);
-
-		const handleActivate = () => {
-			if (!payload?.raw?.name) {
-				return;
-			}
-			onRowClick?.(payload.raw.name);
-		};
-
-		const handleKeyDown = (event: KeyboardEvent<SVGRectElement>) => {
-			if (!isInteractive) {
-				return;
-			}
-			if (event.key === "Enter" || event.key === " ") {
-				event.preventDefault();
-				handleActivate();
-			}
-		};
-
-		return (
-			<rect
-				x={x}
-				y={y}
-				width={width}
-				height={height}
-				fill="hsl(210, 30%, 92%)"
-				fillOpacity={0}
-				onClick={isInteractive ? handleActivate : undefined}
-				onKeyDown={handleKeyDown}
-				role={isInteractive ? "button" : undefined}
-				tabIndex={isInteractive ? 0 : undefined}
-				aria-label={isInteractive ? `Select ${payload?.raw?.name}` : undefined}
-				style={{ cursor: isInteractive ? "pointer" : "default" }}
-				className="hover:fill-opacity-5 transition-all"
-			/>
-		);
-	};
 }
 
 function CompositeBarChart({
@@ -234,6 +134,13 @@ function CompositeBarChart({
 	const hasToolData = data.some((d) => d.toolSuccess !== null);
 	const hasFrontierData = data.some((d) => d.frontier !== null);
 
+	// Compute median effective score for reference line
+	const scores = data.map((d) => d.effectiveScore).sort((a, b) => a - b);
+	const median =
+		scores.length % 2 === 0
+			? (scores[scores.length / 2 - 1] + scores[scores.length / 2]) / 2
+			: scores[Math.floor(scores.length / 2)];
+
 	return (
 		<ResponsiveContainer width="100%" height={Math.max(250, data.length * 50)}>
 			<BarChart
@@ -249,26 +156,31 @@ function CompositeBarChart({
 				}}
 				style={{ cursor: onBarClick ? "pointer" : undefined }}
 			>
-				<CartesianGrid strokeDasharray="3 3" stroke="hsl(213, 23%, 15%)" />
+				<defs>
+					<linearGradient id="effectiveGradient" x1="0" y1="0" x2="1" y2="0">
+						<stop offset="0%" stopColor="hsl(142, 60%, 40%)" />
+						<stop offset="100%" stopColor="hsl(142, 60%, 55%)" />
+					</linearGradient>
+				</defs>
+				<CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
 				<XAxis
 					type="number"
 					domain={[0, 100]}
 					tickFormatter={(v) => `${v}%`}
-					stroke="hsl(210, 12%, 63%)"
-					tick={{ fill: "hsl(210, 12%, 63%)", fontSize: 12 }}
+					stroke={CHART_COLORS.text}
+					tick={{ fill: CHART_COLORS.text, fontSize: 12 }}
 				/>
 				<YAxis
 					type="category"
 					dataKey="name"
 					width={90}
-					stroke="hsl(210, 12%, 63%)"
+					stroke={CHART_COLORS.text}
 					tick={(props) => (
 						<ClickableYAxisTick
 							{...props}
 							onClick={
 								onBarClick
 									? (name) => {
-											// Find the raw name from the data
 											const item = data.find((d) => d.name === name);
 											if (item) onBarClick(item.raw.name);
 										}
@@ -304,10 +216,21 @@ function CompositeBarChart({
 						<span className="text-foreground-muted text-xs">{value}</span>
 					)}
 				/>
+				<ReferenceLine
+					x={median}
+					stroke="hsl(210, 12%, 50%)"
+					strokeDasharray="4 4"
+					label={{
+						value: `median ${median.toFixed(0)}%`,
+						fill: "hsl(210, 12%, 50%)",
+						fontSize: 10,
+						position: "top",
+					}}
+				/>
 				<Bar
 					dataKey="effectiveScore"
 					name="Effective Score"
-					fill={COLORS.effectiveScore}
+					fill="url(#effectiveGradient)"
 					radius={[0, 4, 4, 0]}
 					onClick={(entry) => onBarClick?.(entry.raw.name)}
 					cursor={onBarClick ? "pointer" : undefined}
@@ -380,7 +303,7 @@ export function CompositeScoreChart({
 				</CardTitle>
 				<p className="text-xs text-foreground-muted">
 					<WithInfoTooltip tooltip={compositeTooltips.description} side="right">
-						Effective score (gold) = 40% pass rate + 30% completion + 30% tool
+						Effective score (green) = 40% pass rate + 30% completion + 30% tool
 						success.
 					</WithInfoTooltip>{" "}
 					Sorted by effective score to rank comprehensive performers higher.

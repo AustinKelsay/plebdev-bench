@@ -29,12 +29,12 @@ interface BlindVsInformedChartProps {
 	items: MatrixItemResult[];
 }
 
-// Chart colors
+// Chart colors — toned for dark background consistency
 const COLORS = {
-	blind: "hsl(43, 93%, 63%)", // warning/amber for blind
-	informed: "hsl(156, 67%, 55%)", // success green for informed
-	deltaPositive: "hsl(156, 67%, 55%)",
-	deltaNegative: "hsl(0, 100%, 68%)",
+	blind: "hsl(38, 80%, 58%)",    // warm amber for blind
+	informed: "hsl(142, 60%, 49%)", // brand green for informed
+	deltaPositive: "hsl(142, 60%, 49%)",
+	deltaNegative: "hsl(0, 70%, 60%)",
 };
 
 // Custom tooltip component
@@ -60,7 +60,7 @@ function CustomTooltip({
 		return (
 			<div className="bg-background-raised border border-border rounded p-2 text-sm font-mono">
 				<p className="font-medium mb-1">{label}</p>
-				<p className="text-amber-400">
+				<p className="text-warning">
 					Blind: {(data.blindPassRate * 100).toFixed(1)}% ({data.blindPassed}/
 					{data.blindTotal})
 				</p>
