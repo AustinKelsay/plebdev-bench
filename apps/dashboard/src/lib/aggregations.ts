@@ -11,3 +11,4 @@ export * from "./aggregations-core";
 export * from "./aggregations-tooling";
 export * from "./aggregations-compare";
 export * from "./aggregations-diagnostics";
+export * from "./aggregations-leaderboard";

@@ -18,10 +18,14 @@ export const ALL_FILTER_VALUE = "all";
 export interface FilterState {
 	machine: string;
 	models: string[];
+	search: string;
 	runtime: string;
 	harness: string;
 	passType: string;
 	test: string;
+	status: string;
+	category: string;
+	verification: string;
 }
 
 /** Machine dropdown option resolved from aggregate items. */
@@ -39,10 +43,14 @@ export function createDefaultFilterState(): FilterState {
 	return {
 		machine: ALL_FILTER_VALUE,
 		models: [],
+		search: "",
 		runtime: ALL_FILTER_VALUE,
 		harness: ALL_FILTER_VALUE,
 		passType: ALL_FILTER_VALUE,
 		test: ALL_FILTER_VALUE,
+		status: ALL_FILTER_VALUE,
+		category: ALL_FILTER_VALUE,
+		verification: ALL_FILTER_VALUE,
 	};
 }
 
@@ -55,9 +63,10 @@ export function createDefaultFilterState(): FilterState {
  */
 export function uniqueValues(
 	items: LeaderboardAggregatedItem[],
-	selector: (item: LeaderboardAggregatedItem) => string,
+	selector: (item: LeaderboardAggregatedItem) => string | undefined,
 ): string[] {
-	return [...new Set(items.map(selector))].sort((a, b) => a.localeCompare(b));
+	return [...new Set(items.map(selector).filter((value): value is string => Boolean(value)))]
+		.sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -114,6 +123,7 @@ export function filterItems(
 	items: LeaderboardAggregatedItem[],
 	filters: FilterState,
 ): LeaderboardAggregatedItem[] {
+	const normalizedSearch = filters.search.trim().toLowerCase();
 	return items.filter((item) => {
 		if (filters.machine !== ALL_FILTER_VALUE) {
 			if (item.machineProfileId !== filters.machine) return false;
@@ -141,6 +151,38 @@ export function filterItems(
 		}
 		if (filters.test !== ALL_FILTER_VALUE && item.test !== filters.test) {
 			return false;
+		}
+		if (filters.status !== ALL_FILTER_VALUE && item.status !== filters.status) {
+			return false;
+		}
+		if (
+			filters.category !== ALL_FILTER_VALUE &&
+			item.category !== filters.category
+		) {
+			return false;
+		}
+		if (
+			filters.verification !== ALL_FILTER_VALUE &&
+			item.verificationStatus !== filters.verification
+		) {
+			return false;
+		}
+		if (normalizedSearch.length > 0) {
+			const haystack = [
+				item.model,
+				item.runtime,
+				item.harness,
+				item.test,
+				item.passType,
+				item.machineLabel,
+				item.machineProfileId,
+			]
+				.filter((value): value is string => Boolean(value))
+				.join(" ")
+				.toLowerCase();
+			if (!haystack.includes(normalizedSearch)) {
+				return false;
+			}
 		}
 		return true;
 	});
