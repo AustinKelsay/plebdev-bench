@@ -1,6 +1,6 @@
 /**
  * Purpose: Build tool-first prompts for tool-calling harnesses.
- * Exports: ToolPromptConfig, buildToolPrompt
+ * Exports: ToolPromptConfig, buildToolPrompt, buildWorkspaceToolPrompt
  *
  * Invariants:
  * - Tool instructions wrap the task prompt to override "output only code" prompts.
@@ -67,4 +67,32 @@ export function buildToolPrompt(config: ToolPromptConfig): string {
 	const reminder = `REMINDER: Use the ${toolLabel} tool to write "${solutionFilename}".`;
 
 	return `${preamble}\n\nTASK:\n${trimmedTask}\n\n${reminder}`;
+}
+
+/**
+ * Builds a workspace-scoped tool prompt for filesystem tasks.
+ *
+ * @param config - Prompt configuration
+ * @returns Combined prompt with workspace safety instructions
+ *
+ * @throws {Error} If toolNames is empty
+ */
+export function buildWorkspaceToolPrompt(config: ToolPromptConfig): string {
+	const { toolNames, taskPrompt } = config;
+	if (!Array.isArray(toolNames) || toolNames.length === 0) {
+		throw new Error("toolNames must include at least one tool name");
+	}
+
+	const toolLabel = formatToolNames(toolNames);
+	return [
+		"IMPORTANT: Workspace benchmark mode.",
+		`- You are already inside the isolated benchmark workspace. Use the ${toolLabel} tool for file operations.`,
+		"- Operate only on files inside the current directory.",
+		"- Do not ask for confirmation, approval, or more context.",
+		"- Do not print file contents or patches in chat.",
+		"- After finishing the task, reply with a short confirmation like DONE.",
+		"",
+		"TASK:",
+		taskPrompt.trim(),
+	].join("\n");
 }

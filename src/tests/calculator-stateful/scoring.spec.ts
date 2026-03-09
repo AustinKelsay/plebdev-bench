@@ -10,6 +10,7 @@ import type { ScoringSpec } from "../../schemas/index.js";
 
 export const spec: ScoringSpec = {
 	testSlug: "calculator-stateful",
+	mode: "code-module",
 
 	expectedExports: [{ name: "createCalculator", type: "function" }],
 

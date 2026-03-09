@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { TestCategorySchema } from "./common.schema.js";
+import { TestCategorySchema, TestScoringModeSchema } from "./common.schema.js";
 
 /** Zod schema for per-test metadata file contents. */
 export const TestMetadataSchema = z.object({
@@ -21,6 +21,12 @@ export const TestMetadataSchema = z.object({
 
 	/** Optional tags for future filtering/grouping. */
 	tags: z.array(z.string().min(1)).default([]),
+
+	/** Scoring mode for this test. */
+	scoringMode: TestScoringModeSchema.default("code-module"),
+
+	/** Whether this test requires a tool-calling harness. */
+	requiresTools: z.boolean().default(false),
 });
 
 /** Test metadata type loaded from test.meta.json. */
@@ -39,6 +45,12 @@ export const TestDefinitionSchema = z.object({
 
 	/** Optional tags for future filtering/grouping. */
 	tags: z.array(z.string().min(1)).default([]),
+
+	/** Scoring mode for this test. */
+	scoringMode: TestScoringModeSchema,
+
+	/** Whether this test requires a tool-calling harness. */
+	requiresTools: z.boolean(),
 });
 
 /** Resolved test definition used by the planner. */

@@ -4,6 +4,7 @@
  *          itemStatusTypes, ItemStatusSchema, ItemStatus,
  *          runtimeNames, RuntimeNameSchema, RuntimeName,
  *          testCategories, TestCategorySchema, TestCategory,
+ *          testScoringModes, TestScoringModeSchema, TestScoringMode,
  *          benchmark/machine/provenance metadata schemas
  */
 
@@ -38,6 +39,15 @@ export const TestCategorySchema = z.enum(testCategories);
 
 /** Benchmark test category. */
 export type TestCategory = z.infer<typeof TestCategorySchema>;
+
+/** Valid scoring modes for benchmark tests. */
+export const testScoringModes = ["code-module", "workspace"] as const;
+
+/** Zod schema for benchmark test scoring modes. */
+export const TestScoringModeSchema = z.enum(testScoringModes);
+
+/** Benchmark test scoring mode. */
+export type TestScoringMode = z.infer<typeof TestScoringModeSchema>;
 
 /** Valid statuses for matrix items. */
 export const itemStatusTypes = [

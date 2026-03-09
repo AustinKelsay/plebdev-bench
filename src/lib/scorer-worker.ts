@@ -18,6 +18,7 @@ const ScorerWorkerRequestSchema = z.object({
 	rawOutput: z.string(),
 	timeoutMs: z.number().int().positive(),
 	codeFilePath: z.string().optional(),
+	workspaceDir: z.string().optional(),
 });
 
 /** Worker response payload schema. */
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
 			request.rawOutput,
 			request.timeoutMs,
 			request.codeFilePath,
+			request.workspaceDir,
 		);
 		writeResponse({ ok: true, result });
 	} catch (error) {

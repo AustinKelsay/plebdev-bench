@@ -24,6 +24,7 @@ const ScorerWorkerRequestSchema = z.object({
 	rawOutput: z.string(),
 	timeoutMs: z.number().int().positive(),
 	codeFilePath: z.string().optional(),
+	workspaceDir: z.string().optional(),
 });
 
 /** Worker response payload. */
@@ -94,6 +95,7 @@ async function scoreInWorker(
  * @param rawOutput - Raw output from LLM generation
  * @param timeoutMs - Timeout for scoring (default: 5s)
  * @param codeFilePath - Optional path to code file written by tool-calling harness
+ * @param workspaceDir - Optional seeded workspace for filesystem-driven tests
  * @returns Scoring result with pass/fail counts
  */
 export async function scoreGeneration(
@@ -101,12 +103,14 @@ export async function scoreGeneration(
 	rawOutput: string,
 	timeoutMs = 5000,
 	codeFilePath?: string,
+	workspaceDir?: string,
 ): Promise<ScoringResult> {
 	const input = ScorerWorkerRequestSchema.parse({
 		testSlug,
 		rawOutput,
 		timeoutMs,
 		codeFilePath,
+		workspaceDir,
 	});
 
 	const mode = resolveScoringMode();
@@ -116,6 +120,7 @@ export async function scoreGeneration(
 			input.rawOutput,
 			input.timeoutMs,
 			input.codeFilePath,
+			input.workspaceDir,
 		);
 	}
 

@@ -9,6 +9,7 @@ import type { ScoringSpec } from "../../schemas/index.js";
 
 export const spec: ScoringSpec = {
 	testSlug: "tool-smoke",
+	mode: "code-module",
 
 	expectedExports: [{ name: "add", type: "function" }],
 

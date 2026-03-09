@@ -8,6 +8,8 @@ Test categories:
 - `coding`
 - `computer-use`
 
+Computer-use tests use seeded fixture workspaces plus exact filesystem assertions.
+
 ## Key Commands
 
 ```bash
@@ -66,8 +68,12 @@ src/
 │   ├── run-id.ts         # ID generator
 │   ├── timeout.ts        # Dynamic timeout calculation
 │   ├── code-extractor.ts # Extract code from LLM markdown output
+│   ├── code-module-scorer.ts # Code-module scoring engine
 │   ├── scorer.ts         # Run automated scoring via isolated worker/in-process fallback
 │   ├── scoring-spec.ts   # Scoring spec loader + rubric helpers
+│   ├── test-workspace.ts # Seed isolated fixture workspaces
+│   ├── workspace-manifest.ts # Workspace baseline snapshot + diffing
+│   ├── workspace-scorer.ts # Workspace assertion scorer
 │   ├── benchmark-checkpoint.ts # Checkpoint manifest hashing
 │   ├── hardware-profile.ts # Machine profile collection
 │   ├── openrouter-client.ts # Frontier eval via OpenRouter API
@@ -91,7 +97,12 @@ src/
     ├── todo-app/         # CRUD todo manager
     ├── rate-limiter/     # Per-key fixed-window limiter
     ├── ttl-cache/        # Deterministic TTL cache
-    └── event-emitter/    # Listener lifecycle semantics
+    ├── event-emitter/    # Listener lifecycle semantics
+    ├── workspace-smoke/  # Create/append/emit JSON inside a seeded workspace
+    ├── file-locator/     # Search workspace files and write one report
+    ├── targeted-edit/    # One precise file edit
+    ├── workspace-reorg/  # Move files into a required folder layout
+    └── safe-cleanup/     # Delete only approved files and emit an audit report
     # each test directory also includes test.meta.json with category metadata
 ```
 
@@ -161,6 +172,7 @@ Schema version: `0.3.0`
 |--------|------|---------|
 | `RuntimeNameSchema` | common.schema.ts | Valid runtime names ("ollama", "vllm") |
 | `TestCategorySchema` | common.schema.ts | Test categories ("coding", "computer-use") |
+| `TestScoringModeSchema` | common.schema.ts | Test scoring modes ("code-module", "workspace") |
 | `BenchConfig` | config.schema.ts | CLI input, defaults |
 | `RunPlan` | plan.schema.ts | Expanded matrix (plan.json) |
 | `RunResult` | result.schema.ts | Execution output (run.json) |
@@ -175,8 +187,9 @@ Schema version: `0.3.0`
 
 ## Key Behaviors
 
-- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/` (with categories from `test.meta.json`)
+- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/` (with categories and scoring modes from `test.meta.json`)
 - **Limiting flags**: Use `--models`, `--harnesses`, `--tests`, `--categories` to limit which items to run
+- **Tool-required tests**: Workspace-scored `computer-use` tests are scheduled only on tool-calling harnesses
 - **Sequential execution**: One item at a time
 - **Dynamic timeouts**: Timeout scales with model size and harness:
   - Base: 60s + ceil(params/10) * 60s

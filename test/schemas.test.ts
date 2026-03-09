@@ -14,6 +14,7 @@ import {
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	TestCategorySchema,
+	TestScoringModeSchema,
 	defaultConfig,
 } from "../src/schemas/index.js";
 
@@ -43,6 +44,12 @@ describe("common schemas", () => {
 		expect(TestCategorySchema.parse("coding")).toBe("coding");
 		expect(TestCategorySchema.parse("computer-use")).toBe("computer-use");
 		expect(() => TestCategorySchema.parse("ops")).toThrow();
+	});
+
+	it("should validate test scoring modes", () => {
+		expect(TestScoringModeSchema.parse("code-module")).toBe("code-module");
+		expect(TestScoringModeSchema.parse("workspace")).toBe("workspace");
+		expect(() => TestScoringModeSchema.parse("browser")).toThrow();
 	});
 });
 
@@ -113,11 +120,14 @@ describe("MatrixItemSchema", () => {
 			harness: "direct",
 			test: "smoke",
 			category: "coding",
+			scoringMode: "code-module",
+			requiresTools: false,
 			passType: "blind",
 		});
 		expect(item.id).toBe("01");
 		expect(item.runtime).toBe("ollama");
 		expect(item.model).toBe("llama3.2:3b");
+		expect(item.scoringMode).toBe("code-module");
 	});
 });
 
@@ -170,6 +180,8 @@ describe("RunPlanSchema", () => {
 					harness: "direct",
 					test: "smoke",
 					category: "coding",
+					scoringMode: "code-module",
+					requiresTools: false,
 					passType: "blind",
 				},
 			],

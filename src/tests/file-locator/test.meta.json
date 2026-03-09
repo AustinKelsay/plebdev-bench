@@ -1,0 +1,8 @@
+{
+	"category": "computer-use",
+	"description": "Search a seeded workspace and extract values into one report file",
+	"tags": ["workspace", "search", "read"],
+	"scoringMode": "workspace",
+	"requiresTools": true,
+	"schemaVersion": 1
+}

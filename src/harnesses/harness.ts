@@ -1,6 +1,7 @@
 /**
  * Purpose: Common harness interface and types for all adapters.
- * Exports: Harness, GenerateOpts, GenerateResult, HarnessName, HARNESS_NAMES
+ * Exports: Harness, GenerateOpts, GenerateResult, HarnessName, HARNESS_NAMES,
+ *          HarnessPromptMode, TOOL_CALLING_HARNESS_NAMES
  *
  * All harnesses implement this interface to provide a unified API for:
  * - Checking availability (ping)
@@ -22,6 +23,10 @@ export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
 export type ToolCallingHarnessName =
 	(typeof TOOL_CALLING_HARNESS_NAMES)[number];
+
+/** Prompt handling modes supported by harness adapters. */
+export const HARNESS_PROMPT_MODES = ["code-output", "workspace"] as const;
+export type HarnessPromptMode = (typeof HARNESS_PROMPT_MODES)[number];
 
 /**
  * Runtime compatibility for each harness.
@@ -78,6 +83,10 @@ export interface GenerateOpts {
 	unloadAfter?: boolean;
 	/** Runtime to use for generation. */
 	runtime: Runtime;
+	/** Prompt handling mode for this benchmark item. */
+	promptMode?: HarnessPromptMode;
+	/** Optional working directory for tool-calling harnesses. */
+	workingDirectory?: string;
 }
 
 /** Result from a generation request. */

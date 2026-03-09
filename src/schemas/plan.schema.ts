@@ -15,6 +15,7 @@ import {
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	TestCategorySchema,
+	TestScoringModeSchema,
 } from "./common.schema.js";
 import { ManagedVllmSchema } from "./config.schema.js";
 
@@ -40,6 +41,12 @@ export const MatrixItemSchema = z.object({
 
 	/** Test category (e.g., 'coding', 'computer-use'). */
 	category: TestCategorySchema.optional(),
+
+	/** Test scoring mode (e.g., 'code-module', 'workspace'). */
+	scoringMode: TestScoringModeSchema.default("code-module"),
+
+	/** Whether this test requires a tool-calling harness. */
+	requiresTools: z.boolean().default(false),
 
 	/** Pass type: 'blind' or 'informed'. */
 	passType: PassTypeSchema,

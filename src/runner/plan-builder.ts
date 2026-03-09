@@ -12,6 +12,7 @@
 import * as os from "node:os";
 import {
 	type HarnessName,
+	TOOL_CALLING_HARNESS_NAMES,
 	discoverHarnesses,
 	isHarnessCompatibleWithRuntime,
 	isValidHarnessName,
@@ -345,6 +346,15 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				const modelAlias = modelCanonicalMap.get(`${runtime}::${model}`);
 
 				for (const test of selectedTests) {
+					if (
+						test.requiresTools &&
+						!TOOL_CALLING_HARNESS_NAMES.includes(
+							harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
+						)
+					) {
+						continue;
+					}
+
 					const passTypes = isToolSmokeTest(test.slug)
 						? [selectToolSmokePassType(config.passTypes)]
 						: config.passTypes;
@@ -359,6 +369,8 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 							...(modelAlias ? { modelAlias } : {}),
 							test: test.slug,
 							category: test.category,
+							scoringMode: test.scoringMode,
+							requiresTools: test.requiresTools,
 							passType,
 						});
 					}
@@ -371,6 +383,12 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		{ totalItems: items.length },
 		`Matrix expanded to ${items.length} item(s)`,
 	);
+
+	if (items.length === 0) {
+		throw new Error(
+			"No matrix items generated. Selected tests may require tool-calling harnesses that are not available.",
+		);
+	}
 
 	// Derive summary from actual expanded matrix items, not requested/discovered sets.
 	const summaryRuntimes = new Set(items.map((item) => item.runtime));

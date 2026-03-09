@@ -22,7 +22,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - **Experimenters** tracking progress over time
 
 ## What It Tests
-- **8 benchmark tests:**
+- **13 benchmark tests:**
   - `smoke` - Basic add() function (simplest possible test)
   - `calculator-basic` - Stateless arithmetic functions
   - `calculator-stateful` - Calculator with memory operations
@@ -31,6 +31,11 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
   - `rate-limiter` - Stateful per-key fixed-window rate limiting
   - `ttl-cache` - Deterministic in-memory TTL cache behavior
   - `event-emitter` - Listener lifecycle and event isolation semantics
+  - `workspace-smoke` - Create files, append one exact line, and emit a JSON summary
+  - `file-locator` - Search a bounded workspace and extract values into a report
+  - `targeted-edit` - Make one precise edit without collateral file changes
+  - `workspace-reorg` - Move files into a required directory structure
+  - `safe-cleanup` - Delete only approved files and emit an audit report
 - Expandable test catalog over time
 
 ## Test Categories
@@ -38,8 +43,8 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - `computer-use` — bounded machine/sandbox orchestration tasks
 
 ## Scoring & Evaluation
-- **Automated:** import generated code, validate required exports, then run scoring-spec test cases → pass/fail/total
-- **Frontier eval:** send code + rubric to GPT-5.2 xhigh via OpenRouter → score 1–10 + reasoning
+- **Automated:** either import generated code and run scoring-spec test cases, or compare a seeded workspace against exact filesystem assertions → pass/fail/total
+- **Frontier eval:** send code + rubric to GPT-5.2 xhigh via OpenRouter for code-module tests → score 1–10 + reasoning
 
 ## Architecture & Stack (High Level)
 - **Language:** TypeScript
@@ -73,7 +78,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - Results must include full metadata for reproducibility
 
 ## Success Criteria
-- All 8 tests run end-to-end across all harnesses
+- All 13 tests run end-to-end with tool-required computer-use tests limited to tool-calling harnesses
 - Both blind and informed passes captured per model/harness/test
 - Automated tests run and score correctly
 - Frontier eval returns score + reasoning and is logged
