@@ -1,6 +1,12 @@
 /**
  * Purpose: Zod schemas for scoring specifications.
- * Exports: TestCaseSchema, TestCase, ScoringSpecSchema, ScoringSpec
+ * Exports: ExpectedExportSchema, ExpectedExport, TestCaseSchema, TestCase,
+ *          WorkspaceFileAssertionSchema, WorkspaceFileAssertion,
+ *          WorkspaceJsonAssertionSchema, WorkspaceJsonAssertion,
+ *          WorkspaceMutationSetSchema, WorkspaceMutationSet,
+ *          WorkspaceAssertionsSchema, WorkspaceAssertions,
+ *          ScoringSpecSchema, ScoringSpec, TestCaseResultSchema,
+ *          TestCaseResult, ScoringResultSchema, ScoringResult
  *
  * Scoring specs are data-driven test definitions that describe:
  * - Expected exports from generated code

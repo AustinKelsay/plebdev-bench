@@ -11,12 +11,14 @@
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { z } from "zod";
 
 /** Hidden manifest filename written into seeded benchmark workspaces. */
 export const WORKSPACE_BASELINE_FILENAME = ".plebdev-bench-baseline.json";
 
 /** Snapshot of workspace files keyed by relative path. */
 export type WorkspaceManifest = Record<string, string>;
+const WorkspaceManifestSchema = z.record(z.string(), z.string());
 
 /** Exact file-level diff between two workspace manifests. */
 export interface WorkspaceManifestDiff {
@@ -136,16 +138,14 @@ export async function loadWorkspaceBaseline(
 		);
 	}
 
-	if (
-		parsed === null ||
-		typeof parsed !== "object" ||
-		Array.isArray(parsed) ||
-		Object.values(parsed).some((value) => typeof value !== "string")
-	) {
-		throw new Error("Workspace baseline must be a string map");
+	const manifestResult = WorkspaceManifestSchema.safeParse(parsed);
+	if (!manifestResult.success) {
+		throw new Error(
+			`Workspace baseline is invalid: ${manifestResult.error.message}`,
+		);
 	}
 
-	return parsed as WorkspaceManifest;
+	return manifestResult.data;
 }
 
 /**

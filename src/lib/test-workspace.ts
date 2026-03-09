@@ -11,10 +11,12 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { writeWorkspaceBaseline } from "./workspace-manifest.js";
 
 /** Environment flag for preserving benchmark workspaces after execution. */
 const PRESERVE_WORKSPACES_ENV = "PLEBDEV_BENCH_PRESERVE_WORKSPACES";
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 /** Prepared isolated workspace ready for a benchmark item. */
 export interface PreparedTestWorkspace {
@@ -32,7 +34,7 @@ export interface PreparedTestWorkspace {
  * @returns Fixtures directory path
  */
 function getFixturesPath(testSlug: string): string {
-	return path.join(process.cwd(), "src", "tests", testSlug, "fixtures");
+	return path.join(MODULE_DIR, "..", "tests", testSlug, "fixtures");
 }
 
 /**

@@ -39,6 +39,9 @@ describe("workspace scoring", () => {
 		await fs.promises.mkdir(path.join(workspace.rootDir, "logs"), {
 			recursive: true,
 		});
+		await fs.promises.mkdir(path.join(workspace.rootDir, "checklist"), {
+			recursive: true,
+		});
 		await fs.promises.mkdir(path.join(workspace.rootDir, "artifacts"), {
 			recursive: true,
 		});
@@ -78,6 +81,9 @@ describe("workspace scoring", () => {
 	it("fails when a workspace task makes unexpected extra changes", async () => {
 		const workspace = await createWorkspace("workspace-smoke");
 		await fs.promises.mkdir(path.join(workspace.rootDir, "logs"), {
+			recursive: true,
+		});
+		await fs.promises.mkdir(path.join(workspace.rootDir, "checklist"), {
 			recursive: true,
 		});
 		await fs.promises.mkdir(path.join(workspace.rootDir, "artifacts"), {

@@ -26,7 +26,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.3.0");
+		expect(SCHEMA_VERSION).toBe("0.4.0");
 	});
 
 	it("should validate runtime names", () => {

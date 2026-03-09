@@ -24,7 +24,7 @@ const ScorerWorkerRequestSchema = z.object({
 	rawOutput: z.string(),
 	timeoutMs: z.number().int().positive(),
 	codeFilePath: z.string().optional(),
-	workspaceDir: z.string().optional(),
+	workspaceDir: z.string().trim().min(1).optional(),
 });
 
 /** Worker response payload. */

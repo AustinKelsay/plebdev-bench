@@ -61,10 +61,66 @@ function valuesMatch(
 	}
 
 	if (typeof actual === "object" && typeof expected === "object") {
-		return JSON.stringify(actual) === JSON.stringify(expected);
+		return valuesDeepEqual(actual, expected);
 	}
 
 	return actual === expected;
+}
+
+/**
+ * Performs order-independent deep equality for JSON-like values.
+ *
+ * @param actual - Actual structured value
+ * @param expected - Expected structured value
+ * @returns True when values match recursively
+ */
+function valuesDeepEqual(actual: unknown, expected: unknown): boolean {
+	if (actual === expected) {
+		return true;
+	}
+	if (actual === null || expected === null) {
+		return actual === expected;
+	}
+	if (Array.isArray(actual) || Array.isArray(expected)) {
+		if (!Array.isArray(actual) || !Array.isArray(expected)) {
+			return false;
+		}
+		if (actual.length !== expected.length) {
+			return false;
+		}
+		for (let index = 0; index < actual.length; index += 1) {
+			if (!valuesDeepEqual(actual[index], expected[index])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	if (
+		typeof actual === "object" &&
+		typeof expected === "object" &&
+		actual !== null &&
+		expected !== null
+	) {
+		const actualRecord = actual as Record<string, unknown>;
+		const expectedRecord = expected as Record<string, unknown>;
+		const actualKeys = Object.keys(actualRecord).sort((left, right) =>
+			left.localeCompare(right),
+		);
+		const expectedKeys = Object.keys(expectedRecord).sort((left, right) =>
+			left.localeCompare(right),
+		);
+		if (!valuesDeepEqual(actualKeys, expectedKeys)) {
+			return false;
+		}
+		for (const key of actualKeys) {
+			if (!valuesDeepEqual(actualRecord[key], expectedRecord[key])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	return false;
 }
 
 /**

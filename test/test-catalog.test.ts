@@ -73,6 +73,7 @@ describe("discoverTestCatalog", () => {
 		expect(catalog[0].category).toBe("computer-use");
 		expect(catalog[0].scoringMode).toBe("workspace");
 		expect(catalog[0].requiresTools).toBe(true);
+		expect(catalog[1].scoringMode).toBe("code-module");
 		expect(catalog[1].tags).toEqual(["z"]);
 	});
 
@@ -81,6 +82,19 @@ describe("discoverTestCatalog", () => {
 		createTestDir(root, "smoke");
 
 		expect(() => discoverTestCatalog(root)).toThrow(TEST_METADATA_FILE);
+	});
+
+	it("rejects workspace-scored tests that do not require tools", () => {
+		const root = createTempRoot();
+		createTestDir(root, "bad-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+			requiresTools: false,
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			'requiresTools must be true when scoringMode is "workspace"',
+		);
 	});
 });
 

@@ -58,7 +58,15 @@ function buildWorkspaceFailure(message: string): ScoringResult {
  * @returns True when arrays match exactly
  */
 function pathsMatchExactly(actual: string[], expected: string[]): boolean {
-	return JSON.stringify(actual) === JSON.stringify(expected);
+	if (actual.length !== expected.length) {
+		return false;
+	}
+	for (let index = 0; index < actual.length; index += 1) {
+		if (actual[index] !== expected[index]) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /**

@@ -167,7 +167,6 @@ export function createOpenCodeAdapter(): Harness {
 				promptMode === "workspace"
 					? buildWorkspaceToolPrompt({
 							toolNames: ["edit", "write"],
-							solutionFilename: SOLUTION_FILENAME,
 							taskPrompt: promptWithoutMarker,
 						})
 					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
@@ -492,7 +491,7 @@ export function createOpenCodeAdapter(): Harness {
 				if (timeoutId) clearTimeout(timeoutId);
 				if (staleCheckId) clearInterval(staleCheckId);
 
-				if (!codeFilePath) {
+				if (!hasExternalWorkingDirectory && !codeFilePath) {
 					fs.promises
 						.rm(workDir, { recursive: true, force: true })
 						.catch(() => {});

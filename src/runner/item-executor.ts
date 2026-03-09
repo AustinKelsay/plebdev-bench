@@ -22,7 +22,6 @@ import {
 	evaluateWithFrontier,
 	getOpenRouterKey,
 } from "../lib/openrouter-client.js";
-import { scoreGeneration } from "../lib/scorer.js";
 import { loadRubric } from "../lib/scoring-spec.js";
 import { prepareTestWorkspace } from "../lib/test-workspace.js";
 import { createRuntime } from "../runtimes/index.js";
@@ -33,9 +32,8 @@ import type {
 	MatrixItem,
 	MatrixItemResult,
 	ScoringMetrics,
-	ScoringResult,
 } from "../schemas/index.js";
-import { loadPrompt, runCompileFeedbackRetry } from "./item-retry.js";
+import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
 
 /** Runtime and harness configuration for item execution. */
 interface RuntimeUrls {
@@ -89,7 +87,7 @@ export async function executeItem(
 
 		try {
 			log.debug("Loading prompt...");
-			const prompt = loadPrompt(item.test, item.passType);
+			const prompt = await loadPrompt(item.test, item.passType);
 			promptForRetry = prompt;
 
 			const runtime = createRuntime(item.runtime, {
@@ -189,123 +187,27 @@ export async function executeItem(
 				const supportsCompileRetry =
 					item.scoringMode === "code-module" &&
 					(item.harness === "goose" || item.harness === "opencode");
-				let compileRetryUsed = false;
-				let scoringResult: ScoringResult;
-				let scoringOnlyDurationMs = 0;
-				let retryGenerationDurationMs = 0;
-
-				try {
-					const initialScoringStartTime = performance.now();
-					scoringResult = await scoreGeneration(
-						item.test,
-						generation.output ?? "",
-						undefined,
-						generation.codeFilePath,
-						workspace?.rootDir,
-					);
-					scoringOnlyDurationMs += performance.now() - initialScoringStartTime;
-				} catch (scoringError) {
-					const scoringErrorMessage =
-						scoringError instanceof Error
-							? scoringError.message
-							: String(scoringError);
-					if (
-						supportsCompileRetry &&
-						harnessForRetry &&
-						runtimeForRetry &&
-						promptForRetry.length > 0
-					) {
-						const retryFromException = await runCompileFeedbackRetry({
-							item,
-							harness: harnessForRetry,
-							runtime: runtimeForRetry,
-							promptForRetry,
-							timeoutMs,
-							unloadAfter,
-							log,
-							currentGenerationDurationMs: generation.durationMs,
-							compileError: scoringErrorMessage,
-						});
-						if (retryFromException) {
-							compileRetryUsed = true;
-							generation = retryFromException.generation;
-							scoringResult = retryFromException.scoringResult;
-							scoringOnlyDurationMs += retryFromException.scoringDurationMs;
-							retryGenerationDurationMs +=
-								retryFromException.generation.durationMs;
-						} else {
-							throw scoringError;
-						}
-					} else {
-						throw scoringError;
-					}
-				}
-
-				const compileError =
-					scoringResult.failureType === "import" ||
-					scoringResult.failureType === "missing_export"
-						? scoringResult.error
-						: undefined;
-				if (
-					!compileRetryUsed &&
-					supportsCompileRetry &&
-					typeof compileError === "string" &&
-					harnessForRetry &&
-					runtimeForRetry &&
-					promptForRetry.length > 0
-				) {
-					const retryAttempt = await runCompileFeedbackRetry({
-						item,
-						harness: harnessForRetry,
-						runtime: runtimeForRetry,
-						promptForRetry,
-						timeoutMs,
-						unloadAfter,
-						log,
-						currentGenerationDurationMs: generation.durationMs,
-						compileError,
-					});
-					if (retryAttempt) {
-						scoringOnlyDurationMs += retryAttempt.scoringDurationMs;
-						retryGenerationDurationMs += retryAttempt.generation.durationMs;
-						const previousPassed = scoringResult.passed;
-						const shouldPromoteRetry =
-							retryAttempt.scoringResult.passed > previousPassed ||
-							(retryAttempt.scoringResult.passed === previousPassed &&
-								scoringResult.failureType === "import" &&
-								retryAttempt.scoringResult.failureType !== "import");
-						if (shouldPromoteRetry) {
-							generation = retryAttempt.generation;
-							scoringResult = retryAttempt.scoringResult;
-							log.info(
-								{
-									harness: item.harness,
-									test: item.test,
-									passType: item.passType,
-									beforePassed: previousPassed,
-									afterPassed: retryAttempt.scoringResult.passed,
-								},
-								"Compile-feedback retry promoted as best attempt",
-							);
-						} else {
-							log.warn(
-								{
-									harness: item.harness,
-									test: item.test,
-									passType: item.passType,
-									beforePassed: previousPassed,
-									retryPassed: retryAttempt.scoringResult.passed,
-								},
-								"Compile-feedback retry did not improve score; keeping original attempt",
-							);
-						}
-					}
-				}
+				const scoringOutcome = await runScoringWithCompileRetry({
+					item,
+					generation,
+					harnessForRetry,
+					runtimeForRetry,
+					promptForRetry,
+					timeoutMs,
+					unloadAfter,
+					log,
+					workspaceDir: workspace?.rootDir,
+					supportsCompileRetry,
+				});
+				generation = scoringOutcome.generation;
+				const scoringResult = scoringOutcome.scoringResult;
+				const scoringOnlyDurationMsRounded = Math.round(
+					scoringOutcome.scoringOnlyDurationMs,
+				);
 
 				const scoringDurationMs = Math.round(
 					performance.now() - scoringStartTime,
 				);
-				const scoringOnlyDurationMsRounded = Math.round(scoringOnlyDurationMs);
 
 				automatedScore = {
 					passed: scoringResult.passed,
@@ -316,8 +218,11 @@ export async function executeItem(
 				scoringMetrics = {
 					durationMs: scoringDurationMs,
 					scoringDurationMs: scoringOnlyDurationMsRounded,
-					...(retryGenerationDurationMs > 0
-						? { retryGenerationDurationMs }
+					...(scoringOutcome.retryGenerationDurationMs > 0
+						? {
+								retryGenerationDurationMs:
+									scoringOutcome.retryGenerationDurationMs,
+							}
 						: {}),
 				};
 
@@ -334,8 +239,11 @@ export async function executeItem(
 						total: scoringResult.total,
 						durationMs: scoringDurationMs,
 						scoringDurationMs: scoringOnlyDurationMsRounded,
-						...(retryGenerationDurationMs > 0
-							? { retryGenerationDurationMs }
+						...(scoringOutcome.retryGenerationDurationMs > 0
+							? {
+									retryGenerationDurationMs:
+										scoringOutcome.retryGenerationDurationMs,
+								}
 							: {}),
 					},
 					"Scoring completed",

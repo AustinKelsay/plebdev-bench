@@ -233,7 +233,6 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				promptMode === "workspace"
 					? buildWorkspaceToolPrompt({
 							toolNames: ["text_editor"],
-							solutionFilename: SOLUTION_FILENAME,
 							taskPrompt: promptWithoutMarker,
 						})
 					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);

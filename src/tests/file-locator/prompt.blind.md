@@ -6,6 +6,8 @@ After finding them, create `reports/found-values.json` with this exact shape:
 
 `{"owner":"<owner>","sourceCount":3,"ticket":"<ticket>","version":"<version>"}`
 
+The angle-bracket tokens are placeholders: replace `<owner>`, `<ticket>`, and `<version>` with the actual discovered values instead of writing the bracketed strings literally.
+
 Constraints:
 
 - Read files from the current directory only.

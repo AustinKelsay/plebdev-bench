@@ -11,8 +11,8 @@
 export interface ToolPromptConfig {
 	/** Tool names to instruct the model to use (e.g., ["text_editor"] or ["edit", "write"]). */
 	toolNames: string[];
-	/** Output filename expected from the tool. */
-	solutionFilename: string;
+	/** Output filename expected from the tool in code-output mode. */
+	solutionFilename?: string;
 	/** Task prompt content from the benchmark test. */
 	taskPrompt: string;
 	/** Optional hint about tool arguments (kept minimal to avoid over-coaching). */
@@ -45,6 +45,14 @@ export function buildToolPrompt(config: ToolPromptConfig): string {
 	const { toolNames, solutionFilename, taskPrompt, toolUsageHint } = config;
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
+	}
+	if (
+		typeof solutionFilename !== "string" ||
+		solutionFilename.trim().length === 0
+	) {
+		throw new Error(
+			"solutionFilename must be provided for code-output prompts",
+		);
 	}
 
 	const toolLabel = formatToolNames(toolNames);
