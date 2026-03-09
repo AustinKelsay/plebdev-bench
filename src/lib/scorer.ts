@@ -97,6 +97,9 @@ async function scoreInWorker(
  * @param codeFilePath - Optional path to code file written by tool-calling harness
  * @param workspaceDir - Optional seeded workspace for filesystem-driven tests
  * @returns Scoring result with pass/fail counts
+ * @throws {z.ZodError} If input payload validation fails
+ * @throws {z.ZodError} If `PLEBDEV_BENCH_SCORER_MODE` is invalid
+ * @throws {Error} If the scoring worker process fails, times out, or returns invalid output
  */
 export async function scoreGeneration(
 	testSlug: string,

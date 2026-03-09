@@ -158,6 +158,11 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			const promptWithoutMarker = stripRetryMarker(prompt);
 			const maxTurnsForAttempt = isRetryAttempt ? retryMaxTurns : maxTurns;
 			const promptMode = opts.promptMode ?? "code-output";
+			if (promptMode === "workspace" && opts.workingDirectory === undefined) {
+				throw new Error(
+					"Goose workspace mode requires a caller-supplied workingDirectory",
+				);
+			}
 
 			// Create unique temp directory for this generation
 			const runId = crypto.randomBytes(8).toString("hex");

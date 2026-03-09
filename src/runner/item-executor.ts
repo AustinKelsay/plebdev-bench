@@ -333,7 +333,10 @@ export async function executeItem(
 			test: item.test,
 			category: item.category,
 			passType: item.passType,
-			status: generation.success ? "completed" : "failed",
+			status:
+				generation.success && scoringFailure === undefined
+					? "completed"
+					: "failed",
 			startedAt,
 			completedAt,
 			generation,

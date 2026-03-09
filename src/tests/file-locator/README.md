@@ -12,4 +12,4 @@ Reads a noisy workspace, finds the right source files, and writes one structured
 
 - the report JSON matches exactly
 - no source files are changed or deleted
-- no source files are changed or deleted and no extra files are created except the required `reports/found-values.json`
+- no extra files are created except the required `reports/found-values.json`

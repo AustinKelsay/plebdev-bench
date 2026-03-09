@@ -27,7 +27,11 @@ import {
  * @returns True when the path stays inside the workspace
  */
 function isSafeWorkspacePath(pathValue: string): boolean {
-	if (/^[A-Za-z]:\\/.test(pathValue) || pathValue.startsWith("/")) {
+	if (
+		/^[A-Za-z]:[\\/]/.test(pathValue) ||
+		pathValue.startsWith("\\\\") ||
+		pathValue.startsWith("/")
+	) {
 		return false;
 	}
 	return !pathValue.split(/[\\/]+/).includes("..");
@@ -79,42 +83,48 @@ export const TestCaseSchema = z.object({
 export type TestCase = z.infer<typeof TestCaseSchema>;
 
 /** Exact text assertion for a workspace file. */
-export const WorkspaceFileAssertionSchema = z.object({
-	/** Relative path from workspace root. */
-	path: WorkspacePathSchema,
+export const WorkspaceFileAssertionSchema = z
+	.object({
+		/** Relative path from workspace root. */
+		path: WorkspacePathSchema,
 
-	/** Exact expected file contents. */
-	content: z.string(),
-});
+		/** Exact expected file contents. */
+		content: z.string(),
+	})
+	.strict();
 
 export type WorkspaceFileAssertion = z.infer<
 	typeof WorkspaceFileAssertionSchema
 >;
 
 /** Exact JSON assertion for a workspace file. */
-export const WorkspaceJsonAssertionSchema = z.object({
-	/** Relative path from workspace root. */
-	path: WorkspacePathSchema,
+export const WorkspaceJsonAssertionSchema = z
+	.object({
+		/** Relative path from workspace root. */
+		path: WorkspacePathSchema,
 
-	/** Expected parsed JSON value. */
-	value: z.unknown(),
-});
+		/** Expected parsed JSON value. */
+		value: z.unknown(),
+	})
+	.strict();
 
 export type WorkspaceJsonAssertion = z.infer<
 	typeof WorkspaceJsonAssertionSchema
 >;
 
 /** Exact mutation sets allowed for a workspace task. */
-export const WorkspaceMutationSetSchema = z.object({
-	/** Relative file paths expected to be newly created. */
-	created: z.array(WorkspacePathSchema).default([]),
+export const WorkspaceMutationSetSchema = z
+	.object({
+		/** Relative file paths expected to be newly created. */
+		created: z.array(WorkspacePathSchema).default([]),
 
-	/** Relative file paths expected to be modified in place. */
-	modified: z.array(WorkspacePathSchema).default([]),
+		/** Relative file paths expected to be modified in place. */
+		modified: z.array(WorkspacePathSchema).default([]),
 
-	/** Relative file paths expected to be deleted. */
-	deleted: z.array(WorkspacePathSchema).default([]),
-});
+		/** Relative file paths expected to be deleted. */
+		deleted: z.array(WorkspacePathSchema).default([]),
+	})
+	.strict();
 
 export type WorkspaceMutationSet = z.infer<typeof WorkspaceMutationSetSchema>;
 
@@ -162,7 +172,7 @@ export type WorkspaceAssertions = z.infer<typeof WorkspaceAssertionsSchema>;
 export const ScoringSpecSchema = z
 	.object({
 		/** Schema version for scoring-spec migrations. */
-		schemaVersion: z.number().int().positive().default(1),
+		schemaVersion: z.literal(1).default(1),
 
 		/** Test slug (must match directory name). */
 		testSlug: z.string(),

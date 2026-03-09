@@ -386,7 +386,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 	if (items.length === 0) {
 		throw new Error(
-			"No matrix items generated. Selected tests may require tool-calling harnesses that are not available.",
+			`No matrix items generated. Check selected tests, runtimes, harnesses, and categories. filters: runtimes=${config.runtimes.join(",") || "all"} harnesses=${config.harnesses.join(",") || "all"} tests=${config.tests.join(",") || "all"} categories=${config.categories.join(",") || "all"}`,
 		);
 	}
 

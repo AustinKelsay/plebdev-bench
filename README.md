@@ -41,7 +41,7 @@ Current benchmark tests:
 - `rate-limiter` — per-key fixed-window quota semantics
 - `ttl-cache` — deterministic cache expiration and mutation semantics
 - `event-emitter` — listener lifecycle and ordering semantics
-- `workspace-smoke` — create files, append one line, and emit JSON inside a seeded workspace
+- `workspace-smoke` — create `logs/session.log`, rewrite `checklist/steps.txt` to the exact three-line final state, and emit `artifacts/summary.json`
 - `file-locator` — search a noisy workspace and extract key values into one report
 - `targeted-edit` — make one precise edit to a single existing file
 - `workspace-reorg` — move files into a new directory structure and emit an index manifest

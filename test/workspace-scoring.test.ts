@@ -1,5 +1,10 @@
 /**
  * Purpose: Validate workspace-scored benchmark execution against seeded fixtures.
+ * Exports: none
+ * Invariants:
+ * - Uses deterministic local fixtures only.
+ * - Makes no network calls.
+ * - Verifies exact filesystem scoring behavior against isolated temp workspaces.
  */
 
 import * as fs from "node:fs";

@@ -224,6 +224,31 @@ describe("ScoringSpecSchema", () => {
 		).toThrow("must be a relative path without '..' segments");
 	});
 
+	it("rejects absolute workspace paths and unknown mutation keys", () => {
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {
+					requiredPaths: ["C:/escape.txt"],
+				},
+			}),
+		).toThrow("must be a relative path without '..' segments");
+
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {
+					mutations: {
+						created: ["ok.txt"],
+						extra: ["nope.txt"],
+					},
+				},
+			}),
+		).toThrow();
+	});
+
 	it("adds a default scoring spec schema version", () => {
 		const spec = ScoringSpecSchema.parse({
 			testSlug: "smoke",

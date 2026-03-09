@@ -88,21 +88,26 @@ export function buildToolPrompt(config: CodeOutputToolPromptConfig): string {
 export function buildWorkspaceToolPrompt(
 	config: WorkspaceToolPromptConfig,
 ): string {
-	const { toolNames, taskPrompt } = config;
+	const { toolNames, taskPrompt, toolUsageHint } = config;
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
 	}
 
 	const toolLabel = formatToolNames(toolNames);
-	return [
+	const lines = [
 		"IMPORTANT: Workspace benchmark mode.",
 		`- You are already inside the isolated benchmark workspace. Use the ${toolLabel} tool for file operations.`,
 		"- Operate only on files inside the current directory.",
 		"- Do not ask for confirmation, approval, or more context.",
 		"- Do not print file contents or patches in chat.",
+		"- Chat-only plans, confirmations without tool use, or explanations without file changes are treated as failure.",
 		"- After finishing the task, reply with a short confirmation like DONE.",
 		"",
 		"TASK:",
 		taskPrompt.trim(),
-	].join("\n");
+	];
+	if (toolUsageHint && toolUsageHint.trim().length > 0) {
+		lines.splice(5, 0, `- Tool hint: ${toolUsageHint.trim()}`);
+	}
+	return lines.join("\n");
 }
