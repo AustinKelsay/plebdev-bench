@@ -6,9 +6,9 @@ The workspace contains three source files with `key=value` lines for:
 - `version`
 - `owner`
 
-Create `reports/found-values.json` with the exact object:
-
-`{"owner":"samira","sourceCount":3,"ticket":"ALPHA-17","version":"3.4.1"}`
+Read the workspace files, discover the `owner`, `ticket`, and `version` values,
+and create only `reports/found-values.json` containing the exact object built
+from those discovered values.
 
 Constraints:
 

@@ -34,6 +34,12 @@ afterEach(async () => {
 });
 
 describe("workspace scoring", () => {
+	it("rejects test slugs that are not single safe path segments", async () => {
+		await expect(prepareTestWorkspace("../workspace-smoke")).rejects.toThrow(
+			'Invalid test slug "../workspace-smoke": expected a single path segment',
+		);
+	});
+
 	it("passes when workspace-smoke matches the expected end state", async () => {
 		const workspace = await createWorkspace("workspace-smoke");
 		await fs.promises.mkdir(path.join(workspace.rootDir, "logs"), {
@@ -129,5 +135,48 @@ describe("workspace scoring", () => {
 					detail.name === "mutations.created exact match" && !detail.passed,
 			),
 		).toBe(true);
+	});
+
+	it("reports a clear error when file content mismatches", async () => {
+		const workspace = await createWorkspace("workspace-smoke");
+		await fs.promises.mkdir(path.join(workspace.rootDir, "logs"), {
+			recursive: true,
+		});
+		await fs.promises.mkdir(path.join(workspace.rootDir, "checklist"), {
+			recursive: true,
+		});
+		await fs.promises.mkdir(path.join(workspace.rootDir, "artifacts"), {
+			recursive: true,
+		});
+		await fs.promises.writeFile(
+			path.join(workspace.rootDir, "logs", "session.log"),
+			"session-started\nwrong-value\n",
+		);
+		await fs.promises.writeFile(
+			path.join(workspace.rootDir, "checklist", "steps.txt"),
+			"bootstrap\nverify-inputs\narchive-results\n",
+		);
+		await fs.promises.writeFile(
+			path.join(workspace.rootDir, "artifacts", "summary.json"),
+			JSON.stringify(
+				{
+					status: "ready",
+					createdBy: "workspace-smoke",
+					steps: 3,
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = await scoreGenerationInProcess(
+			"workspace-smoke",
+			"",
+			5000,
+			undefined,
+			workspace.rootDir,
+		);
+
+		expect(result.error).toContain('Content mismatch for "logs/session.log"');
 	});
 });

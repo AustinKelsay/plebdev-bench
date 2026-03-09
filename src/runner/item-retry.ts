@@ -44,7 +44,10 @@ export async function loadPrompt(
 	try {
 		return await fs.promises.readFile(promptPath, "utf-8");
 	} catch (error) {
-		throw new Error(`Prompt file not found: ${promptPath}`);
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			throw new Error(`Prompt file not found: ${promptPath}`);
+		}
+		throw error;
 	}
 }
 
@@ -206,9 +209,10 @@ export async function runScoringWithCompileRetry(
 	let scoringOnlyDurationMs = 0;
 	let retryGenerationDurationMs = 0;
 	let scoringResult: ScoringResult;
+	let initialScoringStartTime = 0;
 
 	try {
-		const initialScoringStartTime = performance.now();
+		initialScoringStartTime = performance.now();
 		scoringResult = await scoreGeneration(
 			context.item.test,
 			generation.output ?? "",
@@ -218,6 +222,7 @@ export async function runScoringWithCompileRetry(
 		);
 		scoringOnlyDurationMs += performance.now() - initialScoringStartTime;
 	} catch (scoringError) {
+		scoringOnlyDurationMs += performance.now() - initialScoringStartTime;
 		const scoringErrorMessage =
 			scoringError instanceof Error
 				? scoringError.message
@@ -278,6 +283,7 @@ export async function runScoringWithCompileRetry(
 			compileError,
 		});
 		if (retryAttempt) {
+			compileRetryUsed = true;
 			scoringOnlyDurationMs += retryAttempt.scoringDurationMs;
 			retryGenerationDurationMs += retryAttempt.generation.durationMs;
 			const previousPassed = scoringResult.passed;

@@ -1,5 +1,11 @@
 /**
- * Targeted-edit benchmark fixture.
+ * Purpose: Targeted-edit benchmark application config fixture.
+ * Exports: appConfig
+ * Invariants:
+ * - mode is a stable environment label for the fixture.
+ * - retryLimit is a non-negative integer.
+ * - syncEnabled remains boolean.
+ * - logLevel stays within the accepted logging levels for this fixture.
  */
 
 /**

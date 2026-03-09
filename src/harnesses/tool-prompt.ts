@@ -1,23 +1,31 @@
 /**
  * Purpose: Build tool-first prompts for tool-calling harnesses.
- * Exports: ToolPromptConfig, buildToolPrompt, buildWorkspaceToolPrompt
+ * Exports: CodeOutputToolPromptConfig, WorkspaceToolPromptConfig,
+ *          buildToolPrompt, buildWorkspaceToolPrompt
  *
  * Invariants:
  * - Tool instructions wrap the task prompt to override "output only code" prompts.
  * - The prompt always references the exact tool name(s) and target filename.
  */
 
-/** Configuration for tool-first prompt construction. */
-export interface ToolPromptConfig {
+/** Shared prompt config fields. */
+interface BaseToolPromptConfig {
 	/** Tool names to instruct the model to use (e.g., ["text_editor"] or ["edit", "write"]). */
 	toolNames: string[];
-	/** Output filename expected from the tool in code-output mode. */
-	solutionFilename?: string;
 	/** Task prompt content from the benchmark test. */
 	taskPrompt: string;
 	/** Optional hint about tool arguments (kept minimal to avoid over-coaching). */
 	toolUsageHint?: string;
 }
+
+/** Prompt config for code-output tool mode. */
+export interface CodeOutputToolPromptConfig extends BaseToolPromptConfig {
+	/** Output filename expected from the tool in code-output mode. */
+	solutionFilename: string;
+}
+
+/** Prompt config for workspace tool mode. */
+export interface WorkspaceToolPromptConfig extends BaseToolPromptConfig {}
 
 /**
  * Formats tool names for human-readable instructions.
@@ -41,18 +49,10 @@ function formatToolNames(toolNames: string[]): string {
  *
  * @throws {Error} If toolNames is empty
  */
-export function buildToolPrompt(config: ToolPromptConfig): string {
+export function buildToolPrompt(config: CodeOutputToolPromptConfig): string {
 	const { toolNames, solutionFilename, taskPrompt, toolUsageHint } = config;
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
-	}
-	if (
-		typeof solutionFilename !== "string" ||
-		solutionFilename.trim().length === 0
-	) {
-		throw new Error(
-			"solutionFilename must be provided for code-output prompts",
-		);
 	}
 
 	const toolLabel = formatToolNames(toolNames);
@@ -85,7 +85,9 @@ export function buildToolPrompt(config: ToolPromptConfig): string {
  *
  * @throws {Error} If toolNames is empty
  */
-export function buildWorkspaceToolPrompt(config: ToolPromptConfig): string {
+export function buildWorkspaceToolPrompt(
+	config: WorkspaceToolPromptConfig,
+): string {
 	const { toolNames, taskPrompt } = config;
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");

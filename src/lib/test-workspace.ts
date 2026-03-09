@@ -18,6 +18,27 @@ import { writeWorkspaceBaseline } from "./workspace-manifest.js";
 const PRESERVE_WORKSPACES_ENV = "PLEBDEV_BENCH_PRESERVE_WORKSPACES";
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Validates that a benchmark slug is a single safe path segment.
+ *
+ * @param testSlug - Benchmark test slug
+ * @throws {RangeError} If the slug is empty or contains traversal/path separators
+ */
+function assertValidTestSlug(testSlug: string): void {
+	if (
+		testSlug.trim().length === 0 ||
+		testSlug === "." ||
+		testSlug === ".." ||
+		testSlug.includes("/") ||
+		testSlug.includes("\\") ||
+		path.basename(testSlug) !== testSlug
+	) {
+		throw new RangeError(
+			`Invalid test slug "${testSlug}": expected a single path segment`,
+		);
+	}
+}
+
 /** Prepared isolated workspace ready for a benchmark item. */
 export interface PreparedTestWorkspace {
 	/** Root directory where the harness should run. */
@@ -34,6 +55,7 @@ export interface PreparedTestWorkspace {
  * @returns Fixtures directory path
  */
 function getFixturesPath(testSlug: string): string {
+	assertValidTestSlug(testSlug);
 	return path.join(MODULE_DIR, "..", "tests", testSlug, "fixtures");
 }
 
@@ -55,6 +77,7 @@ function shouldPreserveWorkspaces(): boolean {
 export async function prepareTestWorkspace(
 	testSlug: string,
 ): Promise<PreparedTestWorkspace> {
+	assertValidTestSlug(testSlug);
 	const rootDir = await fs.promises.mkdtemp(
 		path.join(os.tmpdir(), `plebdev-bench-${testSlug}-`),
 	);

@@ -10,6 +10,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import type {
 	ScoringResult,
 	ScoringSpec,
@@ -162,9 +163,10 @@ export async function scoreWorkspace(
 			passed,
 			expected: fileAssertion.content,
 			actual: actualContent,
-			error:
-				passed || error === undefined
-					? undefined
+			error: passed
+				? undefined
+				: error === undefined
+					? `Content mismatch for "${fileAssertion.path}"`
 					: `Failed to read "${fileAssertion.path}": ${error}`,
 		});
 	}
@@ -181,7 +183,8 @@ export async function scoreWorkspace(
 				readError instanceof Error ? readError.message : String(readError);
 		}
 		const passed =
-			JSON.stringify(actualValue) === JSON.stringify(jsonAssertion.value);
+			error === undefined &&
+			isDeepStrictEqual(actualValue, jsonAssertion.value);
 		results.push({
 			name: `json file: ${jsonAssertion.path}`,
 			passed,

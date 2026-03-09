@@ -20,6 +20,7 @@ function buildListener(payload: unknown): string {
 }
 
 export const spec: ScoringSpec = {
+	schemaVersion: 1,
 	testSlug: "event-emitter",
 	mode: "code-module",
 

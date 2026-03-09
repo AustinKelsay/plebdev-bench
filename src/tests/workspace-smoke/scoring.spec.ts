@@ -8,6 +8,7 @@
 import type { ScoringSpec } from "../../schemas/index.js";
 
 export const spec: ScoringSpec = {
+	schemaVersion: 1,
 	testSlug: "workspace-smoke",
 	mode: "workspace",
 	expectedExports: [],

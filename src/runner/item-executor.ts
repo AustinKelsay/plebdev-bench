@@ -61,10 +61,6 @@ export async function executeItem(
 	timeoutMs: number,
 	unloadAfter = true,
 ): Promise<MatrixItemResult> {
-	const workspace =
-		item.scoringMode === "workspace"
-			? await prepareTestWorkspace(item.test)
-			: undefined;
 	const log = logger.child({
 		itemId: item.id,
 		runtime: item.runtime,
@@ -77,7 +73,12 @@ export async function executeItem(
 	});
 
 	const startedAt = new Date().toISOString();
+	let workspace: Awaited<ReturnType<typeof prepareTestWorkspace>> | undefined;
 	try {
+		if (item.scoringMode === "workspace") {
+			workspace = await prepareTestWorkspace(item.test);
+		}
+
 		let generation: GenerationResult;
 		let generationFailure: MatrixItemResult["generationFailure"];
 		let generationStartTime: number | undefined;
@@ -107,16 +108,25 @@ export async function executeItem(
 			harnessForRetry = harness;
 
 			generationStartTime = performance.now();
-			const result = await harness.generate({
-				model: item.model,
-				prompt,
-				timeoutMs,
-				unloadAfter,
-				runtime,
-				promptMode:
-					item.scoringMode === "workspace" ? "workspace" : "code-output",
-				...(workspace ? { workingDirectory: workspace.rootDir } : {}),
-			});
+			const result =
+				item.scoringMode === "workspace" && workspace
+					? await harness.generate({
+							model: item.model,
+							prompt,
+							timeoutMs,
+							unloadAfter,
+							runtime,
+							promptMode: "workspace",
+							workingDirectory: workspace.rootDir,
+						})
+					: await harness.generate({
+							model: item.model,
+							prompt,
+							timeoutMs,
+							unloadAfter,
+							runtime,
+							promptMode: "code-output",
+						});
 
 			generation = {
 				success: true,
@@ -334,7 +344,44 @@ export async function executeItem(
 			scoringFailure,
 			frontierEvalFailure,
 		};
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		const completedAt = new Date().toISOString();
+		const failureType = classifyGenerationError(errorMessage);
+		log.warn({ error: errorMessage, failureType }, "Item execution failed");
+		return {
+			id: item.id,
+			runtime: item.runtime,
+			model: item.model,
+			harness: item.harness,
+			test: item.test,
+			category: item.category,
+			passType: item.passType,
+			status: "failed",
+			startedAt,
+			completedAt,
+			generation: {
+				success: false,
+				error: errorMessage,
+				failureType,
+				durationMs: 0,
+			},
+			generationFailure: {
+				type: failureType,
+				message: errorMessage,
+			},
+		};
 	} finally {
-		await workspace?.cleanup();
+		try {
+			await workspace?.cleanup();
+		} catch (error) {
+			log.warn(
+				{
+					error: error instanceof Error ? error.message : String(error),
+					workspaceDir: workspace?.rootDir,
+				},
+				"Workspace cleanup failed",
+			);
+		}
 	}
 }

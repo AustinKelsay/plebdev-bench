@@ -15,3 +15,6 @@ Required preserved files:
 Create `reports/cleanup-report.json` with:
 
 `{"deleted":["build/tmp/app.tmp","cache/session.cache","logs/2026-01-01.log"],"preservedCount":3}`
+
+Do not delete, modify, or create anything else in the workspace besides those
+three deletions and the single required output file `reports/cleanup-report.json`.

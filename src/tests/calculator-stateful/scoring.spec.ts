@@ -9,6 +9,7 @@
 import type { ScoringSpec } from "../../schemas/index.js";
 
 export const spec: ScoringSpec = {
+	schemaVersion: 1,
 	testSlug: "calculator-stateful",
 	mode: "code-module",
 

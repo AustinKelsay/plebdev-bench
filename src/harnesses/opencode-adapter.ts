@@ -84,6 +84,11 @@ export function createOpenCodeAdapter(): Harness {
 			const promptWithoutMarker = stripRetryMarker(prompt);
 			const promptMode = opts.promptMode ?? "code-output";
 			const hasExternalWorkingDirectory = opts.workingDirectory !== undefined;
+			if (promptMode === "workspace" && !hasExternalWorkingDirectory) {
+				throw new Error(
+					"OpenCode workspace mode requires a caller-supplied workingDirectory",
+				);
+			}
 
 			const runId = crypto.randomBytes(8).toString("hex");
 			const toolOutputRoot = resolveOpenCodeToolOutputRoot();

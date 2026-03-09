@@ -96,6 +96,18 @@ describe("discoverTestCatalog", () => {
 			'requiresTools must be true when scoringMode is "workspace"',
 		);
 	});
+
+	it("rejects workspace-scored tests when requiresTools is omitted", () => {
+		const root = createTempRoot();
+		createTestDir(root, "missing-tools-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			'requiresTools must be true when scoringMode is "workspace"',
+		);
+	});
 });
 
 describe("selectTests", () => {

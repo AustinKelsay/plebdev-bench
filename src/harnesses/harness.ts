@@ -71,8 +71,8 @@ export function getCompatibleHarnesses(runtime: string): HarnessName[] {
 	);
 }
 
-/** Options for generating a completion. */
-export interface GenerateOpts {
+/** Common options shared across all harness prompt modes. */
+interface BaseGenerateOpts {
 	/** Model name in Ollama format (e.g., "llama3.2:3b"). */
 	model: string;
 	/** The prompt to send to the model. */
@@ -83,11 +83,26 @@ export interface GenerateOpts {
 	unloadAfter?: boolean;
 	/** Runtime to use for generation. */
 	runtime: Runtime;
+}
+
+/** Generation options for standard code-output benchmarks. */
+interface CodeOutputGenerateOpts extends BaseGenerateOpts {
 	/** Prompt handling mode for this benchmark item. */
-	promptMode?: HarnessPromptMode;
+	promptMode?: "code-output";
 	/** Optional working directory for tool-calling harnesses. */
 	workingDirectory?: string;
 }
+
+/** Generation options for workspace-scored benchmarks. */
+interface WorkspaceGenerateOpts extends BaseGenerateOpts {
+	/** Workspace mode always requires a caller-supplied working directory. */
+	promptMode: "workspace";
+	/** Isolated workspace root passed in by the runner. */
+	workingDirectory: string;
+}
+
+/** Options for generating a completion. */
+export type GenerateOpts = CodeOutputGenerateOpts | WorkspaceGenerateOpts;
 
 /** Result from a generation request. */
 export interface GenerateResult {

@@ -31,7 +31,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
   - `rate-limiter` - Stateful per-key fixed-window rate limiting
   - `ttl-cache` - Deterministic in-memory TTL cache behavior
   - `event-emitter` - Listener lifecycle and event isolation semantics
-  - `workspace-smoke` - Create files, append one exact line, and emit a JSON summary
+  - `workspace-smoke` - Create `logs/session.log`, rewrite `checklist/steps.txt` to its exact three-line final state, and emit `artifacts/summary.json`
   - `file-locator` - Search a bounded workspace and extract values into a report
   - `targeted-edit` - Make one precise edit without collateral file changes
   - `workspace-reorg` - Move files into a required directory structure

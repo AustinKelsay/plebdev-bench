@@ -21,6 +21,24 @@ import {
 } from "./common.schema.js";
 
 /**
+ * Validates a workspace-relative file path.
+ *
+ * @param pathValue - Candidate relative path
+ * @returns True when the path stays inside the workspace
+ */
+function isSafeWorkspacePath(pathValue: string): boolean {
+	if (/^[A-Za-z]:\\/.test(pathValue) || pathValue.startsWith("/")) {
+		return false;
+	}
+	return !pathValue.split(/[\\/]+/).includes("..");
+}
+
+/** Relative workspace path schema. */
+const WorkspacePathSchema = z.string().min(1).refine(isSafeWorkspacePath, {
+	message: "must be a relative path without '..' segments",
+});
+
+/**
  * Expected export from generated code.
  * Used to verify the module exports the required functions/classes.
  */
@@ -63,7 +81,7 @@ export type TestCase = z.infer<typeof TestCaseSchema>;
 /** Exact text assertion for a workspace file. */
 export const WorkspaceFileAssertionSchema = z.object({
 	/** Relative path from workspace root. */
-	path: z.string().min(1),
+	path: WorkspacePathSchema,
 
 	/** Exact expected file contents. */
 	content: z.string(),
@@ -76,7 +94,7 @@ export type WorkspaceFileAssertion = z.infer<
 /** Exact JSON assertion for a workspace file. */
 export const WorkspaceJsonAssertionSchema = z.object({
 	/** Relative path from workspace root. */
-	path: z.string().min(1),
+	path: WorkspacePathSchema,
 
 	/** Expected parsed JSON value. */
 	value: z.unknown(),
@@ -89,38 +107,52 @@ export type WorkspaceJsonAssertion = z.infer<
 /** Exact mutation sets allowed for a workspace task. */
 export const WorkspaceMutationSetSchema = z.object({
 	/** Relative file paths expected to be newly created. */
-	created: z.array(z.string().min(1)).default([]),
+	created: z.array(WorkspacePathSchema).default([]),
 
 	/** Relative file paths expected to be modified in place. */
-	modified: z.array(z.string().min(1)).default([]),
+	modified: z.array(WorkspacePathSchema).default([]),
 
 	/** Relative file paths expected to be deleted. */
-	deleted: z.array(z.string().min(1)).default([]),
+	deleted: z.array(WorkspacePathSchema).default([]),
 });
 
 export type WorkspaceMutationSet = z.infer<typeof WorkspaceMutationSetSchema>;
 
 /** File-system assertions for workspace-scored tests. */
-export const WorkspaceAssertionsSchema = z.object({
-	/** Relative paths that must exist after task completion. */
-	requiredPaths: z.array(z.string().min(1)).default([]),
+export const WorkspaceAssertionsSchema = z
+	.object({
+		/** Relative paths that must exist after task completion. */
+		requiredPaths: z.array(WorkspacePathSchema).default([]),
 
-	/** Relative paths that must be absent after task completion. */
-	absentPaths: z.array(z.string().min(1)).default([]),
+		/** Relative paths that must be absent after task completion. */
+		absentPaths: z.array(WorkspacePathSchema).default([]),
 
-	/** Exact text file assertions. */
-	files: z.array(WorkspaceFileAssertionSchema).default([]),
+		/** Exact text file assertions. */
+		files: z.array(WorkspaceFileAssertionSchema).default([]),
 
-	/** Exact JSON file assertions. */
-	jsonFiles: z.array(WorkspaceJsonAssertionSchema).default([]),
+		/** Exact JSON file assertions. */
+		jsonFiles: z.array(WorkspaceJsonAssertionSchema).default([]),
 
-	/** Exact mutation set expected relative to the seeded workspace. */
-	mutations: WorkspaceMutationSetSchema.default({
-		created: [],
-		modified: [],
-		deleted: [],
-	}),
-});
+		/** Exact mutation set expected relative to the seeded workspace. */
+		mutations: WorkspaceMutationSetSchema.default({
+			created: [],
+			modified: [],
+			deleted: [],
+		}),
+	})
+	.refine(
+		(value) =>
+			value.requiredPaths.length > 0 ||
+			value.absentPaths.length > 0 ||
+			value.files.length > 0 ||
+			value.jsonFiles.length > 0 ||
+			value.mutations.created.length > 0 ||
+			value.mutations.modified.length > 0 ||
+			value.mutations.deleted.length > 0,
+		{
+			message: "workspace assertions must define at least one check",
+		},
+	);
 
 export type WorkspaceAssertions = z.infer<typeof WorkspaceAssertionsSchema>;
 
@@ -129,6 +161,9 @@ export type WorkspaceAssertions = z.infer<typeof WorkspaceAssertionsSchema>;
  */
 export const ScoringSpecSchema = z
 	.object({
+		/** Schema version for scoring-spec migrations. */
+		schemaVersion: z.number().int().positive().default(1),
+
 		/** Test slug (must match directory name). */
 		testSlug: z.string(),
 

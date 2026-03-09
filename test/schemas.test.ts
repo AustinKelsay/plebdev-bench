@@ -13,6 +13,7 @@ import {
 	RunResultSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	ScoringSpecSchema,
 	TestCategorySchema,
 	TestScoringModeSchema,
 	defaultConfig,
@@ -197,6 +198,39 @@ describe("RunPlanSchema", () => {
 		expect(plan.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(plan.runId).toBe("20260114-143052-abc123");
 		expect(plan.items).toHaveLength(1);
+	});
+});
+
+describe("ScoringSpecSchema", () => {
+	it("rejects empty workspace assertion sets", () => {
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {},
+			}),
+		).toThrow("workspace assertions must define at least one check");
+	});
+
+	it("rejects unsafe workspace paths", () => {
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {
+					requiredPaths: ["../escape.txt"],
+				},
+			}),
+		).toThrow("must be a relative path without '..' segments");
+	});
+
+	it("adds a default scoring spec schema version", () => {
+		const spec = ScoringSpecSchema.parse({
+			testSlug: "smoke",
+			mode: "code-module",
+			expectedExports: ["add"],
+		});
+		expect(spec.schemaVersion).toBe(1);
 	});
 });
 
