@@ -7,8 +7,8 @@
  * - Grouping keys are stable string identifiers intended for UI tables/charts
  */
 
-import type { AutomatedScore, MatrixItemResult } from "./types.js";
-import { TOOL_SMOKE_TEST_SLUG } from "./types.js";
+import type { AutomatedScore, MatrixItemResult } from "./types";
+import { TOOL_SMOKE_TEST_SLUG } from "./types";
 
 /** Pass rate for a set of items (0-1 range). */
 export interface PassRateResult {

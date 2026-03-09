@@ -12,9 +12,9 @@ import { RunsPage } from "./pages/runs";
 function App() {
 	return (
 		<BrowserRouter>
-			<div className="dashboard-shell min-h-screen text-foreground">
+			<div className="min-h-screen bg-background text-foreground">
 				<Header />
-				<main className="container mx-auto max-w-[1500px] px-4 py-8 md:px-6">
+				<main className="container mx-auto px-4 py-6">
 					<Routes>
 						<Route path="/" element={<Navigate to="/leaderboard" replace />} />
 						<Route path="/about" element={<AboutRoutePage />} />

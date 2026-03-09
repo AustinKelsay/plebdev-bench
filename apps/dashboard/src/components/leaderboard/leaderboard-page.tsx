@@ -4,20 +4,17 @@
  *
  * Invariants:
  * - Renders only aggregate payload from `/results/aggregates/latest.json`
- * - Filter state controls every summary, chart, and table on the page
+ * - Aggregation is precomputed using machine+matrix-key best-result semantics
  */
 
 import { LeaderboardChartGallery } from "@/components/leaderboard/leaderboard-chart-gallery";
-import { LeaderboardHero } from "@/components/leaderboard/leaderboard-hero";
+import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { LeaderboardLatestRuns } from "@/components/leaderboard/leaderboard-latest-runs";
-import { LeaderboardModelVettingTable } from "@/components/leaderboard/leaderboard-model-vetting-table";
 import { LeaderboardResultsTable } from "@/components/leaderboard/leaderboard-results-table";
 import { LeaderboardSummaryCards } from "@/components/leaderboard/leaderboard-summary-cards";
-import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { ModelFilterDropdown } from "@/components/leaderboard/model-filter-dropdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -29,7 +26,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { computePassRate } from "@/lib/aggregations";
 import { fetchDashboardIndex, fetchLatestAggregate } from "@/lib/api";
 import type { DashboardIndex, LeaderboardAggregate } from "@/lib/types";
-import { RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -130,47 +126,24 @@ export function LeaderboardPage() {
 		() => uniqueValues(items, (item) => item.test),
 		[items],
 	);
-	const statusOptions = useMemo(
-		() => uniqueValues(items, (item) => item.status),
-		[items],
-	);
-	const categoryOptions = useMemo(
-		() => uniqueValues(items, (item) => item.category),
-		[items],
-	);
-	const verificationOptions = useMemo(
-		() => uniqueValues(items, (item) => item.verificationStatus),
-		[items],
-	);
-	const activeFilterCount = [
-		filters.machine !== ALL_FILTER_VALUE,
-		filters.models.length > 0,
-		filters.search.trim().length > 0,
-		filters.runtime !== ALL_FILTER_VALUE,
-		filters.harness !== ALL_FILTER_VALUE,
-		filters.passType !== ALL_FILTER_VALUE,
-		filters.test !== ALL_FILTER_VALUE,
-		filters.status !== ALL_FILTER_VALUE,
-		filters.category !== ALL_FILTER_VALUE,
-		filters.verification !== ALL_FILTER_VALUE,
-	].filter(Boolean).length;
 
 	if (loading) {
 		return (
 			<PageContainer>
 				<Skeleton className="h-10 w-72" />
-				<Skeleton className="h-[28rem] rounded-2xl" />
-				<div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-					<Skeleton className="h-32" />
-					<Skeleton className="h-32" />
-					<Skeleton className="h-32" />
-					<Skeleton className="h-32" />
-					<Skeleton className="h-32" />
-					<Skeleton className="h-32" />
+				<div className="grid gap-4 md:grid-cols-4">
+					<Skeleton className="h-24" />
+					<Skeleton className="h-24" />
+					<Skeleton className="h-24" />
+					<Skeleton className="h-24" />
 				</div>
 				<Skeleton className="h-[32rem]" />
-				<Skeleton className="h-[26rem]" />
-				<Skeleton className="h-[30rem]" />
+				<div className="grid gap-4 lg:grid-cols-3">
+					<Skeleton className="h-40" />
+					<Skeleton className="h-40" />
+					<Skeleton className="h-40" />
+				</div>
+				<Skeleton className="h-80" />
 			</PageContainer>
 		);
 	}
@@ -188,7 +161,7 @@ export function LeaderboardPage() {
 	}
 
 	return (
-		<PageContainer className="space-y-8">
+		<PageContainer>
 			<PageHeader
 				title="Leaderboard"
 				description={
@@ -204,63 +177,16 @@ export function LeaderboardPage() {
 				</Link>
 			</PageHeader>
 
-			<LeaderboardHero
-				aggregate={aggregate}
-				items={filteredItems}
-				passRate={passRate}
-			/>
-
-			<Card className="border-border/80 bg-card/85 backdrop-blur">
-				<CardHeader className="gap-2 pb-3">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-						<div>
-							<CardTitle className="text-base">Filters</CardTitle>
-							<p className="mt-1 text-sm leading-6 text-foreground-muted">
-								Constrain the benchmark slice, then read every chart and table as
-								“within current filters”.
-							</p>
-						</div>
-						<div className="flex items-center gap-2">
-							<p className="text-xs uppercase tracking-[0.18em] text-foreground-faint">
-								{activeFilterCount} active
-							</p>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setFilters(createDefaultFilterState())}
-							>
-								<RotateCcw className="mr-2 h-4 w-4" />
-								Clear
-							</Button>
-						</div>
-					</div>
+			<Card>
+				<CardHeader className="pb-3">
+					<CardTitle className="text-base">Filters</CardTitle>
 				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						<Input
-							value={filters.search}
-							onChange={(event) =>
-								setFilters((previous) => ({
-									...previous,
-									search: event.target.value,
-								}))
-							}
-							placeholder="Search model, harness, test, machine"
-							aria-label="Search leaderboard scope"
-						/>
-
-						<ModelFilterDropdown
-							models={modelOptions}
-							selectedModels={filters.models}
-							onSelectionChange={(models) =>
-								setFilters((previous) => ({ ...previous, models }))
-							}
-						/>
-
+				<CardContent>
+					<div className="grid gap-3 md:grid-cols-6">
 						<Select
 							value={filters.machine}
 							onValueChange={(value) =>
-								setFilters((previous) => ({ ...previous, machine: value }))
+								setFilters((prev) => ({ ...prev, machine: value }))
 							}
 						>
 							<SelectTrigger aria-label="Machine filter">
@@ -276,10 +202,18 @@ export function LeaderboardPage() {
 							</SelectContent>
 						</Select>
 
+						<ModelFilterDropdown
+							models={modelOptions}
+							selectedModels={filters.models}
+							onSelectionChange={(models) =>
+								setFilters((prev) => ({ ...prev, models }))
+							}
+						/>
+
 						<Select
 							value={filters.runtime}
 							onValueChange={(value) =>
-								setFilters((previous) => ({ ...previous, runtime: value }))
+								setFilters((prev) => ({ ...prev, runtime: value }))
 							}
 						>
 							<SelectTrigger aria-label="Runtime filter">
@@ -298,7 +232,7 @@ export function LeaderboardPage() {
 						<Select
 							value={filters.harness}
 							onValueChange={(value) =>
-								setFilters((previous) => ({ ...previous, harness: value }))
+								setFilters((prev) => ({ ...prev, harness: value }))
 							}
 						>
 							<SelectTrigger aria-label="Harness filter">
@@ -317,11 +251,11 @@ export function LeaderboardPage() {
 						<Select
 							value={filters.passType}
 							onValueChange={(value) =>
-								setFilters((previous) => ({ ...previous, passType: value }))
+								setFilters((prev) => ({ ...prev, passType: value }))
 							}
 						>
 							<SelectTrigger aria-label="Pass type filter">
-								<SelectValue placeholder="Pass type" />
+								<SelectValue placeholder="Pass Type" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value={ALL_FILTER_VALUE}>All pass types</SelectItem>
@@ -336,7 +270,7 @@ export function LeaderboardPage() {
 						<Select
 							value={filters.test}
 							onValueChange={(value) =>
-								setFilters((previous) => ({ ...previous, test: value }))
+								setFilters((prev) => ({ ...prev, test: value }))
 							}
 						>
 							<SelectTrigger aria-label="Test filter">
@@ -351,81 +285,17 @@ export function LeaderboardPage() {
 								))}
 							</SelectContent>
 						</Select>
-
-						<Select
-							value={filters.status}
-							onValueChange={(value) =>
-								setFilters((previous) => ({ ...previous, status: value }))
-							}
-						>
-							<SelectTrigger aria-label="Status filter">
-								<SelectValue placeholder="Status" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value={ALL_FILTER_VALUE}>All statuses</SelectItem>
-								{statusOptions.map((option) => (
-									<SelectItem key={option} value={option}>
-										{option}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-
-						<Select
-							value={filters.category}
-							onValueChange={(value) =>
-								setFilters((previous) => ({ ...previous, category: value }))
-							}
-						>
-							<SelectTrigger aria-label="Category filter">
-								<SelectValue placeholder="Category" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value={ALL_FILTER_VALUE}>All categories</SelectItem>
-								{categoryOptions.map((option) => (
-									<SelectItem key={option} value={option}>
-										{option}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-
-						<Select
-							value={filters.verification}
-							onValueChange={(value) =>
-								setFilters((previous) => ({
-									...previous,
-									verification: value,
-								}))
-							}
-						>
-							<SelectTrigger aria-label="Verification filter">
-								<SelectValue placeholder="Verification" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value={ALL_FILTER_VALUE}>
-									All provenance states
-								</SelectItem>
-								{verificationOptions.map((option) => (
-									<SelectItem key={option} value={option}>
-										{option}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
 					</div>
 				</CardContent>
 			</Card>
 
 			<LeaderboardSummaryCards
 				aggregate={aggregate}
-				items={filteredItems}
+				filteredItemCount={filteredItems.length}
 				passRate={passRate}
 			/>
 
 			<LeaderboardChartGallery items={filteredItems} />
-
-			<LeaderboardModelVettingTable items={filteredItems} />
 
 			<LeaderboardLatestRuns
 				runs={latestRuns}
@@ -435,8 +305,8 @@ export function LeaderboardPage() {
 			{(aggregate?.summary.runsMatched ?? 0) === 0 &&
 				(index?.runs.length ?? 0) > 0 && (
 					<div className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
-						No published runs match latest checkpoint {index?.latestCheckpointId}{" "}
-						yet.
+						No published runs match latest checkpoint{" "}
+						{index?.latestCheckpointId} yet.
 					</div>
 				)}
 

@@ -20,30 +20,23 @@ export function Header() {
 	];
 
 	return (
-		<header className="sticky top-0 z-30 border-b border-border/80 bg-background/80 backdrop-blur-xl">
-			<div className="container mx-auto flex h-16 max-w-[1500px] items-center justify-between px-4 md:px-6">
-				<Link to="/" className="mr-8 flex items-center gap-3">
-					<span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-info/30 bg-info/10 text-sm font-semibold text-info">
-						pb
+		<header className="border-b border-border bg-background-raised">
+			<div className="container mx-auto flex h-14 items-center px-4">
+				<Link to="/" className="mr-8 flex items-center space-x-2">
+					<span className="text-lg font-semibold text-foreground">
+						plebdev-bench
 					</span>
-					<div>
-						<span className="block text-lg font-semibold text-foreground">
-							plebdev-bench
-						</span>
-						<span className="text-[11px] uppercase tracking-[0.24em] text-foreground-faint">
-							open-model intelligence
-						</span>
-					</div>
+					<span className="text-xs text-foreground-faint">dashboard</span>
 				</Link>
-				<nav className="flex items-center gap-2 rounded-full border border-border/70 bg-background-raised/70 p-1">
+				<nav className="flex items-center space-x-6">
 					{navItems.map((item) => (
 						<Link
 							key={item.href}
 							to={item.href}
 							className={cn(
-								"rounded-full px-4 py-2 text-sm font-medium transition-colors hover:text-foreground",
+								"text-sm font-medium transition-colors hover:text-foreground",
 								location.pathname.startsWith(item.href)
-									? "bg-info/15 text-foreground"
+									? "text-foreground"
 									: "text-foreground-muted",
 							)}
 						>
@@ -51,10 +44,6 @@ export function Header() {
 						</Link>
 					))}
 				</nav>
-				<div className="hidden text-right text-xs text-foreground-faint xl:block">
-					<p>Reproducible matrix benchmark</p>
-					<p>Local-first artifacts, static dashboard</p>
-				</div>
 			</div>
 		</header>
 	);

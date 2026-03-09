@@ -65,8 +65,6 @@ export function LeaderboardResultsTable({
 							<TableHead>Pass</TableHead>
 							<TableHead>Status</TableHead>
 							<TableHead>Score</TableHead>
-							<TableHead>Frontier</TableHead>
-							<TableHead>Failure</TableHead>
 							<TableHead>Duration</TableHead>
 							<TableHead>Source Run</TableHead>
 						</TableRow>
@@ -102,17 +100,6 @@ export function LeaderboardResultsTable({
 										: "—"}
 								</TableCell>
 								<TableCell>
-									{item.frontierEval ? `${item.frontierEval.score}/10` : "—"}
-								</TableCell>
-								<TableCell className="max-w-[220px]">
-									<span className="line-clamp-2 text-xs text-foreground-muted">
-										{item.generationFailure?.type ??
-											item.scoringFailure?.type ??
-											item.frontierEvalFailure?.type ??
-											"—"}
-									</span>
-								</TableCell>
-								<TableCell>
 									{item.generation?.durationMs !== undefined
 										? formatDuration(item.generation.durationMs)
 										: "—"}
@@ -134,7 +121,7 @@ export function LeaderboardResultsTable({
 						))}
 						{items.length === 0 && (
 							<TableRow>
-								<TableCell colSpan={12} className="text-center text-foreground-muted">
+								<TableCell colSpan={10} className="text-center text-foreground-muted">
 									No items match current filters.
 								</TableCell>
 							</TableRow>
