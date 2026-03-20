@@ -4,7 +4,11 @@
 	"tags": ["workspace", "filesystem", "foundational"],
 	"scoringMode": "workspace",
 	"requiresTools": true,
-	"requiredHarnessCapabilities": ["workspace-read", "workspace-write"],
+	"requiredHarnessCapabilities": [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir"
+	],
 	"timeoutMultiplier": 1.4,
 	"schemaVersion": 1
 }
