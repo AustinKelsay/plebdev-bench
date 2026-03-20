@@ -33,6 +33,7 @@ import {
 	computeStaleOutputTimeoutMs,
 	forceKillProcess,
 } from "./opencode-process.js";
+import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
@@ -81,34 +82,52 @@ export function createOpenCodeAdapter(): Harness {
 			const startTime = performance.now();
 			const isRetryAttempt = hasRetryMarker(prompt);
 			const promptWithoutMarker = stripRetryMarker(prompt);
-
-			const runId = crypto.randomBytes(8).toString("hex");
-			const toolOutputRoot = resolveOpenCodeToolOutputRoot();
-			const workDir = path.join(
-				toolOutputRoot,
-				`plebdev-bench-opencode-${runId}`,
-			);
-			const solutionPath = path.join(workDir, SOLUTION_FILENAME);
-
-			try {
-				await fs.promises.mkdir(workDir, { recursive: true });
-			} catch (error) {
+			const promptMode = opts.promptMode ?? "code-output";
+			const hasExternalWorkingDirectory = opts.workingDirectory !== undefined;
+			if (promptMode === "workspace" && !hasExternalWorkingDirectory) {
 				throw new Error(
-					`Failed to create OpenCode workDir at "${workDir}": ${error instanceof Error ? error.message : String(error)}`,
+					"OpenCode workspace mode requires a caller-supplied workingDirectory",
 				);
 			}
 
+			const runId = crypto.randomBytes(8).toString("hex");
+			const toolOutputRoot = resolveOpenCodeToolOutputRoot();
+			const workDir =
+				opts.workingDirectory ??
+				path.join(toolOutputRoot, `plebdev-bench-opencode-${runId}`);
+			const solutionPath = path.join(workDir, SOLUTION_FILENAME);
+			const configDir = path.join(
+				toolOutputRoot,
+				`plebdev-bench-opencode-config-${runId}`,
+			);
+
 			try {
-				await execa("git", ["init", "--quiet"], { cwd: workDir });
-				await execa("git", ["config", "user.email", "bench@local"], {
-					cwd: workDir,
-				});
-				await execa("git", ["config", "user.name", "Bench"], { cwd: workDir });
-			} catch (gitErr) {
-				log.warn({ error: gitErr }, "Failed to initialize git repo in workDir");
+				await fs.promises.mkdir(workDir, { recursive: true });
+				await fs.promises.mkdir(configDir, { recursive: true });
+			} catch (error) {
+				throw new Error(
+					`Failed to create OpenCode directories at "${workDir}": ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
 
-			const configPath = path.join(workDir, "opencode.json");
+			if (!hasExternalWorkingDirectory) {
+				try {
+					await execa("git", ["init", "--quiet"], { cwd: workDir });
+					await execa("git", ["config", "user.email", "bench@local"], {
+						cwd: workDir,
+					});
+					await execa("git", ["config", "user.name", "Bench"], {
+						cwd: workDir,
+					});
+				} catch (gitErr) {
+					log.warn(
+						{ error: gitErr },
+						"Failed to initialize git repo in workDir",
+					);
+				}
+			}
+
+			const configPath = path.join(configDir, "opencode.json");
 
 			const providerName = runtime.name;
 			if (runtime.apiFormat === "openai-compat") {
@@ -149,10 +168,13 @@ export function createOpenCodeAdapter(): Harness {
 				runtimeName: runtime.name,
 			});
 
-			const fullPrompt = buildCodeOnlyPrompt(
-				promptWithoutMarker,
-				isRetryAttempt,
-			);
+			const fullPrompt =
+				promptMode === "workspace"
+					? buildWorkspaceToolPrompt({
+							toolNames: ["edit", "write"],
+							taskPrompt: promptWithoutMarker,
+						})
+					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 
 			const args = [
 				"run",
@@ -349,6 +371,13 @@ export function createOpenCodeAdapter(): Harness {
 					output = normalized.output;
 				}
 
+				if (promptMode === "workspace") {
+					return {
+						output,
+						durationMs,
+					};
+				}
+
 				if (fs.existsSync(solutionPath)) {
 					const code = await fs.promises.readFile(solutionPath, "utf-8");
 					if (code.trim().length >= MIN_OUTPUT_LENGTH) {
@@ -467,11 +496,14 @@ export function createOpenCodeAdapter(): Harness {
 				if (timeoutId) clearTimeout(timeoutId);
 				if (staleCheckId) clearInterval(staleCheckId);
 
-				if (!codeFilePath) {
+				if (!hasExternalWorkingDirectory && !codeFilePath) {
 					fs.promises
 						.rm(workDir, { recursive: true, force: true })
 						.catch(() => {});
 				}
+				fs.promises
+					.rm(configDir, { recursive: true, force: true })
+					.catch(() => {});
 			}
 		},
 	};

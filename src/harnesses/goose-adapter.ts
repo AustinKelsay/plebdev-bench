@@ -29,6 +29,7 @@ import {
 import { normalizeOpenAiBasePath } from "./goose-openai.js";
 import { normalizeGooseOutput } from "./goose-output.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
+import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
@@ -156,10 +157,18 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			const isRetryAttempt = hasRetryMarker(prompt);
 			const promptWithoutMarker = stripRetryMarker(prompt);
 			const maxTurnsForAttempt = isRetryAttempt ? retryMaxTurns : maxTurns;
+			const promptMode = opts.promptMode ?? "code-output";
+			if (promptMode === "workspace" && opts.workingDirectory === undefined) {
+				throw new Error(
+					"Goose workspace mode requires a caller-supplied workingDirectory",
+				);
+			}
 
 			// Create unique temp directory for this generation
 			const runId = crypto.randomBytes(8).toString("hex");
-			const workDir = path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
+			const workDir =
+				opts.workingDirectory ??
+				path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
 			const solutionPath = path.join(workDir, SOLUTION_FILENAME);
 			const executionCwd = workDir;
 
@@ -225,10 +234,13 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				...extraEnv,
 			};
 
-			const fullPrompt = buildCodeOnlyPrompt(
-				promptWithoutMarker,
-				isRetryAttempt,
-			);
+			const fullPrompt =
+				promptMode === "workspace"
+					? buildWorkspaceToolPrompt({
+							toolNames: ["text_editor"],
+							taskPrompt: promptWithoutMarker,
+						})
+					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 
 			// CRITICAL: Use --provider and --model flags to override Goose's config file
 			const args = [
@@ -311,6 +323,13 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					},
 					"Goose completed",
 				);
+
+				if (promptMode === "workspace") {
+					return {
+						output,
+						durationMs,
+					};
+				}
 
 				// Check if solution file was created by tool
 				let codeFilePath: string | undefined;

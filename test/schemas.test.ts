@@ -13,7 +13,9 @@ import {
 	RunResultSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	ScoringSpecSchema,
 	TestCategorySchema,
+	TestScoringModeSchema,
 	defaultConfig,
 } from "../src/schemas/index.js";
 
@@ -25,7 +27,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.3.0");
+		expect(SCHEMA_VERSION).toBe("0.4.0");
 	});
 
 	it("should validate runtime names", () => {
@@ -43,6 +45,12 @@ describe("common schemas", () => {
 		expect(TestCategorySchema.parse("coding")).toBe("coding");
 		expect(TestCategorySchema.parse("computer-use")).toBe("computer-use");
 		expect(() => TestCategorySchema.parse("ops")).toThrow();
+	});
+
+	it("should validate test scoring modes", () => {
+		expect(TestScoringModeSchema.parse("code-module")).toBe("code-module");
+		expect(TestScoringModeSchema.parse("workspace")).toBe("workspace");
+		expect(() => TestScoringModeSchema.parse("browser")).toThrow();
 	});
 });
 
@@ -113,11 +121,14 @@ describe("MatrixItemSchema", () => {
 			harness: "direct",
 			test: "smoke",
 			category: "coding",
+			scoringMode: "code-module",
+			requiresTools: false,
 			passType: "blind",
 		});
 		expect(item.id).toBe("01");
 		expect(item.runtime).toBe("ollama");
 		expect(item.model).toBe("llama3.2:3b");
+		expect(item.scoringMode).toBe("code-module");
 	});
 });
 
@@ -170,6 +181,8 @@ describe("RunPlanSchema", () => {
 					harness: "direct",
 					test: "smoke",
 					category: "coding",
+					scoringMode: "code-module",
+					requiresTools: false,
 					passType: "blind",
 				},
 			],
@@ -185,6 +198,64 @@ describe("RunPlanSchema", () => {
 		expect(plan.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(plan.runId).toBe("20260114-143052-abc123");
 		expect(plan.items).toHaveLength(1);
+	});
+});
+
+describe("ScoringSpecSchema", () => {
+	it("rejects empty workspace assertion sets", () => {
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {},
+			}),
+		).toThrow("workspace assertions must define at least one check");
+	});
+
+	it("rejects unsafe workspace paths", () => {
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {
+					requiredPaths: ["../escape.txt"],
+				},
+			}),
+		).toThrow("must be a relative path without '..' segments");
+	});
+
+	it("rejects absolute workspace paths and unknown mutation keys", () => {
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {
+					requiredPaths: ["C:/escape.txt"],
+				},
+			}),
+		).toThrow("must be a relative path without '..' segments");
+
+		expect(() =>
+			ScoringSpecSchema.parse({
+				testSlug: "workspace-test",
+				mode: "workspace",
+				workspace: {
+					mutations: {
+						created: ["ok.txt"],
+						extra: ["nope.txt"],
+					},
+				},
+			}),
+		).toThrow();
+	});
+
+	it("adds a default scoring spec schema version", () => {
+		const spec = ScoringSpecSchema.parse({
+			testSlug: "smoke",
+			mode: "code-module",
+			expectedExports: ["add"],
+		});
+		expect(spec.schemaVersion).toBe(1);
 	});
 });
 
