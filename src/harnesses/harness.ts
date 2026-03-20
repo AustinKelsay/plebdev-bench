@@ -1,7 +1,9 @@
 /**
  * Purpose: Common harness interface and types for all adapters.
  * Exports: Harness, GenerateOpts, GenerateResult, HarnessName, HARNESS_NAMES,
- *          HarnessPromptMode, TOOL_CALLING_HARNESS_NAMES
+ *          HarnessPromptMode, TOOL_CALLING_HARNESS_NAMES,
+ *          HARNESS_CAPABILITY_MAP, getHarnessCapabilities,
+ *          doesHarnessSupportCapabilities
  *
  * All harnesses implement this interface to provide a unified API for:
  * - Checking availability (ping)
@@ -11,6 +13,7 @@
  */
 
 import type { Runtime } from "../runtimes/index.js";
+import type { HarnessCapability } from "../schemas/index.js";
 
 /** Supported harness names. "direct" replaces "ollama" for clarity. */
 export const HARNESS_NAMES = ["direct", "goose", "opencode"] as const;
@@ -23,6 +26,27 @@ export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
 export type ToolCallingHarnessName =
 	(typeof TOOL_CALLING_HARNESS_NAMES)[number];
+
+/**
+ * Explicit workspace capabilities supported by each harness.
+ *
+ * These capabilities are intentionally conservative. A harness should only
+ * advertise a capability when the runner config exposes a stable tool path for it.
+ */
+export const HARNESS_CAPABILITY_MAP: Record<
+	HarnessName,
+	readonly HarnessCapability[]
+> = {
+	direct: [],
+	goose: ["workspace-read", "workspace-write"],
+	opencode: [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir",
+		"workspace-search",
+		"workspace-delete",
+	],
+} as const;
 
 /** Prompt handling modes supported by harness adapters. */
 export const HARNESS_PROMPT_MODES = ["code-output", "workspace"] as const;
@@ -68,6 +92,35 @@ export function isHarnessCompatibleWithRuntime(
 export function getCompatibleHarnesses(runtime: string): HarnessName[] {
 	return HARNESS_NAMES.filter((harness) =>
 		isHarnessCompatibleWithRuntime(harness, runtime),
+	);
+}
+
+/**
+ * Gets the explicit workspace capabilities for a harness.
+ *
+ * @param harness - Harness name
+ * @returns Read-only list of supported capabilities
+ */
+export function getHarnessCapabilities(
+	harness: HarnessName,
+): readonly HarnessCapability[] {
+	return HARNESS_CAPABILITY_MAP[harness];
+}
+
+/**
+ * Checks whether a harness supports every capability required by a test.
+ *
+ * @param harness - Harness name
+ * @param requiredCapabilities - Required capability list from test metadata
+ * @returns True when the harness advertises all required capabilities
+ */
+export function doesHarnessSupportCapabilities(
+	harness: HarnessName,
+	requiredCapabilities: readonly HarnessCapability[],
+): boolean {
+	const supported = HARNESS_CAPABILITY_MAP[harness];
+	return requiredCapabilities.every((capability) =>
+		supported.includes(capability),
 	);
 }
 

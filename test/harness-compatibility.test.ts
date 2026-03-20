@@ -8,8 +8,11 @@
 
 import { describe, expect, it } from "vitest";
 import {
+	HARNESS_CAPABILITY_MAP,
 	HARNESS_RUNTIME_COMPATIBILITY,
+	doesHarnessSupportCapabilities,
 	getCompatibleHarnesses,
+	getHarnessCapabilities,
 	isHarnessCompatibleWithRuntime,
 } from "../src/harnesses/harness.js";
 
@@ -30,6 +33,46 @@ describe("HARNESS_RUNTIME_COMPATIBILITY", () => {
 		expect(HARNESS_RUNTIME_COMPATIBILITY.direct).toContain("vllm");
 		expect(HARNESS_RUNTIME_COMPATIBILITY.goose).toContain("vllm");
 		expect(HARNESS_RUNTIME_COMPATIBILITY.opencode).toContain("vllm");
+	});
+});
+
+describe("HARNESS_CAPABILITY_MAP", () => {
+	it("declares conservative workspace capabilities per harness", () => {
+		expect(HARNESS_CAPABILITY_MAP.direct).toEqual([]);
+		expect(HARNESS_CAPABILITY_MAP.goose).toEqual([
+			"workspace-read",
+			"workspace-write",
+		]);
+		expect(HARNESS_CAPABILITY_MAP.opencode).toEqual([
+			"workspace-read",
+			"workspace-write",
+			"workspace-mkdir",
+			"workspace-search",
+			"workspace-delete",
+		]);
+	});
+
+	it("returns harness capabilities through the public helper", () => {
+		expect(getHarnessCapabilities("opencode")).toContain("workspace-delete");
+	});
+
+	it("checks capability support exactly", () => {
+		expect(
+			doesHarnessSupportCapabilities("goose", [
+				"workspace-read",
+				"workspace-write",
+			]),
+		).toBe(true);
+		expect(doesHarnessSupportCapabilities("goose", ["workspace-delete"])).toBe(
+			false,
+		);
+		expect(
+			doesHarnessSupportCapabilities("opencode", [
+				"workspace-mkdir",
+				"workspace-search",
+				"workspace-delete",
+			]),
+		).toBe(true);
 	});
 });
 

@@ -17,11 +17,14 @@ export {
 	HARNESS_NAMES,
 	LEGACY_HARNESS_ALIAS,
 	TOOL_CALLING_HARNESS_NAMES,
+	HARNESS_CAPABILITY_MAP,
 	normalizeHarnessName,
 	isValidHarnessName,
 	HARNESS_RUNTIME_COMPATIBILITY,
 	isHarnessCompatibleWithRuntime,
 	getCompatibleHarnesses,
+	getHarnessCapabilities,
+	doesHarnessSupportCapabilities,
 } from "./harness.js";
 
 // Re-export discovery

@@ -6,7 +6,11 @@
  */
 
 import { z } from "zod";
-import { TestCategorySchema, TestScoringModeSchema } from "./common.schema.js";
+import {
+	HarnessCapabilitySchema,
+	TestCategorySchema,
+	TestScoringModeSchema,
+} from "./common.schema.js";
 
 /**
  * Applies shared invariants for test metadata.
@@ -15,7 +19,12 @@ import { TestCategorySchema, TestScoringModeSchema } from "./common.schema.js";
  * @param ctx - Zod refinement context
  */
 function validateTestMetadata(
-	value: { scoringMode: "code-module" | "workspace"; requiresTools: boolean },
+	value: {
+		scoringMode: "code-module" | "workspace";
+		requiresTools: boolean;
+		requiredHarnessCapabilities: string[];
+		timeoutMultiplier: number;
+	},
 	ctx: z.RefinementCtx,
 ): void {
 	if (value.scoringMode === "workspace" && value.requiresTools !== true) {
@@ -23,6 +32,35 @@ function validateTestMetadata(
 			code: z.ZodIssueCode.custom,
 			path: ["requiresTools"],
 			message: 'requiresTools must be true when scoringMode is "workspace"',
+		});
+	}
+
+	if (!value.requiresTools && value.requiredHarnessCapabilities.length > 0) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ["requiredHarnessCapabilities"],
+			message:
+				"requiredHarnessCapabilities may only be set when requiresTools is true",
+		});
+	}
+
+	if (
+		value.scoringMode === "workspace" &&
+		value.requiredHarnessCapabilities.length === 0
+	) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ["requiredHarnessCapabilities"],
+			message:
+				"workspace-scored tests must declare requiredHarnessCapabilities",
+		});
+	}
+
+	if (!Number.isFinite(value.timeoutMultiplier) || value.timeoutMultiplier <= 0) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ["timeoutMultiplier"],
+			message: "timeoutMultiplier must be a finite positive number",
 		});
 	}
 }
@@ -46,6 +84,12 @@ const TestMetadataFieldsSchema = z.object({
 
 	/** Whether this test requires a tool-calling harness. */
 	requiresTools: z.boolean().default(false),
+
+	/** Explicit harness capabilities required for representative execution. */
+	requiredHarnessCapabilities: z.array(HarnessCapabilitySchema).default([]),
+
+	/** Optional per-test multiplier applied on top of dynamic generation timeouts. */
+	timeoutMultiplier: z.number().positive().default(1),
 });
 
 /** Zod schema for per-test metadata file contents. */

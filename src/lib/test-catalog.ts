@@ -9,12 +9,9 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { TOOL_SMOKE_TEST_SLUG } from "./tool-smoke.js";
+import { isPreflightTest } from "./tool-smoke.js";
 import type { TestCategory, TestDefinition } from "../schemas/index.js";
-import {
-	TestDefinitionSchema,
-	TestMetadataSchema,
-} from "../schemas/index.js";
+import { TestDefinitionSchema, TestMetadataSchema } from "../schemas/index.js";
 
 /** Required metadata filename in each test directory. */
 export const TEST_METADATA_FILE = "test.meta.json";
@@ -27,7 +24,9 @@ export const TEST_METADATA_FILE = "test.meta.json";
  *
  * @throws {Error} If tests directory is missing, empty, or contains invalid metadata
  */
-export function discoverTestCatalog(rootDir: string = process.cwd()): TestDefinition[] {
+export function discoverTestCatalog(
+	rootDir: string = process.cwd(),
+): TestDefinition[] {
 	const testsDir = path.join(rootDir, "src", "tests");
 	if (!fs.existsSync(testsDir)) {
 		throw new Error(`Tests directory not found: ${testsDir}`);
@@ -64,7 +63,8 @@ export function discoverTestCatalog(rootDir: string = process.cwd()): TestDefini
 		if (!parsed.success) {
 			const issues = parsed.error.issues
 				.map((issue) => {
-					const location = issue.path.length > 0 ? issue.path.join(".") : "<root>";
+					const location =
+						issue.path.length > 0 ? issue.path.join(".") : "<root>";
 					return `${location}: ${issue.message}`;
 				})
 				.join("\n");
@@ -79,19 +79,19 @@ export function discoverTestCatalog(rootDir: string = process.cwd()): TestDefini
 }
 
 /**
- * Orders tests so tool-smoke runs first when present.
+ * Orders tests so preflight checks run first when present.
  *
  * @param tests - Input test definitions
  * @returns Ordered test definitions
  */
 export function orderTests(tests: TestDefinition[]): TestDefinition[] {
-	const toolSmoke = tests.find((test) => test.slug === TOOL_SMOKE_TEST_SLUG);
-	if (!toolSmoke) {
+	const preflightTests = tests.filter((test) => isPreflightTest(test.tags));
+	if (preflightTests.length === 0) {
 		return tests;
 	}
 	return [
-		toolSmoke,
-		...tests.filter((test) => test.slug !== TOOL_SMOKE_TEST_SLUG),
+		...preflightTests,
+		...tests.filter((test) => !isPreflightTest(test.tags)),
 	];
 }
 
@@ -101,7 +101,7 @@ export function orderTests(tests: TestDefinition[]): TestDefinition[] {
  * @param catalog - Full discovered test catalog
  * @param requestedSlugs - Optional explicit test slugs from config/CLI
  * @param requestedCategories - Optional category filter from config/CLI
- * @returns Selected test definitions with tool-smoke ordering applied
+ * @returns Selected test definitions with preflight ordering applied
  *
  * @throws {Error} If requested tests are unknown or selection is empty
  */

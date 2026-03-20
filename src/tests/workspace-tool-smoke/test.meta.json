@@ -1,0 +1,9 @@
+{
+	"category": "computer-use",
+	"description": "Preflight read/write workspace task for tool harnesses",
+	"tags": ["preflight", "workspace", "foundational"],
+	"scoringMode": "workspace",
+	"requiresTools": true,
+	"requiredHarnessCapabilities": ["workspace-read", "workspace-write"],
+	"schemaVersion": 1
+}

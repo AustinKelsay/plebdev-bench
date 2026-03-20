@@ -42,6 +42,11 @@ describe("scoreGeneration isolation", () => {
 		const result = await scoreGeneration("smoke", "export const x = 1;");
 
 		expect(execaMock).toHaveBeenCalledTimes(1);
+		expect(execaMock).toHaveBeenCalledWith(
+			"bun",
+			expect.any(Array),
+			expect.objectContaining({ timeout: 18_000 }),
+		);
 		expect(result).toEqual({ passed: 1, failed: 0, total: 1 });
 	});
 

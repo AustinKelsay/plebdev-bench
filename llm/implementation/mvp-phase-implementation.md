@@ -6,7 +6,7 @@ Purpose: Document the MVP phase implementation - automated scoring, frontier eva
 
 The MVP phase delivers:
 - **Automated scoring** via data-driven scoring specs and dynamic import
-- **Frontier eval** via OpenRouter GPT-5.2 (optional, auto-enabled with API key)
+- **Frontier eval** via OpenRouter GPT-5.4 (optional, auto-enabled with API key)
 - **Compare command** for deterministic run comparison with deltas
 - **Benchmark test catalog** with 4 tests (smoke, calculator-basic, calculator-stateful, todo-app)
 
@@ -104,7 +104,7 @@ if (generation.success && generation.output) {
 
 ### OpenRouter Client (`src/lib/openrouter-client.ts`)
 
-- Model: `openai/gpt-5.2`
+- Model: `openai/gpt-5.4`
 - Timeout: 30 seconds
 - Max tokens: 1024 (sized to avoid truncation while keeping responses reasonable)
 - Graceful failure: returns null on any error, logs warning, continues run

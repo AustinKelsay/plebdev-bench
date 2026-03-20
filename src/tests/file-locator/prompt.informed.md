@@ -7,8 +7,12 @@ The workspace contains three source files with `key=value` lines for:
 - `owner`
 
 Read the workspace files, discover the `owner`, `ticket`, and `version` values,
-and create only `reports/found-values.json` containing the exact object built
-from those discovered values.
+and create only `reports/found-values.json` containing this exact object shape:
+
+`{"owner":"<owner>","sourceCount":3,"ticket":"<ticket>","version":"<version>"}`
+
+Replace the angle-bracket placeholders with the discovered values instead of
+writing them literally.
 
 Constraints:
 

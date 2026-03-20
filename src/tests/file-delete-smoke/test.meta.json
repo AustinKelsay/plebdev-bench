@@ -1,0 +1,14 @@
+{
+	"category": "computer-use",
+	"description": "Preflight deletion task for harnesses with delete support",
+	"tags": ["preflight", "workspace", "delete"],
+	"scoringMode": "workspace",
+	"requiresTools": true,
+	"requiredHarnessCapabilities": [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir",
+		"workspace-delete"
+	],
+	"schemaVersion": 1
+}

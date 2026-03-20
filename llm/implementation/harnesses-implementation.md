@@ -187,6 +187,13 @@ When extracting code from tool-call JSON responses, `JSON.parse()` already corre
 
 **Important:** Do NOT post-process escape sequences after JSON.parse. Additional replacements like `.replace(/\\n/g, '\n')` would corrupt legitimate code escapes (e.g., regex `/\n/` or string literals `"\n"`).
 
+### Workspace Benchmark Mode
+
+- Goose workspace prompts are now anchored to the concrete seeded workspace root path via `buildWorkspaceToolPrompt()` and the adapter-provided `workspaceRootPath`.
+- "Read/write-only Goose rows" means rows whose `requiredHarnessCapabilities` are limited to `workspace-read` and `workspace-write`, which is the conservative capability set advertised by Goose in `src/harnesses/harness.ts`.
+- "Preseeded fixture directories" are created during workspace setup from each test's `fixtures/` tree (`src/lib/test-workspace.ts`) so read/write-only rows can create nested files without also requiring mkdir capability.
+- Directory-creation, search, and delete tasks are scheduled only onto harnesses that advertise `workspace-mkdir`, `workspace-search`, and `workspace-delete` in `HARNESS_CAPABILITY_MAP`.
+
 ### OpenCode Adapter
 
 **Direct Mode with Tool-Calling** (current implementation):
@@ -195,9 +202,8 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 1. **Command Structure**:
    ```bash
-   opencode run "<prompt>" --model ollama/<model> --agent build --format json --log-level ERROR
+   opencode run "<prompt>" --model ollama/<model> --format json --log-level ERROR
    ```
-   - `--agent build` - Uses build agent with all tools allowed
    - `--format json` - Structured JSONL output for reliable parsing
    - `--log-level ERROR` - Reduces noise in output
    - No `--attach` flag - runs directly without server
@@ -222,8 +228,15 @@ OpenCode now runs directly in a unique work directory per generation, using tool
          "models": { "model:tag": { "name": "model:tag", "tools": true } }
        }
      },
-     "permission": { "edit": "allow", "write": "allow", "read": "allow", "bash": "deny" },
-     "tools": { "edit": true, "write": true, "read": false, "bash": false }
+     "permission": { "edit": "allow", "write": "allow", "read": "allow", "bash": "allow" },
+     "tools": {
+       "edit": true,
+       "write": true,
+       "read": true,
+       "bash": true,
+       "glob": true,
+       "grep": true
+     }
    }
    ```
 
@@ -241,6 +254,7 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 5. **Tool-Calling Flow**:
    - Prompt uses `buildToolPrompt()` to instruct tool usage
    - OpenCode writes code to `solution.ts` via edit/write tool
+   - Workspace-mode prompts switch to `buildWorkspaceToolPrompt()` and explicitly advertise `read`, `glob`, `grep`, and `bash`
    - Code read from file after execution
    - Fallback: extract tool call from JSON output if file not created
    - Fails with `tool_missing` if no code produced
@@ -359,6 +373,23 @@ The prompt instructs models to:
 
 Used by both Goose and OpenCode adapters for consistent tool-calling behavior.
 
+It also provides `buildWorkspaceToolPrompt()` for workspace-mode filesystem tasks:
+
+```typescript
+interface WorkspaceToolPromptOptions {
+  toolNames: string[];         // e.g., ["text_editor"] or ["read", "glob", "grep", "bash"]
+  taskPrompt: string;          // Original filesystem task prompt
+  workspaceRootPath?: string;  // Absolute seeded workspace root for sandbox anchoring
+  toolUsageHint?: string;      // Optional minimal hint for tool arguments
+}
+
+function buildWorkspaceToolPrompt(
+  options: WorkspaceToolPromptOptions,
+): string;
+```
+
+Unlike `buildToolPrompt()`, this variant is for workspace-mode rows instead of code-output rows: it advertises the exact filesystem tools available for the harness, reminds the model it is already inside an isolated workspace, and anchors operations to the seeded workspace root path when provided.
+
 ## Discovery
 
 ### Runtime Discovery (`src/runtimes/discovery.ts`)
@@ -409,6 +440,25 @@ runtimes × harnesses × models × tests × passTypes
 ```
 
 Example with 1 runtime, 2 harnesses, 2 models, 1 test, 2 passTypes = 8 items.
+
+Computer-use rows are additionally filtered by `requiredHarnessCapabilities` from each test's `test.meta.json`. This prevents impossible combinations like a delete benchmark on a harness that only advertises read/write support.
+
+`requiredHarnessCapabilities` is an array of explicit capability tokens from `HarnessCapabilitySchema`: `workspace-read`, `workspace-write`, `workspace-mkdir`, `workspace-search`, and `workspace-delete`. Those tokens map directly to the advertised harness support in `src/harnesses/harness.ts`.
+
+Minimal example:
+
+```json
+{
+  "schemaVersion": 1,
+  "category": "computer-use",
+  "requiresTools": true,
+  "requiredHarnessCapabilities": [
+    "workspace-read",
+    "workspace-write",
+    "workspace-search"
+  ]
+}
+```
 
 ## Error Handling
 
@@ -478,36 +528,12 @@ timeout = base + ceil(paramsBillions/10) * 60s + harnessOverhead
 
 Model info fetched in parallel via `/api/show` before execution starts (B.5 optimization).
 
-## Performance Benchmarks
+## Preflight Tests
 
-After optimizations, typical execution times for a 3B model:
+Current preflight behavior is documented in `llm/implementation/computer-use-hardening.md`.
 
-| Harness | Before | After | Improvement |
-|---------|--------|-------|-------------|
-| Ollama | 5-8s | 5-8s | (baseline) |
-| Goose | 14+ min (timeout) | 34-49s | ~20x faster |
-| OpenCode | 7+ min (timeout) | 28-77s | ~10x faster |
-
-## Tool-Smoke Test
-
-`src/tests/tool-smoke/` provides a preflight test for tool-calling harnesses.
-
-**Purpose:**
-- Verify that a runtime/model/harness combination can successfully use tools
-- Run before other tests to detect tool failures early
-- Skip remaining tool-dependent items for the same runtime/model/harness slice if tool-smoke fails
-
-**Test Design:**
-- Simple task: write an `add(a, b)` function that returns the sum
-- Minimal complexity to isolate tool-calling from code generation
-- Pass criteria: file created with valid TypeScript function
-
-**Runner Integration** (`src/runner/index.ts`, `src/lib/tool-smoke.ts`):
-- Tool-smoke items run first per runtime/model/harness
-- Failures recorded as `tool_missing` generation failure type
-- Subsequent items for the same runtime/model/harness slice marked as tool failures
-
-**Dashboard Integration:**
-- Tool success rate displayed in CompositeScoreChart
-- Tooling breakdown panel shows per-model/harness stats
-- Tool-smoke items excluded from pass rate calculations
+In short:
+- preflight coverage is tag-based and capability-specific (`tool-smoke`, `workspace-tool-smoke`, `file-search-smoke`, `file-delete-smoke`)
+- tests tagged `preflight` run first per runtime/model/harness and use a single pass type
+- a preflight failure with `tool_missing` skips later tool-dependent items for that same slice
+- capability-qualified matrix filtering prevents impossible computer-use rows from being scheduled

@@ -1,6 +1,7 @@
 # Workspace Smoke
 
 Baseline `computer-use` test for file creation, in-place editing, and structured output.
+Nested destination directories are preseeded so the task does not implicitly require directory creation.
 
 ## Task
 

@@ -1,9 +1,6 @@
 {
-  "category": "coding",
-  "description": "Tool-calling preflight before main benchmark tests",
-  "tags": [
-    "preflight",
-    "tooling"
-  ],
-  "schemaVersion": 1
+	"category": "coding",
+	"description": "Tool-calling preflight before main benchmark tests",
+	"tags": ["preflight", "tooling"],
+	"schemaVersion": 1
 }

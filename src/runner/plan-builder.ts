@@ -13,6 +13,7 @@ import * as os from "node:os";
 import {
 	type HarnessName,
 	TOOL_CALLING_HARNESS_NAMES,
+	doesHarnessSupportCapabilities,
 	discoverHarnesses,
 	isHarnessCompatibleWithRuntime,
 	isValidHarnessName,
@@ -27,7 +28,7 @@ import { logger } from "../lib/logger.js";
 import { isAlias, resolveModelForRuntime } from "../lib/model-aliases.js";
 import { generateRunId } from "../lib/run-id.js";
 import { discoverTestCatalog, selectTests } from "../lib/test-catalog.js";
-import { isToolSmokeTest, selectToolSmokePassType } from "../lib/tool-smoke.js";
+import { isPreflightTest, selectPreflightPassType } from "../lib/tool-smoke.js";
 import {
 	RUNTIME_NAMES,
 	type RuntimeName,
@@ -355,8 +356,18 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 						continue;
 					}
 
-					const passTypes = isToolSmokeTest(test.slug)
-						? [selectToolSmokePassType(config.passTypes)]
+					if (
+						test.requiredHarnessCapabilities.length > 0 &&
+						!doesHarnessSupportCapabilities(
+							harness,
+							test.requiredHarnessCapabilities,
+						)
+					) {
+						continue;
+					}
+
+					const passTypes = isPreflightTest(test.tags)
+						? [selectPreflightPassType(config.passTypes)]
 						: config.passTypes;
 
 					for (const passType of passTypes) {
@@ -371,6 +382,9 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 							category: test.category,
 							scoringMode: test.scoringMode,
 							requiresTools: test.requiresTools,
+							requiredHarnessCapabilities: test.requiredHarnessCapabilities,
+							tags: test.tags,
+							timeoutMultiplier: test.timeoutMultiplier,
 							passType,
 						});
 					}
@@ -425,6 +439,8 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			generateTimeoutMs: config.generateTimeoutMs,
 			gooseMaxTurns: config.gooseMaxTurns,
 			gooseRetryMaxTurns: config.gooseRetryMaxTurns,
+			gooseWorkspaceMaxTurns: config.gooseWorkspaceMaxTurns,
+			gooseWorkspaceRetryMaxTurns: config.gooseWorkspaceRetryMaxTurns,
 			passTypes: config.passTypes,
 			categories: config.categories,
 			...(managedVllm ? { managedVllm } : {}),

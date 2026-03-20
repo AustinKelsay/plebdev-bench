@@ -5,5 +5,6 @@
     "stateful",
     "time-window"
   ],
+  "timeoutMultiplier": 3,
   "schemaVersion": 1
 }

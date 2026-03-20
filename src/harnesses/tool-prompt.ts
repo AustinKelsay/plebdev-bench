@@ -14,6 +14,8 @@ interface BaseToolPromptConfig {
 	toolNames: string[];
 	/** Task prompt content from the benchmark test. */
 	taskPrompt: string;
+	/** Optional absolute workspace root path for stronger sandbox anchoring. */
+	workspaceRootPath?: string;
 	/** Optional hint about tool arguments (kept minimal to avoid over-coaching). */
 	toolUsageHint?: string;
 }
@@ -88,7 +90,7 @@ export function buildToolPrompt(config: CodeOutputToolPromptConfig): string {
 export function buildWorkspaceToolPrompt(
 	config: WorkspaceToolPromptConfig,
 ): string {
-	const { toolNames, taskPrompt, toolUsageHint } = config;
+	const { toolNames, taskPrompt, toolUsageHint, workspaceRootPath } = config;
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
 	}
@@ -97,6 +99,12 @@ export function buildWorkspaceToolPrompt(
 	const lines = [
 		"IMPORTANT: Workspace benchmark mode.",
 		`- You are already inside the isolated benchmark workspace. Use the ${toolLabel} tool for file operations.`,
+		...(workspaceRootPath
+			? [
+					`- Workspace root: "${workspaceRootPath}". Treat that directory as the only allowed project root.`,
+					"- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect \"/\" or parent directories.",
+				]
+			: []),
 		"- Operate only on files inside the current directory.",
 		"- Do not ask for confirmation, approval, or more context.",
 		"- Do not print file contents or patches in chat.",

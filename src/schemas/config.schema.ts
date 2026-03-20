@@ -91,6 +91,12 @@ export const BenchConfigSchema = z
 		/** Goose retry-attempt max turns in headless mode. */
 		gooseRetryMaxTurns: z.number().int().positive().default(3),
 
+		/** Goose first-attempt max turns for workspace-scored benchmarks. */
+		gooseWorkspaceMaxTurns: z.number().int().positive().default(8),
+
+		/** Goose retry-attempt max turns for workspace-scored benchmarks. */
+		gooseWorkspaceRetryMaxTurns: z.number().int().positive().default(12),
+
 		/** Output directory for results. */
 		outputDir: z.string().default("results"),
 
@@ -113,6 +119,15 @@ export const BenchConfigSchema = z
 				path: ["gooseRetryMaxTurns"],
 				message:
 					"gooseRetryMaxTurns must be greater than or equal to gooseMaxTurns",
+			});
+		}
+
+		if (config.gooseWorkspaceRetryMaxTurns < config.gooseWorkspaceMaxTurns) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["gooseWorkspaceRetryMaxTurns"],
+				message:
+					"gooseWorkspaceRetryMaxTurns must be greater than or equal to gooseWorkspaceMaxTurns",
 			});
 		}
 	});

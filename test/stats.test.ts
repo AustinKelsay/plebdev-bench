@@ -107,7 +107,7 @@ describe("calculateRunStats", () => {
 					frontierEval: {
 						score: 8,
 						reasoning: "good",
-						model: "gpt-5.2",
+						model: "gpt-5.4",
 						latencyMs: 500,
 					},
 				}),
@@ -116,7 +116,7 @@ describe("calculateRunStats", () => {
 					frontierEval: {
 						score: 7,
 						reasoning: "ok",
-						model: "gpt-5.2",
+						model: "gpt-5.4",
 						latencyMs: 700,
 					},
 				}),
@@ -271,13 +271,13 @@ describe("calculateRunStats", () => {
 		it("should calculate average score and range", () => {
 			const results: MatrixItemResult[] = [
 				createResult({
-					frontierEval: { score: 8, reasoning: "good", model: "gpt-5.2" },
+					frontierEval: { score: 8, reasoning: "good", model: "gpt-5.4" },
 				}),
 				createResult({
-					frontierEval: { score: 6, reasoning: "ok", model: "gpt-5.2" },
+					frontierEval: { score: 6, reasoning: "ok", model: "gpt-5.4" },
 				}),
 				createResult({
-					frontierEval: { score: 10, reasoning: "excellent", model: "gpt-5.2" },
+					frontierEval: { score: 10, reasoning: "excellent", model: "gpt-5.4" },
 				}),
 			];
 
@@ -294,15 +294,15 @@ describe("calculateRunStats", () => {
 			const results: MatrixItemResult[] = [
 				createResult({
 					harness: "direct",
-					frontierEval: { score: 9, reasoning: "x", model: "gpt-5.2" },
+					frontierEval: { score: 9, reasoning: "x", model: "gpt-5.4" },
 				}),
 				createResult({
 					harness: "direct",
-					frontierEval: { score: 7, reasoning: "x", model: "gpt-5.2" },
+					frontierEval: { score: 7, reasoning: "x", model: "gpt-5.4" },
 				}),
 				createResult({
 					harness: "goose",
-					frontierEval: { score: 5, reasoning: "x", model: "gpt-5.2" },
+					frontierEval: { score: 5, reasoning: "x", model: "gpt-5.4" },
 				}),
 			];
 
@@ -318,11 +318,11 @@ describe("calculateRunStats", () => {
 			const results: MatrixItemResult[] = [
 				createResult({
 					model: "llama3.2:3b",
-					frontierEval: { score: 6, reasoning: "x", model: "gpt-5.2" },
+					frontierEval: { score: 6, reasoning: "x", model: "gpt-5.4" },
 				}),
 				createResult({
 					model: "qwen2.5:7b",
-					frontierEval: { score: 8, reasoning: "x", model: "gpt-5.2" },
+					frontierEval: { score: 8, reasoning: "x", model: "gpt-5.4" },
 				}),
 			];
 
@@ -506,6 +506,11 @@ describe("formatRunStats", () => {
 				passRate: 75,
 				totalPassed: 15,
 				totalTests: 20,
+				scoredItems: 2,
+				totalItems: 2,
+				completedItems: 2,
+				itemSuccessRate: 100,
+				scoredItemRate: 100,
 				byTest: [{ name: "test-a", passed: 15, total: 20, passRate: 75 }],
 				byHarness: [{ name: "ollama", passed: 15, total: 20, passRate: 75 }],
 				byModel: [{ name: "llama3.2:3b", passed: 15, total: 20, passRate: 75 }],
@@ -517,8 +522,10 @@ describe("formatRunStats", () => {
 		const output = formatRunStats(stats, "test-run", 2, 0, 2, 10000, "results");
 
 		expect(output).toContain("Scoring");
-		expect(output).toContain("Pass rate: 75.0%");
-		expect(output).toContain("15/20 tests");
+		expect(output).toContain("Semantic pass rate: 75.0%");
+		expect(output).toContain("15/20 scored checks");
+		expect(output).toContain("Item success rate:");
+		expect(output).toContain("Scored rows:");
 		expect(output).toContain("Avg scoring:");
 		expect(output).toContain("Avg retry gen:");
 		expect(output).toContain("Avg scoring total:");
@@ -569,6 +576,11 @@ describe("formatRunStats", () => {
 				passRate: 50,
 				totalPassed: 10,
 				totalTests: 20,
+				scoredItems: 4,
+				totalItems: 4,
+				completedItems: 4,
+				itemSuccessRate: 100,
+				scoredItemRate: 100,
 				byTest: [
 					{ name: "test-a", passed: 8, total: 10, passRate: 80 },
 					{ name: "test-b", passed: 2, total: 10, passRate: 20 },

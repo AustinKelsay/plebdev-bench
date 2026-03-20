@@ -1,6 +1,7 @@
 # File Locator
 
 Reads a noisy workspace, finds the right source files, and writes one structured report.
+Because the report directory is not preseeded, this benchmark requires `workspace-mkdir` in addition to search.
 
 ## Task
 

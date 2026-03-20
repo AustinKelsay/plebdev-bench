@@ -11,7 +11,10 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildDashboardIndexArtifacts } from "../apps/dashboard/scripts/build-index.js";
+import {
+	buildDashboardIndexArtifacts,
+	resolveResultsDir,
+} from "../apps/dashboard/scripts/build-index.js";
 import { computeBenchmarkCheckpoint } from "../src/lib/benchmark-checkpoint.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
@@ -114,16 +117,32 @@ afterEach(() => {
 	}
 });
 
+type LatestAggregateFixture = {
+	checkpointId: string;
+	summary: { runsMatched: number };
+	items: Array<{
+		generation?: {
+			codeFilePath?: string;
+			output?: string;
+		};
+		scoringFailure?: {
+			message?: string;
+		};
+	}>;
+};
+
 describe("buildDashboardIndexArtifacts", () => {
 	it("writes v2 index and latest aggregate artifacts", async () => {
 		const projectRoot = createProjectRoot();
-		const resultsDir = path.join(projectRoot, "published-results");
-		fs.mkdirSync(resultsDir, { recursive: true });
+		const sourceResultsDir = path.join(projectRoot, "results");
+		const outputResultsDir = path.join(projectRoot, "published-results");
+		fs.mkdirSync(sourceResultsDir, { recursive: true });
+		fs.mkdirSync(outputResultsDir, { recursive: true });
 
 		const checkpoint = computeBenchmarkCheckpoint(projectRoot);
 
 		writeRunDir(
-			resultsDir,
+			sourceResultsDir,
 			"run-latest",
 			{
 				schemaVersion: SCHEMA_VERSION,
@@ -160,8 +179,20 @@ describe("buildDashboardIndexArtifacts", () => {
 						status: "completed",
 						startedAt: "2026-03-04T10:00:00.000Z",
 						completedAt: "2026-03-04T10:01:00.000Z",
-						generation: { success: true, output: "code", durationMs: 1000 },
+						generation: {
+							success: true,
+							output:
+								"Wrote /Users/example/.local/share/opencode/tool-output/run-1/solution.ts",
+							durationMs: 1000,
+							codeFilePath:
+								"/Users/example/.local/share/opencode/tool-output/run-1/solution.ts",
+						},
 						automatedScore: { passed: 6, failed: 0, total: 6 },
+						scoringFailure: {
+							type: "test_execution",
+							message:
+								"Failed to read '/private/var/folders/abc/reports/output.json' at /Users/example/project/file.ts:9:3",
+						},
 					},
 				],
 			},
@@ -214,7 +245,7 @@ describe("buildDashboardIndexArtifacts", () => {
 		);
 
 		writeRunDir(
-			resultsDir,
+			sourceResultsDir,
 			"run-legacy",
 			{
 				schemaVersion: "0.2.2",
@@ -248,7 +279,8 @@ describe("buildDashboardIndexArtifacts", () => {
 		);
 
 		const output = await buildDashboardIndexArtifacts({
-			resultsDir,
+			sourceResultsDir,
+			outputResultsDir,
 			projectRoot,
 		});
 		expect(output.index.schemaVersion).toBe(2);
@@ -262,20 +294,118 @@ describe("buildDashboardIndexArtifacts", () => {
 		).toBe(true);
 
 		const latestAggregatePath = path.join(
-			resultsDir,
+			outputResultsDir,
 			"aggregates",
 			"latest.json",
 		);
 		expect(fs.existsSync(latestAggregatePath)).toBe(true);
 		const latestAggregate = JSON.parse(
 			fs.readFileSync(latestAggregatePath, "utf-8"),
-		) as {
-			checkpointId: string;
-			summary: { runsMatched: number };
-			items: unknown[];
-		};
+		) as LatestAggregateFixture;
 		expect(latestAggregate.checkpointId).toBe(checkpoint.checkpointId);
 		expect(latestAggregate.summary.runsMatched).toBe(1);
 		expect(latestAggregate.items).toHaveLength(1);
+		expect(
+			latestAggregate.items[0]?.generation?.codeFilePath,
+		).toBeUndefined();
+		expect(latestAggregate.items[0]?.generation?.output).toContain(
+			"[path:solution.ts]",
+		);
+		expect(latestAggregate.items[0]?.generation?.output).not.toContain(
+			"/Users/example",
+		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
+			"reports/output.json",
+		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
+			"/private/var/folders",
+		);
+		expect(output.index.runs[0]?.runId).toBe("run-latest");
+		expect(
+			fs.existsSync(path.join(outputResultsDir, "run-latest", "run.json")),
+		).toBe(false);
+	});
+
+	it("falls back latestCheckpointId to the newest published checkpoint", async () => {
+		const projectRoot = createProjectRoot();
+		const sourceResultsDir = path.join(projectRoot, "results");
+		const outputResultsDir = path.join(projectRoot, "published-results");
+		fs.mkdirSync(sourceResultsDir, { recursive: true });
+		fs.mkdirSync(outputResultsDir, { recursive: true });
+
+		const checkpoint = computeBenchmarkCheckpoint(projectRoot);
+		const publishedCheckpoint = {
+			...checkpoint,
+			checkpointId: "chk_sha256v1_published",
+		};
+
+		writeRunDir(
+			sourceResultsDir,
+			"run-published",
+			{
+				schemaVersion: SCHEMA_VERSION,
+				runId: "run-published",
+				benchmarkCheckpoint: publishedCheckpoint,
+				provenance: {
+					verificationStatus: "self_reported",
+					source: "local_cli",
+				},
+				startedAt: "2026-03-04T10:00:00.000Z",
+				completedAt: "2026-03-04T10:01:00.000Z",
+				durationMs: 60_000,
+				summary: { total: 1, completed: 1, failed: 0, pending: 0 },
+				items: [],
+			},
+			{
+				schemaVersion: SCHEMA_VERSION,
+				runId: "run-published",
+				createdAt: "2026-03-04T10:00:00.000Z",
+				runtimeEnvironment: { platform: "darwin", bunVersion: "1.3.3" },
+				benchmarkCheckpoint: publishedCheckpoint,
+				provenance: {
+					verificationStatus: "self_reported",
+					source: "local_cli",
+				},
+				config: {
+					ollamaBaseUrl: "http://localhost:11434",
+					vllmBaseUrl: "http://localhost:8000",
+					generateTimeoutMs: 120_000,
+					passTypes: ["blind"],
+				},
+				items: [],
+				summary: {
+					totalItems: 0,
+					runtimes: 0,
+					models: 0,
+					harnesses: 0,
+					tests: 0,
+				},
+			},
+		);
+
+		const output = await buildDashboardIndexArtifacts({
+			sourceResultsDir,
+			outputResultsDir,
+			projectRoot,
+		});
+
+		expect(output.index.latestCheckpointId).toBe(
+			publishedCheckpoint.checkpointId,
+		);
+		expect(output.latestAggregate.checkpointId).toBe(
+			publishedCheckpoint.checkpointId,
+		);
+	});
+});
+
+describe("resolveResultsDir", () => {
+	it("rejects flag names passed as directory values", () => {
+		expect(() => resolveResultsDir(["--source-dir", "--output-dir"])).toThrow(
+			"--source-dir requires a path",
+		);
+		expect(() => resolveResultsDir(["--output-dir", "--dir"])).toThrow(
+			"--output-dir requires a path",
+		);
+		expect(() => resolveResultsDir(["--dir"])).toThrow("--dir requires a path");
 	});
 });

@@ -1,6 +1,7 @@
 # Workspace Reorg
 
 Reorganization benchmark for bounded filesystem operations.
+The final layout introduces new destination directories, so this benchmark requires directory creation support.
 
 ## Task
 
