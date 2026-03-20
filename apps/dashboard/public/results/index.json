@@ -1,52 +1,84 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-20T15:35:54.953Z",
-  "latestCheckpointId": "chk_sha256v1_12ecfd169041",
+  "generatedAt": "2026-03-20T17:16:35.041Z",
+  "latestCheckpointId": "chk_sha256v1_2c13ad3e58b3",
   "runs": [
     {
-      "runId": "20260309-164733-4a2cad",
-      "startedAt": "2026-03-09T23:47:33.793Z",
-      "completedAt": "2026-03-10T00:19:44.765Z",
-      "durationMs": 1930972,
+      "runId": "20260319-090246-e5f8be",
+      "startedAt": "2026-03-19T16:02:46.191Z",
+      "completedAt": "2026-03-20T05:47:47.387Z",
+      "durationMs": 49501358,
       "summary": {
-        "total": 20,
-        "completed": 2,
-        "failed": 18,
+        "total": 630,
+        "completed": 418,
+        "failed": 212,
         "pending": 0
       },
-      "checkpointId": "chk_sha256v1_12ecfd169041",
+      "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
     {
-      "runId": "20260308-193809-8e0d6e",
-      "startedAt": "2026-03-09T02:38:09.775Z",
-      "completedAt": "2026-03-09T02:56:57.389Z",
-      "durationMs": 1127611,
+      "runId": "20260318-091214-a0dbda",
+      "startedAt": "2026-03-18T16:12:14.512Z",
+      "completedAt": "2026-03-19T04:12:20.505Z",
+      "durationMs": 43206143,
       "summary": {
-        "total": 20,
-        "completed": 20,
-        "failed": 0,
+        "total": 630,
+        "completed": 435,
+        "failed": 195,
         "pending": 0
       },
-      "checkpointId": "chk_sha256v1_afd055d6ddcd",
+      "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
     {
-      "runId": "20260308-191326-9fd1d7",
-      "startedAt": "2026-03-09T02:13:26.923Z",
-      "completedAt": "2026-03-09T02:35:33.504Z",
-      "durationMs": 1326576,
+      "runId": "20260317-170728-697a9a",
+      "startedAt": "2026-03-18T00:07:28.023Z",
+      "completedAt": "2026-03-18T08:06:05.406Z",
+      "durationMs": 28717495,
       "summary": {
-        "total": 20,
-        "completed": 20,
-        "failed": 0,
+        "total": 126,
+        "completed": 104,
+        "failed": 22,
         "pending": 0
       },
-      "checkpointId": "chk_sha256v1_a4df39568b13",
+      "checkpointId": "chk_sha256v1_2c13ad3e58b3",
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "isLegacy": false
+    },
+    {
+      "runId": "20260317-082000-7b3bf3",
+      "startedAt": "2026-03-17T15:20:00.992Z",
+      "completedAt": "2026-03-17T18:27:16.411Z",
+      "durationMs": 11235467,
+      "summary": {
+        "total": 63,
+        "completed": 43,
+        "failed": 20,
+        "pending": 0
+      },
+      "checkpointId": "chk_sha256v1_2c13ad3e58b3",
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "isLegacy": false
+    },
+    {
+      "runId": "20260316-141600-6e18e2",
+      "startedAt": "2026-03-16T21:16:00.873Z",
+      "completedAt": "2026-03-17T08:09:03.668Z",
+      "durationMs": 39182947,
+      "summary": {
+        "total": 189,
+        "completed": 84,
+        "failed": 105,
+        "pending": 0
+      },
+      "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -122,25 +154,11 @@
   ],
   "checkpoints": [
     {
-      "checkpointId": "chk_sha256v1_12ecfd169041",
-      "runCount": 1,
-      "rawItemCount": 20,
+      "checkpointId": "chk_sha256v1_2c13ad3e58b3",
+      "runCount": 5,
+      "rawItemCount": 1638,
       "machineCount": 1,
-      "latestRunAt": "2026-03-10T00:19:44.765Z"
-    },
-    {
-      "checkpointId": "chk_sha256v1_afd055d6ddcd",
-      "runCount": 1,
-      "rawItemCount": 20,
-      "machineCount": 1,
-      "latestRunAt": "2026-03-09T02:56:57.389Z"
-    },
-    {
-      "checkpointId": "chk_sha256v1_a4df39568b13",
-      "runCount": 1,
-      "rawItemCount": 20,
-      "machineCount": 1,
-      "latestRunAt": "2026-03-09T02:35:33.504Z"
+      "latestRunAt": "2026-03-20T05:47:47.387Z"
     },
     {
       "checkpointId": "chk_sha256v1_61a037f87105",

@@ -1,0 +1,2136 @@
+{
+  "schemaVersion": "0.4.0",
+  "runId": "20260317-082000-7b3bf3",
+  "machine": {
+    "profileId": "anon_6fe55c56c31d",
+    "hardware": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "osRelease": "25.3.0",
+      "cpuModel": "Apple M4 Pro",
+      "logicalCores": 12,
+      "totalMemoryBytes": 68719476736
+    }
+  },
+  "benchmarkCheckpoint": {
+    "checkpointId": "chk_sha256v1_2c13ad3e58b3",
+    "algorithm": "sha256v1",
+    "manifestHash": "2c13ad3e58b3f6da0d583184b377b332c01d2d0049664a1595ca5e8c6ba44f52",
+    "assetCount": 121,
+    "computedAt": "2026-03-17T15:20:01.001Z"
+  },
+  "provenance": {
+    "verificationStatus": "self_reported",
+    "source": "local_cli"
+  },
+  "startedAt": "2026-03-17T15:20:00.992Z",
+  "completedAt": "2026-03-17T18:27:16.411Z",
+  "durationMs": 11235467,
+  "summary": {
+    "total": 63,
+    "completed": 43,
+    "failed": 20,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "01",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "tool-smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T15:20:01.155Z",
+      "completedAt": "2026-03-17T15:20:41.936Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
+        "durationMs": 38933,
+        "promptTokens": 199,
+        "completionTokens": 804
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 74,
+        "scoringDurationMs": 74
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add with correct TypeScript types and a pure, concise sum. It correctly handles positive, negative, and zero values.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1771
+      }
+    },
+    {
+      "id": "02",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T15:20:41.939Z",
+      "completedAt": "2026-03-17T15:21:23.701Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  if (b === 0) {\n    return Infinity;\n  }\n  return a / b;\n}\n```",
+        "durationMs": 40299,
+        "promptTokens": 218,
+        "completionTokens": 968
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 72,
+        "scoringDurationMs": 72
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four exported TypeScript functions are correct, concise, and pure. Division by zero returns Infinity, and the implementation cleanly handles standard numeric cases.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1388
+      }
+    },
+    {
+      "id": "03",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T15:21:23.702Z",
+      "completedAt": "2026-03-17T15:22:49.364Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return a / b;\n}\n```",
+        "durationMs": 82781,
+        "promptTokens": 310,
+        "completionTokens": 2000
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 74,
+        "scoringDurationMs": 74
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four exported TypeScript functions are correct, concise, pure, and handle zero/negative/float inputs as expected, including divide by zero returning Infinity.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 2804
+      }
+    },
+    {
+      "id": "04",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T15:22:49.365Z",
+      "completedAt": "2026-03-17T15:31:04.840Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ninterface Calculator {\n  add: (n: number) => Calculator;\n  subtract: (n: number) => Calculator;\n  multiply: (n: number) => Calculator;\n  divide: (n: number) => Calculator;\n  clear: () => Calculator;\n  result: () => number;\n  memoryStore: () => Calculator;\n  memoryAdd: () => Calculator;\n  memoryClear: () => Calculator;\n  memoryRecall: () => number;\n}\n\nexport function createCalculator(): Calculator {\n  const current: number = 0;\n  const memory: number = 0;\n  \n  const calc: Calculator = {} as Calculator;\n  \n  calc.add = (n: number) => {\n    current += n;\n    return calc;\n  };\n  \n  calc.subtract = (n: number) => {\n    current -= n;\n    return calc;\n  };\n  \n  calc.multiply = (n: number) => {\n    current *= n;\n    return calc;\n  };\n  \n  calc.divide = (n: number) => {\n    if (n !== 0) {\n      current /= n;\n    } else {\n      current = NaN;\n    }\n    return calc;\n  };\n  \n  calc.clear = () => {\n    current = 0;\n    return calc;\n  };\n  \n  calc.result = () => current;\n  \n  calc.memoryStore = () => {\n    memory = current;\n    return calc;\n  };\n  \n  calc.memoryAdd = () => {\n    memory += current;\n    return calc;\n  };\n  \n  calc.memoryClear = () => {\n    memory = 0;\n    return calc;\n  };\n  \n  calc.memoryRecall = () => memory;\n  \n  return calc;\n}\n```",
+        "durationMs": 493913,
+        "promptTokens": 338,
+        "completionTokens": 11814
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 0,
+        "failed": 23,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 74,
+        "scoringDurationMs": 74
+      },
+      "frontierEval": {
+        "score": 2,
+        "reasoning": "Exports createCalculator, but code won't compile: current/memory are const yet reassigned. If fixed, API/chaining are mostly right, but as written it's failing.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1485
+      },
+      "scoringFailure": {
+        "type": "import",
+        "message": "Import failed: 9 errors building \"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-n2qpapk9.ts\""
+      }
+    },
+    {
+      "id": "05",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T15:31:04.841Z",
+      "completedAt": "2026-03-17T15:37:39.400Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ninterface Calculator {\n  add(n: number): Calculator\n  subtract(n: number): Calculator\n  multiply(n: number): Calculator\n  divide(n: number): Calculator\n  clear(): Calculator\n  result(): number\n  memoryStore(): Calculator\n  memoryRecall(): number\n  memoryClear(): Calculator\n  memoryAdd(): Calculator\n}\n\nexport function createCalculator(): Calculator {\n  let current: number = 0;\n  let memory: number = 0;\n\n  return {\n    add: (n: number): Calculator => {\n      current += n;\n      return this;\n    },\n    subtract: (n: number): Calculator => {\n      current -= n;\n      return this;\n    },\n    multiply: (n: number): Calculator => {\n      current *= n;\n      return this;\n    },\n    divide: (n: number): Calculator => {\n      current /= n;\n      return this;\n    },\n    clear: (): Calculator => {\n      current = 0;\n      return this;\n    },\n    result: (): number => {\n      return current;\n    },\n    memoryStore: (): Calculator => {\n      memory = current;\n      return this;\n    },\n    memoryRecall: (): number => {\n      current = memory;\n      return current;\n    },\n    memoryClear: (): Calculator => {\n      memory = 0;\n      return this;\n    },\n    memoryAdd: (): Calculator => {\n      memory += current;\n      return this;\n    },\n  };\n}\n```",
+        "durationMs": 392957,
+        "promptTokens": 336,
+        "completionTokens": 9432
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 21,
+        "failed": 2,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 75,
+        "scoringDurationMs": 75
+      },
+      "frontierEval": {
+        "score": 3,
+        "reasoning": "Exports createCalculator, but chaining is broken because arrow methods return lexical this, not the calculator object. memoryRecall also mutates current, violating independent memory behavior.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1523
+      }
+    },
+    {
+      "id": "06",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T15:37:39.401Z",
+      "completedAt": "2026-03-17T15:54:09.410Z",
+      "generation": {
+        "success": false,
+        "error": "Ollama request timed out after 990s. Try increasing --timeout for large models.",
+        "failureType": "timeout",
+        "durationMs": 990003
+      },
+      "generationAttempts": 1,
+      "generationFailure": {
+        "type": "timeout",
+        "message": "Ollama request timed out after 990s. Try increasing --timeout for large models."
+      }
+    },
+    {
+      "id": "07",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T15:54:09.411Z",
+      "completedAt": "2026-03-17T15:59:42.077Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ntype Listener = (payload: unknown) => unknown\n\ninterface EventEmitter {\n  on(event: string, listener: Listener): number\n  once(event: string, listener: Listener): number\n  off(event: string, listener: Listener): boolean\n  emit(event: string, payload: unknown): unknown[]\n  listenerCount(event: string): number\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const listeners = new Map<string, Array<{ listener: Listener; once: boolean }>>()\n\n  return {\n    on(event, listener) {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      const list = listeners.get(event)!\n      list.push({ listener, once: false })\n      return list.length\n    },\n    once(event, listener) {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      const list = listeners.get(event)!\n      list.push({ listener, once: true })\n      return list.length\n    },\n    off(event, listener) {\n      const list = listeners.get(event)\n      if (!list) {\n        return false\n      }\n      const index = list.findIndex((item) => item.listener === listener)\n      if (index !== -1) {\n        list.splice(index, 1)\n        return true\n      }\n      return false\n    },\n    emit(event, payload) {\n      const list = listeners.get(event)\n      if (!list) {\n        return []\n      }\n      const results: unknown[] = []\n      const toRemoveIndices: number[] = []\n\n      for (let i = 0; i < list.length; i++) {\n        const item = list[i]\n        const result = item.listener(payload)\n        results.push(result)\n        if (item.once) {\n          toRemoveIndices.push(i)\n        }\n      }\n\n      for (let i = toRemoveIndices.length - 1; i >= 0; i--) {\n        const indexToRemove = toRemoveIndices[i]\n        list.splice(indexToRemove, 1)\n      }\n\n      return results\n    },\n    listenerCount(event) {\n      const list = listeners.get(event)\n      return list ? list.length : 0\n    },\n  }\n}\n```",
+        "durationMs": 330988,
+        "promptTokens": 370,
+        "completionTokens": 7964
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 22,
+        "failed": 0,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 76,
+        "scoringDurationMs": 76
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Implements the full API correctly with proper ordering, per-event isolation, duplicate handling, once semantics, and accurate counts. Minor caveat: mutating the live listener array during emit may affect re-entrant edge cases.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1608
+      }
+    },
+    {
+      "id": "08",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T15:59:42.078Z",
+      "completedAt": "2026-03-17T16:04:57.023Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createRateLimiter(\n  maxRequests: number = 3,\n  windowMs: number = 1000\n) {\n  return {\n    check: (key: string, nowMs: number) => {\n      const windowStart = Math.floor(nowMs / windowMs) * windowMs;\n      const state = limitStore.get(key);\n\n      if (!state) {\n        limitStore.set(key, { count: 0, windowStart });\n        return true;\n      }\n\n      if (state.windowStart !== windowStart) {\n        state.windowStart = windowStart;\n        state.count = 0;\n      }\n\n      if (state.count >= maxRequests) {\n        return false;\n      }\n\n      state.count++;\n      return true;\n    },\n    reset: (key: string) => {\n      limitStore.delete(key);\n    },\n  };\n}\n\nconst limitStore = new Map<\n  string,\n  { count: number; windowStart: number }\n>();\n```\n\nWait, I defined `limitStore` outside. Is that allowed?\n\"Return exactly one TypeScript module\".\nUsually, state needs to be captured.\nDefining `limitStore` as a const at the top level of the module is fine.\nHowever, if `createRateLimiter` is imported multiple times, having a single shared global map might be an issue depending on the harness (singleton vs new instance).\nThe harness imports \"your output and calls the exported functions directly\".\nIf `limitStore` is global (outside function), then `createRateLimiter` is effectively stateful per-module instance.\nHowever, usually rate limiters should be stateless regarding the factory or the instance should hold the state.\nIn the code above, `limitStore` is a module-level constant. This means all created limiters share the same state.\nIs that desired? \"Key quotas are independent.\"\n\"Key quotas are independent\" usually means keys A and B don't affect each other (which they don't).\nBut does `createRateLimiter` create a *new* limiter instance with its own store, or is it a factory for a stateful global store?\nUsually, a factory should return an isolated instance.\nSo `limitStore` should be inside `createRateLimiter`.\nIf I move `limitStore` inside, I need to make sure `check` has access to it.\nSo I will define `limitStore` inside the returned closure.\nWait, if I define it inside `createRateLimiter`, it's fine.\nBut the code above had it outside.\nI will fix that to ensure isolated instances.\n\nRevised Code:\n```typescript\nexport function createRateLimiter(\n  maxRequests: number = 3,\n  windowMs: number = 1000\n): {\n  check: (key: string, nowMs: number) => boolean;\n  reset: (key: string) => void;\n} {\n  const limitStore = new Map<\n    string,\n    { count: number; windowStart: number }\n  >();\n\n  return {\n    check: (key: string, nowMs: number) => {\n      const windowStart = Math.floor(nowMs / windowMs) * windowMs;\n      const state = limitStore.get(key);\n\n      if (!state) {\n        limitStore.set(key, { count: 0, windowStart });\n        return true;\n      }\n\n      if (state.windowStart !== windowStart) {\n        state.windowStart = windowStart;\n        state.count = 0;\n      }\n\n      if (state.count >= maxRequests) {\n        return false;\n      }\n\n      state.count++;\n      return true;\n    },\n    reset: (key: string) => {\n      limitStore.delete(key);\n    },\n  };\n}\n```\nThis looks correct and self-contained.\n\nDouble check the \"single markdown code block\" instruction.\nI must not add text before or after the ```typescript.\nJust the block.\n\nOne detail: \"Output contract: Return exactly one TypeScript module\".\nThis implies the code I write is the whole module.\nSo the `createRateLimiter` export is the main thing.\n\nWait, I should check if I need to export types. The prompt says \"Export a factory `createRateLimiter`\".\nIt doesn't explicitly ask for types to be exported, but TypeScript modules often benefit from interface exports.\nHowever, to minimize boilerplate and stick to \"Output contract\", I will just export the function. The internal types can be inferred or used directly.\nI will remove explicit interface export unless necessary for strict typing, but TS allows returning typed objects directly.\nHowever, to ensure the return type is known to the harness, explicit return type on function is good.\nI'll stick to the inline return type or let TS infer it.\nInferencing is safer to avoid interface pollution if not needed.\nBut `check` and `reset` are methods.\nI will add the return type annotation for clarity.\n\nWait, `limitStore` should be a `Map`.\nI'll use `Map`.\n\nFinal check on logic:\n- 3 requests per 1000ms.\n- Fixed window.\n- Deterministic `nowMs`.\n- `reset(key)`.\n- Independent keys.\n- Boundary rule (fresh window) handled by `windowStart` change.\n\nLooks good.\n\nOne thing: `export` is needed for `createRateLimiter`.\nI will ensure it is exported.\n\nWait, I noticed `const limitStore = new Map...` is inside.\nSo `createRateLimiter` returns the object with those methods.\nThe `limitStore` is captured in the closure.\nThis is correct.\n\nI will remove the `export` from the top level if not needed, but since it's a module, `export` keyword is needed for public members.\nI'll use `export function createRateLimiter`.\n\nFinal check: \"Output only TypeScript code as a single markdown code block\".\nI must ensure I don't include markdown text outside the block.\n\nOkay, generating the response.\n\n```typescript\nexport function createRateLimiter(\n  maxRequests: number = 3,\n  windowMs: number = 1000\n): {\n  check: (key: string, nowMs: number) => boolean;\n  reset: (key: string) => void;\n} {\n  const store = new Map<\n    string,\n    { count: number; windowStart: number }\n  >();\n\n  return {\n    check: (key: string, nowMs: number): boolean => {\n      const windowStart = Math.floor(nowMs / windowMs) * windowMs;\n      const state = store.get(key);\n\n      if (!state) {\n        store.set(key, { count: 0, windowStart });\n        return true;\n      }\n\n      if (state.windowStart !== windowStart) {\n        state.windowStart = windowStart;\n        state.count = 0;\n      }\n\n      if (state.count >= maxRequests) {\n        return false;\n      }\n\n      state.count++;\n      return true;\n    },\n    reset: (key: string): void => {\n      store.delete(key);\n    },\n  };\n}\n```\nLooks clean.\n\nWait, one nuance: \"No prose, no explanations, and no markdown outside an optional single ```typescript code block.\"\nSo I just output the block.\n\nOne final check: \"Use deterministic timestamps passed in by the caller (`nowMs`) instead of `Date.now()`.\"\nMy code uses `nowMs` argument.\n\"Key quotas are independent.\"\nMy code creates a new Map per factory instance, keys are isolated.\n\"Boundary rule: when a window has fully elapsed, the next call starts a fresh window.\"\nMy code resets state if `windowStart` differs.\n\nI am confident.\n\nWait, I should check if `createRateLimiter` needs to export the `RateLimiter` type or the `store`.\nOnly `createRateLimiter` is specified to be exported.\nI will only export that.\n\nOne detail: \"Use named exports exactly as specified\".\nSo `export function createRateLimiter`.\nI will not add `export const limitStore` because it is private.\n\nOkay, ready.\n\nOne small check: Should I use `const` or `let` for `store`? `const` is better.\nReturn type annotation: `{ check: ..., reset: ... }`.\nThis is explicit.\n\nOkay.\n\n```typescript\nexport function createRateLimiter(\n  maxRequests: number = 3,\n  windowMs: number = 1000\n): {\n  check: (key: string, nowMs: number) => boolean;\n  reset: (key: string) => void;\n} {\n  const store = new Map<\n    string,\n    { count: number; windowStart: number }\n  >();\n\n  return {\n    check: (key: string, nowMs: number): boolean => {\n      const windowStart = Math.floor(nowMs / windowMs) * windowMs;\n      const state = store.get(key);\n\n      if (!state) {\n        store.set(key, { count: 0, windowStart });\n        return true;\n      }\n\n      if (state.windowStart !== windowStart) {\n        state.windowStart = windowStart;\n        state.count = 0;\n      }\n\n      if (state.count >= maxRequests) {\n        return false;\n      }\n\n      state.count++;\n      return true;\n    },\n    reset: (key: string): void => {\n      store.delete(key);\n    },\n  };\n}\n```\nI will remove the explicit return type annotation if it makes the code longer or redundant, but it is good for strictness. I will keep it.\nActually, I can omit the explicit return type and let TS infer. But the prompt is strict on \"Output contract\".\nI'll keep it to be safe.\n\nWait, the prompt says \"Use named exports exactly as specified\".\nIt specifies `createRateLimiter`.\nIt doesn't specify the return type interface name.\nSo `createRateLimiter` is the only named export.\nI will not export the interface type for the returned object.\n\nOkay, final version.\n\n```typescript\nexport function createRateLimiter(\n  maxRequests: number = 3,\n  windowMs: number = 1000\n) {\n  const store = new Map<\n    string,\n    { count: number; windowStart: number }\n  >();\n\n  return {\n    check: (key: string, nowMs: number) => {\n      const windowStart = Math.floor(nowMs / windowMs) * windowMs;\n      const state = store.get(key);\n\n      if (!state) {\n        store.set(key, { count: 0, windowStart });\n        return true;\n      }\n\n      if (state.windowStart !== windowStart) {\n        state.windowStart = windowStart;\n        state.count = 0;\n      }\n\n      if (state.count >= maxRequests) {\n        return false;\n      }\n\n      state.count++;\n      return true;\n    },\n    reset: (key: string) => {\n      store.delete(key);\n    },\n  };\n}\n```\nI removed the explicit return type from the function signature because it's not strictly necessary if I export the function, but it helps with IDE support. I'll keep the explicit return type for clarity in TS module.\nWait, \"Output contract: ... Return exactly one TypeScript module... Use named exports exactly as specified\".\nI will keep the function signature.\n\nOne thing: `Math.floor` might behave differently for negative numbers. `nowMs` is usually positive.\nI will assume positive `nowMs`.\n\nOkay, writing it out.\n</think>\n\n```typescript\nexport function createRateLimiter(\n  maxRequests: number = 3,\n  windowMs: number = 1000\n): {\n  check: (key: string, nowMs: number) => boolean;\n  reset: (key: string) => void;\n} {\n  const store = new Map<\n    string,\n    { count: number; windowStart: number }\n  >();\n\n  return {\n    check: (key: string, nowMs: number): boolean => {\n      const windowStart = Math.floor(nowMs / windowMs) * windowMs;\n      const state = store.get(key);\n\n      if (!state) {\n        store.set(key, { count: 0, windowStart });\n        return true;\n      }\n\n      if (state.windowStart !== windowStart) {\n        state.windowStart = windowStart;\n        state.count = 0;\n      }\n\n      if (state.count >= maxRequests) {\n        return false;\n      }\n\n      state.count++;\n      return true;\n    },\n    reset: (key: string): void => {\n      store.delete(key);\n    },\n  };\n}\n```",
+        "durationMs": 313253,
+        "promptTokens": 284,
+        "completionTokens": 7461
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 2,
+        "failed": 19,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 89,
+        "scoringDurationMs": 89
+      },
+      "frontierEval": {
+        "score": 2,
+        "reasoning": "It exports createRateLimiter, but the code is duplicated/redeclared and would not compile. It also fails correctness: first allowed call doesn't increment count and no remaining value is implemented.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1601
+      }
+    },
+    {
+      "id": "09",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:04:57.024Z",
+      "completedAt": "2026-03-17T16:09:13.950Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport interface RateLimiter {\n  allow(key: string, nowMs: number): boolean;\n  remaining(key: string, nowMs: number): number;\n  reset(key: string): void;\n}\n\nexport function createRateLimiter(): RateLimiter {\n  const limit = 3;\n  const windowMs = 1000;\n  const storage = new Map<string, { count: number; windowStart: number }>();\n\n  return {\n    allow(key: string, nowMs: number): boolean {\n      let state = storage.get(key);\n\n      if (state === undefined) {\n        state = { count: 0, windowStart: nowMs };\n        storage.set(key, state);\n      }\n\n      if (nowMs - state.windowStart >= windowMs) {\n        state.windowStart = nowMs;\n        state.count = 0;\n      }\n\n      if (state.count < limit) {\n        state.count++;\n        return true;\n      }\n\n      return false;\n    },\n    remaining(key: string, nowMs: number): number {\n      let state = storage.get(key);\n\n      if (state === undefined) {\n        state = { count: 0, windowStart: nowMs };\n        storage.set(key, state);\n      }\n\n      if (nowMs - state.windowStart >= windowMs) {\n        state.windowStart = nowMs;\n        state.count = 0;\n      }\n\n      return limit - state.count;\n    },\n    reset(key: string): void {\n      storage.delete(key);\n    }\n  };\n}\n```",
+        "durationMs": 255597,
+        "promptTokens": 343,
+        "completionTokens": 6129
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 21,
+        "failed": 0,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 77,
+        "scoringDurationMs": 77
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Factory/export, per-key quotas, >= window reset, accurate remaining, and targeted reset are all correct. Only minor issue: remaining mutates state for unseen keys.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1250
+      }
+    },
+    {
+      "id": "10",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:09:13.951Z",
+      "completedAt": "2026-03-17T16:10:03.375Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
+        "durationMs": 48402,
+        "promptTokens": 180,
+        "completionTokens": 1166
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 75,
+        "scoringDurationMs": 75
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Perfect implementation: exported add function with correct TypeScript types, concise pure logic, and returns the correct sum for all numeric inputs.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 945
+      }
+    },
+    {
+      "id": "11",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:10:03.376Z",
+      "completedAt": "2026-03-17T16:10:26.993Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
+        "durationMs": 22416,
+        "promptTokens": 183,
+        "completionTokens": 529
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 75,
+        "scoringDurationMs": 75
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Perfect implementation: correctly exported, properly typed, concise, pure, and returns the sum for any number inputs.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1124
+      }
+    },
+    {
+      "id": "12",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T16:10:26.994Z",
+      "completedAt": "2026-03-17T16:14:36.947Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTodoApp() {\n  const nextId = 1;\n  const todos: Array<{ id: number; text: string; completed: boolean }> = [];\n\n  return {\n    addTodo: (text: string): { id: number; text: string; completed: boolean } => {\n      const todo = {\n        id: nextId++,\n        text,\n        completed: false,\n      };\n      todos.push(todo);\n      return todo;\n    },\n    getTodo: (id: number): { id: number; text: string; completed: boolean } | undefined => {\n      return todos.find((t) => t.id === id);\n    },\n    toggleTodo: (id: number): void => {\n      const index = todos.findIndex((t) => t.id === id);\n      if (index !== -1) {\n        todos[index].completed = !todos[index].completed;\n      }\n    },\n    deleteTodo: (id: number): boolean => {\n      const index = todos.findIndex((t) => t.id === id);\n      if (index !== -1) {\n        todos.splice(index, 1);\n        return true;\n      }\n      return false;\n    },\n    listTodos: (): Array<{ id: number; text: string; completed: boolean }> => {\n      return todos.slice();\n    },\n    listCompleted: (): Array<{ id: number; text: string; completed: boolean }> => {\n      return todos.filter((t) => t.completed);\n    },\n    listPending: (): Array<{ id: number; text: string; completed: boolean }> => {\n      return todos.filter((t) => !t.completed);\n    },\n    clearCompleted: (): void => {\n      todos = todos.filter((t) => !t.completed);\n    },\n  };\n}\n```",
+        "durationMs": 248610,
+        "promptTokens": 427,
+        "completionTokens": 5988
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 0,
+        "failed": 15,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 75,
+        "scoringDurationMs": 75
+      },
+      "frontierEval": {
+        "score": 2,
+        "reasoning": "Exports createTodoApp, but code is broken: nextId is const yet incremented, and todos is const yet reassigned in clearCompleted. Core functionality won't run.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1267
+      },
+      "scoringFailure": {
+        "type": "import",
+        "message": "Import failed: 2 errors building \"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-zu0qyvvm.ts\""
+      }
+    },
+    {
+      "id": "13",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T16:14:36.948Z",
+      "completedAt": "2026-03-17T16:18:52.019Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport interface Todo {\n  id: number\n  text: string\n  completed: boolean\n}\n\nexport interface TodoApp {\n  addTodo(text: string): Todo\n  getTodo(id: number): Todo | undefined\n  toggleTodo(id: number): void\n  deleteTodo(id: number): boolean\n  listTodos(): Todo[]\n  listCompleted(): Todo[]\n  listPending(): Todo[]\n  clearCompleted(): void\n}\n\nexport function createTodoApp(): TodoApp {\n  const todos: Todo[] = []\n  let nextId = 1\n\n  return {\n    addTodo(text: string): Todo {\n      const todo: Todo = {\n        id: nextId,\n        text,\n        completed: false\n      }\n      todos.push(todo)\n      nextId++\n      return todo\n    },\n    getTodo(id: number): Todo | undefined {\n      return todos.find(t => t.id === id)\n    },\n    toggleTodo(id: number): void {\n      const todo = todos.find(t => t.id === id)\n      if (todo) {\n        todo.completed = !todo.completed\n      }\n    },\n    deleteTodo(id: number): boolean {\n      const index = todos.findIndex(t => t.id === id)\n      if (index !== -1) {\n        todos.splice(index, 1)\n        return true\n      }\n      return false\n    },\n    listTodos(): Todo[] {\n      return [...todos]\n    },\n    listCompleted(): Todo[] {\n      return [...todos.filter(t => t.completed)]\n    },\n    listPending(): Todo[] {\n      return [...todos.filter(t => !t.completed)]\n    },\n    clearCompleted(): void {\n      todos = todos.filter(t => !t.completed)\n    }\n  }\n}\n```",
+        "durationMs": 251896,
+        "promptTokens": 392,
+        "completionTokens": 6071
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 0,
+        "failed": 15,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 76,
+        "scoringDurationMs": 76
+      },
+      "frontierEval": {
+        "score": 4,
+        "reasoning": "Has correct core CRUD shape and filtering intent, but clearCompleted reassigns a const array so the code won't compile/run. Otherwise IDs and instance-local state are fine.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 3096
+      },
+      "scoringFailure": {
+        "type": "import",
+        "message": "Import failed: BuildMessage: This assignment will throw because \"todos\" is a constant"
+      }
+    },
+    {
+      "id": "14",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:18:52.020Z",
+      "completedAt": "2026-03-17T16:25:40.598Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTtlCache(): {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n} {\n  const store = new Map<string, { value: unknown; expiresAt: number }>();\n  const DEFAULT_TTL = 1000;\n\n  return {\n    set: (key: string, value: unknown, nowMs: number, ttlMs?: number): void => {\n      const ttl = ttlMs ?? DEFAULT_TTL;\n      const expiresAt = nowMs + ttl;\n      store.set(key, { value, expiresAt });\n    },\n    get: (key: string, nowMs: number): unknown => {\n      const entry = store.get(key);\n      if (!entry) {\n        return undefined;\n      }\n      if (nowMs >= entry.expiresAt) {\n        store.delete(key);\n        return undefined;\n      }\n      return entry.value;\n    },\n    has: (key: string, nowMs: number): boolean => {\n      const entry = store.get(key);\n      if (!entry) {\n        return false;\n      }\n      if (nowMs >= entry.expiresAt) {\n        store.delete(key);\n        return false;\n      }\n      return true;\n    },\n    delete: (key: string): boolean => {\n      return store.delete(key);\n    },\n    size: (nowMs: number): number => {\n      let count = 0;\n      for (const entry of store.values()) {\n        if (nowMs < entry.expiresAt) {\n          count++;\n        }\n      }\n      return count;\n    },\n    clear: (): void => {\n      store.clear();\n    }\n  };\n}\n```",
+        "durationMs": 406922,
+        "promptTokens": 434,
+        "completionTokens": 9756
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 90,
+        "scoringDurationMs": 90
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Factory and core TTL behavior are correct, including >= expiry, overwrite refresh, ttl=0, and undefined values. Minor issue: size doesn't purge expired entries, though it counts correctly.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1573
+      }
+    },
+    {
+      "id": "15",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "direct",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T16:25:40.600Z",
+      "completedAt": "2026-03-17T16:37:33.739Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ninterface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n}\n\nexport function createTtlCache(): TtlCache {\n  const cache = new Map<string, { value: unknown; expiresAt: number }>();\n  const defaultTtl = 1000;\n\n  const set: TtlCache['set'] = (key, value, nowMs, ttlMs) => {\n    const expiresAt = nowMs + (ttlMs ?? defaultTtl);\n    cache.set(key, { value, expiresAt });\n  };\n\n  const get: TtlCache['get'] = (key, nowMs) => {\n    const entry = cache.get(key);\n    if (!entry) return undefined;\n    if (nowMs >= entry.expiresAt) {\n      cache.delete(key);\n      return undefined;\n    }\n    return entry.value;\n  };\n\n  const has: TtlCache['has'] = (key, nowMs) => {\n    const entry = cache.get(key);\n    if (!entry) return false;\n    if (nowMs >= entry.expiresAt) {\n      cache.delete(key);\n      return false;\n    }\n    return true;\n  };\n\n  const delete: TtlCache['delete'] = (key) => {\n    return cache.delete(key);\n  };\n\n  const size: TtlCache['size'] = (nowMs) => {\n    const keysToDelete: string[] = [];\n    for (const [key, entry] of cache.entries()) {\n      if (nowMs >= entry.expiresAt) {\n        keysToDelete.push(key);\n      }\n    }\n    for (const key of keysToDelete) {\n      cache.delete(key);\n    }\n    return cache.size();\n  };\n\n  const clear: TtlCache['clear'] = () => {\n    cache.clear();\n  };\n\n  return { set, get, has, delete, size, clear } satisfies TtlCache;\n}\n```",
+        "durationMs": 711379,
+        "promptTokens": 380,
+        "completionTokens": 16511
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 0,
+        "failed": 31,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 92,
+        "scoringDurationMs": 92
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Implements the full API with correct >= expiry, overwrite refresh, cleanup on get/has/size, and supports undefined values. Only possible issue is assuming a default TTL of 1000 without spec confirmation.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1666
+      },
+      "scoringFailure": {
+        "type": "import",
+        "message": "Import failed: 2 errors building \"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-ls6i4pa2.ts\""
+      }
+    },
+    {
+      "id": "16",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "tool-smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:37:33.739Z",
+      "completedAt": "2026-03-17T16:38:51.546Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
+        "durationMs": 76479,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-9d3e27aee585cc18/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 79,
+        "scoringDurationMs": 79
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add with correct TypeScript types and pure concise logic. Correctly returns sums for positive, negative, and zero values.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1242
+      }
+    },
+    {
+      "id": "17",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "workspace-tool-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:38:51.547Z",
+      "completedAt": "2026-03-17T16:40:38.505Z",
+      "generation": {
+        "success": true,
+        "output": "",
+        "durationMs": 106870
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 7,
+        "failed": 0,
+        "total": 7
+      },
+      "scoringMetrics": {
+        "durationMs": 76,
+        "scoringDurationMs": 76
+      }
+    },
+    {
+      "id": "18",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:40:38.506Z",
+      "completedAt": "2026-03-17T16:41:52.742Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n    return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n    return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n    return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n    if (b === 0) {\n        return Infinity;\n    }\n    return a / b;\n}\n```",
+        "durationMs": 72959,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-daa6a9a25bef2170/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 77,
+        "scoringDurationMs": 77
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four exported TypeScript functions are correct, clean, and pure. Division by zero returns Infinity, and the code handles standard numeric edge cases appropriately.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1198
+      }
+    },
+    {
+      "id": "19",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:41:52.742Z",
+      "completedAt": "2026-03-17T16:43:40.733Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return a / b;\n}\n```",
+        "durationMs": 106344,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-31a11fe17941d2dc/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 80,
+        "scoringDurationMs": 80
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four typed, exported functions are correct, concise, and pure. Division by zero follows JavaScript behavior, and edge cases like negatives, zero, and floats are handled.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1564
+      }
+    },
+    {
+      "id": "20",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:43:40.733Z",
+      "completedAt": "2026-03-17T16:50:01.695Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createCalculator(): {\n  add: (a: number) => this;\n  subtract: (a: number) => this;\n  multiply: (a: number) => this;\n  divide: (a: number) => this;\n  clear: () => this;\n  result: () => number;\n  memoryStore: () => this;\n  memoryAdd: () => this;\n  memoryClear: () => this;\n  memoryRecall: () => number;\n} {\n  let value = 0;\n  let memory = 0;\n\n  const calculator = {\n    add: (a: number) => {\n      value += a;\n      return calculator;\n    },\n    subtract: (a: number) => {\n      value -= a;\n      return calculator;\n    },\n    multiply: (a: number) => {\n      value *= a;\n      return calculator;\n    },\n    divide: (a: number) => {\n      value /= a;\n      return calculator;\n    },\n    clear: () => {\n      value = 0;\n      return calculator;\n    },\n    result: () => value,\n    memoryStore: () => {\n      memory = value;\n      return calculator;\n    },\n    memoryAdd: () => {\n      memory += value;\n      return calculator;\n    },\n    memoryClear: () => {\n      memory = 0;\n      return calculator;\n    },\n    memoryRecall: () => memory\n  };\n\n  return calculator;\n}\n```",
+        "durationMs": 379307,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-85e44843678b2efe/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 76,
+        "scoringDurationMs": 76
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Exports createCalculator, chaining and state encapsulation work, and memory is independent. Main issue: divide by zero isn't handled and TS uses `this` return types inaccurately.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1585
+      }
+    },
+    {
+      "id": "21",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T16:50:01.700Z",
+      "completedAt": "2026-03-17T16:52:49.473Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createCalculator(): Calculator {\n  let current: number = 0;\n  let memory: number = 0;\n\n  return {\n    add(n: number): Calculator {\n      current += n;\n      return this;\n    },\n    subtract(n: number): Calculator {\n      current -= n;\n      return this;\n    },\n    multiply(n: number): Calculator {\n      current *= n;\n      return this;\n    },\n    divide(n: number): Calculator {\n      current /= n;\n      return this;\n    },\n    clear(): Calculator {\n      current = 0;\n      return this;\n    },\n    result(): number {\n      return current;\n    },\n    memoryStore(): Calculator {\n      memory = current;\n      return this;\n    },\n    memoryRecall(): number {\n      return memory;\n    },\n    memoryClear(): Calculator {\n      memory = 0;\n      return this;\n    },\n    memoryAdd(): Calculator {\n      memory += current;\n      return this;\n    },\n  };\n}\n```",
+        "durationMs": 166401,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-32b3aed44578bd9c/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 68,
+        "scoringDurationMs": 68
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Implements the full stateful API with proper chaining and per-instance encapsulated state. Main gap is no explicit division-by-zero handling and reliance on `this` in object methods.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1304
+      }
+    },
+    {
+      "id": "22",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T16:52:49.473Z",
+      "completedAt": "2026-03-17T17:04:05.081Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ntype EventEmitterReturn<T, K extends keyof T> = T[K] extends (...args: infer R) => infer V ? V : never & []\n\nfunction createEventEmitter<KeyT extends string = string>(): Record<KeyT, EventEmitterReturn<Record<KeyT, ...>, KeyT> extends infer Return ? (Return & {\n  on: <E extends keyof Record<KeyT, EventListenerMap<E>>>(event: E, listener: EventListenerMap<E>[E]) => void\n} & {\n  off: <E extends KeyT>(event: E, callback?: EventListenerMap<E>[E]) => void\n} & {\n  once: <E extends keyof Record<KeyT, EventListenerMap<E>>>(event: E, listener: EventListenerMap<E>[E]) => void\n} & {\n  emit: <E extends keyof Record<KeyT, EventListenerMap<E>>>(event: E, ...args: Parameters<EventListenerMap<E>[E]>) => EventEmitterReturn<Record<KeyT, EventListenerMap<E>>, E>\n}> : never>\n  \nfunction getEmitter<KeyT extends string = string>(\n  events: Record<string, Map<string, Set<EventListenerRef<KnownEvent<KeyT>>>>> & {\n    [K in keyof KeyT]: Map<K, Set<{callback: KnownEvent<KeyT>[K], once?: true}>}>\n  } = {}\n): Record<KeyT, EventEmitterReturn<Record<KeyT, ...>, KeyT>> {\n  return {\n    on: <E extends keyof Record<KeyT, EventListenerMap<E>>>(event: E, callback: EventListenerMap<E>[E]) => {\n      const map = (events as any)[event] || new Map()\n      map.set(event, new Set([{callback, once: false}]))\n      for (const k of map.keys()) {\n        (events as any)[k] = map.get(k) || new Map()\n      }\n      return () => {}\n    },\n    once: <E extends keyof Record<KeyT, EventListenerMap<E>>>(event: E, callback: EventListenerMap<E>[E]) => {\n      const map = (events as any)[event] || new Map()\n      map.set(event, new Set([{callback, once: true}]))\n      return () => {}\n    },\n    off: <E extends KeyT>(event: E, callback?: any) => {\n      const map = (events as any).get(event)\n      if (!map) return []\n      const set = map.get(event)\n      if (!set) return []\n      return Array.from(set).filter(({callback: c}) => callback === undefined || c !== callback).length\n   },\n    emit: <E extends keyof Record<KeyT, EventListenerMap<E>>>(event: E, ...args: any[]) => {\n      const map = (events as any)[event]\n      if (!map) return []\n      const set = map.get(event)\n      if (!set) return []\n      const results: any[] = []\n      for (const {callback} of Array.from(set)) {\n        results.push(callback(...args))\n      }\n      return results\n    }\n  }\n}\n\ntype KnownEvent<K extends string> = Record<K, (...args: any[]) => any>\n\ntype EventListenerMap<E extends keyof Record<string, any>> = E extends keyof any ? Record<E, (...args: any[]) => any> : never\n\nexport function createEventEmitter<KeyT extends string = string>(): Record<KeyT, (...args: any[]) => any> {\n  const events = {} as any\n  \n  const result = {\n    on: <E extends keyof Record<KeyT, any>>(event: E, listener: EventEmitterReturn<any, E>) => {\n      const map = (events as any)[event] || new Map()\n      map.set(event, new Set([{callback: listener, once: false}]))\n      return () => {}\n    },\n    off: <E extends KeyT>(event: E, callback?: any) => {\n      const map = (events as any)[event as string]\n      if (!map) return []\n      const set = map.get(event as string)\n      if (!set) return []\n      return Array.from(set).filter(({callback: c}) => callback === undefined || c !== callback).length\n    },\n    once: <E extends keyof Record<KeyT, any>>(event: E, listener: EventEmitterReturn<any, E>) => {\n      const map = (events as any)[event] || new Map()\n      map.set(event, new Set([{callback: listener, once: true}]))\n      return () => {}\n    },\n    emit: <E extends keyof Record<KeyT, any>>(event: E, ...args: any[]) => {\n      const map = (events as any)[event]\n      if (!map) return []\n      const set = map.get(event as string)\n      if (!set) return []\n      const results: any[] = []\n      for (const {callback} of Array.from(set)) {\n        try {\n          results.push(callback(...args))\n        } catch {\n          // Skip broken listeners\n        }\n      }\n      return results\n    }\n  }\n  \n  return result\n}\n```\n\nWait, let me rewrite this cleanly to ensure correctness:\n\n```typescript\nexport type EmitHandler<T> = (...args: T extends Record<any, any> ? [T[keyof T]] : [any]) => unknown\n\nfunction createEventEmitter<KeyT extends string = string>(): Record<KeyT, any> & {\n  on: <E extends keyof Record<any, any>>(event: E, handler: EmitHandler<any>) => void\n  off: <E extends string>(event: E, handler?: any) => void\n  once: <E extends keyof Record<any, any>>(event: E, handler: EmitHandler<any>) => void\n  emit: <E extends keyof Record<any, any>>(event: E, ...args: any[]) => unknown[]\n} {\n  const emitter = Object.create(null)\n  const listeners = Map<string, Map<EventListenerMeta, any[]>>()\n  \n  emitter.on = function(event: string, handler: EmitHandler<any>): void {\n    const listenersForEvent = listeners.get(event) || Map()\n    listenersForEvent.set({handler, once: false}, [])\n    listeners.set(event, listenersForEvent)\n  }(event, handler)\n  \n  return {\n    on: function(event: string, handler: EmitHandler<any>): void {\n      const listenersForEvent = listeners.get(event) || Map()\n      listenersForEvent.set({handler, once: false}, [])\n      listeners.set(event, listenersForEvent)\n    },\n    off: function(event: string, handler?: any): void {\n      const listenersForEvent = listeners.get(event)\n      if (!listenersForEvent) return\n      if (!handler) {\n        listenersForEvent.forEach(() => {})\n        listeners.delete(event)\n      } else {\n        for (const [meta, _] of listenersForEvent.entries()) {\n          if (meta.handler === handler) {\n            listenersForEvent.delete(meta)\n            break\n          }\n        }\n      }\n    },\n    once: function(event: string, handler: EmitHandler<any>): void {\n      try {\n      },\n    }\n  }\n}\n```\n\nLet me write this completely and correctly in one go:\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): {\n  on: <E extends EKey<KeyT>>(event: E, listener: Listener<E>) => void\n  once: <E extends EKey<KeyT>>(event: E, listener: Listener<E>) => void\n  off: <E extends EKey<KeyT>>(event: E, listener?: Listener<E>) => void\n  emit: <E extends EKey<KeyT>>(event: E, ...args: ListenerArgs<E>) => ListenerReturns<E>\n} & Record<KeyT, unknown> {\n  const listeners = new Map<EKey<KeyT>, Map<{ handler: Listener<EKey<KeyT>>, once: boolean }, any>>>()\n  \n  return {\n    on: <E extends EKey<KeyT>>(event: E, listener: Listener<E>): void => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, new Map())\n      }\n      const eventListenersMap = listeners.get(event)!\n      if (!eventListenersMap.has(listener)) {\n        eventListenersMap.set({handler: listener, once: false}, [])\n      }\n    },\n    once: <E extends EKey<KeyT>>(event: E, listener: Listener<E>): void => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, new Map())\n      }\n      const eventListenersMap = listeners.get(event)!\n      eventListenersMap.set({handler: listener, once: true}, [])\n      for (const [_, v] of eventListenersMap) {\n      }\n    },\n    off: <E extends EKey<KeyT>>(event: E, listener?: Listener<E>): void => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return\n      if (!listener) {\n        listeners.delete(event)\n      } else {\n        for (const [meta, _] of eventListeners.entries()) {\n          if (meta.handler === listener) {\n            eventListeners.delete(meta)\n            break\n          }\n        }\n      }\n    },\n    emit: <E extends EKey<KeyT>>(event: E, ...args: ListenerArgs<E>): ListenerReturns<E> => {\n      const eventListenersMap = listeners.get(event)\n      if (!eventListenersMap) return []\n      const results: ListenerReturns<E> = []\n      for (const [meta, _] of eventListenersMap.entries()) {\n        try {\n          if (!meta.once || meta.once) {\n            eventListenersMap.delete(meta)\n          }\n          results.push(meta.handler(...args))\n        } catch (e) {\n        }\n      }\n      return results\n    }\n  }\n}\n\ntype EKey<T> = keyof T\ntype Listener<E extends string> = (...args: any[]) => unknown\ntype ListenerArgs<E extends string> = Parameters<Listener<E>>\ntype ListenerReturns<E extends string> = ReturnType<Listener<E>>[]\n```\n\nI'll finalize a clean implementation:\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): Record<KeyT, unknown> & {\n  on: (event: keyof Record<KeyT, any>, listener: (...args: any[]) => unknown) => void\n  off: (event: keyof Record<KeyT, any>, listener?: (...args: any[]) => unknown) => void\n  once: (event: keyof Record<KeyT, any>, listener: (...args: any[]) => unknown) => void\n  emit: (event: keyof Record<KeyT, any>, ...args: any[]) => unknown[]\n} {\n  const listeners = new Map<keyof Record<KeyT, any>, Map<{handler: (...args: unknown[]) => unknown}, unknown[]>>()\n  \n  return {\n    on: <K extends keyof Record<KeyT, any>>(event: K, listener: (...args: any[]) => unknown) => {\n      const eventListenersMap = listeners.get(event) || new Map()\n      eventListenersMap.set({handler: listener}, [])\n      listeners.set(event, eventListenersMap)\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, listener?: (...args: any[]) => unknown) => {\n      const eventListenersMap = listeners.get(event)\n      if (!eventListenersMap) return\n      if (!listener) {\n        listeners.delete(event)\n        return\n      }\n      for (const [meta, _] of eventListenersMap.entries()) {\n        if (meta.handler === listener) {\n          eventListenersMap.delete(meta)\n          break\n        }\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, listener: (...args: any[]) => unknown) => {\n      const eventListenersMap = listeners.get(event) || new Map()\n      eventListenersMap.set({handler: listener}, [])\n      listeners.set(event, eventListenersMap)\n    },\n    emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => {\n      const eventListenersMap = listeners.get(event)\n      if (!eventListenersMap) return []\n      return Array.from(eventListenersMap.values()).map(([_, returns]) => returns)\n    }\n  }\n}\n```\n\nLet me clean this up one more time to ensure it's correct:\n\n```typescript\ntype Emitter = {\n  <K extends string>(event: K, handler: (...args: any[]) => unknown): void\n  (event: string, handler: (...args: any[]) => unknown): void\n  <K extends string>(event: K): (event: K) => unknown[]\n  emit(event: string, ...args: any[]): unknown[]\n  off(event: string, handler?: (...args: any[]) => unknown): void\n  once(event: string, handler: (...args: any[]) => unknown): void\n}\n\nexport function createEventEmitter<KeyT extends string = string>(): Record<KeyT, unknown> & {\n  on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => void\n  off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => void\n  once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => void\n  emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => unknown[]\n} {\n  const emitters = new Map<keyof Record<KeyT, any>, () => void>()\n  \n  return {\n    on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListeners = emitters.get(event) || new Map<() => void, {handler: (...args: unknown[]) => unknown, count: number}>>()\n      eventListeners.set(handler, {handler, count: (emitters.get(event)?.get(event as string)?.count as number) || 0})\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => {\n      const eventListeners = emitters.get(event)\n      if (!eventListeners) return\n      if (!handler) {\n        emitters.delete(event)\n      } else {\n        eventListeners.delete(handler)\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListeners = emitters.get(event) || new Map<() => void, {handler: (...args: unknown[]) => unknown, count: number}>>()\n      eventListeners.set(handler, {handler, count: emitters.get(event)?.get(event as string)?.count as number || 0})\n    },\n    emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => {\n      const eventListeners = emitters.get(event)\n      if (!eventListeners) return []\n      return Array.from(eventListeners.values())\n    }\n  }\n}\n```\n\nFinal clean version:\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): {\n  <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void\n  <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void\n  (event: string, handler: (...args: any[]) => unknown): void\n  <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void\n  <K extends keyof Record<KeyT, any>>(event: K): unknown[]\n  (event: string, ...args: any[]): unknown[]\n  off: (event: string, handler?: (...args: any[]) => unknown) => void\n  once: (event: string, handler: (...args: any[]) => unknown) => void\n} & Record<KeyT, unknown> {\n  const listeners = Map<keyof Record<KeyT, any>, {handler: (...args: any[]) => unknown, once: boolean}[]>()\n  \n  return {\n    on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, [])\n      }\n      eventListeners.push({handler, once: false})\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return\n      if (!handler) {\n        listeners.delete(event)\n      } else {\n        const index = eventListeners.findIndex(l => l.handler === handler)\n        if (index === -1) return\n        eventListeners.splice(index, 1)\n        if (eventListeners.length === 0) {\n          listeners.delete(event)\n        }\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, [])\n      }\n      eventListeners.push({handler, once: true})\n    },\n    emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return []\n      return eventListeners.map(({handler, once}) => {\n        const result = handler(...args)\n        if (once) {\n          const index = eventListeners.findIndex(l => l.handler === handler)\n          if (index !== -1) {\n            eventListeners.splice(index, 1)\n          }\n        }\n        return result\n      })\n    }\n  }\n}\n```\n\nWait, there's an issue with the `off` method and the `once` method - they shouldn't share the same implementation. Let me fix this:\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): {\n  <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void\n  <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void\n  (event: string, handler: (...args: any[]) => unknown): void\n  <K extends keyof Record<KeyT, any>>(event: K): unknown[]\n  (event: string, ...args: any[]): unknown[]\n  off: (event: string, handler?: (...args: any[]) => unknown) => void\n  once: (event: string, handler: (...args: any[]) => unknown) => void\n} & Record<KeyT, unknown> {\n  const listeners = Map<keyof Record<KeyT, any>, {handler: (...args: any[]) => unknown, once: boolean}[]>()\n  \n  return {\n    on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, [])\n      }\n      eventListeners.push({handler, once: false})\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return\n      if (!handler) {\n        listeners.delete(event)\n      } else {\n        const index = eventListeners.findIndex(l => l.handler === handler)\n        if (index === -1) return\n        eventListeners.splice(index, 1)\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListener\n```\n\nI realize the issue with the `once` method - it can't distinguish between a regular `on` call and a `once` call based on the `once` flag. Let me rethink this:\n\nThe `once` behavior should:\n1. Add a listener that will fire once\n2. Remove itself after firing\n\nFor implementation, I need to:\n1. Store metadata with each listener\n2. When `emit` is called, remove one-time listeners after they fire\n3. For `off`, it should remove listeners based on equality\n\nLet me simplify and write a working implementation:\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): {\n  <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void\n  (event: string, handler: (...args: any[]) => unknown): void\n  <K extends keyof Record<KeyT, any>>(event: K): unknown[]\n  (event: string, ...args: any[]): unknown[]\n  off: (event: string, handler?: (...args: any[]) => unknown) => void\n  once: (event: string, handler: (...args: any[]) => unknown) => void\n} & Record<KeyT, unknown> {\n  const listeners = new Map<keyof Record<KeyT, any>, {handler: (...args: any[]) => unknown, once: boolean}[]>()\n  \n  return {\n    on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, [])\n      }\n      eventListeners.push({handler, once: false})\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return\n      if (!handler) {\n        listeners.delete(event)\n      } else {\n        const index = eventListeners.findIndex(l => l.handler === handler)\n        if (index === -1) return\n        eventListeners.splice(index, 1)\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      // Create a wrapped version with unique identity using the provided handler\n      const wrappedHandler = function(this: any, ...args: any[]) {\n        const result = handler.apply(this, args)\n        const index = eventListeners.findIndex(l => {\n          // Check if this is the same handler by comparing function references\n          return l.handler === handler\n        })\n        if (index !== -1) {\n          eventListeners.splice(index, 1)\n        }\n        return result\n      }\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, [])\n      }\n      eventListeners.push({handler: wrappedHandler, once: true})\n    },\n    emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return []\n      return eventListeners.map(({handler}) => {\n        try {\n          return handler(...args)\n        } catch (e) {\n          return undefined\n        }\n      })\n    }\n  }\n}\n```\n\nI've created a working implementation that handles the requirements. Now let me verify the key behaviors:\n\n1. **Normal listeners**: `on` adds listeners without the `once` flag\n2. **One-time listeners**: `once` wraps the handler and sets `once: true`\n3. **Registration order**: Using `Array.push` and `for...of` maintains order\n4. **Duplicate registration**: Each call appends a new listener, so duplicates are supported\n5. **`off` removes one matching listener**: Uses `findIndex` + `splice` for specific removal\n6. **`emit` returns values in order**: `map` over listeners in array order\n7. **Event isolation**: Each event is a separate entry in the Map\n\nLet me do a final verification and cleanup:\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): {\n  <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void\n  (event: string, handler: (...args: any[]) => unknown): void\n  <K extends keyof Record<KeyT, any>>(event: K): unknown[]\n  (event: string, ...args: any[]): unknown[]\n  off: (event: string, handler?: (...args: any[]) => unknown) => void\n  once: (event: string, handler: (...args: any[]) => unknown) => void\n} & Record<KeyT, unknown> {\n  const listeners = new Map<keyof Record<KeyT, any>, {handler: (...args: any[]) => unknown, once: boolean}[]>()\n  \n  const emitter = {\n    on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      let eventListeners: {handler: (...args: any[]) => unknown, once: boolean}[] = listeners.get(event) || []\n      eventListeners.push({handler, once: false})\n      listeners.set(event, eventListeners)\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return\n      if (!handler) {\n        listeners.delete(event)\n      } else {\n        const index = eventListeners.findIndex(l => l.handler === handler)\n        if (index !== -1) {\n          eventListeners.splice(index, 1)\n        }\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const wrappedHandler = function(this: any, ...args: any[]) {\n        const result = handler.apply(this, args)\n        const listenersForEvent = listeners.get(event)\n        if (listenersForEvent) {\n          const index = listenersForEvent.findIndex(l => {\n            // Use reference equality to identify our wrapped listener\n            // Since wrappedHandler is created fresh each time, we can use it directly\n            return l.handler === wrappedHandler\n          })\n          if (index !== -1) {\n            listenersForEvent.splice(index, 1)\n          }\n        }\n        return result\n      }\n      const listenersForEvent = listeners.get(event) || []\n      listenersForEvent.push({handler: wrappedHandler, once: true})\n      listeners.set(event, listenersForEvent)\n    },\n    emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return []\n      return eventListeners.map(({handler}) => {\n        return handler(...args)\n      })\n    }\n  } as any\n  \n  return emitter\n}\n```\n\nWait, I see an issue - when `once` is called, `wrappedHandler` is the function, but when we store it and try to remove it later, we need to compare function references. However, since `wrappedHandler` is created fresh each time and assigned as a literal in the spread operation, the reference should be preserved.\n\nBut there's another issue: in TypeScript, the `once` method shouldn't have the same signature as `emit`. Let me fix the typing:\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): {\n  on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => void\n  off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => void\n  once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => void\n  emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => unknown[]\n} & Record<KeyT, unknown> {\n  const listeners = new Map<keyof Record<KeyT, any>, {handler: (...args: any[]) => unknown, once: boolean}[]>()\n  \n  const emitter = {\n    on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, [])\n      }\n      eventListeners.push({handler, once: false})\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return\n      if (!handler) {\n        listeners.delete(event)\n      } else {\n        const index = eventListeners.findIndex(l => l.handler === handler)\n        if (index !== -1) {\n          eventListeners.splice(index, 1)\n        }\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => {\n      const wrappedHandler = function(this: any, ...args: any[]) {\n        const result = handler.apply(this, args)\n        const listenersForEvent = listeners.get(event)\n        if (listenersForEvent) {\n          const index = listenersForEvent.findIndex(l => l.handler === wrappedHandler)\n          if (index !== -1) {\n            listenersForEvent.splice(index, 1)\n          }\n        }\n        return result\n      }\n      const listenersForEvent = listeners.get(event) || []\n      listenersForEvent.push({handler: wrappedHandler, once: true})\n      listeners.set(event, listenersForEvent)\n    },\n    emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return []\n      return eventListeners.map(({handler}) => {\n        return handler(...args)\n      })\n    }\n  } as any\n  \n  return emitter\n}\n```\n\nThis should work. Let me finalize and output it cleanly without comments or markdown formatting.\n</think>\n\n```typescript\nexport function createEventEmitter<KeyT extends string = string>(): {\n  on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => void\n  off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown) => void\n  once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown) => void\n  emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]) => unknown[]\n} & Record<KeyT, unknown> {\n  const listeners = new Map<keyof Record<KeyT, any>, {handler: (...args: any[]) => unknown, once: boolean}[]>()\n\n  const emitter = {\n    on: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        listeners.set(event, [])\n      }\n      eventListeners.push({ handler, once: false })\n    },\n    off: <K extends keyof Record<KeyT, any>>(event: K, handler?: (...args: any[]) => unknown): void => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return\n      if (!handler) {\n        listeners.delete(event)\n      } else {\n        const index = eventListeners.findIndex(l => l.handler === handler)\n        if (index !== -1) {\n          eventListeners.splice(index, 1)\n        }\n      }\n    },\n    once: <K extends keyof Record<KeyT, any>>(event: K, handler: (...args: any[]) => unknown): void => {\n      const wrappedHandler = function(this: any, ...args: any[]) {\n        const result = handler.apply(this, args)\n        const listenersForEvent = listeners.get(event)\n        if (listenersForEvent) {\n          const index = listenersForEvent.findIndex(l => l.handler === wrappedHandler)\n          if (index !== -1) {\n            listenersForEvent.splice(index, 1)\n          }\n        }\n        return result\n      }\n      const listenersForEvent = listeners.get(event) || []\n      listenersForEvent.push({ handler: wrappedHandler, once: true })\n      listeners.set(event, listenersForEvent)\n    },\n    emit: <K extends keyof Record<KeyT, any>>(event: K, ...args: any[]): unknown[] => {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return []\n      return eventListeners.map(({ handler }) => {\n        return handler(...args)\n      })\n    }\n  } as any\n\n  return emitter\n}\n```",
+        "durationMs": 503146,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-9ba642acd5a043d3/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 0,
+        "failed": 22,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 169653,
+        "scoringDurationMs": 138,
+        "retryGenerationDurationMs": 169514
+      },
+      "frontierEval": {
+        "score": 2,
+        "reasoning": "Exports exist, but the code is malformed with multiple conflicting implementations. Final emitter lacks listenerCount, has broken on logic, and off/once semantics are incorrect.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 2808
+      },
+      "scoringFailure": {
+        "type": "import",
+        "message": "Import failed: 2 errors building \"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-68sk0yum.ts\""
+      }
+    },
+    {
+      "id": "23",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:04:05.082Z",
+      "completedAt": "2026-03-17T17:08:38.952Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\ntype Listener = (payload: unknown) => unknown\n\nexport interface EventEmitter {\n  on(event: string, listener: Listener): number\n  once(event: string, listener: Listener): number\n  off(event: string, listener: Listener): boolean\n  emit(event: string, payload: unknown): unknown[]\n  listenerCount(event: string): number\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const listeners = new Map<string, Array<{ func: Listener; once: boolean }>>()\n  const emittedOnce = new Map<string, Set<Listener>>()\n\n  function getListeners(event: string): Array<{ func: Listener; once: boolean }> {\n    let list = listeners.get(event)\n    if (list === undefined) {\n      list = []\n      listeners.set(event, list)\n    }\n    return list\n  }\n\n  function on(event: string, listener: Listener): number {\n    const list = getListeners(event)\n    list.push({ func: listener, once: false })\n    return list.length\n  }\n\n  function once(event: string, listener: Listener): number {\n    const list = getListeners(event)\n    list.push({ func: listener, once: true })\n    return list.length\n  }\n\n  function off(event: string, listener: Listener): boolean {\n    let list = listeners.get(event)\n    if (list === undefined) {\n      return false\n    }\n    const index = list.findIndex(l => l.func === listener)\n    if (index !== -1) {\n      list.splice(index, 1)\n      if (list.length === 0) {\n        listeners.delete(event)\n      }\n      return true\n    }\n    return false\n  }\n\n  function emit(event: string, payload: unknown): unknown[] {\n    let list: Array<{ func: Listener; once: boolean } | undefined> = listeners.get(event)\n    if (list === undefined || list.length === 0) {\n      return []\n    }\n\n    const results: unknown[] = []\n    for (const item of list) {\n      if (item === undefined) {\n        continue\n      }\n      const result = item.func(payload)\n      results.push(result)\n\n      if (item.once) {\n        if (!emittedOnce.has(event)) {\n          emittedOnce.set(event, new Set())\n        }\n        emittedOnce.get(event)!.add(item.func)\n      }\n    }\n\n    return results\n  }\n\n  function listenerCount(event: string): number {\n    const list = getListeners(event)\n    return list.length\n  }\n\n  function cleanupEmittedOnce(event: string): void {\n    const emitted = emittedOnce.get(event)\n    if (emitted === undefined) {\n      return\n    }\n    let list: Array<{ func: Listener; once: boolean } | undefined> = listeners.get(event)\n    if (list === undefined) {\n      return\n    }\n\n    const filtered = list.filter(l => {\n      if (!l) {\n        return false\n      }\n      return !emitted.has(l.func)\n    })\n\n    listeners.set(event, filtered)\n    emittedOnce.set(event, new Set())\n  }\n\n  function onWithCleanup(event: string, listener: Listener): number {\n    const list = getListeners(event)\n    list.push({ func: listener, once: false })\n    return list.length\n  }\n\n  function onceWithCleanup(event: string, listener: Listener): number {\n    const list = getListeners(event)\n    list.push({ func: listener, once: true })\n    emittedOnce.get(event)?.add(listener)\n    return list.length\n  }\n\n  function emitWithCleanup(event: string, payload: unknown): unknown[] {\n    cleanupEmittedOnce(event)\n    let list = listeners.get(event)\n    if (list === undefined) {\n      return []\n    }\n\n    const results: unknown[] = []\n    for (const item of list) {\n      if (item === undefined) {\n        continue\n      }\n      const result = item.func(payload)\n      results.push(result)\n      if (item.once) {\n        emittedOnce.get(event)?.add(item.func)\n      }\n    }\n\n    return results\n  }\n\n  return {\n    on: onWithCleanup,\n    once: onceWithCleanup,\n    off,\n    emit: emitWithCleanup,\n    listenerCount\n  }\n}\n```",
+        "durationMs": 272192,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-436f3a405933dafe/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 14,
+        "failed": 8,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 70,
+        "scoringDurationMs": 70
+      },
+      "frontierEval": {
+        "score": 3,
+        "reasoning": "Exports factory and basic API, but once is broken: once listeners are pre-marked and removed before firing, and cleanup removes all duplicate listeners of the same function.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1608
+      }
+    },
+    {
+      "id": "24",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:08:38.954Z",
+      "completedAt": "2026-03-17T17:13:02.094Z",
+      "generation": {
+        "success": true,
+        "output": "export type RateLimiterEntry = {\n  lastTimestamp: number;\n  count: number;\n};\n\nexport function createRateLimiter(): {\n  isAllowed: (key: string, nowMs: number) => boolean;\n  reset: (key: string) => void;\n} {\n  const records: Map<string, RateLimiterEntry> = new Map();\n\n  const WINDOW_DURATION = 1000;\n  const MAX_REQUESTS = 3;\n\n  return {\n    isAllowed: (key: string, nowMs: number): boolean => {\n      let entry = records.get(key);\n\n      if (!entry) {\n        // First request for this key - start new window\n        entry = { lastTimestamp: nowMs, count: 1 };\n        records.set(key, entry);\n        return true;\n      }\n\n      const elapsed = nowMs - entry.lastTimestamp;\n\n      // Check if window has fully elapsed\n      if (elapsed >= WINDOW_DURATION) {\n        // Start fresh window with this request\n        entry.lastTimestamp = nowMs;\n        entry.count = 1;\n        return true;\n      }\n\n      // Check if we've hit the limit\n      if (entry.count >= MAX_REQUESTS) {\n        return false;\n      }\n\n      // Increment count and allow request\n      entry.count += 1;\n      return true;\n    },\n\n    reset: (key: string): void => {\n      records.delete(key);\n    }\n  };\n}",
+        "durationMs": 261741,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-95b550cd4909a34d/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 2,
+        "failed": 19,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 70,
+        "scoringDurationMs": 70
+      },
+      "frontierEval": {
+        "score": 6,
+        "reasoning": "Per-key quota, >= reset, and targeted reset are correct, but the API is incomplete: it lacks required remaining tracking. Core logic is otherwise deterministic and isolated.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1326
+      }
+    },
+    {
+      "id": "25",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:13:02.095Z",
+      "completedAt": "2026-03-17T17:15:55.525Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createRateLimiter(): RateLimiter {\n  type State = {\n    count: number\n    windowStart: number\n  }\n\n  const store = new Map<string, State>()\n  const limit = 3\n  const windowMs = 1000\n\n  return {\n    allow(key: string, nowMs: number): boolean {\n      let state: State | undefined = store.get(key)\n\n      // Check if window expired\n      if (state == null || nowMs - state.windowStart >= windowMs) {\n        state = { count: 0, windowStart: nowMs }\n        store.set(key, state)\n      }\n      if (state == null) return false\n\n      if (state.count < limit) {\n        state.count += 1\n        return true\n      }\n      return false\n    },\n\n    remaining(key: string, nowMs: number): number {\n      let state = store.get(key)\n\n      if (state == null) {\n        return limit\n      }\n\n      // Check if window expired\n      if (nowMs - state.windowStart >= windowMs) {\n        return limit\n      }\n\n      // Ensure we don't return negative remaining\n      if (state.count < limit) {\n        const remaining = limit - state.count\n        return remaining > 0 ? remaining : 0\n      }\n\n      return 0\n    },\n\n    reset(key: string): void {\n      store.delete(key)\n    },\n  }\n}\n```",
+        "durationMs": 171960,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-24510506f8497b2b/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 21,
+        "failed": 0,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 63,
+        "scoringDurationMs": 63
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Correct per-key fixed-window limiter with proper >= reset, accurate remaining, and targeted reset. Minor issue: remaining doesn't persist refreshed state after expiry, though behavior stays correct.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1408
+      }
+    },
+    {
+      "id": "26",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:15:55.525Z",
+      "completedAt": "2026-03-17T17:17:22.984Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
+        "durationMs": 85969,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-7bf15184554245e6/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 70,
+        "scoringDurationMs": 70
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add with correct TypeScript types and a pure, concise return of the sum. Fully meets correctness, quality, and best-practice criteria.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1418
+      }
+    },
+    {
+      "id": "27",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:17:22.984Z",
+      "completedAt": "2026-03-17T17:18:53.854Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
+        "durationMs": 89533,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-81728b6ee1753fd2/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 70,
+        "scoringDurationMs": 70
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add with correct TypeScript types and returns the sum directly. Clean, concise, pure, and fully meets the benchmark requirements.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1265
+      }
+    },
+    {
+      "id": "28",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T17:18:53.854Z",
+      "completedAt": "2026-03-17T17:21:09.487Z",
+      "generation": {
+        "success": true,
+        "output": "",
+        "durationMs": 135559
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 3,
+        "failed": 2,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 69,
+        "scoringDurationMs": 69
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Content mismatch for \"src/app-config.ts\"; Expected modified paths to match exactly"
+      }
+    },
+    {
+      "id": "29",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T17:21:09.487Z",
+      "completedAt": "2026-03-17T17:22:50.303Z",
+      "generation": {
+        "success": true,
+        "output": "",
+        "durationMs": 100745
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 3,
+        "failed": 2,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 69,
+        "scoringDurationMs": 69
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Content mismatch for \"src/app-config.ts\"; Expected modified paths to match exactly"
+      }
+    },
+    {
+      "id": "30",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T17:22:50.303Z",
+      "completedAt": "2026-03-17T17:33:24.252Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nconst createTodoApp = function(): {\n  addTodo: (text: string) => { id: number; text: string; completed: boolean };\n  getTodo: (id: number) => { id: number; text: string; completed: boolean } | undefined;\n  toggleTodo: (id: number) => void;\n  deleteTodo: (id: number) => boolean;\n  listTodos: () => Array<{ id: number; text: string; completed: boolean }>;\n  listCompleted: () => Array<{ id: number; text: string; completed: boolean }>;\n  listPending: () => Array<{ id: number; text: string; completed: boolean }>;\n  clearCompleted: () => void;\n} {\n  let idCounter = 0;\n  const todos: Array<{ id: number; text: string; completed: boolean }> = [];\n\n  const addTodo = (text: string) => {\n    const newTodo = {\n      id: idCounter++,\n      text,\n      completed: false\n    };\n    todos.push(newTodo);\n    return newTodo;\n  };\n\n  const getTodo = (id: number) => {\n    const indexedTodos = todos.map(t => (t.id === id ? t : null));\n    return todos.find(t => t.id === id) || undefined;\n  };\n\n  const toggleTodo = (id: number) => {\n    const todo = todos.find(t => t.id === id);\n    if (todo !== undefined) {\n      todo.completed = !todo.completed;\n    }\n  };\n\n  const deleteTodo = (id: number) => {\n    const item = todos.find(t => t.id === id);\n    if (item !== undefined) {\n      todos.splice(todos.indexOf(item), 1);\n      return true;\n    }\n    return false;\n  };\n\n  const listTodos = () => todos.slice();\n\n  const listCompleted = () => todos.filter(t => t.completed);\n\n  const listPending = () => todos.filter(t => !t.completed);\n\n  const clearCompleted = () => {\n    todos = todos.filter(t => !t.completed);\n  };\n\n  return {\n    addTodo,\n    getTodo,\n    toggleTodo,\n    deleteTodo,\n    listTodos,\n    listCompleted,\n    listPending,\n    clearCompleted\n  };\n};\n\nexport { createTodoApp };\n```",
+        "durationMs": 468598,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-7e0142164d4ccc71/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 0,
+        "failed": 15,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 162979,
+        "scoringDurationMs": 150,
+        "retryGenerationDurationMs": 162827
+      },
+      "frontierEval": {
+        "score": 3,
+        "reasoning": "Exports createTodoApp and most CRUD/filter methods are present, but clearCompleted reassigns a const array so the code won't compile; getTodo also has dead code.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 2375
+      },
+      "scoringFailure": {
+        "type": "import",
+        "message": "Import failed: BuildMessage: This assignment will throw because \"todos\" is a constant"
+      }
+    },
+    {
+      "id": "31",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:33:24.252Z",
+      "completedAt": "2026-03-17T17:40:05.068Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTodoApp(): TodoApp {\n  let todos: Todo[] = [];\n  let nextId = 1;\n\n  return {\n    addTodo(text: string): Todo {\n      const todo: Todo = { id: nextId, text, completed: false };\n      nextId++;\n      todos.push(todo);\n      return todo;\n    },\n\n    getTodo(id: number): Todo | undefined {\n      const idx = todos.findIndex(t => t.id === id);\n      return idx !== -1 ? todos[idx] : undefined;\n    },\n\n    toggleTodo(id: number): void {\n      const idx = todos.findIndex(t => t.id === id);\n      if (idx !== -1) {\n        todos[idx].completed = !todos[idx].completed;\n      }\n    },\n\n    deleteTodo(id: number): boolean {\n      const idx = todos.findIndex(t => t.id === id);\n      if (idx !== -1) {\n        todos.splice(idx, 1);\n        return true;\n      }\n      return false;\n    },\n\n    listTodos(): Todo[] {\n      return [...todos];\n    },\n\n    listCompleted(): Todo[] {\n      return todos.filter(t => t.completed);\n    },\n\n    listPending(): Todo[] {\n      return todos.filter(t => !t.completed);\n    },\n\n    clearCompleted(): void {\n      todos = todos.filter(t => !t.completed);\n    },\n  };\n}\n```",
+        "durationMs": 399140,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-94c50fd1fc455eb4/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 15,
+        "failed": 0,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 79,
+        "scoringDurationMs": 79
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Covers CRUD, filtering, unique incrementing IDs, and isolated state well. Minor issues: relies on external types and returns internal todo objects, allowing mutation.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1600
+      }
+    },
+    {
+      "id": "32",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:40:05.069Z",
+      "completedAt": "2026-03-17T17:44:03.018Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTtlCache(): {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n} {\n  const store = new Map<string, { value: unknown; expiresAt: number }>();\n\n  function isExpired(key: string, nowMs: number): boolean {\n    const entry = store.get(key);\n    if (!entry) return true;\n    return nowMs >= entry.expiresAt;\n  }\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs?: number): void {\n      const ttl = ttlMs ?? 1000;\n      store.set(key, { value, expiresAt: nowMs + ttl });\n    },\n\n    get(key: string, nowMs: number): unknown {\n      if (!isExpired(key, nowMs)) {\n        return store.get(key)!.value;\n      }\n      store.delete(key);\n      return undefined;\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = store.get(key);\n      if (!entry) return false;\n      return nowMs < entry.expiresAt;\n    },\n\n    delete(key: string): boolean {\n      return store.delete(key);\n    },\n\n    size(nowMs: number): number {\n      let count = 0;\n      for (const entry of store.values()) {\n        if (nowMs < entry.expiresAt) {\n          count++;\n        }\n      }\n      return count;\n    },\n\n    clear(): void {\n      store.clear();\n    },\n  };\n}\n```",
+        "durationMs": 138583,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-19259a302bfef4e8/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 138744,
+        "scoringDurationMs": 160,
+        "retryGenerationDurationMs": 138583
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Factory/API and TTL boundary logic are correct, including overwrite and ttlMs=0. Main issue: default TTL is hardcoded to 1000 with no configurable default, and has() doesn't purge expired entries.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1752
+      }
+    },
+    {
+      "id": "33",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:44:03.018Z",
+      "completedAt": "2026-03-17T17:48:50.395Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTtlCache(): TtlCache {\n  const store = new Map<string, { value: unknown; expiresAt: number }>()\n\n  function _getExpiresAt(key: string): number | undefined {\n    const entry = store.get(key)\n    return entry ? entry.expiresAt : undefined\n  }\n\n  return {\n    set: (key: string, value: unknown, nowMs: number, ttlMs: number = 1000): void => {\n      const expiresAt = nowMs + ttlMs\n      store.set(key, { value, expiresAt })\n    },\n    get: (key: string, nowMs: number): unknown => {\n      const entry = store.get(key)\n      if (!entry) {\n        return undefined\n      }\n      if (nowMs >= entry.expiresAt) {\n        store.delete(key)\n        return undefined\n      }\n      return entry.value\n    },\n    has: (key: string, nowMs: number): boolean => {\n      const entry = store.get(key)\n      if (!entry) {\n        return false\n      }\n      return nowMs < entry.expiresAt\n    },\n    delete: (key: string): boolean => {\n      // If exists but expired, we still delete it\n      const exists = _getExpiresAt(key) !== undefined\n      store.delete(key)\n      return exists\n    },\n    size: (nowMs: number): number => {\n      let count = 0\n      for (const [key, entry] of store.entries()) {\n        if (nowMs < entry.expiresAt) {\n          count++\n        }\n      }\n      return count\n    },\n    clear: (): void => {\n      store.clear()\n    }\n  }\n}\n\nexport interface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n}\n```",
+        "durationMs": 285426,
+        "codeFilePath": "/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-goose-e4432c960f7b6baa/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 69,
+        "scoringDurationMs": 69
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Core TTL behavior, boundary >= expiry, overwrite refresh, default TTL, and undefined values work. Main issue: has() doesn't purge expired entries, leaving state less consistent.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1881
+      }
+    },
+    {
+      "id": "34",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:48:50.395Z",
+      "completedAt": "2026-03-17T17:52:12.797Z",
+      "generation": {
+        "success": true,
+        "output": "I'll complete all three tasks using the text_editor tool:",
+        "durationMs": 202326
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 9,
+        "failed": 0,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 69,
+        "scoringDurationMs": 69
+      }
+    },
+    {
+      "id": "35",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "goose",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:52:12.797Z",
+      "completedAt": "2026-03-17T17:54:08.575Z",
+      "generation": {
+        "success": true,
+        "output": "I'll create the three files with their exact contents using the text_editor tool.",
+        "durationMs": 115706
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 9,
+        "failed": 0,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 69,
+        "scoringDurationMs": 69
+      }
+    },
+    {
+      "id": "36",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "file-delete-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:54:08.575Z",
+      "completedAt": "2026-03-17T17:55:01.413Z",
+      "generation": {
+        "success": true,
+        "output": "DONE",
+        "durationMs": 52772
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 62,
+        "scoringDurationMs": 62
+      }
+    },
+    {
+      "id": "37",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "file-search-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T17:55:01.413Z",
+      "completedAt": "2026-03-17T17:56:44.518Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773770137903,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0612b001q9DlPmYaSDvz2O\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcefd533001QEXRmqnKdFBREK\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773770143953,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0788f001ql9Mfrot4f2aep\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcefd533001QEXRmqnKdFBREK\",\"type\":\"tool\",\"callID\":\"call_oa2j1d9d\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"ls -la /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj\",\"description\":\"List workspace contents\"},\"output\":\"total 8\\ndrwx------@   5 plebdev  staff    160 Mar 17 10:55 .\\ndrwx------@ 400 plebdev  staff  12800 Mar 17 10:55 ..\\n-rw-r--r--@   1 plebdev  staff    275 Mar 17 10:55 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   4 plebdev  staff    128 Mar 17 10:55 inputs\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 10:55 misc\\n\",\"title\":\"List workspace contents\",\"metadata\":{\"output\":\"total 8\\ndrwx------@   5 plebdev  staff    160 Mar 17 10:55 .\\ndrwx------@ 400 plebdev  staff  12800 Mar 17 10:55 ..\\n-rw-r--r--@   1 plebdev  staff    275 Mar 17 10:55 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   4 plebdev  staff    128 Mar 17 10:55 inputs\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 10:55 misc\\n\",\"exit\":0,\"description\":\"List workspace contents\",\"truncated\":false},\"time\":{\"start\":1773770143898,\"end\":1773770143952}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773770143955,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf078d20012RoZndIwul2Ew3\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcefd533001QEXRmqnKdFBREK\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10225,\"input\":10081,\"output\":144,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773770150101,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf090d30010UASZtZW2Bl8Ym\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf078d5001GOzSl2zw2GCzfD\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773770154836,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0a322001embG9cS5GSEHDE\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf078d5001GOzSl2zw2GCzfD\",\"type\":\"tool\",\"callID\":\"call_5sfn6ram\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"find /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj -type f | head -50\",\"description\":\"Find all files in workspace\"},\"output\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/.plebdev-bench-baseline.json\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/misc/ignore.txt\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/beta/info.txt\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/alpha.txt\\n\",\"title\":\"Find all files in workspace\",\"metadata\":{\"output\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/.plebdev-bench-baseline.json\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/misc/ignore.txt\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/beta/info.txt\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/alpha.txt\\n\",\"exit\":0,\"description\":\"Find all files in workspace\",\"truncated\":false},\"time\":{\"start\":1773770154791,\"end\":1773770154836}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773770154837,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0a354001NEP5TjVzKWRc2k\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf078d5001GOzSl2zw2GCzfD\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10466,\"input\":10353,\"output\":113,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773770162162,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0bfef001nPOawzpSjQUzwA\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0a357001V0ctNg6wC73Aan\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773770166018,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0cefa001MuKqcZqHEci2gl\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0a357001V0ctNg6wC73Aan\",\"type\":\"tool\",\"callID\":\"call_ofzuim6x\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/.plebdev-bench-baseline.json\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/.plebdev-bench-baseline.json</path>\\n<type>file</type>\\n<content>1: {\\n2:   \\\"inputs/alpha.txt\\\": \\\"ce95eac7620f5323366f89ba4b99ea988e607b384606971c97a646b47f5a7f21\\\",\\n3:   \\\"inputs/beta/info.txt\\\": \\\"040b84f47e7de56b88233cf496275487cd0a2c19f17424818121ec20bf17bf19\\\",\\n4:   \\\"misc/ignore.txt\\\": \\\"ebe749fef0539dedc8e5707c5aa8d06b34e376f91591009469fe4ddfd03ff809\\\"\\n5: }\\n\\n(End of file - total 5 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/.plebdev-bench-baseline.json\",\"metadata\":{\"preview\":\"{\\n  \\\"inputs/alpha.txt\\\": \\\"ce95eac7620f5323366f89ba4b99ea988e607b384606971c97a646b47f5a7f21\\\",\\n  \\\"inputs/beta/info.txt\\\": \\\"040b84f47e7de56b88233cf496275487cd0a2c19f17424818121ec20bf17bf19\\\",\\n  \\\"misc/ignore.txt\\\": \\\"ebe749fef0539dedc8e5707c5aa8d06b34e376f91591009469fe4ddfd03ff809\\\"\\n}\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773770166013,\"end\":1773770166018}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773770169144,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0db31001C0FBRc6ilEbBdO\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0a357001V0ctNg6wC73Aan\",\"type\":\"tool\",\"callID\":\"call_6e2aibq2\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/alpha.txt\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/alpha.txt</path>\\n<type>file</type>\\n<content>1: alpha=1\\n2: \\n\\n(End of file - total 2 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/alpha.txt\",\"metadata\":{\"preview\":\"alpha=1\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773770169139,\"end\":1773770169143}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773770172243,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0e74c001AlpplbM3TsYpZl\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0a357001V0ctNg6wC73Aan\",\"type\":\"tool\",\"callID\":\"call_k648u1pq\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/misc/ignore.txt\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/misc/ignore.txt</path>\\n<type>file</type>\\n<content>1: this file does not contain the target\\n2: \\n\\n(End of file - total 2 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/misc/ignore.txt\",\"metadata\":{\"preview\":\"this file does not contain the target\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773770172239,\"end\":1773770172243}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773770175409,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0f3ab001X74EseRWriN08k\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0a357001V0ctNg6wC73Aan\",\"type\":\"tool\",\"callID\":\"call_f4svvzq0\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/beta/info.txt\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/beta/info.txt</path>\\n<type>file</type>\\n<content>1: target=needle-42\\n2: \\n\\n(End of file - total 2 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/inputs/beta/info.txt\",\"metadata\":{\"preview\":\"target=needle-42\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773770175405,\"end\":1773770175408}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773770175451,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf0f3d8001ZC0JWO92l840wQ\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0a357001V0ctNg6wC73Aan\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10988,\"input\":10673,\"output\":315,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773770186053,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf11d430018OnGyyxB6MikXN\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0f3df001CVAXgrD2TwK3At\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773770192684,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf136fb001Bq5VadwsHC6ZaR\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0f3df001CVAXgrD2TwK3At\",\"type\":\"tool\",\"callID\":\"call_4qd34vlk\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"mkdir -p /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/reports\",\"description\":\"Create reports directory\"},\"output\":\"\",\"title\":\"Create reports directory\",\"metadata\":{\"output\":\"\",\"exit\":0,\"description\":\"Create reports directory\",\"truncated\":false},\"time\":{\"start\":1773770192641,\"end\":1773770192683}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773770192685,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf1372c001KE0txvO9NwJuMC\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf0f3df001CVAXgrD2TwK3At\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":11740,\"input\":11583,\"output\":157,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773770196361,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf14587001V2g1eMa8q6HHhk\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf1372e001R5SSlGRujO7SFt\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773770202403,\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"part\":{\"id\":\"prt_cfcf15d20001WZjo6QDi7jjrfz\",\"sessionID\":\"ses_303102ae7ffe036sqhBod7qiPA\",\"messageID\":\"msg_cfcf1372e001R5SSlGRujO7SFt\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":11832,\"input\":11689,\"output\":143,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 103043
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 2,
+        "failed": 3,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/search-result.json\"; Failed to read JSON \"reports/search-result.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-search-smoke-vt4Trj/reports/search-result.json'; Expected created paths to match exactly"
+      }
+    },
+    {
+      "id": "38",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "tool-smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:56:44.519Z",
+      "completedAt": "2026-03-17T17:57:41.727Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n  return a + b;\n}",
+        "durationMs": 55584,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-520585063eb1c6da/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 58,
+        "scoringDurationMs": 58
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Correctly exports a pure add function with proper TypeScript types and concise implementation. It returns the sum for positive, negative, and zero values.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1564
+      }
+    },
+    {
+      "id": "39",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "workspace-tool-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T17:57:41.727Z",
+      "completedAt": "2026-03-17T17:59:17.224Z",
+      "generation": {
+        "success": true,
+        "output": "DONE",
+        "durationMs": 95429
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 5,
+        "failed": 2,
+        "total": 7
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Content mismatch for \"checklist/steps.txt\"; Expected modified paths to match exactly"
+      }
+    },
+    {
+      "id": "40",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T17:59:17.225Z",
+      "completedAt": "2026-03-17T18:00:04.046Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b\n}\n\nexport function divide(a: number, b: number): number {\n  if (b === 0) {\n    return Infinity\n  }\n  return a / b\n}\n```",
+        "durationMs": 45510,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-2fb271246c6ec057/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 61,
+        "scoringDurationMs": 61
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four exported TypeScript functions are correct, clean, and pure. Division by zero returns Infinity, and the implementation handles standard numeric cases properly.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1249
+      }
+    },
+    {
+      "id": "41",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "calculator-basic",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:00:04.054Z",
+      "completedAt": "2026-03-17T18:00:54.650Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b\n}\n\nexport function divide(a: number, b: number): number {\n  return a / b\n}\n```",
+        "durationMs": 49328,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-2afffac57c62f945/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 20,
+        "failed": 0,
+        "total": 20
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "All four exported TypeScript functions are correct, concise, and pure. Arithmetic and division by zero follow JavaScript behavior with no unnecessary complexity.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1207
+      }
+    },
+    {
+      "id": "42",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:00:54.650Z",
+      "completedAt": "2026-03-17T18:02:10.537Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createCalculator() {\n  let currentValue: number = 0\n  let memory: number = 0\n\n  return {\n    add: function (num: number): ReturnType<typeof createCalculator> {\n      this.currentValue = currentValue + num\n      return this\n    },\n    subtract: function (num: number): ReturnType<typeof createCalculator> {\n      this.currentValue = currentValue - num\n      return this\n    },\n    multiply: function (num: number): ReturnType<typeof createCalculator> {\n      this.currentValue = currentValue * num\n      return this\n    },\n    divide: function (num: number): ReturnType<typeof createCalculator> {\n      if (num === 0) {\n        this.currentValue = Number.NEGATIVE_INFINITY\n      } else {\n        this.currentValue = currentValue / num\n      }\n      return this\n    },\n    clear: function (): ReturnType<typeof createCalculator> {\n      this.currentValue = 0\n      return this\n    },\n    result: function (): number {\n      return this.currentValue\n    },\n    memoryStore: function (): ReturnType<typeof createCalculator> {\n      this.memory = this.currentValue\n      return this\n    },\n    memoryAdd: function (): ReturnType<typeof createCalculator> {\n      this.memory = this.memory + this.currentValue\n      return this\n    },\n    memoryClear: function (): ReturnType<typeof createCalculator> {\n      this.memory = 0\n      return this\n    },\n    memoryRecall: function (): number {\n      return this.memory\n    }\n  };\n}\n```",
+        "durationMs": 74434,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-b38685bae5d542a5/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 18,
+        "failed": 5,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "frontierEval": {
+        "score": 3,
+        "reasoning": "Exports createCalculator, but state handling is broken: methods update this.currentValue while calculations read closed-over currentValue, so chaining fails. Memory is also stored on the object, not independent.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1392
+      }
+    },
+    {
+      "id": "43",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "calculator-stateful",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:02:10.537Z",
+      "completedAt": "2026-03-17T18:03:16.853Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createCalculator(): Calculator {\n  let currentValue: number = 0\n  let memory: number = 0\n\n  interface Calculator {\n    add(n: number): Calculator\n    subtract(n: number): Calculator\n    multiply(n: number): Calculator\n    divide(n: number): Calculator\n    clear(): Calculator\n    result(): number\n    memoryStore(): Calculator\n    memoryRecall(): number\n    memoryClear(): Calculator\n    memoryAdd(): Calculator\n  }\n\n  const impl: Calculator = {\n    add(n: number): Calculator {\n      currentValue += n\n      return this\n    },\n    subtract(n: number): Calculator {\n      currentValue -= n\n      return this\n    },\n    multiply(n: number): Calculator {\n      currentValue *= n\n      return this\n    },\n    divide(n: number): Calculator {\n      if (n !== 0) {\n        currentValue /= n\n      }\n      return this\n    },\n    clear(): Calculator {\n      currentValue = 0\n      return this\n    },\n    result(): number {\n      return currentValue\n    },\n    memoryStore(): Calculator {\n      memory = currentValue\n      return this\n    },\n    memoryRecall(): number {\n      return memory\n    },\n    memoryClear(): Calculator {\n      memory = 0\n      return this\n    },\n    memoryAdd(): Calculator {\n      memory += currentValue\n      return this\n    }\n  }\n\n  return impl\n}\n```",
+        "durationMs": 64981,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-3366070a0b35ee3e/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 23,
+        "failed": 0,
+        "total": 23
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Exports createCalculator, chaining and state encapsulation work, and memory is independent per instance. Main issue: divide by zero is silently ignored, which is a weak edge-case handling choice.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1272
+      }
+    },
+    {
+      "id": "44",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:03:16.853Z",
+      "completedAt": "2026-03-17T18:04:19.047Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createEventEmitter(): {\n  on<T extends string>(eventName: T, listener: (...args: unknown[]) => unknown): void\n  off<T extends string>(eventName: T, listener: (...args: unknown[]) => unknown): void\n  emit<T extends string, U extends unknown[]>(eventName: T, ...args: U): U extends [infer R, ...never[]] ? R : never\n} {\n  const listeners = new Map<string, Array<(...args: unknown[]) => unknown>>()\n\n  function on<T extends string>(eventName: T, listener: (...args: unknown[]) => unknown): void {\n    if (!listeners.has(eventName)) {\n      listeners.set(eventName, [])\n    }\n    listeners.get(eventName)!.push(listener)\n  }\n\n  function off<T extends string>(eventName: T, listener: (...args: unknown[]) => unknown): void {\n    const eventListeners = listeners.get(eventName)\n    if (!eventListeners) {\n      return\n    }\n    const index = eventListeners.indexOf(listener)\n    if (index !== -1) {\n      eventListeners.splice(index, 1)\n    }\n  }\n\n  function emit<T extends string, U extends unknown[]>(eventName: T, ...args: U): U extends [infer R, ...infer _] ? R : never {\n    if (eventListeners) {\n      listeners.forEach((listeners) => {\n        listeners.forEach((listener) => {\n          const result = listener(...args)\n          if (result) {\n            returnResults.push(result)\n          }\n        })\n      })\n    }\n    return returnResults\n  }\n\n  return { on, off, emit }\n}\n</parameter>\n<parameter=description>\nWrite TypeScript event emitter to file\n</parameter>\n</function>\n</tool_call>",
+        "durationMs": 60540,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-1a44a0637f848c53/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 1,
+        "failed": 21,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 54,
+        "scoringDurationMs": 54
+      },
+      "frontierEval": {
+        "score": 1,
+        "reasoning": "Exports the factory but misses once/listenerCount, off return semantics, and emit is broken with undefined vars and wrong event dispatch/results.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1598
+      }
+    },
+    {
+      "id": "45",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "event-emitter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:04:19.048Z",
+      "completedAt": "2026-03-17T18:06:18.214Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createEventEmitter(): EventEmitter {\n  const listeners = new Map<string, Array<{listener: Listener, once: boolean}>>()\n  \n  return {\n    on(event: string, listener: Listener): number {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      const list = listeners.get(event)!\n      list.push({listener, once: false})\n      return list.length\n    },\n    \n    once(event: string, listener: Listener): number {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      const list = listeners.get(event)!\n      list.push({listener, once: true})\n      return list.length\n    },\n    \n    off(event: string, listener: Listener): boolean {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return false\n      \n      const index = eventListeners.findIndex(l => l.listener === listener)\n      if (index !== -1) {\n        eventListeners.splice(index, 1)\n        return true\n      }\n      return false\n    },\n    \n    emit(event: string, payload: unknown): unknown[] {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) return []\n      \n      const results: unknown[] = []\n      for (let i = 0; i < eventListeners.length; i++) {\n        const {listener, once} = eventListeners[i]\n        const result = listener(payload)\n        results.push(result)\n        if (once) {\n          eventListeners.splice(i, 1)\n          i--\n        }\n      }\n      return results\n    },\n    \n    listenerCount(event: string): number {\n      const list = listeners.get(event)\n      return list ? list.length : 0\n    }\n  }\n}\n```",
+        "durationMs": 117810,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-9dfeb6bbde7dd829/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 22,
+        "failed": 0,
+        "total": 22
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements the full API correctly: ordered listeners, once removal, single-match off, isolated per-event state, accurate counts, and proper empty/false edge-case behavior.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1295
+      }
+    },
+    {
+      "id": "46",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "file-locator",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:06:18.216Z",
+      "completedAt": "2026-03-17T18:07:16.737Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773770815637,\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"part\":{\"id\":\"prt_cfcfab89100120Op3aJCl7gLw3\",\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"messageID\":\"msg_cfcfa2914001lEleWOWCcb5ZFk\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773770818859,\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"part\":{\"id\":\"prt_cfcfac4ec001quWEspd483ACD0\",\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"messageID\":\"msg_cfcfa2914001lEleWOWCcb5ZFk\",\"type\":\"tool\",\"callID\":\"call_uce03brr\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"ls -la\",\"description\":\"List files in workspace root\"},\"output\":\"total 8\\ndrwx------@   7 plebdev  staff    224 Mar 17 11:06 .\\ndrwx------@ 409 plebdev  staff  13088 Mar 17 11:06 ..\\n-rw-r--r--@   1 plebdev  staff    381 Mar 17 11:06 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 owners\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 records\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 releases\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 scratch\\n\",\"title\":\"List files in workspace root\",\"metadata\":{\"output\":\"total 8\\ndrwx------@   7 plebdev  staff    224 Mar 17 11:06 .\\ndrwx------@ 409 plebdev  staff  13088 Mar 17 11:06 ..\\n-rw-r--r--@   1 plebdev  staff    381 Mar 17 11:06 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 owners\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 records\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 releases\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:06 scratch\\n\",\"exit\":0,\"description\":\"List files in workspace root\",\"truncated\":false},\"time\":{\"start\":1773770818808,\"end\":1773770818858}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773770824087,\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"part\":{\"id\":\"prt_cfcfad966001vkr1oAHLgY1Bx7\",\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"messageID\":\"msg_cfcfa2914001lEleWOWCcb5ZFk\",\"type\":\"tool\",\"callID\":\"call_97t1cph9\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"find . -type f -name \\\"*.json\\\" -o -name \\\"*.txt\\\" -o -name \\\"*.md\\\" -o -name \\\"*.cfg\\\" -o -name \\\"*.ini\\\" -o -name \\\"*.conf\\\" -o -name \\\"*.yaml\\\" -o -name \\\"*.yml\\\" -o -name \\\"*.env\\\" -o -name \\\"*.conf\\\" 2>/dev/null | head -50\",\"description\":\"Find potential config files\"},\"output\":\"./.plebdev-bench-baseline.json\\n./releases/current.txt\\n./records/alpha/details.txt\\n./scratch/ignore.txt\\n./owners/app-owner.txt\\n\",\"title\":\"Find potential config files\",\"metadata\":{\"output\":\"./.plebdev-bench-baseline.json\\n./releases/current.txt\\n./records/alpha/details.txt\\n./scratch/ignore.txt\\n./owners/app-owner.txt\\n\",\"exit\":0,\"description\":\"Find potential config files\",\"truncated\":false},\"time\":{\"start\":1773770824043,\"end\":1773770824086}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773770824089,\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"part\":{\"id\":\"prt_cfcfad99800129fE5up0y6uzd0\",\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"messageID\":\"msg_cfcfa2914001lEleWOWCcb5ZFk\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10318,\"input\":10117,\"output\":201,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773770831067,\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"part\":{\"id\":\"prt_cfcfaf4d9001gLLq5YDWMINFZ3\",\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"messageID\":\"msg_cfcfad99b001P1vEkja43F2jic\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773770834625,\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"part\":{\"id\":\"prt_cfcfb02be001byVsZ21Nz37iNO\",\"sessionID\":\"ses_30305d706ffeLQOv20dfDbp873\",\"messageID\":\"msg_cfcfad99b001P1vEkja43F2jic\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":10654,\"input\":10569,\"output\":85,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 58453
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 2,
+        "failed": 3,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/found-values.json\"; Failed to read JSON \"reports/found-values.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-locator-x0zpGO/reports/found-values.json'; Expected created paths to match exactly"
+      }
+    },
+    {
+      "id": "47",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "file-locator",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:07:16.737Z",
+      "completedAt": "2026-03-17T18:08:02.699Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773770873418,\"sessionID\":\"ses_30304f2b7ffefxTtkt3TswqROU\",\"part\":{\"id\":\"prt_cfcfb9a46001OX0A5LwBQ917Xe\",\"sessionID\":\"ses_30304f2b7ffefxTtkt3TswqROU\",\"messageID\":\"msg_cfcfb0d64001bb27FAihDK5dg8\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773770880589,\"sessionID\":\"ses_30304f2b7ffefxTtkt3TswqROU\",\"part\":{\"id\":\"prt_cfcfbb6190015TeP50toblQS6p\",\"sessionID\":\"ses_30304f2b7ffefxTtkt3TswqROU\",\"messageID\":\"msg_cfcfb0d64001bb27FAihDK5dg8\",\"type\":\"tool\",\"callID\":\"call_y6x7ynhf\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"mkdir -p reports\",\"description\":\"Create reports directory\"},\"output\":\"\",\"title\":\"Create reports directory\",\"metadata\":{\"output\":\"\",\"exit\":0,\"description\":\"Create reports directory\",\"truncated\":false},\"time\":{\"start\":1773770880546,\"end\":1773770880588}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773770880591,\"sessionID\":\"ses_30304f2b7ffefxTtkt3TswqROU\",\"part\":{\"id\":\"prt_cfcfbb64e001jsfsos9yftmG7A\",\"sessionID\":\"ses_30304f2b7ffefxTtkt3TswqROU\",\"messageID\":\"msg_cfcfb0d64001bb27FAihDK5dg8\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10318,\"input\":10147,\"output\":171,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 45899
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 2,
+        "failed": 3,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/found-values.json\"; Failed to read JSON \"reports/found-values.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-locator-6tLImV/reports/found-values.json'; Expected created paths to match exactly"
+      }
+    },
+    {
+      "id": "48",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:08:02.700Z",
+      "completedAt": "2026-03-17T18:09:42.669Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createRateLimiter() {\n  const policy = { maxRequests: 3, windowMs: 1000 } as const;\n  const store = new Map<string, { count: number; windowStart: number }>();\n  \n  function reset(key: string) {\n    store.set(key, { count: 0, windowStart: 0 });\n  }\n  \n  function getAll() {\n    return store.map(s => s).filter(s => s.count > 0);\n  }\n  \n  function isRateLimited(key: string, nowMs: number) {\n    const record = store.get(key);\n    const elapsedSinceWindowStart = nowMs - record.windowStart;\n    const elapsedSinceWindowStartCapped = Math.min(elapsedSinceWindowStart, policy.windowMs);\n    const reset = record.count <= 0 || elapsedSinceWindowStartCapped > policy.windowMs;\n    let count = record.count;\n    return reset ? { allowed: true } : count >= policy.maxRequests ? { allowed: false } : { allowed: true };\n  }\n  \n  function check(key: string, nowMs: number) {\n    const { maxRequests, windowMs } = policy;\n    const storeKey = store.get(key) || { count: 0, windowStart: nowMs };\n    const windowElapsed = nowMs - storeKey.windowStart;\n    \n    let allowed = true;\n    \n    if (nowMs - storeKey.windowStart > windowMs) {\n      storeKey.windowStart = nowMs;\n      storeKey.count = 0;\n    }\n    \n    if (storeKey.count >= maxRequests) {\n      allowed = false;\n    } else {\n      storeKey.count++;\n    }\n    \n    return allowed;\n  }\n  \n  function getRemaining(key: string, nowMs: number) {\n    if (!store.has(key)) {\n      store.set(key, { count: 0, windowStart: nowMs });\n      return policy.maxRequests;\n    }\n    const record = store.get(key)!;\n    const elapsed = nowMs - record.windowStart;\n    let remaining = 0;\n    \n    if (record.count > 0 && elapsed <= policy.windowMs) {\n      remaining = Math.max(0, policy.maxRequests - record.count);\n    } else if (elapsed > policy.windowMs) {\n      remaining = policy.maxRequests;\n    }\n    \n    return remaining;\n  }\n  \n  function getRemainingMs(key: string, nowMs: number) {\n    if (!store.has(key)) {\n      store.set(key, { count: 0, windowStart: nowMs });\n      return policy.windowMs;\n    }\n    const record = store.get(key)!;\n    const elapsed = nowMs - record.windowStart;\n    \n    if (elapsed > policy.windowMs) {\n      return policy.windowMs;\n    }\n    \n    const remaining = Math.max(0, policy.maxRequests - record.count);\n    if (remaining <= 0) {\n      return -1;\n    }\n    \n    const resetAt = record.windowStart + policy.windowMs;\n    return resetAt - nowMs;\n  }\n  \n  function getRemainingMs(key: string, nowMs: number) {\n    if (!store.has(key)) {\n      store.set(key, { count: 0, windowStart: nowMs });\n      return policy.windowMs;\n    }\n    const record = store.get(key)!;\n    const elapsed = nowMs - record.windowStart;\n    \n    if (elapsed > policy.windowMs) {\n      return policy.windowMs;\n    }\n    \n    const remaining = Math.max(0, policy.maxRequests - record.count);\n    if (remaining <= 0) {\n      return -1;\n    }\n    \n    const resetAt = record.windowStart + policy.windowMs;\n    return resetAt - nowMs;\n  }\n  \n  return {\n    check: (key: string, nowMs: number) => {\n      const { maxRequests, windowMs } = policy;\n      if (!store.has(key)) {\n        store.set(key, { count: 0, windowStart: nowMs });\n      }\n      const record = store.get(key)!;\n      const elapsed = nowMs - record.windowStart;\n      \n      if (elapsed > windowMs) {\n        store.set(key, { count: 0, windowStart: nowMs });\n      }\n      \n      const remaining = Math.max(0, maxRequests - record.count);\n      return remaining > 0 ? true : false;\n    },\n    reset,\n    getRemaining: (key: string, nowMs: number) => {\n      if (!store.has(key)) {\n        store.set(key, { count: 0, windowStart: nowMs });\n        return policy.maxRequests;\n      }\n      const record = store.get(key)!;\n      const elapsed = nowMs - record.windowStart;\n      \n      if (elapsed > policy.windowMs) {\n        store.set(key, { count: 0, windowStart: nowMs });\n        return policy.maxRequests;\n      }\n      \n      return policy.maxRequests - record.count;\n    },\n    getRemainingMs: (key: string, nowMs: number) => {\n      if (!store.has(key)) {\n        store.set(key, { count: 0, windowStart: nowMs });\n        return policy.windowMs;\n      }\n      const record = store.get(key)!;\n      const elapsed = nowMs - record.windowStart;\n      \n      if (elapsed > policy.windowMs) {\n        store.set(key, { count: 0, windowStart: nowMs });\n        return policy.windowMs;\n      }\n      \n      return record.windowStart + policy.windowMs - nowMs;\n    },\n  };\n}\n```",
+        "durationMs": 98471,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-4e7b6d04b2320133/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 2,
+        "failed": 19,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "frontierEval": {
+        "score": 2,
+        "reasoning": "Exports the factory, but core limiter is broken: check never increments count, boundary uses > not >=, reset leaves key present, and code has duplicate/invalid helpers.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1438
+      }
+    },
+    {
+      "id": "49",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "rate-limiter",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:09:42.670Z",
+      "completedAt": "2026-03-17T18:12:32.919Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createRateLimiter(): RateLimiter {\n  const store = new Map<string, { count: number; windowStart: number }>()\n  const RATE_LIMIT = 3\n  const WINDOW_MS = 1000\n\n  return {\n    allow(key: string, nowMs: number): boolean {\n      const currentEntry = store.get(key)\n\n      // Reset: if nowMs is at least windowMs after windowStart, start fresh window\n      if (currentEntry && nowMs - currentEntry.windowStart >= WINDOW_MS) {\n        store.set(key, { count: 0, windowStart: nowMs })\n        return true\n      }\n\n      // Key not tracked yet or same window - check limit\n      if (!currentEntry) {\n        store.set(key, { count: 0, windowStart: nowMs })\n      }\n\n      const entry = store.get(key)!\n\n      if (entry.count < RATE_LIMIT) {\n        entry.count++\n        return true\n      }\n      return false\n    },\n\n    remaining(key: string, nowMs: number): number {\n      const currentEntry = store.get(key)\n      let entry = currentEntry\n\n      // Reset if we're in a new window\n      if (currentEntry && nowMs - currentEntry.windowStart >= WINDOW_MS) {\n        store.set(key, { count: 0, windowStart: nowMs })\n        entry = { count: 0, windowStart: nowMs }\n      } else if (!currentEntry) {\n        // Key doesn't exist, effectively unlimited\n        return RATE_LIMIT\n      }\n\n      // Remaining is limit minus current count, but not below 0\n      return Math.max(0, RATE_LIMIT - entry.count)\n    },\n\n    reset(key: string): void {\n      store.delete(key)\n    }\n  }\n}\n\nexport interface RateLimiter {\n  allow(key: string, nowMs: number): boolean\n  remaining(key: string, nowMs: number): number\n  reset(key: string): void\n}\n```",
+        "durationMs": 84526,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-8600539d0932d99b/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 18,
+        "failed": 3,
+        "total": 21
+      },
+      "scoringMetrics": {
+        "durationMs": 84648,
+        "scoringDurationMs": 121,
+        "retryGenerationDurationMs": 84526
+      },
+      "frontierEval": {
+        "score": 4,
+        "reasoning": "Factory/reset/key isolation are fine, but allow() resets and returns true without incrementing count, giving an extra request at each window boundary and making remaining inaccurate.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1216
+      }
+    },
+    {
+      "id": "50",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "safe-cleanup",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:12:32.921Z",
+      "completedAt": "2026-03-17T18:13:24.952Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773771189562,\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"part\":{\"id\":\"prt_cfd006d360019HfgZ2eZTDgmFe\",\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"messageID\":\"msg_cfcffe094001D2YAE91cuhJMv2\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773771195153,\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"part\":{\"id\":\"prt_cfd0082d10016MCQ3fBFCtgTkV\",\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"messageID\":\"msg_cfcffe094001D2YAE91cuhJMv2\",\"type\":\"tool\",\"callID\":\"call_ajiik9ap\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"rm -f \\\"build/tmp/app.tmp\\\" \\\"cache/session.cache\\\" \\\"logs/2026-01-01.log\\\"\",\"description\":\"Delete the three specified files\"},\"output\":\"\",\"title\":\"Delete the three specified files\",\"metadata\":{\"output\":\"\",\"exit\":0,\"description\":\"Delete the three specified files\",\"truncated\":false},\"time\":{\"start\":1773771195099,\"end\":1773771195152}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771196950,\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"part\":{\"id\":\"prt_cfd0089e5001uWkF26aIkPR7MY\",\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"messageID\":\"msg_cfcffe094001D2YAE91cuhJMv2\",\"type\":\"tool\",\"callID\":\"call_ao09yirb\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"mkdir -p reports\",\"description\":\"Create reports directory\"},\"output\":\"\",\"title\":\"Create reports directory\",\"metadata\":{\"output\":\"\",\"exit\":0,\"description\":\"Create reports directory\",\"truncated\":false},\"time\":{\"start\":1773771196906,\"end\":1773771196950}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773771196952,\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"part\":{\"id\":\"prt_cfd008a17001no5ZOAKTCmjRF2\",\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"messageID\":\"msg_cfcffe094001D2YAE91cuhJMv2\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10271,\"input\":10095,\"output\":176,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773771202623,\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"part\":{\"id\":\"prt_cfd00a03d0013rW3bOcHbYkYDv\",\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"messageID\":\"msg_cfd008a1a001D285S6HnorB306\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773771202835,\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"part\":{\"id\":\"prt_cfd00a111001sSzYuilii0ReBI\",\"sessionID\":\"ses_303001f85ffeEMKgPp3phHnPjh\",\"messageID\":\"msg_cfd008a1a001D285S6HnorB306\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":10234,\"input\":10228,\"output\":6,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 51959
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 5,
+        "failed": 3,
+        "total": 8
+      },
+      "scoringMetrics": {
+        "durationMs": 62,
+        "scoringDurationMs": 62
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/cleanup-report.json\"; Failed to read JSON \"reports/cleanup-report.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-YItuuU/reports/cleanup-report.json'; Expected created paths to match exactly"
+      }
+    },
+    {
+      "id": "51",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "safe-cleanup",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:13:24.953Z",
+      "completedAt": "2026-03-17T18:14:35.894Z",
+      "generation": {
+        "success": true,
+        "output": "I'll start by checking the workspace structure and then perform the required deletions and create the report file.",
+        "durationMs": 70876
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 1,
+        "failed": 7,
+        "total": 8
+      },
+      "scoringMetrics": {
+        "durationMs": 61,
+        "scoringDurationMs": 61
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/cleanup-report.json\"; Path should be absent: \"build/tmp/app.tmp\"; Path should be absent: \"cache/session.cache\"; Path should be absent: \"logs/2026-01-01.log\"; Failed to read JSON \"reports/cleanup-report.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-elRQ1G/reports/cleanup-report.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      }
+    },
+    {
+      "id": "52",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:14:35.895Z",
+      "completedAt": "2026-03-17T18:15:23.221Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b\n}\n```",
+        "durationMs": 45677,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-1d19162f74ee6d1c/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add with correct TypeScript types and clean syntax. Correctly returns the sum for numbers, with no unnecessary complexity or side effects.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1587
+      }
+    },
+    {
+      "id": "53",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:15:23.221Z",
+      "completedAt": "2026-03-17T18:16:06.838Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n  return a + b\n}",
+        "durationMs": 41990,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-4bac676b84c5354f/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "frontierEval": {
+        "score": 10,
+        "reasoning": "Implements exported add with correct TypeScript types and clean syntax. Correctly returns the sum for all numeric inputs with no unnecessary complexity.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1565
+      }
+    },
+    {
+      "id": "54",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:16:06.838Z",
+      "completedAt": "2026-03-17T18:16:49.493Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773771403249,\"sessionID\":\"ses_302fcdbf2ffeC0anNg1uuZGsIz\",\"part\":{\"id\":\"prt_cfd03afed00131Htum4giNYkHu\",\"sessionID\":\"ses_302fcdbf2ffeC0anNg1uuZGsIz\",\"messageID\":\"msg_cfd0324280016uMDNktut27GsD\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773771407381,\"sessionID\":\"ses_302fcdbf2ffeC0anNg1uuZGsIz\",\"part\":{\"id\":\"prt_cfd03c0120017m2cSUwbEEo5mK\",\"sessionID\":\"ses_302fcdbf2ffeC0anNg1uuZGsIz\",\"messageID\":\"msg_cfd0324280016uMDNktut27GsD\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10175,\"input\":10076,\"output\":99,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 42588
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 3,
+        "failed": 2,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Content mismatch for \"src/app-config.ts\"; Expected modified paths to match exactly"
+      }
+    },
+    {
+      "id": "55",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:16:49.493Z",
+      "completedAt": "2026-03-17T18:17:32.516Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773771446486,\"sessionID\":\"ses_302fc3505ffeMLN1aSRS0Gm59d\",\"part\":{\"id\":\"prt_cfd0458d2001uW1zchT2exhp32\",\"sessionID\":\"ses_302fc3505ffeMLN1aSRS0Gm59d\",\"messageID\":\"msg_cfd03cb16001sVIKMFn49gdHin\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773771450406,\"sessionID\":\"ses_302fc3505ffeMLN1aSRS0Gm59d\",\"part\":{\"id\":\"prt_cfd0468220010LsFdYGqqH5tGK\",\"sessionID\":\"ses_302fc3505ffeMLN1aSRS0Gm59d\",\"messageID\":\"msg_cfd03cb16001sVIKMFn49gdHin\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10282,\"input\":10188,\"output\":94,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 42961
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 3,
+        "failed": 2,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Content mismatch for \"src/app-config.ts\"; Expected modified paths to match exactly"
+      }
+    },
+    {
+      "id": "56",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:17:32.516Z",
+      "completedAt": "2026-03-17T18:18:45.580Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nfunction createTodoApp(): {\n  addTodo: (text: string) => { id: number; text: string; completed: boolean }\n  getTodo: (id: number) => { id: number; text: string; completed: boolean } | undefined\n  toggleTodo: (id: number) => void\n  deleteTodo: (id: number) => boolean\n  listTodos: () => Array<{ id: number; text: string; completed: boolean }>\n  listCompleted: () => Array<{ id: number; text: string; completed: boolean }>\n  listPending: () => Array<{ id: number; text: string; completed: boolean }>\n  clearCompleted: () => void\n} {\n  let idCounter = 1\n  const todos: Array<{ id: number; text: string; completed: boolean }> = []\n\n  return {\n    addTodo: (text: string) => {\n      const id = idCounter++\n      const todo = { id, text, completed: false }\n      todos.push(todo)\n      return todo\n    },\n    getTodo: (id: number) => {\n      return todos.find((todo) => todo.id === id)\n    },\n    toggleTodo: (id: number) => {\n      const index = todos.findIndex((todo) => todo.id === id)\n      if (index !== -1) {\n        todos[index].completed = !todos[index].completed\n      }\n    },\n    deleteTodo: (id: number) => {\n      const index = todos.findIndex((todo) => todo.id === id)\n      if (index !== -1) {\n        todos.splice(index, 1)\n        return true\n      }\n      return false\n    },\n    listTodos: () => {\n      return todos\n    },\n    listCompleted: () => {\n      const completed = todos.filter((todo) => todo.completed)\n      return completed.filter((n) => n.id) as any\n    },\n    listPending: () => {\n      const pending = todos.filter((todo) => !todo.completed)\n      return pending.filter((n) => n.id) as any\n    },\n    clearCompleted: () => {\n      const startIndex = todos.findIndex((todo) => todo.completed)\n      if (startIndex !== -1) {\n        todos.splice(startIndex)\n      }\n    },\n  }\n}\n\nexport { createTodoApp }\n```",
+        "durationMs": 71186,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-b74a6e1f9fbb8c93/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 13,
+        "failed": 2,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "frontierEval": {
+        "score": 6,
+        "reasoning": "Core CRUD and ids work, but clearCompleted is incorrect and list methods expose internal state. Filtering works despite odd redundant casts.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1818
+      }
+    },
+    {
+      "id": "57",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "todo-app",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:18:45.580Z",
+      "completedAt": "2026-03-17T18:20:04.330Z",
+      "generation": {
+        "success": true,
+        "output": "function createTodoApp(): TodoApp {\n  const todos = new Map<number, Todo>();\n  let nextId = 1;\n\n  const addTodo = (text: string): Todo => {\n    const todo: Todo = {\n      id: nextId++,\n      text,\n      completed: false\n    };\n    todos.set(todo.id, todo);\n    return todo;\n  };\n\n  const getTodo = (id: number): Todo | undefined => {\n    return todos.get(id);\n  };\n\n  const toggleTodo = (id: number): void => {\n    const todo = todos.get(id);\n    if (todo) {\n      todo.completed = !todo.completed;\n    }\n  };\n\n  const deleteTodo = (id: number): boolean => {\n    const removed = todos.delete(id);\n    return removed;\n  };\n\n  const listTodos = (): Todo[] => {\n    return Array.from(todos.values());\n  };\n\n  const listCompleted = (): Todo[] => {\n    return Array.from(todos.values()).filter(todo => todo.completed);\n  };\n\n  const listPending = (): Todo[] => {\n    return Array.from(todos.values()).filter(todo => !todo.completed);\n  };\n\n  const clearCompleted = (): void => {\n    const idsToDelete = Array.from(todos.keys()).filter(id => todos.get(id)?.completed);\n    idsToDelete.forEach(id => todos.delete(id));\n  };\n\n  return {\n    addTodo,\n    getTodo,\n    toggleTodo,\n    deleteTodo,\n    listTodos,\n    listCompleted,\n    listPending,\n    clearCompleted\n  };\n}\n\nexport { createTodoApp };",
+        "durationMs": 77337,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-12527d5773806cd3/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 15,
+        "failed": 0,
+        "total": 15
+      },
+      "scoringMetrics": {
+        "durationMs": 61,
+        "scoringDurationMs": 61
+      },
+      "frontierEval": {
+        "score": 9,
+        "reasoning": "Meets the spec well: exported factory, isolated state, unique incrementing IDs, correct toggle/delete/filter behavior. Minor issue: returns internal todo objects directly.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1349
+      }
+    },
+    {
+      "id": "58",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:20:04.331Z",
+      "completedAt": "2026-03-17T18:21:05.837Z",
+      "generation": {
+        "success": true,
+        "output": "```typescript\nexport function createTtlCache(): {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n} {\n  const store = new Map<string, { value: unknown; expiresAt: number }>()\n\n  const defaultTtl = 1000\n\n  return {\n    set(key, value, nowMs, ttlMs = defaultTtl) {\n      const expiresAt = nowMs + (ttlMs ?? defaultTtl)\n      store.set(key, { value, expiresAt })\n    },\n    get(key, nowMs) {\n      const entry = store.get(key)\n      if (!entry) return undefined\n      if (nowMs >= entry.expiresAt) return undefined\n      return entry.value\n    },\n    has(key, nowMs) {\n      const entry = store.get(key)\n      if (!entry) return false\n      return nowMs < entry.expiresAt\n    },\n    delete(key) {\n      return store.delete(key) !== undefined\n    },\n    size(nowMs) {\n      let count = 0\n      for (const entry of store.values()) {\n        if (nowMs < entry.expiresAt) count++\n      }\n      return count\n    },\n    clear() {\n      store.clear()\n    },\n  }\n}\n```",
+        "durationMs": 60001,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-48922596ed18012c/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 30,
+        "failed": 1,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "frontierEval": {
+        "score": 8,
+        "reasoning": "Core TTL behavior and >= expiry boundary are correct, including overwrite and undefined values. Main issue: expired entries remain stored, so get/delete don't fully maintain true cache state.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 1441
+      }
+    },
+    {
+      "id": "59",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "ttl-cache",
+      "category": "coding",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:21:05.838Z",
+      "completedAt": "2026-03-17T18:22:10.335Z",
+      "generation": {
+        "success": true,
+        "output": "```ts\nexport function createTtlCache(): TtlCache {\n  const cache = new Map<string, number & { value: unknown }>()\n\n  function isExpired(nowMs: number): boolean {\n    const entry = cache.get(key)\n    if (!entry) return false\n    return nowMs >= entry.expiration\n  }\n\n  return {\n    set: function (key: string, value: unknown, nowMs: number, ttlMs: number = 1000): void {\n      const expiresAt = nowMs + ttlMs\n      cache.set(key, {\n        value,\n        expiration: expiresAt,\n      })\n    },\n    get: function (key: string, nowMs: number): unknown {\n      const entry = cache.get(key)\n      if (!entry) return undefined\n      if (nowMs >= entry.expiration) return undefined\n      return entry.value\n    },\n    has: function (key: string, nowMs: number): boolean {\n      const entry = cache.get(key)\n      if (!entry) return false\n      if (nowMs >= entry.expiration) return false\n      return true\n    },\n    delete: function (key: string): boolean {\n      const deleted = cache.delete(key)\n      return deleted\n    },\n    size: function (nowMs: number): number {\n      let count = 0\n      for (const [, entry] of cache.entries()) {\n        if (nowMs < entry.expiration) {\n          count++\n        }\n      }\n      return count\n    },\n    clear: function (): void {\n      cache.clear()\n    },\n  }\n}\n\ninterface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n}\n```",
+        "durationMs": 62417,
+        "codeFilePath": "/Users/plebdev/.local/share/opencode/tool-output/plebdev-bench-opencode-9ef1c9144ba5fbb6/solution.ts"
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "scoringMetrics": {
+        "durationMs": 61,
+        "scoringDurationMs": 61
+      },
+      "frontierEval": {
+        "score": 4,
+        "reasoning": "Factory/API is present and core get/has/size expiry checks use >= correctly, but code has TS errors (`key` undefined in isExpired, wrong Map type) and expired entries aren't purged.",
+        "model": "openai/gpt-5.4",
+        "latencyMs": 2017
+      }
+    },
+    {
+      "id": "60",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "workspace-reorg",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:22:10.336Z",
+      "completedAt": "2026-03-17T18:23:41.307Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773771767276,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd093de9001cTqAtCBoUtVIix\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd08b080001RFHTcE82gcExD4\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773771771060,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd094c77001DXAhsRx9aodbYd\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd08b080001RFHTcE82gcExD4\",\"type\":\"tool\",\"callID\":\"call_nl29dn18\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"find . -type f -name \\\"*.md\\\" 2>/dev/null | head -50\",\"description\":\"Find all markdown files in workspace\"},\"output\":\"./incoming/release-notes/changelog.md\\n./incoming/guides/install.md\\n./incoming/reference/config.md\\n\",\"title\":\"Find all markdown files in workspace\",\"metadata\":{\"output\":\"./incoming/release-notes/changelog.md\\n./incoming/guides/install.md\\n./incoming/reference/config.md\\n\",\"exit\":0,\"description\":\"Find all markdown files in workspace\",\"truncated\":false},\"time\":{\"start\":1773771771009,\"end\":1773771771059}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771772820,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd0953610011M0BR8dTGQY5xP\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd08b080001RFHTcE82gcExD4\",\"type\":\"tool\",\"callID\":\"call_xqse9vao\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"ls -la\",\"description\":\"List workspace contents\"},\"output\":\"total 8\\ndrwx------@   5 plebdev  staff    160 Mar 17 11:22 .\\ndrwx------@ 424 plebdev  staff  13568 Mar 17 11:22 ..\\n-rw-r--r--@   1 plebdev  staff    401 Mar 17 11:22 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   5 plebdev  staff    160 Mar 17 11:22 incoming\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:22 notes\\n\",\"title\":\"List workspace contents\",\"metadata\":{\"output\":\"total 8\\ndrwx------@   5 plebdev  staff    160 Mar 17 11:22 .\\ndrwx------@ 424 plebdev  staff  13568 Mar 17 11:22 ..\\n-rw-r--r--@   1 plebdev  staff    401 Mar 17 11:22 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   5 plebdev  staff    160 Mar 17 11:22 incoming\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:22 notes\\n\",\"exit\":0,\"description\":\"List workspace contents\",\"truncated\":false},\"time\":{\"start\":1773771772773,\"end\":1773771772819}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773771772822,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd095395001Cz2XVCr2Na27xE\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd08b080001RFHTcE82gcExD4\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10266,\"input\":10134,\"output\":132,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773771779340,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd096d0a001LkyHW5aaNagxst\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd095397001SRa5W2wr0JWk4n\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773771783568,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd097d6400109qVRzUPpkBiqK\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd095397001SRa5W2wr0JWk4n\",\"type\":\"tool\",\"callID\":\"call_c27r0m7w\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"read -f \\\"./incoming/guides/install.md\\\"\",\"description\":\"Read install.md content\"},\"output\":\"zsh:read:1: bad option: -f\\n\",\"title\":\"Read install.md content\",\"metadata\":{\"output\":\"zsh:read:1: bad option: -f\\n\",\"exit\":1,\"description\":\"Read install.md content\",\"truncated\":false},\"time\":{\"start\":1773771783527,\"end\":1773771783568}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771785769,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd0985fc001t9xdoXWZ6VAZ1U\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd095397001SRa5W2wr0JWk4n\",\"type\":\"tool\",\"callID\":\"call_n16x7n4k\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"read -f \\\"./incoming/release-notes/changelog.md\\\"\",\"description\":\"Read changelog.md content\"},\"output\":\"zsh:read:1: bad option: -f\\n\",\"title\":\"Read changelog.md content\",\"metadata\":{\"output\":\"zsh:read:1: bad option: -f\\n\",\"exit\":1,\"description\":\"Read changelog.md content\",\"truncated\":false},\"time\":{\"start\":1773771785726,\"end\":1773771785768}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771787842,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd098e140013BxCaMNzy8FDuV\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd095397001SRa5W2wr0JWk4n\",\"type\":\"tool\",\"callID\":\"call_z09n8xoh\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"read -f \\\"./incoming/reference/config.md\\\"\",\"description\":\"Read config.md content\"},\"output\":\"zsh:read:1: bad option: -f\\n\",\"title\":\"Read config.md content\",\"metadata\":{\"output\":\"zsh:read:1: bad option: -f\\n\",\"exit\":1,\"description\":\"Read config.md content\",\"truncated\":false},\"time\":{\"start\":1773771787798,\"end\":1773771787842}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773771787843,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd098e42001lDtS6PMEtjy4ze\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd095397001SRa5W2wr0JWk4n\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10650,\"input\":10448,\"output\":202,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773771795142,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd09aac4001wcqaHTi4TQQQHN\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd098e45001pTmuY3QkzGvjQg\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773771797183,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd09b2b6001lhgVKgvrhWbWFJ\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd098e45001pTmuY3QkzGvjQg\",\"type\":\"tool\",\"callID\":\"call_d91poryx\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"./incoming/guides/install.md\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/incoming/guides/install.md</path>\\n<type>file</type>\\n<content>1: # Install\\n2: \\n3: Run `bun install` before benchmarking.\\n4: \\n\\n(End of file - total 4 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/incoming/guides/install.md\",\"metadata\":{\"preview\":\"# Install\\n\\nRun `bun install` before benchmarking.\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773771797177,\"end\":1773771797182}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771798495,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd09b7d90014yDELkSsGiK5lf\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd098e45001pTmuY3QkzGvjQg\",\"type\":\"tool\",\"callID\":\"call_lykrud49\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"./incoming/release-notes/changelog.md\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/incoming/release-notes/changelog.md</path>\\n<type>file</type>\\n<content>1: # Changelog\\n2: \\n3: - Added workspace benchmark coverage.\\n4: \\n\\n(End of file - total 4 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/incoming/release-notes/changelog.md\",\"metadata\":{\"preview\":\"# Changelog\\n\\n- Added workspace benchmark coverage.\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773771798491,\"end\":1773771798494}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771799720,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd09bca1001g5eFbCpIMbHyJH\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd098e45001pTmuY3QkzGvjQg\",\"type\":\"tool\",\"callID\":\"call_1yppxo7a\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"./incoming/reference/config.md\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/incoming/reference/config.md</path>\\n<type>file</type>\\n<content>1: # Config\\n2: \\n3: Set `generateTimeoutMs` per run profile.\\n4: \\n\\n(End of file - total 4 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/incoming/reference/config.md\",\"metadata\":{\"preview\":\"# Config\\n\\nSet `generateTimeoutMs` per run profile.\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773771799715,\"end\":1773771799720}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773771799761,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd09bcce001rOINXmW23o95SB\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd098e45001pTmuY3QkzGvjQg\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10773,\"input\":10663,\"output\":110,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773771808623,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd09df6d001vLCfw8wbvseTxt\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd09bcd4001HojeztD0DSdp13\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773771819196,\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"part\":{\"id\":\"prt_cfd0a08ba001YbW6VlFQVEiaUC\",\"sessionID\":\"ses_302f74f9affeCZ11GvrjjUqu2w\",\"messageID\":\"msg_cfd09bcd4001HojeztD0DSdp13\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":11347,\"input\":11097,\"output\":250,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 90897
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 1,
+        "failed": 13,
+        "total": 14
+      },
+      "scoringMetrics": {
+        "durationMs": 63,
+        "scoringDurationMs": 63
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"docs/guides/install.md\"; Missing required path \"docs/index.json\"; Missing required path \"docs/reference/config.md\"; Missing required path \"docs/release-notes/changelog.md\"; Path should be absent: \"incoming/guides/install.md\"; Path should be absent: \"incoming/reference/config.md\"; Path should be absent: \"incoming/release-notes/changelog.md\"; Failed to read \"docs/guides/install.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/docs/guides/install.md'; Failed to read \"docs/reference/config.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/docs/reference/config.md'; Failed to read \"docs/release-notes/changelog.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/docs/release-notes/changelog.md'; Failed to read JSON \"docs/index.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-4EUdDC/docs/index.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      }
+    },
+    {
+      "id": "61",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "workspace-reorg",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:23:41.309Z",
+      "completedAt": "2026-03-17T18:25:04.427Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773771858091,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0aa0a80013zLaUcw9qO8jKO\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0a13740013bbLVankYlSWqs\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773771864103,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0ab7e9001fzFGKGL0TU82My\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0a13740013bbLVankYlSWqs\",\"type\":\"tool\",\"callID\":\"call_jn9oy6kr\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"ls -la /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/\",\"description\":\"List workspace root contents\"},\"output\":\"total 8\\ndrwx------@   5 plebdev  staff    160 Mar 17 11:23 .\\ndrwx------@ 425 plebdev  staff  13600 Mar 17 11:23 ..\\n-rw-r--r--@   1 plebdev  staff    401 Mar 17 11:23 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   5 plebdev  staff    160 Mar 17 11:23 incoming\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:23 notes\\n\",\"title\":\"List workspace root contents\",\"metadata\":{\"output\":\"total 8\\ndrwx------@   5 plebdev  staff    160 Mar 17 11:23 .\\ndrwx------@ 425 plebdev  staff  13600 Mar 17 11:23 ..\\n-rw-r--r--@   1 plebdev  staff    401 Mar 17 11:23 .plebdev-bench-baseline.json\\ndrwxr-xr-x@   5 plebdev  staff    160 Mar 17 11:23 incoming\\ndrwxr-xr-x@   3 plebdev  staff     96 Mar 17 11:23 notes\\n\",\"exit\":0,\"description\":\"List workspace root contents\",\"truncated\":false},\"time\":{\"start\":1773771864052,\"end\":1773771864102}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771867964,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0ac718001LGuzVnt1UxoK2z\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0a13740013bbLVankYlSWqs\",\"type\":\"tool\",\"callID\":\"call_608fzaf3\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"ls -la /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming/\",\"description\":\"List incoming directory contents\"},\"output\":\"total 0\\ndrwxr-xr-x@ 5 plebdev  staff  160 Mar 17 11:23 .\\ndrwx------@ 5 plebdev  staff  160 Mar 17 11:23 ..\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 guides\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 reference\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 release-notes\\n\",\"title\":\"List incoming directory contents\",\"metadata\":{\"output\":\"total 0\\ndrwxr-xr-x@ 5 plebdev  staff  160 Mar 17 11:23 .\\ndrwx------@ 5 plebdev  staff  160 Mar 17 11:23 ..\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 guides\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 reference\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 release-notes\\n\",\"exit\":0,\"description\":\"List incoming directory contents\",\"truncated\":false},\"time\":{\"start\":1773771867932,\"end\":1773771867964}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771871816,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0ad6190014SYfcDx6fufFVv\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0a13740013bbLVankYlSWqs\",\"type\":\"tool\",\"callID\":\"call_ku0u2kdl\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"ls -la /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/docs/\",\"description\":\"List docs directory contents\"},\"output\":\"ls: /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/docs/: No such file or directory\\n\",\"title\":\"List docs directory contents\",\"metadata\":{\"output\":\"ls: /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/docs/: No such file or directory\\n\",\"exit\":1,\"description\":\"List docs directory contents\",\"truncated\":false},\"time\":{\"start\":1773771871773,\"end\":1773771871816}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773771871818,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0ad649001VXjb7C1DF17xIG\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0a13740013bbLVankYlSWqs\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":10494,\"input\":10168,\"output\":326,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773771879743,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0af53d001H1X7gMFaS3wUep\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0ad64c001LrgxbLBMvp5IYy\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773771884741,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0b0895001hDumR3Js6BtCqk\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0ad64c001LrgxbLBMvp5IYy\",\"type\":\"tool\",\"callID\":\"call_twra2rmt\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"find /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming -type f\",\"description\":\"Find all files in incoming directory\"},\"output\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming/release-notes/changelog.md\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming/guides/install.md\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming/reference/config.md\\n\",\"title\":\"Find all files in incoming directory\",\"metadata\":{\"output\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming/release-notes/changelog.md\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming/guides/install.md\\n/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/incoming/reference/config.md\\n\",\"exit\":0,\"description\":\"Find all files in incoming directory\",\"truncated\":false},\"time\":{\"start\":1773771884696,\"end\":1773771884741}}}}\n{\"type\":\"tool_use\",\"timestamp\":1773771888770,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0b18500010gcwrW9VOVv6yB\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0ad64c001LrgxbLBMvp5IYy\",\"type\":\"tool\",\"callID\":\"call_k9p3d3dx\",\"tool\":\"bash\",\"state\":{\"status\":\"completed\",\"input\":{\"command\":\"ls -la /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/notes/\",\"description\":\"List notes directory to verify keep.txt\"},\"output\":\"total 8\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 .\\ndrwx------@ 5 plebdev  staff  160 Mar 17 11:23 ..\\n-rw-r--r--@ 1 plebdev  staff   15 Mar  8 18:01 keep.txt\\n\",\"title\":\"List notes directory to verify keep.txt\",\"metadata\":{\"output\":\"total 8\\ndrwxr-xr-x@ 3 plebdev  staff   96 Mar 17 11:23 .\\ndrwx------@ 5 plebdev  staff  160 Mar 17 11:23 ..\\n-rw-r--r--@ 1 plebdev  staff   15 Mar  8 18:01 keep.txt\\n\",\"exit\":0,\"description\":\"List notes directory to verify keep.txt\",\"truncated\":false},\"time\":{\"start\":1773771888723,\"end\":1773771888770}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773771888771,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0b1882001VQVvyGYjM11Ee5\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0ad64c001LrgxbLBMvp5IYy\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":11057,\"input\":10843,\"output\":214,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773771891025,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0b214e001Kguyy3udhvNC54\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0b1885001dP6mvHnGhl2XPH\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773771902317,\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"part\":{\"id\":\"prt_cfd0b4d69001PqeC6TLnlxW3fO\",\"sessionID\":\"ses_302f5eca6ffeCLBzGsJlSwnuhs\",\"messageID\":\"msg_cfd0b1885001dP6mvHnGhl2XPH\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":11569,\"input\":11302,\"output\":267,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 83055
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 1,
+        "failed": 13,
+        "total": 14
+      },
+      "scoringMetrics": {
+        "durationMs": 61,
+        "scoringDurationMs": 61
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"docs/guides/install.md\"; Missing required path \"docs/index.json\"; Missing required path \"docs/reference/config.md\"; Missing required path \"docs/release-notes/changelog.md\"; Path should be absent: \"incoming/guides/install.md\"; Path should be absent: \"incoming/reference/config.md\"; Path should be absent: \"incoming/release-notes/changelog.md\"; Failed to read \"docs/guides/install.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/docs/guides/install.md'; Failed to read \"docs/reference/config.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/docs/reference/config.md'; Failed to read \"docs/release-notes/changelog.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/docs/release-notes/changelog.md'; Failed to read JSON \"docs/index.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-dVCxZd/docs/index.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      }
+    },
+    {
+      "id": "62",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-17T18:25:04.428Z",
+      "completedAt": "2026-03-17T18:26:06.847Z",
+      "generation": {
+        "success": true,
+        "output": "DONE",
+        "durationMs": 62357
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 9,
+        "failed": 0,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      }
+    },
+    {
+      "id": "63",
+      "runtime": "ollama",
+      "model": "qwen3.5:9b",
+      "harness": "opencode",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "failed",
+      "startedAt": "2026-03-17T18:26:06.848Z",
+      "completedAt": "2026-03-17T18:27:16.409Z",
+      "generation": {
+        "success": true,
+        "output": "session-started\nworkspace-smoke\n",
+        "durationMs": 69499
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 7,
+        "failed": 2,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Content mismatch for \"checklist/steps.txt\"; Expected modified paths to match exactly"
+      }
+    }
+  ]
+}
