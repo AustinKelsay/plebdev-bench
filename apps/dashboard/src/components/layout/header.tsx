@@ -28,12 +28,12 @@ export function Header() {
 			/>
 			<header className="relative border-b border-border bg-background-raised noise-overlay">
 				<div className="container mx-auto flex h-14 items-center px-4 relative z-10">
-					<Link to="/" className="mr-8 flex items-center space-x-1">
+					<Link to="/" className="mr-8 flex items-center space-x-0">
 						<span className="text-lg font-semibold text-success">
-							pleb
+							plebdev
 						</span>
 						<span className="text-lg font-semibold text-foreground">
-							dev-bench
+							-bench
 						</span>
 					</Link>
 					<nav className="flex items-center space-x-6">

@@ -1,14 +1,46 @@
 /**
  * Purpose: Zod schemas for scoring specifications.
- * Exports: TestCaseSchema, TestCase, ScoringSpecSchema, ScoringSpec
+ * Exports: ExpectedExportSchema, ExpectedExport, TestCaseSchema, TestCase,
+ *          WorkspaceFileAssertionSchema, WorkspaceFileAssertion,
+ *          WorkspaceJsonAssertionSchema, WorkspaceJsonAssertion,
+ *          WorkspaceMutationSetSchema, WorkspaceMutationSet,
+ *          WorkspaceAssertionsSchema, WorkspaceAssertions,
+ *          ScoringSpecSchema, ScoringSpec, TestCaseResultSchema,
+ *          TestCaseResult, ScoringResultSchema, ScoringResult
  *
  * Scoring specs are data-driven test definitions that describe:
  * - Expected exports from generated code
  * - Test cases with inputs and expected outputs
+ * - Workspace assertions for file-system driven tasks
  */
 
 import { z } from "zod";
-import { ScoringFailureTypeSchema } from "./common.schema.js";
+import {
+	ScoringFailureTypeSchema,
+	TestScoringModeSchema,
+} from "./common.schema.js";
+
+/**
+ * Validates a workspace-relative file path.
+ *
+ * @param pathValue - Candidate relative path
+ * @returns True when the path stays inside the workspace
+ */
+function isSafeWorkspacePath(pathValue: string): boolean {
+	if (
+		/^[A-Za-z]:[\\/]/.test(pathValue) ||
+		pathValue.startsWith("\\\\") ||
+		pathValue.startsWith("/")
+	) {
+		return false;
+	}
+	return !pathValue.split(/[\\/]+/).includes("..");
+}
+
+/** Relative workspace path schema. */
+const WorkspacePathSchema = z.string().min(1).refine(isSafeWorkspacePath, {
+	message: "must be a relative path without '..' segments",
+});
 
 /**
  * Expected export from generated code.
@@ -50,31 +82,148 @@ export const TestCaseSchema = z.object({
 
 export type TestCase = z.infer<typeof TestCaseSchema>;
 
+/** Exact text assertion for a workspace file. */
+export const WorkspaceFileAssertionSchema = z
+	.object({
+		/** Relative path from workspace root. */
+		path: WorkspacePathSchema,
+
+		/** Exact expected file contents. */
+		content: z.string(),
+	})
+	.strict();
+
+export type WorkspaceFileAssertion = z.infer<
+	typeof WorkspaceFileAssertionSchema
+>;
+
+/** Exact JSON assertion for a workspace file. */
+export const WorkspaceJsonAssertionSchema = z
+	.object({
+		/** Relative path from workspace root. */
+		path: WorkspacePathSchema,
+
+		/** Expected parsed JSON value. */
+		value: z.unknown(),
+	})
+	.strict();
+
+export type WorkspaceJsonAssertion = z.infer<
+	typeof WorkspaceJsonAssertionSchema
+>;
+
+/** Exact mutation sets allowed for a workspace task. */
+export const WorkspaceMutationSetSchema = z
+	.object({
+		/** Relative file paths expected to be newly created. */
+		created: z.array(WorkspacePathSchema).default([]),
+
+		/** Relative file paths expected to be modified in place. */
+		modified: z.array(WorkspacePathSchema).default([]),
+
+		/** Relative file paths expected to be deleted. */
+		deleted: z.array(WorkspacePathSchema).default([]),
+	})
+	.strict();
+
+export type WorkspaceMutationSet = z.infer<typeof WorkspaceMutationSetSchema>;
+
+/** File-system assertions for workspace-scored tests. */
+export const WorkspaceAssertionsSchema = z
+	.object({
+		/** Relative paths that must exist after task completion. */
+		requiredPaths: z.array(WorkspacePathSchema).default([]),
+
+		/** Relative paths that must be absent after task completion. */
+		absentPaths: z.array(WorkspacePathSchema).default([]),
+
+		/** Exact text file assertions. */
+		files: z.array(WorkspaceFileAssertionSchema).default([]),
+
+		/** Exact JSON file assertions. */
+		jsonFiles: z.array(WorkspaceJsonAssertionSchema).default([]),
+
+		/** Exact mutation set expected relative to the seeded workspace. */
+		mutations: WorkspaceMutationSetSchema.default({
+			created: [],
+			modified: [],
+			deleted: [],
+		}),
+	})
+	.refine(
+		(value) =>
+			value.requiredPaths.length > 0 ||
+			value.absentPaths.length > 0 ||
+			value.files.length > 0 ||
+			value.jsonFiles.length > 0 ||
+			value.mutations.created.length > 0 ||
+			value.mutations.modified.length > 0 ||
+			value.mutations.deleted.length > 0,
+		{
+			message: "workspace assertions must define at least one check",
+		},
+	);
+
+export type WorkspaceAssertions = z.infer<typeof WorkspaceAssertionsSchema>;
+
 /**
  * Complete scoring specification for a benchmark test.
  */
-export const ScoringSpecSchema = z.object({
-	/** Test slug (must match directory name). */
-	testSlug: z.string(),
+export const ScoringSpecSchema = z
+	.object({
+		/** Schema version for scoring-spec migrations. */
+		schemaVersion: z.literal(1).default(1),
 
-	/** Expected exports that the generated code must provide. */
-	expectedExports: z.array(z.union([z.string(), ExpectedExportSchema])),
+		/** Test slug (must match directory name). */
+		testSlug: z.string(),
 
-	/** Test cases to run against the generated code. */
-	testCases: z.array(TestCaseSchema),
+		/** Scoring mode for this test. */
+		mode: TestScoringModeSchema.default("code-module"),
 
-	/**
-	 * Factory function name if the test requires creating an instance.
-	 * e.g., 'createCalculator' or 'TodoApp'
-	 */
-	factoryFn: z.string().optional(),
+		/** Expected exports that the generated code must provide. */
+		expectedExports: z
+			.array(z.union([z.string(), ExpectedExportSchema]))
+			.default([]),
 
-	/**
-	 * Whether test cases should run against a fresh instance each time.
-	 * Default: false (reuse instance).
-	 */
-	freshInstancePerTest: z.boolean().optional(),
-});
+		/** Test cases to run against the generated code. */
+		testCases: z.array(TestCaseSchema).default([]),
+
+		/**
+		 * Factory function name if the test requires creating an instance.
+		 * e.g., 'createCalculator' or 'TodoApp'
+		 */
+		factoryFn: z.string().optional(),
+
+		/**
+		 * Whether test cases should run against a fresh instance each time.
+		 * Default: false (reuse instance).
+		 */
+		freshInstancePerTest: z.boolean().optional(),
+
+		/** Workspace assertions for filesystem-driven computer-use tests. */
+		workspace: WorkspaceAssertionsSchema.optional(),
+	})
+	.superRefine((value, ctx) => {
+		if (value.mode === "workspace" && value.workspace === undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["workspace"],
+				message: 'workspace assertions are required when mode is "workspace"',
+			});
+		}
+		if (
+			value.mode === "code-module" &&
+			value.expectedExports.length === 0 &&
+			value.testCases.length === 0
+		) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["expectedExports"],
+				message:
+					"code-module specs must define expectedExports, testCases, or both",
+			});
+		}
+	});
 
 export type ScoringSpec = z.infer<typeof ScoringSpecSchema>;
 

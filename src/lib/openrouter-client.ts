@@ -2,7 +2,7 @@
  * Purpose: OpenRouter API client for frontier model evaluation.
  * Exports: evaluateWithFrontier, FrontierEvalRequest, FrontierEvalResponse, FrontierEvalOutcome
  *
- * Uses OpenRouter to call frontier models (e.g., GPT-5.2) for code evaluation.
+ * Uses OpenRouter to call frontier models (e.g., GPT-5.4) for code evaluation.
  * Failures return structured outcomes rather than throwing.
  */
 
@@ -14,7 +14,7 @@ import { logger } from "./logger.js";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 /** Default model for frontier evaluation. */
-const DEFAULT_MODEL = "openai/gpt-5.2";
+const DEFAULT_MODEL = "openai/gpt-5.4";
 
 /** Default timeout for API calls (30 seconds). */
 const DEFAULT_TIMEOUT_MS = 30_000;

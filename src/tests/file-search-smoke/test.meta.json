@@ -1,0 +1,14 @@
+{
+	"category": "computer-use",
+	"description": "Preflight workspace search task for harnesses with search support",
+	"tags": ["preflight", "workspace", "search"],
+	"scoringMode": "workspace",
+	"requiresTools": true,
+	"requiredHarnessCapabilities": [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir",
+		"workspace-search"
+	],
+	"schemaVersion": 1
+}

@@ -1,0 +1,21 @@
+You are inside an isolated benchmark workspace for the `file-locator` test.
+
+The workspace contains three source files with `key=value` lines for:
+
+- `ticket`
+- `version`
+- `owner`
+
+Read the workspace files, discover the `owner`, `ticket`, and `version` values,
+and create only `reports/found-values.json` containing this exact object shape:
+
+`{"owner":"<owner>","sourceCount":3,"ticket":"<ticket>","version":"<version>"}`
+
+Replace the angle-bracket placeholders with the discovered values instead of
+writing them literally.
+
+Constraints:
+
+- Discover the values by reading the workspace files.
+- Do not change any existing files.
+- Do not create any file other than `reports/found-values.json`.

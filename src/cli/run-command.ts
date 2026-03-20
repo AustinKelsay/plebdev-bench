@@ -91,6 +91,16 @@ export const runCommand = new Command("run")
 		"Goose max turns for retry attempt",
 		"3",
 	)
+	.option(
+		"--goose-workspace-max-turns <n>",
+		"Goose max turns for initial workspace attempt",
+		"8",
+	)
+	.option(
+		"--goose-workspace-retry-max-turns <n>",
+		"Goose max turns for retry workspace attempt",
+		"12",
+	)
 	.option("-o, --output <dir>", "Output directory", "results")
 	.option(
 		"--machine-id <id>",
@@ -169,6 +179,14 @@ export const runCommand = new Command("run")
 				gooseRetryMaxTurns: parseStrictIntegerOption(
 					"--goose-retry-max-turns",
 					options.gooseRetryMaxTurns,
+				),
+				gooseWorkspaceMaxTurns: parseStrictIntegerOption(
+					"--goose-workspace-max-turns",
+					options.gooseWorkspaceMaxTurns,
+				),
+				gooseWorkspaceRetryMaxTurns: parseStrictIntegerOption(
+					"--goose-workspace-retry-max-turns",
+					options.gooseWorkspaceRetryMaxTurns,
 				),
 				outputDir: options.output,
 				machineProfileId:

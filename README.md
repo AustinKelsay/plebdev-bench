@@ -16,8 +16,8 @@ Test categories:
 - `computer-use`
 
 Scoring:
-- **Automated**: runs a test suite against generated code (Vitest).
-- **Optional frontier eval**: rubric scoring via **OpenRouter** (auto-enabled when API key is present).
+- **Automated**: either imports generated code and runs scoring cases, or scores a seeded workspace against exact filesystem assertions.
+- **Optional frontier eval**: rubric scoring via **OpenRouter** for code-module tests when an API key is present.
 
 Outputs (per run):
 - `results/<run-id>/plan.json` — resolved config + expanded matrix plan (reproducibility)
@@ -34,13 +34,21 @@ Built-ins:
 
 Current benchmark tests:
 - `smoke` — basic add function sanity check
-- `tool-smoke` — tool-calling preflight for tool harnesses
+- `tool-smoke` — code-output preflight for tool harnesses
 - `calculator-basic` — stateless arithmetic operations
 - `calculator-stateful` — chainable calculator + memory semantics
 - `todo-app` — CRUD/stateful todo management
 - `rate-limiter` — per-key fixed-window quota semantics
 - `ttl-cache` — deterministic cache expiration and mutation semantics
 - `event-emitter` — listener lifecycle and ordering semantics
+- `workspace-tool-smoke` — read/write workspace preflight for computer-use harnesses with preseeded parent directories
+- `file-search-smoke` — search preflight for harnesses that advertise workspace search
+- `file-delete-smoke` — delete preflight for harnesses that advertise workspace delete
+- `workspace-smoke` — create nested files in preseeded directories, rewrite `checklist/steps.txt` to the exact three-line final state, and emit `artifacts/summary.json`
+- `file-locator` — search a noisy workspace and extract key values into one report
+- `targeted-edit` — make one precise edit to a single existing file
+- `workspace-reorg` — move files into a new directory structure and emit an index manifest
+- `safe-cleanup` — delete only approved files and write an audit report
 
 ## Status
 
@@ -54,6 +62,19 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - Dashboard can be hosted as a static frontend that reads published run data from `apps/dashboard/public/results/index.json`.
 - Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
 - vLLM local setup notes (OrbStack/Docker, memory sizing, troubleshooting): `llm/implementation/vllm-orbstack-setup.md`.
+
+### Computer-Use Hardening Checkpoint (2026-03-13)
+
+- Workspace tests now declare `requiredHarnessCapabilities`, and the plan builder skips invalid harness/test combinations instead of running impossible rows.
+- Capability modeling now distinguishes plain workspace write access from directory creation via `workspace-mkdir`.
+- Preflight coverage now includes `tool-smoke`, `workspace-tool-smoke`, `file-search-smoke`, and `file-delete-smoke`.
+- Goose has separate workspace turn budgets so computer-use tasks are no longer constrained by the old code-output defaults.
+- Workspace prompts now include the resolved workspace root path so tool harnesses are explicitly anchored inside the seeded fixture.
+- OpenCode workspace runs expose `read`, `glob`, `grep`, and `bash`, so search/delete benchmarks now measure model behavior instead of missing tool affordances.
+- Generation now retries a single `harness_error` once on a fresh workspace before the row is recorded as failed.
+- Tests can declare `timeoutMultiplier` in `test.meta.json`, and the longer coding tasks now ship with higher calibrated multipliers so valid slow generations are less likely to be recorded as timeouts.
+- Run summaries now distinguish semantic scored-check pass rate from full item success rate and scored-row coverage.
+- Validation run `20260313-090646-1a74da` confirmed that previously invalid OpenCode delete/search tasks now execute as normal scored items; one transient `harness_error` was isolated to a single `workspace-smoke` blind run and did not reproduce in rerun `20260313-092934-851223`.
 
 ## Tech stack
 
@@ -97,7 +118,7 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 - `src/runtimes/` — runtime adapters (inference backends like Ollama)
 - `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI)
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
-  - includes `test.meta.json` for category metadata
+  - includes `test.meta.json` for category metadata, scoring mode, `tags`, `requiredHarnessCapabilities`, and optional `timeoutMultiplier`
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
 - `results/` — local runtime output (ignored by git)
@@ -130,6 +151,9 @@ bun pb --machine-id mac-mini-m4-pro --machine-label "Austin Mac Mini"
 
 # Run only coding category tests
 bun pb --categories coding
+
+# Run only computer-use tests on tool harnesses
+bun pb --categories computer-use --harnesses goose opencode
 
 # Run with specific runtime and harness
 bun pb --runtimes ollama --harnesses direct
@@ -184,13 +208,18 @@ Full vLLM setup/troubleshooting: `llm/implementation/vllm-orbstack-setup.md`.
 ### Long-Run Stability
 
 - Scoring is process-isolated by default to avoid Bun memory growth from repeated dynamic imports during long runs.
+- The scorer worker now gets a 15s default budget plus startup overhead, reducing false negatives from slow-but-valid scoring setup.
 - Override mode (debugging only): `PLEBDEV_BENCH_SCORER_MODE=in-process bun pb ...`
 - During execution, the runner writes periodic snapshots to `results/<run-id>/run.partial.json` and removes it after a successful final write.
 - If the process crashes, inspect `run.partial.json` for recovered progress.
+- Harness-level `harness_error` rows are retried once automatically. For workspace rows, the retry runs on a freshly seeded workspace.
 - Goose headless turn controls:
   - `--goose-max-turns <n>` controls first attempt turns (default: `1`)
   - `--goose-retry-max-turns <n>` controls retry turns after off-task/turn-limit output (default: `3`)
   - `--goose-retry-max-turns` must be greater than or equal to `--goose-max-turns`
+  - `--goose-workspace-max-turns <n>` controls first-attempt workspace turns (default: `8`)
+  - `--goose-workspace-retry-max-turns <n>` controls workspace retry turns (default: `12`)
+  - `--goose-workspace-retry-max-turns` must be greater than or equal to `--goose-workspace-max-turns`
 
 ## Core CLI Commands
 
@@ -219,7 +248,15 @@ Each run creates:
 
 - Prefer comparing runs by delta, not by single absolute scores.
 - Re-run the same matrix when evaluating prompt changes, then compare run pairs.
+- Workspace scores are only comparable when the same capability-qualified matrix is used; do not compare pre-hardening computer-use runs against post-hardening runs as if the matrices were equivalent.
+- Read/write-only workspace tests must keep parent directories preseeded in fixtures; if a task needs to create missing directories, it must declare `workspace-mkdir`.
+- Treat preflight failures as harness slice failures first. If a preflight fails, the skipped rows behind it should not be interpreted as model evidence.
+- Treat `harness_error` items as infrastructure or harness-reliability signals. The runner already retries them once automatically; only repeated failures should be treated as stable evidence.
 - Treat harness-level no-output/tool-call failures as harness reliability signals, not always model capability signals.
+- Read the CLI summary carefully:
+  - `Semantic pass rate` is scored-check pass rate on rows that reached scoring
+  - `Item success rate` is full end-to-end row success across the whole scheduled matrix
+  - `Scored rows` shows how much of the matrix actually reached scoring
 - Use `direct` harness as the baseline for prompt-level changes, and treat Goose/OpenCode as additional realism/stress layers.
 
 ## Docs
@@ -230,6 +267,7 @@ Each run creates:
 - `llm/project/design-rules.md` — Terminal-Native design rules
 - `llm/project/project-rules.md` — engineering standards
 - `llm/implementation/review-and-hardening-implementation.md` — threat model + hardening notes
+- `llm/implementation/computer-use-hardening.md` — current computer-use scheduling, preflight, and scoring-interpretation rules
 - `llm/implementation/release-readiness-checklist.md` — release checklist and sign-off
 - `llm/implementation/multi-runtime-mvp-implementation.md` — detailed multi-runtime MVP implementation and validation notes
 

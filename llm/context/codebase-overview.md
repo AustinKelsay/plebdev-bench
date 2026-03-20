@@ -8,6 +8,8 @@ Test categories:
 - `coding`
 - `computer-use`
 
+Computer-use tests use seeded fixture workspaces plus exact filesystem assertions.
+
 ## Key Commands
 
 ```bash
@@ -31,7 +33,7 @@ bun dashboard:index                 # Generate results/index.json for dashboard
 
 ## Environment Variables
 
-- `OPENROUTER_API_KEY` - Enables frontier eval via OpenRouter (GPT-5.2)
+- `OPENROUTER_API_KEY` - Enables frontier eval via OpenRouter (GPT-5.4)
 
 ## Module Layout
 
@@ -66,15 +68,19 @@ src/
 │   ├── run-id.ts         # ID generator
 │   ├── timeout.ts        # Dynamic timeout calculation
 │   ├── code-extractor.ts # Extract code from LLM markdown output
+│   ├── code-module-scorer.ts # Code-module scoring engine
 │   ├── scorer.ts         # Run automated scoring via isolated worker/in-process fallback
 │   ├── scoring-spec.ts   # Scoring spec loader + rubric helpers
+│   ├── test-workspace.ts # Seed isolated fixture workspaces
+│   ├── workspace-manifest.ts # Workspace baseline snapshot + diffing
+│   ├── workspace-scorer.ts # Workspace assertion scorer
 │   ├── benchmark-checkpoint.ts # Checkpoint manifest hashing
 │   ├── hardware-profile.ts # Machine profile collection
 │   ├── openrouter-client.ts # Frontier eval via OpenRouter API
 │   ├── stats.ts          # Run statistics calculation + formatting
 │   ├── failure-classifier.ts # Classify generation/scoring errors
 │   ├── test-catalog.ts   # Test catalog discovery + category filtering
-│   └── tool-smoke.ts     # Tool-smoke constants + pass-type selection
+│   └── tool-smoke.ts     # Tool-smoke/preflight constants + pass-type selection
 ├── runner/
 │   ├── index.ts          # Orchestration
 │   ├── plan-builder.ts   # Discovery + matrix expansion
@@ -85,13 +91,21 @@ src/
 │   └── compare.ts        # Compare two runs + delta computation
 └── tests/
     ├── smoke/            # Basic add() function
-    ├── tool-smoke/       # Tool-calling preflight test
+    ├── tool-smoke/       # Quick preflight that verifies tool support and basic code-output sanity
     ├── calculator-basic/ # Stateless arithmetic functions
     ├── calculator-stateful/ # Calculator with memory
     ├── todo-app/         # CRUD todo manager
     ├── rate-limiter/     # Per-key fixed-window limiter
     ├── ttl-cache/        # Deterministic TTL cache
-    └── event-emitter/    # Listener lifecycle semantics
+    ├── event-emitter/    # Listener lifecycle semantics
+    ├── workspace-tool-smoke/ # Read/write workspace preflight (no implicit mkdir)
+    ├── file-search-smoke/ # Search-capability workspace preflight
+    ├── file-delete-smoke/ # Delete-capability workspace preflight
+    ├── workspace-smoke/  # Create/append/emit JSON inside a seeded workspace
+    ├── file-locator/     # Search workspace files and write one report
+    ├── targeted-edit/    # One precise file edit
+    ├── workspace-reorg/  # Move files into a required folder layout
+    └── safe-cleanup/     # Delete only approved files and emit an audit report
     # each test directory also includes test.meta.json with category metadata
 ```
 
@@ -114,11 +128,11 @@ Discovery: `discoverRuntimes()` checks if Ollama endpoint is reachable.
 
 All harnesses use a Runtime for the actual inference:
 
-| Harness | Method | Description |
-|---------|--------|-------------|
-| `direct` | HTTP | Direct API calls to runtime (was "ollama" harness) |
-| `goose` | CLI | Headless mode with `--provider ollama --model` CLI flags |
-| `opencode` | CLI | Direct mode with `opencode run` (tool-calling) |
+| Harness | Method | Description | Advertised workspace capabilities |
+|---------|--------|-------------|----------------------------------|
+| `direct` | HTTP | Direct API calls to runtime (was "ollama" harness) | none |
+| `goose` | CLI | Headless mode with `--provider ollama --model` CLI flags | `workspace-read`, `workspace-write` |
+| `opencode` | CLI | Direct mode with `opencode run` (tool-calling) | `workspace-read`, `workspace-write`, `workspace-mkdir`, `workspace-search`, `workspace-delete` |
 
 Discovery: `discoverHarnesses()` checks CLI availability. The `direct` harness is always available.
 
@@ -137,14 +151,15 @@ goose run --no-session --provider ollama --model <model> -q --output-format json
 ### OpenCode Direct Mode
 ```bash
 # Direct execution with tool-calling
-opencode run "<prompt>" --model ollama/<model> --agent build --format json
+opencode run "<prompt>" --model ollama/<model> --format json
 ```
 - Runs directly in a temporary work directory (no server mode)
-- Uses `edit` or `write` tool to create `solution.ts`
+- Uses `edit` or `write` tool to create `solution.ts` for code-output tests (`code-module` scoring mode, where one generated module is imported and scored)
+- Uses `read`, `glob`, `grep`, and `bash` during workspace-mode tests (`workspace` scoring mode, where tools mutate a seeded multi-file workspace and the final filesystem state is scored)
 - Local `opencode.json` config enables tools and sets permissions
 - Code read from file after execution (tool-calling mode)
 - Falls back to tool call extraction from JSON output if needed
-- **Tool-smoke preflight**: Runs tool-smoke test first to verify tool support
+- **Preflight gate**: tagged preflight tests run first to verify the capability slice needed by later items
 
 ## Result Artifacts
 
@@ -155,12 +170,14 @@ Each run creates `results/<run-id>/`:
 
 ## Schemas
 
-Schema version: `0.3.0`
+Schema version: `0.4.0`
 
 | Schema | File | Purpose |
 |--------|------|---------|
 | `RuntimeNameSchema` | common.schema.ts | Valid runtime names ("ollama", "vllm") |
 | `TestCategorySchema` | common.schema.ts | Test categories ("coding", "computer-use") |
+| `HarnessCapabilitySchema` | common.schema.ts | Workspace capability requirements (`workspace-read`, `workspace-write`, `workspace-mkdir`, `workspace-search`, `workspace-delete`) |
+| `TestScoringModeSchema` | common.schema.ts | Test scoring modes ("code-module", "workspace") |
 | `BenchConfig` | config.schema.ts | CLI input, defaults |
 | `RunPlan` | plan.schema.ts | Expanded matrix (plan.json) |
 | `RunResult` | result.schema.ts | Execution output (run.json) |
@@ -168,15 +185,18 @@ Schema version: `0.3.0`
 | `MatrixItemResult` | result.schema.ts | Item + generation result + scores |
 | `ScoringSpec` | scoring.schema.ts | Data-driven test definitions |
 | `AutomatedScore` | result.schema.ts | Passed/failed/total counts |
-| `FrontierEval` | result.schema.ts | GPT-5.2 score + reasoning |
+| `FrontierEval` | result.schema.ts | GPT-5.4 score + reasoning |
 | `GenerationFailureType` | common.schema.ts | 6 types: timeout, api_error, tool_missing, harness_error, prompt_not_found, unknown |
 | `ScoringFailureType` | common.schema.ts | 9 types: extraction, import, missing_export, factory_init_failed, export_validation, test_execution, spec_load, no_spec, unknown |
 | `FrontierEvalFailureType` | common.schema.ts | 8 types: timeout, auth_error, rate_limited, http_error, invalid_response, parse_error, truncated, unknown |
 
 ## Key Behaviors
 
-- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/` (with categories from `test.meta.json`)
+- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/` (with categories and scoring modes from `test.meta.json`)
 - **Limiting flags**: Use `--models`, `--harnesses`, `--tests`, `--categories` to limit which items to run
+- **Capability-aware scheduling**: Tests with `requiredHarnessCapabilities` only run on harnesses that advertise every required capability
+- **Test-aware timeouts**: Tests can declare `timeoutMultiplier` in `test.meta.json`, and the resolved multiplier is copied into each matrix row
+- **Workspace-root anchoring**: Tool-harness workspace prompts include the concrete seeded root path so models are explicitly told where the allowed workspace begins and ends
 - **Sequential execution**: One item at a time
 - **Dynamic timeouts**: Timeout scales with model size and harness:
   - Base: 60s + ceil(params/10) * 60s
@@ -188,9 +208,12 @@ Schema version: `0.3.0`
 - **Fail-fast validation**: Empty or very short output throws error immediately (catches silent failures)
 - **Stderr fallback**: If stdout is empty but stderr has meaningful content, uses stderr as output
 - **Model recognition errors**: Fast empty responses (<2s) indicate model not recognized by OpenCode (check config)
-- **Tool-smoke preflight**: If `tool-smoke` is present, it runs first per runtime/model/harness; failures can skip remaining tool-dependent items for that same slice as tool failures
+- **Preflight ordering**: Tests tagged `preflight` run first per runtime/model/harness and use a single pass type to reduce overhead
+- **Preflight skip behavior**: `tool_missing` in a preflight causes later items in that runtime/model/harness slice to be skipped as tool failures
 - **Failure handling**: Item failures recorded, don't crash run, exit 0
 - **Failure categorization**: Errors classified as generation failures (timeout, api_error, harness_error, prompt_not_found) or scoring failures (extraction, import, export_validation, test_execution, spec_load, no_spec)
+- **Infra retry**: `harness_error` is retried once automatically, with fresh workspace reseeding for workspace rows (matrix items using `workspace` scoring mode)
+- **Result interpretation**: CLI summaries now separate semantic scored-check pass rate (passed scored checks divided by total scored checks), item success rate (completed items divided by total scheduled items), and scored-row coverage (items with at least one scored check divided by total scheduled items) so generation failures are not hidden behind the headline pass rate
 - **Frontier eval failures**: Recorded per-item in `frontierEvalFailure` with type/message/status when OpenRouter calls fail
 - **Debug logging**: Harness adapters log command execution and stderr for troubleshooting
 - **Progress output**: `item 01/08: runtime=ollama harness=direct model=X test=Y pass=blind timeout=5m`

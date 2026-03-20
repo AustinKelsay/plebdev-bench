@@ -1,0 +1,15 @@
+{
+	"category": "computer-use",
+	"description": "Move files into a new directory structure and emit an index manifest",
+	"tags": ["workspace", "move", "rename"],
+	"scoringMode": "workspace",
+	"requiresTools": true,
+	"requiredHarnessCapabilities": [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir",
+		"workspace-delete"
+	],
+	"timeoutMultiplier": 1.25,
+	"schemaVersion": 1
+}

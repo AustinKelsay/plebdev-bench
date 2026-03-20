@@ -17,7 +17,7 @@ import { logger } from "../lib/logger.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
 import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
-import { TOOL_SMOKE_TEST_SLUG, isToolSmokeTest } from "../lib/tool-smoke.js";
+import { isPreflightTest } from "../lib/tool-smoke.js";
 import {
 	deletePartialResult,
 	writePartialResult,
@@ -203,14 +203,14 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const results: MatrixItemResult[] = [];
 	const total = plan.items.length;
 	const toolCallingHarnesses = new Set(TOOL_CALLING_HARNESS_NAMES);
-	const toolSmokeStatus = new Map<
+	const preflightStatus = new Map<
 		string,
 		{ status: "passed" | "failed"; skip: boolean; message?: string }
 	>();
 	let lastCheckpointItemCount = 0;
 
-	if (!plan.items.some((item) => item.test === TOOL_SMOKE_TEST_SLUG)) {
-		log.warn("tool-smoke test not present in plan; tool preflight is disabled");
+	if (!plan.items.some((item) => isPreflightTest(item.tags))) {
+		log.warn("No preflight tests present in plan; tool preflight is disabled");
 	}
 
 	try {
@@ -252,6 +252,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				item.harness as HarnessName,
 				config.generateTimeoutMs,
 				item.model,
+				item.timeoutMultiplier,
 			);
 
 			// Progress counter (terminal-native UX)
@@ -259,22 +260,22 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 			);
 
-			const toolSmokeKey = `${item.runtime}::${item.harness}::${item.model}`;
+			const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
 			const isToolHarness = toolCallingHarnesses.has(
 				item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
 			);
-			const isToolSmoke = isToolSmokeTest(item.test);
+			const isPreflight = isPreflightTest(item.tags);
 
-			if (isToolHarness && !isToolSmoke) {
-				const status = toolSmokeStatus.get(toolSmokeKey);
+			if (isToolHarness && !isPreflight) {
+				const status = preflightStatus.get(preflightKey);
 				if (status?.skip) {
 					const now = new Date().toISOString();
 					const message =
 						status.message ??
-						"tool-smoke failed; skipping remaining items for this harness/model";
+						"preflight failed; skipping remaining items for this harness/model";
 					log.warn(
 						{ harness: item.harness, model: item.model, test: item.test },
-						"Skipping item due to tool-smoke failure",
+						"Skipping item due to preflight failure",
 					);
 					results.push({
 						id: item.id,
@@ -339,6 +340,8 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 					vllmBaseUrl: config.vllmBaseUrl,
 					gooseMaxTurns: config.gooseMaxTurns,
 					gooseRetryMaxTurns: config.gooseRetryMaxTurns,
+					gooseWorkspaceMaxTurns: config.gooseWorkspaceMaxTurns,
+					gooseWorkspaceRetryMaxTurns: config.gooseWorkspaceRetryMaxTurns,
 				},
 				dynamicTimeout,
 				isLastForModel,
@@ -369,14 +372,14 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				lastCheckpointItemCount = itemCount;
 			}
 
-			if (isToolHarness && isToolSmoke) {
+			if (isToolHarness && isPreflight) {
 				const failureMessage =
 					result.generation?.error ?? result.generationFailure?.message;
 				const passed = result.generation?.success === true;
 				const shouldSkip =
 					result.generation?.success === false &&
 					result.generation?.failureType === "tool_missing";
-				toolSmokeStatus.set(toolSmokeKey, {
+				preflightStatus.set(preflightKey, {
 					status: passed ? "passed" : "failed",
 					skip: shouldSkip,
 					message: failureMessage,
@@ -385,11 +388,11 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 
 			if (
 				isToolHarness &&
-				!isToolSmoke &&
+				!isPreflight &&
 				result.generation?.success === false &&
 				result.generation?.failureType === "tool_missing"
 			) {
-				toolSmokeStatus.set(toolSmokeKey, {
+				preflightStatus.set(preflightKey, {
 					status: "failed",
 					skip: true,
 					message:

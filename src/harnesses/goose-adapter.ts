@@ -29,6 +29,7 @@ import {
 import { normalizeOpenAiBasePath } from "./goose-openai.js";
 import { normalizeGooseOutput } from "./goose-output.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
+import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
@@ -36,11 +37,17 @@ const MIN_OUTPUT_LENGTH = 10;
 /** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
 
-/** Default Goose turn limit for first attempt. */
+/** Default Goose turn limit for first code-output attempt. */
 const DEFAULT_GOOSE_MAX_TURNS = 1;
 
-/** Default Goose turn limit for retry attempt. */
+/** Default Goose turn limit for code-output retry attempts. */
 const DEFAULT_GOOSE_RETRY_MAX_TURNS = 3;
+
+/** Default Goose turn limit for first workspace attempt. */
+const DEFAULT_GOOSE_WORKSPACE_MAX_TURNS = 8;
+
+/** Default Goose turn limit for workspace retry attempts. */
+const DEFAULT_GOOSE_WORKSPACE_RETRY_MAX_TURNS = 12;
 
 /** Configuration for Goose turn limits across attempts. */
 export interface GooseAdapterOptions {
@@ -48,6 +55,10 @@ export interface GooseAdapterOptions {
 	maxTurns?: number;
 	/** Maximum Goose turns for the retry attempt. */
 	retryMaxTurns?: number;
+	/** Maximum Goose turns for the first workspace attempt. */
+	workspaceMaxTurns?: number;
+	/** Maximum Goose turns for the workspace retry attempt. */
+	workspaceRetryMaxTurns?: number;
 }
 
 /** Runtime-validated Goose adapter options. */
@@ -55,6 +66,8 @@ const GooseAdapterOptionsSchema = z
 	.object({
 		maxTurns: z.number().optional(),
 		retryMaxTurns: z.number().optional(),
+		workspaceMaxTurns: z.number().optional(),
+		workspaceRetryMaxTurns: z.number().optional(),
 	})
 	.strict();
 
@@ -135,6 +148,22 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 		);
 	}
 	const retryMaxTurns = requestedRetryMaxTurns;
+	const workspaceMaxTurns = normalizeTurnLimit(
+		"goose.workspaceMaxTurns",
+		parsedOptions.workspaceMaxTurns,
+		DEFAULT_GOOSE_WORKSPACE_MAX_TURNS,
+	);
+	const requestedWorkspaceRetryMaxTurns = normalizeTurnLimit(
+		"goose.workspaceRetryMaxTurns",
+		parsedOptions.workspaceRetryMaxTurns,
+		DEFAULT_GOOSE_WORKSPACE_RETRY_MAX_TURNS,
+	);
+	if (requestedWorkspaceRetryMaxTurns < workspaceMaxTurns) {
+		throw new TypeError(
+			`goose.workspaceRetryMaxTurns (${requestedWorkspaceRetryMaxTurns}) must be greater than or equal to goose.workspaceMaxTurns (${workspaceMaxTurns})`,
+		);
+	}
+	const workspaceRetryMaxTurns = requestedWorkspaceRetryMaxTurns;
 
 	return {
 		name: "goose" as const,
@@ -155,11 +184,26 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			const startTime = performance.now();
 			const isRetryAttempt = hasRetryMarker(prompt);
 			const promptWithoutMarker = stripRetryMarker(prompt);
-			const maxTurnsForAttempt = isRetryAttempt ? retryMaxTurns : maxTurns;
+			const promptMode = opts.promptMode ?? "code-output";
+			const maxTurnsForAttempt =
+				promptMode === "workspace"
+					? isRetryAttempt
+						? workspaceRetryMaxTurns
+						: workspaceMaxTurns
+					: isRetryAttempt
+						? retryMaxTurns
+						: maxTurns;
+			if (promptMode === "workspace" && opts.workingDirectory === undefined) {
+				throw new Error(
+					"Goose workspace mode requires a caller-supplied workingDirectory",
+				);
+			}
 
 			// Create unique temp directory for this generation
 			const runId = crypto.randomBytes(8).toString("hex");
-			const workDir = path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
+			const workDir =
+				opts.workingDirectory ??
+				path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
 			const solutionPath = path.join(workDir, SOLUTION_FILENAME);
 			const executionCwd = workDir;
 
@@ -225,10 +269,14 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				...extraEnv,
 			};
 
-			const fullPrompt = buildCodeOnlyPrompt(
-				promptWithoutMarker,
-				isRetryAttempt,
-			);
+			const fullPrompt =
+				promptMode === "workspace"
+					? buildWorkspaceToolPrompt({
+							toolNames: ["text_editor"],
+							taskPrompt: promptWithoutMarker,
+							workspaceRootPath: executionCwd,
+						})
+					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 
 			// CRITICAL: Use --provider and --model flags to override Goose's config file
 			const args = [
@@ -311,6 +359,13 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					},
 					"Goose completed",
 				);
+
+				if (promptMode === "workspace") {
+					return {
+						output,
+						durationMs,
+					};
+				}
 
 				// Check if solution file was created by tool
 				let codeFilePath: string | undefined;

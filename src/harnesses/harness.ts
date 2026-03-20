@@ -1,6 +1,9 @@
 /**
  * Purpose: Common harness interface and types for all adapters.
- * Exports: Harness, GenerateOpts, GenerateResult, HarnessName, HARNESS_NAMES
+ * Exports: Harness, GenerateOpts, GenerateResult, HarnessName, HARNESS_NAMES,
+ *          HarnessPromptMode, TOOL_CALLING_HARNESS_NAMES,
+ *          HARNESS_CAPABILITY_MAP, getHarnessCapabilities,
+ *          doesHarnessSupportCapabilities
  *
  * All harnesses implement this interface to provide a unified API for:
  * - Checking availability (ping)
@@ -10,6 +13,7 @@
  */
 
 import type { Runtime } from "../runtimes/index.js";
+import type { HarnessCapability } from "../schemas/index.js";
 
 /** Supported harness names. "direct" replaces "ollama" for clarity. */
 export const HARNESS_NAMES = ["direct", "goose", "opencode"] as const;
@@ -22,6 +26,31 @@ export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
 export type ToolCallingHarnessName =
 	(typeof TOOL_CALLING_HARNESS_NAMES)[number];
+
+/**
+ * Explicit workspace capabilities supported by each harness.
+ *
+ * These capabilities are intentionally conservative. A harness should only
+ * advertise a capability when the runner config exposes a stable tool path for it.
+ */
+export const HARNESS_CAPABILITY_MAP: Record<
+	HarnessName,
+	readonly HarnessCapability[]
+> = {
+	direct: [],
+	goose: ["workspace-read", "workspace-write"],
+	opencode: [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir",
+		"workspace-search",
+		"workspace-delete",
+	],
+} as const;
+
+/** Prompt handling modes supported by harness adapters. */
+export const HARNESS_PROMPT_MODES = ["code-output", "workspace"] as const;
+export type HarnessPromptMode = (typeof HARNESS_PROMPT_MODES)[number];
 
 /**
  * Runtime compatibility for each harness.
@@ -66,8 +95,37 @@ export function getCompatibleHarnesses(runtime: string): HarnessName[] {
 	);
 }
 
-/** Options for generating a completion. */
-export interface GenerateOpts {
+/**
+ * Gets the explicit workspace capabilities for a harness.
+ *
+ * @param harness - Harness name
+ * @returns Read-only list of supported capabilities
+ */
+export function getHarnessCapabilities(
+	harness: HarnessName,
+): readonly HarnessCapability[] {
+	return HARNESS_CAPABILITY_MAP[harness];
+}
+
+/**
+ * Checks whether a harness supports every capability required by a test.
+ *
+ * @param harness - Harness name
+ * @param requiredCapabilities - Required capability list from test metadata
+ * @returns True when the harness advertises all required capabilities
+ */
+export function doesHarnessSupportCapabilities(
+	harness: HarnessName,
+	requiredCapabilities: readonly HarnessCapability[],
+): boolean {
+	const supported = HARNESS_CAPABILITY_MAP[harness];
+	return requiredCapabilities.every((capability) =>
+		supported.includes(capability),
+	);
+}
+
+/** Common options shared across all harness prompt modes. */
+interface BaseGenerateOpts {
 	/** Model name in Ollama format (e.g., "llama3.2:3b"). */
 	model: string;
 	/** The prompt to send to the model. */
@@ -79,6 +137,25 @@ export interface GenerateOpts {
 	/** Runtime to use for generation. */
 	runtime: Runtime;
 }
+
+/** Generation options for standard code-output benchmarks. */
+interface CodeOutputGenerateOpts extends BaseGenerateOpts {
+	/** Prompt handling mode for this benchmark item. */
+	promptMode?: "code-output";
+	/** Optional working directory for tool-calling harnesses. */
+	workingDirectory?: string;
+}
+
+/** Generation options for workspace-scored benchmarks. */
+interface WorkspaceGenerateOpts extends BaseGenerateOpts {
+	/** Workspace mode always requires a caller-supplied working directory. */
+	promptMode: "workspace";
+	/** Isolated workspace root passed in by the runner. */
+	workingDirectory: string;
+}
+
+/** Options for generating a completion. */
+export type GenerateOpts = CodeOutputGenerateOpts | WorkspaceGenerateOpts;
 
 /** Result from a generation request. */
 export interface GenerateResult {

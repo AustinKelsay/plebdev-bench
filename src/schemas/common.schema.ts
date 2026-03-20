@@ -4,13 +4,14 @@
  *          itemStatusTypes, ItemStatusSchema, ItemStatus,
  *          runtimeNames, RuntimeNameSchema, RuntimeName,
  *          testCategories, TestCategorySchema, TestCategory,
+ *          testScoringModes, TestScoringModeSchema, TestScoringMode,
  *          benchmark/machine/provenance metadata schemas
  */
 
 import { z } from "zod";
 
 /** Current schema version for all result/plan files. */
-export const SCHEMA_VERSION = "0.3.0";
+export const SCHEMA_VERSION = "0.4.0";
 
 /** Valid runtime names (inference backends). */
 export const runtimeNames = ["ollama", "vllm"] as const;
@@ -38,6 +39,30 @@ export const TestCategorySchema = z.enum(testCategories);
 
 /** Benchmark test category. */
 export type TestCategory = z.infer<typeof TestCategorySchema>;
+
+/** Valid scoring modes for benchmark tests. */
+export const testScoringModes = ["code-module", "workspace"] as const;
+
+/** Zod schema for benchmark test scoring modes. */
+export const TestScoringModeSchema = z.enum(testScoringModes);
+
+/** Benchmark test scoring mode. */
+export type TestScoringMode = z.infer<typeof TestScoringModeSchema>;
+
+/** Valid harness capability requirements for benchmark tests. */
+export const harnessCapabilities = [
+	"workspace-read",
+	"workspace-write",
+	"workspace-mkdir",
+	"workspace-search",
+	"workspace-delete",
+] as const;
+
+/** Zod schema for harness capability requirements. */
+export const HarnessCapabilitySchema = z.enum(harnessCapabilities);
+
+/** Harness capability requirement type. */
+export type HarnessCapability = z.infer<typeof HarnessCapabilitySchema>;
 
 /** Valid statuses for matrix items. */
 export const itemStatusTypes = [

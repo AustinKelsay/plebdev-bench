@@ -1,23 +1,33 @@
 /**
  * Purpose: Build tool-first prompts for tool-calling harnesses.
- * Exports: ToolPromptConfig, buildToolPrompt
+ * Exports: CodeOutputToolPromptConfig, WorkspaceToolPromptConfig,
+ *          buildToolPrompt, buildWorkspaceToolPrompt
  *
  * Invariants:
  * - Tool instructions wrap the task prompt to override "output only code" prompts.
  * - The prompt always references the exact tool name(s) and target filename.
  */
 
-/** Configuration for tool-first prompt construction. */
-export interface ToolPromptConfig {
+/** Shared prompt config fields. */
+interface BaseToolPromptConfig {
 	/** Tool names to instruct the model to use (e.g., ["text_editor"] or ["edit", "write"]). */
 	toolNames: string[];
-	/** Output filename expected from the tool. */
-	solutionFilename: string;
 	/** Task prompt content from the benchmark test. */
 	taskPrompt: string;
+	/** Optional absolute workspace root path for stronger sandbox anchoring. */
+	workspaceRootPath?: string;
 	/** Optional hint about tool arguments (kept minimal to avoid over-coaching). */
 	toolUsageHint?: string;
 }
+
+/** Prompt config for code-output tool mode. */
+export interface CodeOutputToolPromptConfig extends BaseToolPromptConfig {
+	/** Output filename expected from the tool in code-output mode. */
+	solutionFilename: string;
+}
+
+/** Prompt config for workspace tool mode. */
+export interface WorkspaceToolPromptConfig extends BaseToolPromptConfig {}
 
 /**
  * Formats tool names for human-readable instructions.
@@ -41,7 +51,7 @@ function formatToolNames(toolNames: string[]): string {
  *
  * @throws {Error} If toolNames is empty
  */
-export function buildToolPrompt(config: ToolPromptConfig): string {
+export function buildToolPrompt(config: CodeOutputToolPromptConfig): string {
 	const { toolNames, solutionFilename, taskPrompt, toolUsageHint } = config;
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
@@ -67,4 +77,45 @@ export function buildToolPrompt(config: ToolPromptConfig): string {
 	const reminder = `REMINDER: Use the ${toolLabel} tool to write "${solutionFilename}".`;
 
 	return `${preamble}\n\nTASK:\n${trimmedTask}\n\n${reminder}`;
+}
+
+/**
+ * Builds a workspace-scoped tool prompt for filesystem tasks.
+ *
+ * @param config - Prompt configuration
+ * @returns Combined prompt with workspace safety instructions
+ *
+ * @throws {Error} If toolNames is empty
+ */
+export function buildWorkspaceToolPrompt(
+	config: WorkspaceToolPromptConfig,
+): string {
+	const { toolNames, taskPrompt, toolUsageHint, workspaceRootPath } = config;
+	if (!Array.isArray(toolNames) || toolNames.length === 0) {
+		throw new Error("toolNames must include at least one tool name");
+	}
+
+	const toolLabel = formatToolNames(toolNames);
+	const lines = [
+		"IMPORTANT: Workspace benchmark mode.",
+		`- You are already inside the isolated benchmark workspace. Use the ${toolLabel} tool for file operations.`,
+		...(workspaceRootPath
+			? [
+					`- Workspace root: "${workspaceRootPath}". Treat that directory as the only allowed project root.`,
+					"- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect \"/\" or parent directories.",
+				]
+			: []),
+		"- Operate only on files inside the current directory.",
+		"- Do not ask for confirmation, approval, or more context.",
+		"- Do not print file contents or patches in chat.",
+		"- Chat-only plans, confirmations without tool use, or explanations without file changes are treated as failure.",
+		"- After finishing the task, reply with a short confirmation like DONE.",
+		"",
+		"TASK:",
+		taskPrompt.trim(),
+	];
+	if (toolUsageHint && toolUsageHint.trim().length > 0) {
+		lines.splice(5, 0, `- Tool hint: ${toolUsageHint.trim()}`);
+	}
+	return lines.join("\n");
 }

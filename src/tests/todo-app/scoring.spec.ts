@@ -9,7 +9,9 @@
 import type { ScoringSpec } from "../../schemas/index.js";
 
 export const spec: ScoringSpec = {
+	schemaVersion: 1,
 	testSlug: "todo-app",
+	mode: "code-module",
 
 	expectedExports: [{ name: "createTodoApp", type: "function" }],
 

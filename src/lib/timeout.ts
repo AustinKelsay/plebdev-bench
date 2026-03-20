@@ -83,14 +83,20 @@ function calculateOpenCodeOverhead(parametersBillions: number): number {
  * @param harness - Harness type (ollama, goose, opencode)
  * @param baseTimeoutMs - User-specified base timeout (overrides default)
  * @param modelTag - Model tag for quantization detection (e.g., "llama3:bf16")
- * @returns Calculated timeout in milliseconds
+ * @param timeoutMultiplier - Optional per-test multiplier applied after heuristic sizing
+ * @returns Calculated timeout in milliseconds, clamped to the shared 1 minute floor and 20 minute ceiling after multiplier application
  */
 export function calculateTimeout(
 	parametersBillions: number,
 	harness: HarnessName,
 	baseTimeoutMs?: number,
 	modelTag?: string,
+	timeoutMultiplier = 1,
 ): number {
+	if (!Number.isFinite(timeoutMultiplier) || timeoutMultiplier <= 0) {
+		throw new RangeError("timeoutMultiplier must be a finite positive number");
+	}
+
 	// Use provided base or default
 	const base = baseTimeoutMs ?? BASE_TIMEOUT_MS;
 
@@ -118,7 +124,9 @@ export function calculateTimeout(
 		timeout *= HIGH_PRECISION_MULTIPLIER;
 	}
 
-	// Apply floor and ceiling
+	timeout *= timeoutMultiplier;
+
+	// Apply floor and ceiling after multipliers so the shared cap remains deterministic.
 	timeout = Math.max(MIN_TIMEOUT_MS, Math.min(MAX_TIMEOUT_MS, timeout));
 
 	return timeout;

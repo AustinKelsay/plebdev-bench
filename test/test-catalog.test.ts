@@ -7,9 +7,9 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	TEST_METADATA_FILE,
 	discoverTestCatalog,
 	selectTests,
-	TEST_METADATA_FILE,
 } from "../src/lib/test-catalog.js";
 
 const tempDirs: string[] = [];
@@ -56,15 +56,25 @@ afterEach(() => {
 describe("discoverTestCatalog", () => {
 	it("loads and sorts tests with valid metadata", () => {
 		const root = createTempRoot();
-		createTestDir(root, "zeta", { category: "coding", tags: ["z"] });
+		createTestDir(root, "zeta", {
+			category: "coding",
+			tags: ["z"],
+			scoringMode: "code-module",
+		});
 		createTestDir(root, "alpha", {
 			category: "computer-use",
 			description: "A computer-use test",
+			scoringMode: "workspace",
+			requiresTools: true,
+			requiredHarnessCapabilities: ["workspace-read", "workspace-write"],
 		});
 
 		const catalog = discoverTestCatalog(root);
 		expect(catalog.map((test) => test.slug)).toEqual(["alpha", "zeta"]);
 		expect(catalog[0].category).toBe("computer-use");
+		expect(catalog[0].scoringMode).toBe("workspace");
+		expect(catalog[0].requiresTools).toBe(true);
+		expect(catalog[1].scoringMode).toBe("code-module");
 		expect(catalog[1].tags).toEqual(["z"]);
 	});
 
@@ -74,7 +84,72 @@ describe("discoverTestCatalog", () => {
 
 		expect(() => discoverTestCatalog(root)).toThrow(TEST_METADATA_FILE);
 	});
-});
+
+	it("rejects workspace-scored tests that do not require tools", () => {
+		const root = createTempRoot();
+		createTestDir(root, "bad-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+			requiresTools: false,
+			requiredHarnessCapabilities: ["workspace-read"],
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			'requiresTools must be true when scoringMode is "workspace"',
+		);
+	});
+
+	it("rejects workspace-scored tests when requiresTools is omitted", () => {
+		const root = createTempRoot();
+		createTestDir(root, "missing-tools-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+			requiredHarnessCapabilities: ["workspace-read"],
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			'requiresTools must be true when scoringMode is "workspace"',
+		);
+	});
+
+	it("rejects workspace-scored tests without explicit harness capabilities", () => {
+		const root = createTempRoot();
+		createTestDir(root, "missing-capabilities-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+			requiresTools: true,
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			"workspace-scored tests must declare requiredHarnessCapabilities",
+		);
+	});
+
+		it("rejects harness capability requirements when tools are disabled", () => {
+			const root = createTempRoot();
+			createTestDir(root, "invalid-capabilities", {
+				category: "coding",
+				requiresTools: false,
+				requiredHarnessCapabilities: ["workspace-read"],
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+				"requiredHarnessCapabilities may only be set when requiresTools is true",
+			);
+		});
+
+		it("rejects invalid timeout multipliers", () => {
+			const root = createTempRoot();
+			createTestDir(root, "bad-timeout-multiplier", {
+				category: "coding",
+				timeoutMultiplier: 0,
+			});
+
+			expect(() => discoverTestCatalog(root)).toThrow(
+				"timeoutMultiplier",
+			);
+		});
+	});
 
 describe("selectTests", () => {
 	it("throws on unknown requested tests", () => {
@@ -90,7 +165,10 @@ describe("selectTests", () => {
 	it("applies category filters and keeps tool-smoke first", () => {
 		const root = createTempRoot();
 		createTestDir(root, "calculator-basic", { category: "coding" });
-		createTestDir(root, "tool-smoke", { category: "coding" });
+		createTestDir(root, "tool-smoke", {
+			category: "coding",
+			tags: ["preflight"],
+		});
 		createTestDir(root, "desktop-cleanup", { category: "computer-use" });
 		const catalog = discoverTestCatalog(root);
 
