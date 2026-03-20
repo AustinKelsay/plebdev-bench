@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-03-08T18:25:57.578Z",
+  "generatedAt": "2026-03-20T15:38:18.842Z",
   "checkpointId": "chk_sha256v1_61a037f87105",
   "summary": {
-    "runsConsidered": 4,
+    "runsConsidered": 7,
     "runsMatched": 4,
     "rawItems": 1350,
     "dedupedItems": 1080,
