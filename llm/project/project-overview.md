@@ -44,7 +44,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 
 ## Scoring & Evaluation
 - **Automated:** either import generated code and run scoring-spec test cases, or compare a seeded workspace against exact filesystem assertions → pass/fail/total
-- **Frontier eval:** send code + rubric to GPT-5.2 xhigh via OpenRouter for code-module tests → score 1–10 + reasoning
+- **Frontier eval:** send code + rubric to GPT-5.4 via OpenRouter for code-module tests → score 1–10 + reasoning
 
 ## Architecture & Stack (High Level)
 - **Language:** TypeScript

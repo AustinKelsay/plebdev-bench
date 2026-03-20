@@ -40,7 +40,7 @@ const ScorerWorkerResponseSchema = z.discriminatedUnion("ok", [
 ]);
 
 /** Additional timeout budget for worker startup and JSON I/O. */
-const SCORER_WORKER_OVERHEAD_MS = 2000;
+const SCORER_WORKER_OVERHEAD_MS = 3000;
 
 /**
  * Resolves scoring mode from environment.
@@ -93,7 +93,7 @@ async function scoreInWorker(
  *
  * @param testSlug - Test directory name
  * @param rawOutput - Raw output from LLM generation
- * @param timeoutMs - Timeout for scoring (default: 5s)
+ * @param timeoutMs - Timeout for scoring (default: 15s)
  * @param codeFilePath - Optional path to code file written by tool-calling harness
  * @param workspaceDir - Optional seeded workspace for filesystem-driven tests
  * @returns Scoring result with pass/fail counts
@@ -104,7 +104,7 @@ async function scoreInWorker(
 export async function scoreGeneration(
 	testSlug: string,
 	rawOutput: string,
-	timeoutMs = 5000,
+	timeoutMs = 15_000,
 	codeFilePath?: string,
 	workspaceDir?: string,
 ): Promise<ScoringResult> {

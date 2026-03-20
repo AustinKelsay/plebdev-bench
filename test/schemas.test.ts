@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
 	BenchConfigSchema,
 	FrontierEvalFailureTypeSchema,
+	HarnessCapabilitySchema,
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
@@ -52,6 +53,16 @@ describe("common schemas", () => {
 		expect(TestScoringModeSchema.parse("workspace")).toBe("workspace");
 		expect(() => TestScoringModeSchema.parse("browser")).toThrow();
 	});
+
+	it("should validate harness capabilities", () => {
+		expect(HarnessCapabilitySchema.parse("workspace-read")).toBe(
+			"workspace-read",
+		);
+		expect(HarnessCapabilitySchema.parse("workspace-mkdir")).toBe(
+			"workspace-mkdir",
+		);
+		expect(() => HarnessCapabilitySchema.parse("browser-click")).toThrow();
+	});
 });
 
 describe("BenchConfigSchema", () => {
@@ -67,6 +78,8 @@ describe("BenchConfigSchema", () => {
 		expect(config.generateTimeoutMs).toBe(300_000);
 		expect(config.gooseMaxTurns).toBe(1);
 		expect(config.gooseRetryMaxTurns).toBe(3);
+		expect(config.gooseWorkspaceMaxTurns).toBe(8);
+		expect(config.gooseWorkspaceRetryMaxTurns).toBe(12);
 		expect(config.outputDir).toBe("results");
 		expect(config.managedVllm).toBeUndefined();
 	});
@@ -81,6 +94,8 @@ describe("BenchConfigSchema", () => {
 			generateTimeoutMs: 60_000,
 			gooseMaxTurns: 2,
 			gooseRetryMaxTurns: 4,
+			gooseWorkspaceMaxTurns: 6,
+			gooseWorkspaceRetryMaxTurns: 9,
 		});
 		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual(["llama3.2:3b"]);
@@ -90,6 +105,8 @@ describe("BenchConfigSchema", () => {
 		expect(config.generateTimeoutMs).toBe(60_000);
 		expect(config.gooseMaxTurns).toBe(2);
 		expect(config.gooseRetryMaxTurns).toBe(4);
+		expect(config.gooseWorkspaceMaxTurns).toBe(6);
+		expect(config.gooseWorkspaceRetryMaxTurns).toBe(9);
 	});
 
 	it("should reject invalid URL", () => {
@@ -105,6 +122,15 @@ describe("BenchConfigSchema", () => {
 				gooseRetryMaxTurns: 2,
 			}),
 		).toThrow(/gooseRetryMaxTurns/);
+	});
+
+	it("should reject workspace goose retry turns lower than initial turns", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				gooseWorkspaceMaxTurns: 6,
+				gooseWorkspaceRetryMaxTurns: 4,
+			}),
+		).toThrow(/gooseWorkspaceRetryMaxTurns/);
 	});
 
 	it("should provide default config", () => {
@@ -123,6 +149,8 @@ describe("MatrixItemSchema", () => {
 			category: "coding",
 			scoringMode: "code-module",
 			requiresTools: false,
+			requiredHarnessCapabilities: [],
+			tags: [],
 			passType: "blind",
 		});
 		expect(item.id).toBe("01");
@@ -170,6 +198,8 @@ describe("RunPlanSchema", () => {
 				generateTimeoutMs: 120_000,
 				gooseMaxTurns: 1,
 				gooseRetryMaxTurns: 3,
+				gooseWorkspaceMaxTurns: 8,
+				gooseWorkspaceRetryMaxTurns: 12,
 				categories: ["coding"],
 				passTypes: ["blind", "informed"],
 			},
@@ -183,6 +213,8 @@ describe("RunPlanSchema", () => {
 					category: "coding",
 					scoringMode: "code-module",
 					requiresTools: false,
+					requiredHarnessCapabilities: [],
+					tags: [],
 					passType: "blind",
 				},
 			],

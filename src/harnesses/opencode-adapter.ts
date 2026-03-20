@@ -171,8 +171,11 @@ export function createOpenCodeAdapter(): Harness {
 			const fullPrompt =
 				promptMode === "workspace"
 					? buildWorkspaceToolPrompt({
-							toolNames: ["edit", "write"],
+							toolNames: ["read", "edit", "write", "glob", "grep", "bash"],
 							taskPrompt: promptWithoutMarker,
+							workspaceRootPath: workDir,
+							toolUsageHint:
+								"Use read/glob/grep to inspect the workspace and bash for mkdir/delete/move operations when the task requires them.",
 						})
 					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 

@@ -4,5 +4,11 @@
 	"tags": ["workspace", "search", "read"],
 	"scoringMode": "workspace",
 	"requiresTools": true,
+	"requiredHarnessCapabilities": [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir",
+		"workspace-search"
+	],
 	"schemaVersion": 1
 }

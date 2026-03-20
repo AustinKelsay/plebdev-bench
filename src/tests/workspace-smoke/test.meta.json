@@ -4,5 +4,7 @@
 	"tags": ["workspace", "filesystem", "foundational"],
 	"scoringMode": "workspace",
 	"requiresTools": true,
+	"requiredHarnessCapabilities": ["workspace-read", "workspace-write"],
+	"timeoutMultiplier": 1.4,
 	"schemaVersion": 1
 }

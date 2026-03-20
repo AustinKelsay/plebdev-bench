@@ -14,6 +14,7 @@ import {
 	RuntimeEnvironmentSchema,
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	HarnessCapabilitySchema,
 	TestCategorySchema,
 	TestScoringModeSchema,
 } from "./common.schema.js";
@@ -47,6 +48,15 @@ export const MatrixItemSchema = z.object({
 
 	/** Whether this test requires a tool-calling harness. */
 	requiresTools: z.boolean().default(false),
+
+	/** Explicit harness capabilities required for representative execution. */
+	requiredHarnessCapabilities: z.array(HarnessCapabilitySchema).default([]),
+
+	/** Test tags copied from metadata for ordering and preflight logic. */
+	tags: z.array(z.string()).default([]),
+
+	/** Per-test timeout multiplier copied from metadata for reproducible timeout policy. */
+	timeoutMultiplier: z.number().positive().default(1),
 
 	/** Pass type: 'blind' or 'informed'. */
 	passType: PassTypeSchema,
@@ -85,6 +95,8 @@ export const RunPlanSchema = z.object({
 		generateTimeoutMs: z.number(),
 		gooseMaxTurns: z.number().int().positive().optional(),
 		gooseRetryMaxTurns: z.number().int().positive().optional(),
+		gooseWorkspaceMaxTurns: z.number().int().positive().optional(),
+		gooseWorkspaceRetryMaxTurns: z.number().int().positive().optional(),
 		passTypes: z.array(PassTypeSchema),
 		categories: z.array(TestCategorySchema).optional(),
 		managedVllm: ManagedVllmSchema.optional(),

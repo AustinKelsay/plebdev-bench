@@ -33,6 +33,7 @@ import type {
 	MatrixItemResult,
 	ScoringMetrics,
 } from "../schemas/index.js";
+import { runGenerationWithInfraRetry } from "./generation-retry.js";
 import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
 
 /** Runtime and harness configuration for item execution. */
@@ -41,6 +42,8 @@ interface RuntimeUrls {
 	vllmBaseUrl: string;
 	gooseMaxTurns: number;
 	gooseRetryMaxTurns: number;
+	gooseWorkspaceMaxTurns: number;
+	gooseWorkspaceRetryMaxTurns: number;
 }
 
 /**
@@ -74,6 +77,7 @@ export async function executeItem(
 
 	const startedAt = new Date().toISOString();
 	let workspace: Awaited<ReturnType<typeof prepareTestWorkspace>> | undefined;
+	let generationAttempts = 0;
 	try {
 		if (item.scoringMode === "workspace") {
 			workspace = await prepareTestWorkspace(item.test);
@@ -81,7 +85,6 @@ export async function executeItem(
 
 		let generation: GenerationResult;
 		let generationFailure: MatrixItemResult["generationFailure"];
-		let generationStartTime: number | undefined;
 		let promptForRetry = "";
 		let runtimeForRetry: ReturnType<typeof createRuntime> | undefined;
 		let harnessForRetry: ReturnType<typeof createHarness> | undefined;
@@ -103,84 +106,46 @@ export async function executeItem(
 				goose: {
 					maxTurns: runtimeConfig.gooseMaxTurns,
 					retryMaxTurns: runtimeConfig.gooseRetryMaxTurns,
+					workspaceMaxTurns: runtimeConfig.gooseWorkspaceMaxTurns,
+					workspaceRetryMaxTurns: runtimeConfig.gooseWorkspaceRetryMaxTurns,
 				},
 			});
 			harnessForRetry = harness;
-
-			generationStartTime = performance.now();
-			const result =
-				item.scoringMode === "workspace" && workspace
-					? await harness.generate({
-							model: item.model,
-							prompt,
-							timeoutMs,
-							unloadAfter,
-							runtime,
-							promptMode: "workspace",
-							workingDirectory: workspace.rootDir,
-						})
-					: await harness.generate({
-							model: item.model,
-							prompt,
-							timeoutMs,
-							unloadAfter,
-							runtime,
-							promptMode: "code-output",
-						});
-
-			generation = {
-				success: true,
-				output: result.output,
-				durationMs: result.durationMs,
-				promptTokens: result.promptTokens,
-				completionTokens: result.completionTokens,
-				codeFilePath: result.codeFilePath,
-			};
-
-			log.info(
-				{
-					durationMs: result.durationMs,
-					harness: item.harness,
-					codeFilePath: result.codeFilePath,
-					workspaceDir: workspace?.rootDir,
-				},
-				"Generation completed",
-			);
+			const generationOutcome = await runGenerationWithInfraRetry({
+				item,
+				prompt,
+				timeoutMs,
+				unloadAfter,
+				runtime,
+				harness,
+				workspace,
+				prepareFreshWorkspace:
+					item.scoringMode === "workspace"
+						? async () => {
+								await workspace?.cleanup();
+								return prepareTestWorkspace(item.test);
+							}
+						: undefined,
+				log,
+			});
+			generation = generationOutcome.generation;
+			generationAttempts = generationOutcome.generationAttempts;
+			generationFailure = generationOutcome.generationFailure;
+			workspace = generationOutcome.workspace;
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
-			const errorDetails = error as {
-				output?: string;
-				durationMs?: number;
-			};
 			const failureType = classifyGenerationError(errorMessage);
-			const fallbackDurationMs =
-				typeof generationStartTime === "number"
-					? Math.round(performance.now() - generationStartTime)
-					: 0;
-			const durationMs =
-				typeof errorDetails.durationMs === "number"
-					? errorDetails.durationMs
-					: fallbackDurationMs;
-			const output =
-				typeof errorDetails.output === "string" &&
-				errorDetails.output.trim().length > 0
-					? errorDetails.output
-					: undefined;
-
 			generation = {
 				success: false,
 				error: errorMessage,
 				failureType,
-				durationMs,
-				output,
+				durationMs: 0,
 			};
-
 			generationFailure = {
 				type: failureType,
 				message: errorMessage,
 			};
-
 			log.warn(
 				{ error: errorMessage, failureType, harness: item.harness },
 				"Generation failed",
@@ -340,6 +305,7 @@ export async function executeItem(
 			startedAt,
 			completedAt,
 			generation,
+			...(generationAttempts > 0 ? { generationAttempts } : {}),
 			automatedScore,
 			scoringMetrics,
 			frontierEval,
@@ -369,6 +335,7 @@ export async function executeItem(
 				failureType,
 				durationMs: 0,
 			},
+			...(generationAttempts > 0 ? { generationAttempts } : {}),
 			generationFailure: {
 				type: failureType,
 				message: errorMessage,

@@ -49,6 +49,21 @@ export const TestScoringModeSchema = z.enum(testScoringModes);
 /** Benchmark test scoring mode. */
 export type TestScoringMode = z.infer<typeof TestScoringModeSchema>;
 
+/** Valid harness capability requirements for benchmark tests. */
+export const harnessCapabilities = [
+	"workspace-read",
+	"workspace-write",
+	"workspace-mkdir",
+	"workspace-search",
+	"workspace-delete",
+] as const;
+
+/** Zod schema for harness capability requirements. */
+export const HarnessCapabilitySchema = z.enum(harnessCapabilities);
+
+/** Harness capability requirement type. */
+export type HarnessCapability = z.infer<typeof HarnessCapabilitySchema>;
+
 /** Valid statuses for matrix items. */
 export const itemStatusTypes = [
 	"pending",

@@ -1,29 +1,33 @@
 /**
- * Purpose: Tool-smoke test constants and helpers.
- * Exports: TOOL_SMOKE_TEST_SLUG, isToolSmokeTest, selectToolSmokePassType
+ * Purpose: Preflight benchmark constants and helpers.
+ * Exports: PREFLIGHT_TEST_TAG, isPreflightTest, selectPreflightPassType,
+ *          TOOL_SMOKE_TEST_SLUG
  *
  * Invariants:
- * - Tool-smoke runs once per model+harness to validate tool usage.
+ * - Preflight tests run once per model+harness to validate core harness behavior.
  * - Only a single passType is used to minimize overhead.
  */
 
 import type { PassType } from "../schemas/index.js";
 
+/** Tag used to identify preflight tests in metadata and run plans. */
+export const PREFLIGHT_TEST_TAG = "preflight";
+
 /** Test slug used for tool-smoke preflight. */
 export const TOOL_SMOKE_TEST_SLUG = "tool-smoke";
 
 /**
- * Checks if a test slug is the tool-smoke test.
+ * Checks if a test is marked as a preflight test.
  *
- * @param testSlug - Test slug to check
- * @returns True if tool-smoke
+ * @param tags - Test tags
+ * @returns True when the test is a preflight
  */
-export function isToolSmokeTest(testSlug: string): boolean {
-	return testSlug === TOOL_SMOKE_TEST_SLUG;
+export function isPreflightTest(tags: readonly string[]): boolean {
+	return tags.includes(PREFLIGHT_TEST_TAG);
 }
 
 /**
- * Selects the pass type to use for tool-smoke.
+ * Selects the pass type to use for preflight tests.
  *
  * Prefers "blind" if present to match default passType ordering.
  *
@@ -32,7 +36,7 @@ export function isToolSmokeTest(testSlug: string): boolean {
  *
  * @throws {Error} If passTypes is empty
  */
-export function selectToolSmokePassType(passTypes: PassType[]): PassType {
+export function selectPreflightPassType(passTypes: PassType[]): PassType {
 	if (!Array.isArray(passTypes) || passTypes.length === 0) {
 		throw new Error("passTypes must include at least one entry");
 	}

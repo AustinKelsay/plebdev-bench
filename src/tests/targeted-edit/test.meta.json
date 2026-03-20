@@ -4,5 +4,7 @@
 	"tags": ["workspace", "edit", "precision"],
 	"scoringMode": "workspace",
 	"requiresTools": true,
+	"requiredHarnessCapabilities": ["workspace-read", "workspace-write"],
+	"timeoutMultiplier": 1.2,
 	"schemaVersion": 1
 }

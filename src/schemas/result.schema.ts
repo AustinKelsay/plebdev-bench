@@ -183,6 +183,9 @@ export const MatrixItemResultSchema = z.object({
 	/** Generation result from harness. */
 	generation: GenerationResultSchema.optional(),
 
+	/** Number of generation attempts used for this item, including infra retries. */
+	generationAttempts: z.number().int().positive().optional(),
+
 	/** Structured generation failure record (when generation fails). */
 	generationFailure: GenerationFailureSchema.optional(),
 

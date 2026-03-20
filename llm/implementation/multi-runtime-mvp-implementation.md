@@ -2,6 +2,8 @@ Purpose: Document the completed multi-runtime MVP implementation, operational se
 
 # Multi-Runtime MVP Implementation
 
+This document captures the February 8, 2026 MVP checkpoint. Later computer-use hardening added capability-aware scheduling, workspace preflights, and separate Goose workspace turn budgets; use [README.md](../../README.md) and [harnesses-implementation.md](./harnesses-implementation.md) for current operational behavior.
+
 ## Summary
 - `plebdev-bench` now runs a single benchmark matrix across multiple runtimes (`ollama`, `vllm`) and multiple harnesses (`direct`, `goose`, `opencode`) in one command.
 - Harness adapters were generalized to be runtime-aware through `runtime.apiFormat` and runtime base URLs.
@@ -233,4 +235,3 @@ Purpose: Document the completed multi-runtime MVP implementation, operational se
 - Test suite compatibility fixed by replacing `bun:test` imports with `vitest` in:
   - `test/vllm-runtime.test.ts`
   - `test/harness-compatibility.test.ts`
-

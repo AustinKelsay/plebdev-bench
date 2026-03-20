@@ -37,11 +37,17 @@ const MIN_OUTPUT_LENGTH = 10;
 /** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
 
-/** Default Goose turn limit for first attempt. */
+/** Default Goose turn limit for first code-output attempt. */
 const DEFAULT_GOOSE_MAX_TURNS = 1;
 
-/** Default Goose turn limit for retry attempt. */
+/** Default Goose turn limit for code-output retry attempts. */
 const DEFAULT_GOOSE_RETRY_MAX_TURNS = 3;
+
+/** Default Goose turn limit for first workspace attempt. */
+const DEFAULT_GOOSE_WORKSPACE_MAX_TURNS = 8;
+
+/** Default Goose turn limit for workspace retry attempts. */
+const DEFAULT_GOOSE_WORKSPACE_RETRY_MAX_TURNS = 12;
 
 /** Configuration for Goose turn limits across attempts. */
 export interface GooseAdapterOptions {
@@ -49,6 +55,10 @@ export interface GooseAdapterOptions {
 	maxTurns?: number;
 	/** Maximum Goose turns for the retry attempt. */
 	retryMaxTurns?: number;
+	/** Maximum Goose turns for the first workspace attempt. */
+	workspaceMaxTurns?: number;
+	/** Maximum Goose turns for the workspace retry attempt. */
+	workspaceRetryMaxTurns?: number;
 }
 
 /** Runtime-validated Goose adapter options. */
@@ -56,6 +66,8 @@ const GooseAdapterOptionsSchema = z
 	.object({
 		maxTurns: z.number().optional(),
 		retryMaxTurns: z.number().optional(),
+		workspaceMaxTurns: z.number().optional(),
+		workspaceRetryMaxTurns: z.number().optional(),
 	})
 	.strict();
 
@@ -136,6 +148,22 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 		);
 	}
 	const retryMaxTurns = requestedRetryMaxTurns;
+	const workspaceMaxTurns = normalizeTurnLimit(
+		"goose.workspaceMaxTurns",
+		parsedOptions.workspaceMaxTurns,
+		DEFAULT_GOOSE_WORKSPACE_MAX_TURNS,
+	);
+	const requestedWorkspaceRetryMaxTurns = normalizeTurnLimit(
+		"goose.workspaceRetryMaxTurns",
+		parsedOptions.workspaceRetryMaxTurns,
+		DEFAULT_GOOSE_WORKSPACE_RETRY_MAX_TURNS,
+	);
+	if (requestedWorkspaceRetryMaxTurns < workspaceMaxTurns) {
+		throw new TypeError(
+			`goose.workspaceRetryMaxTurns (${requestedWorkspaceRetryMaxTurns}) must be greater than or equal to goose.workspaceMaxTurns (${workspaceMaxTurns})`,
+		);
+	}
+	const workspaceRetryMaxTurns = requestedWorkspaceRetryMaxTurns;
 
 	return {
 		name: "goose" as const,
@@ -156,8 +184,15 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			const startTime = performance.now();
 			const isRetryAttempt = hasRetryMarker(prompt);
 			const promptWithoutMarker = stripRetryMarker(prompt);
-			const maxTurnsForAttempt = isRetryAttempt ? retryMaxTurns : maxTurns;
 			const promptMode = opts.promptMode ?? "code-output";
+			const maxTurnsForAttempt =
+				promptMode === "workspace"
+					? isRetryAttempt
+						? workspaceRetryMaxTurns
+						: workspaceMaxTurns
+					: isRetryAttempt
+						? retryMaxTurns
+						: maxTurns;
 			if (promptMode === "workspace" && opts.workingDirectory === undefined) {
 				throw new Error(
 					"Goose workspace mode requires a caller-supplied workingDirectory",
@@ -239,6 +274,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					? buildWorkspaceToolPrompt({
 							toolNames: ["text_editor"],
 							taskPrompt: promptWithoutMarker,
+							workspaceRootPath: executionCwd,
 						})
 					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 

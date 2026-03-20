@@ -7,6 +7,7 @@
  */
 
 import type { MatrixItemResult } from "../schemas/index.js";
+export { formatRunStats } from "./stats-format.js";
 
 /** Timing statistics. */
 export interface TimingStats {
@@ -49,12 +50,22 @@ export interface DimensionBreakdown {
 
 /** Scoring statistics. */
 export interface ScoringStats {
-	/** Overall pass rate. */
+	/** Semantic pass rate across scored assertions only. */
 	passRate: number;
 	/** Total tests passed. */
 	totalPassed: number;
 	/** Total tests run. */
 	totalTests: number;
+	/** Number of rows that produced an automated score. */
+	scoredItems: number;
+	/** Number of rows in the run. */
+	totalItems: number;
+	/** Number of fully successful rows. */
+	completedItems: number;
+	/** Item-level success rate across the full run. */
+	itemSuccessRate: number;
+	/** Fraction of scheduled rows that reached scoring. */
+	scoredItemRate: number;
 	/** Breakdown by test. */
 	byTest: DimensionBreakdown[];
 	/** Breakdown by harness. */
@@ -230,6 +241,12 @@ function calculateScoringStats(
 		0,
 	);
 	const passRate = totalTests > 0 ? (totalPassed / totalTests) * 100 : 0;
+	const completedItems = results.filter((r) => r.status === "completed").length;
+	const totalItems = results.length;
+	const scoredItems = withScores.length;
+	const itemSuccessRate =
+		totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+	const scoredItemRate = totalItems > 0 ? (scoredItems / totalItems) * 100 : 0;
 
 	// Breakdown by test
 	const byTestMap = groupBy(
@@ -298,6 +315,11 @@ function calculateScoringStats(
 		passRate,
 		totalPassed,
 		totalTests,
+		scoredItems,
+		totalItems,
+		completedItems,
+		itemSuccessRate,
+		scoredItemRate,
 		byTest: Array.from(byTestMap.entries())
 			.map(([name, stats]) => ({ name, ...stats }))
 			.sort((a, b) => b.passRate - a.passRate),
@@ -395,222 +417,4 @@ export function calculateRunStats(results: MatrixItemResult[]): RunStats {
 		frontier: calculateFrontierStats(results),
 		generationFailures: calculateGenerationFailureStats(results),
 	};
-}
-
-/**
- * Formats a duration in milliseconds to a human-readable string.
- */
-function formatDuration(ms: number): string {
-	if (ms < 1000) return `${Math.round(ms)}ms`;
-	const seconds = ms / 1000;
-	if (seconds < 60) return `${seconds.toFixed(1)}s`;
-	const minutes = Math.floor(seconds / 60);
-	const remainingSeconds = seconds % 60;
-	return `${minutes}m ${Math.round(remainingSeconds)}s`;
-}
-
-/**
- * Formats a number with thousands separators.
- */
-function formatNumber(n: number): string {
-	return n.toLocaleString("en-US");
-}
-
-/**
- * Pads a string to a fixed width.
- */
-function pad(
-	str: string,
-	width: number,
-	align: "left" | "right" = "left",
-): string {
-	if (align === "right") return str.padStart(width);
-	return str.padEnd(width);
-}
-
-/**
- * Formats run statistics for terminal output.
- *
- * @param stats - Run statistics
- * @param runId - Run identifier
- * @param completed - Number of completed items
- * @param failed - Number of failed items
- * @param total - Total number of items
- * @param durationMs - Total run duration
- * @param outputDir - Output directory path
- * @returns Formatted string for terminal output
- */
-export function formatRunStats(
-	stats: RunStats,
-	runId: string,
-	completed: number,
-	failed: number,
-	total: number,
-	durationMs: number,
-	outputDir: string,
-): string {
-	const lines: string[] = [];
-
-	// Header
-	lines.push("");
-	lines.push(`Run complete: ${runId}`);
-	lines.push(`  Completed: ${completed}/${total}`);
-	lines.push(`  Failed: ${failed}`);
-	if (stats.generationFailures && stats.generationFailures.total > 0) {
-		lines.push("  Failure breakdown:");
-		for (const { type, count } of stats.generationFailures.byType) {
-			lines.push(`    ${type}: ${count}`);
-		}
-	}
-	lines.push(`  Duration: ${formatDuration(durationMs)}`);
-
-	// Timing section
-	lines.push("");
-	lines.push("Timing");
-	lines.push(
-		`  Avg generation:    ${formatDuration(stats.timing.avgGenerationMs)}`,
-	);
-	const avgScoringForDisplay =
-		stats.timing.avgScoringOnlyMs ?? stats.timing.avgScoringMs;
-	if (avgScoringForDisplay !== null) {
-		lines.push(`  Avg scoring:       ${formatDuration(avgScoringForDisplay)}`);
-	}
-	if (stats.timing.avgRetryGenerationMs != null) {
-		lines.push(
-			`  Avg retry gen:     ${formatDuration(stats.timing.avgRetryGenerationMs)} (${stats.timing.scoringItemsWithRetry ?? 0} items)`,
-		);
-	}
-	if (
-		stats.timing.avgScoringMs !== null &&
-		stats.timing.avgScoringOnlyMs !== undefined &&
-		stats.timing.avgScoringOnlyMs !== null &&
-		stats.timing.avgScoringMs > stats.timing.avgScoringOnlyMs
-	) {
-		lines.push(
-			`  Avg scoring total: ${formatDuration(stats.timing.avgScoringMs)}`,
-		);
-	}
-	if (stats.timing.avgFrontierEvalMs !== null) {
-		lines.push(
-			`  Avg frontier eval: ${formatDuration(stats.timing.avgFrontierEvalMs)}`,
-		);
-	}
-	lines.push(
-		`  Generation range:  ${formatDuration(stats.timing.minGenerationMs)} - ${formatDuration(stats.timing.maxGenerationMs)}`,
-	);
-
-	// Tokens section (if available)
-	if (stats.tokens) {
-		lines.push("");
-		lines.push("Tokens");
-		lines.push(
-			`  Total prompt:      ${formatNumber(stats.tokens.totalPromptTokens)}`,
-		);
-		lines.push(
-			`  Total completion:  ${formatNumber(stats.tokens.totalCompletionTokens)}`,
-		);
-		lines.push(
-			`  Avg completion:    ${formatNumber(stats.tokens.avgCompletionTokens)}/item`,
-		);
-		lines.push(`  Items with tokens: ${stats.tokens.itemsWithTokens}/${total}`);
-	}
-
-	// Scoring section (if available)
-	if (stats.scoring) {
-		lines.push("");
-		lines.push("Scoring");
-		lines.push(
-			`  Pass rate: ${stats.scoring.passRate.toFixed(1)}% (${stats.scoring.totalPassed}/${stats.scoring.totalTests} tests)`,
-		);
-
-		// By test breakdown (show all)
-		if (stats.scoring.byTest.length > 1) {
-			lines.push("  By test:");
-			const maxNameLen = Math.max(
-				...stats.scoring.byTest.map((t) => t.name.length),
-			);
-			for (const t of stats.scoring.byTest) {
-				lines.push(
-					`    ${pad(t.name, maxNameLen)}  ${pad(`${t.passRate.toFixed(1)}%`, 6, "right")} (${t.passed}/${t.total})`,
-				);
-			}
-		}
-
-		// By harness breakdown (show if > 1 harness)
-		if (stats.scoring.byHarness.length > 1) {
-			lines.push("  By harness:");
-			const maxNameLen = Math.max(
-				...stats.scoring.byHarness.map((h) => h.name.length),
-			);
-			for (const h of stats.scoring.byHarness) {
-				lines.push(
-					`    ${pad(h.name, maxNameLen)}  ${pad(`${h.passRate.toFixed(1)}%`, 6, "right")} (${h.passed}/${h.total})`,
-				);
-			}
-		}
-
-		// By model breakdown (show if > 1 model)
-		if (stats.scoring.byModel.length > 1) {
-			lines.push("  By model:");
-			const maxNameLen = Math.min(
-				25,
-				Math.max(...stats.scoring.byModel.map((m) => m.name.length)),
-			);
-			for (const m of stats.scoring.byModel) {
-				const displayName =
-					m.name.length > 25 ? `${m.name.slice(0, 24)}…` : m.name;
-				lines.push(
-					`    ${pad(displayName, maxNameLen)}  ${pad(`${m.passRate.toFixed(1)}%`, 6, "right")} (${m.passed}/${m.total})`,
-				);
-			}
-		}
-	}
-
-	// Frontier eval section (if available)
-	if (stats.frontier) {
-		lines.push("");
-		lines.push("Frontier Eval");
-		lines.push(
-			`  Avg score: ${stats.frontier.avgScore.toFixed(1)}/10 (${stats.frontier.itemCount} items)`,
-		);
-		lines.push(
-			`  Range: ${stats.frontier.minScore}/10 - ${stats.frontier.maxScore}/10`,
-		);
-
-		// By harness breakdown (show if > 1 harness)
-		if (stats.frontier.byHarness.length > 1) {
-			lines.push("  By harness:");
-			const maxNameLen = Math.max(
-				...stats.frontier.byHarness.map((h) => h.name.length),
-			);
-			for (const h of stats.frontier.byHarness) {
-				lines.push(
-					`    ${pad(h.name, maxNameLen)}  ${h.avgScore.toFixed(1)}/10 (${h.count})`,
-				);
-			}
-		}
-
-		// By model breakdown (show if > 1 model)
-		if (stats.frontier.byModel.length > 1) {
-			lines.push("  By model:");
-			const maxNameLen = Math.min(
-				25,
-				Math.max(...stats.frontier.byModel.map((m) => m.name.length)),
-			);
-			for (const m of stats.frontier.byModel) {
-				const displayName =
-					m.name.length > 25 ? `${m.name.slice(0, 24)}…` : m.name;
-				lines.push(
-					`    ${pad(displayName, maxNameLen)}  ${m.avgScore.toFixed(1)}/10 (${m.count})`,
-				);
-			}
-		}
-	}
-
-	// Results path
-	lines.push("");
-	lines.push(`Results: ${outputDir}/${runId}/`);
-	lines.push("");
-
-	return lines.join("\n");
 }

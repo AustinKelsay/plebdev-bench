@@ -6,5 +6,6 @@
     "cache",
     "expiration"
   ],
+  "timeoutMultiplier": 2.25,
   "schemaVersion": 1
 }

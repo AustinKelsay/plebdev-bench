@@ -66,6 +66,7 @@ describe("discoverTestCatalog", () => {
 			description: "A computer-use test",
 			scoringMode: "workspace",
 			requiresTools: true,
+			requiredHarnessCapabilities: ["workspace-read", "workspace-write"],
 		});
 
 		const catalog = discoverTestCatalog(root);
@@ -90,6 +91,7 @@ describe("discoverTestCatalog", () => {
 			category: "computer-use",
 			scoringMode: "workspace",
 			requiresTools: false,
+			requiredHarnessCapabilities: ["workspace-read"],
 		});
 
 		expect(() => discoverTestCatalog(root)).toThrow(
@@ -102,13 +104,52 @@ describe("discoverTestCatalog", () => {
 		createTestDir(root, "missing-tools-workspace-test", {
 			category: "computer-use",
 			scoringMode: "workspace",
+			requiredHarnessCapabilities: ["workspace-read"],
 		});
 
 		expect(() => discoverTestCatalog(root)).toThrow(
 			'requiresTools must be true when scoringMode is "workspace"',
 		);
 	});
-});
+
+	it("rejects workspace-scored tests without explicit harness capabilities", () => {
+		const root = createTempRoot();
+		createTestDir(root, "missing-capabilities-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+			requiresTools: true,
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			"workspace-scored tests must declare requiredHarnessCapabilities",
+		);
+	});
+
+		it("rejects harness capability requirements when tools are disabled", () => {
+			const root = createTempRoot();
+			createTestDir(root, "invalid-capabilities", {
+				category: "coding",
+				requiresTools: false,
+				requiredHarnessCapabilities: ["workspace-read"],
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+				"requiredHarnessCapabilities may only be set when requiresTools is true",
+			);
+		});
+
+		it("rejects invalid timeout multipliers", () => {
+			const root = createTempRoot();
+			createTestDir(root, "bad-timeout-multiplier", {
+				category: "coding",
+				timeoutMultiplier: 0,
+			});
+
+			expect(() => discoverTestCatalog(root)).toThrow(
+				"timeoutMultiplier",
+			);
+		});
+	});
 
 describe("selectTests", () => {
 	it("throws on unknown requested tests", () => {
@@ -124,7 +165,10 @@ describe("selectTests", () => {
 	it("applies category filters and keeps tool-smoke first", () => {
 		const root = createTempRoot();
 		createTestDir(root, "calculator-basic", { category: "coding" });
-		createTestDir(root, "tool-smoke", { category: "coding" });
+		createTestDir(root, "tool-smoke", {
+			category: "coding",
+			tags: ["preflight"],
+		});
 		createTestDir(root, "desktop-cleanup", { category: "computer-use" });
 		const catalog = discoverTestCatalog(root);
 

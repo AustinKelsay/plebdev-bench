@@ -129,7 +129,7 @@ Multi-bar chart showing effective score and contributing metrics:
 - **Effective Score** (gold/amber): 40% pass + 30% completion + 30% tool success
 - **Pass Rate** (green): Automated test pass rate
 - **Tool Success** (blue): Tool-calling success rate for tool harnesses
-- **Frontier Avg** (purple): GPT-5.2 evaluation average
+- **Frontier Avg** (purple): GPT-5.4 evaluation average
 
 #### BlindVsInformedChart
 
