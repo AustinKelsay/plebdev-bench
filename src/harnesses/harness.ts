@@ -1,6 +1,7 @@
 /**
  * Purpose: Common harness interface and types for all adapters.
- * Exports: Harness, GenerateOpts, GenerateResult, HarnessName, HARNESS_NAMES
+ * Exports: Harness, GenerateOpts, GenerateResult, HarnessName, HARNESS_NAMES,
+ *          HarnessPromptMode, TOOL_CALLING_HARNESS_NAMES
  *
  * All harnesses implement this interface to provide a unified API for:
  * - Checking availability (ping)
@@ -22,6 +23,10 @@ export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
 export type ToolCallingHarnessName =
 	(typeof TOOL_CALLING_HARNESS_NAMES)[number];
+
+/** Prompt handling modes supported by harness adapters. */
+export const HARNESS_PROMPT_MODES = ["code-output", "workspace"] as const;
+export type HarnessPromptMode = (typeof HARNESS_PROMPT_MODES)[number];
 
 /**
  * Runtime compatibility for each harness.
@@ -66,8 +71,8 @@ export function getCompatibleHarnesses(runtime: string): HarnessName[] {
 	);
 }
 
-/** Options for generating a completion. */
-export interface GenerateOpts {
+/** Common options shared across all harness prompt modes. */
+interface BaseGenerateOpts {
 	/** Model name in Ollama format (e.g., "llama3.2:3b"). */
 	model: string;
 	/** The prompt to send to the model. */
@@ -79,6 +84,25 @@ export interface GenerateOpts {
 	/** Runtime to use for generation. */
 	runtime: Runtime;
 }
+
+/** Generation options for standard code-output benchmarks. */
+interface CodeOutputGenerateOpts extends BaseGenerateOpts {
+	/** Prompt handling mode for this benchmark item. */
+	promptMode?: "code-output";
+	/** Optional working directory for tool-calling harnesses. */
+	workingDirectory?: string;
+}
+
+/** Generation options for workspace-scored benchmarks. */
+interface WorkspaceGenerateOpts extends BaseGenerateOpts {
+	/** Workspace mode always requires a caller-supplied working directory. */
+	promptMode: "workspace";
+	/** Isolated workspace root passed in by the runner. */
+	workingDirectory: string;
+}
+
+/** Options for generating a completion. */
+export type GenerateOpts = CodeOutputGenerateOpts | WorkspaceGenerateOpts;
 
 /** Result from a generation request. */
 export interface GenerateResult {

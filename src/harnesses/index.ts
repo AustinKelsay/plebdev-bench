@@ -16,6 +16,7 @@ export type {
 export {
 	HARNESS_NAMES,
 	LEGACY_HARNESS_ALIAS,
+	TOOL_CALLING_HARNESS_NAMES,
 	normalizeHarnessName,
 	isValidHarnessName,
 	HARNESS_RUNTIME_COMPATIBILITY,

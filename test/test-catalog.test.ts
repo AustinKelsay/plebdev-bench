@@ -7,9 +7,9 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	TEST_METADATA_FILE,
 	discoverTestCatalog,
 	selectTests,
-	TEST_METADATA_FILE,
 } from "../src/lib/test-catalog.js";
 
 const tempDirs: string[] = [];
@@ -56,15 +56,24 @@ afterEach(() => {
 describe("discoverTestCatalog", () => {
 	it("loads and sorts tests with valid metadata", () => {
 		const root = createTempRoot();
-		createTestDir(root, "zeta", { category: "coding", tags: ["z"] });
+		createTestDir(root, "zeta", {
+			category: "coding",
+			tags: ["z"],
+			scoringMode: "code-module",
+		});
 		createTestDir(root, "alpha", {
 			category: "computer-use",
 			description: "A computer-use test",
+			scoringMode: "workspace",
+			requiresTools: true,
 		});
 
 		const catalog = discoverTestCatalog(root);
 		expect(catalog.map((test) => test.slug)).toEqual(["alpha", "zeta"]);
 		expect(catalog[0].category).toBe("computer-use");
+		expect(catalog[0].scoringMode).toBe("workspace");
+		expect(catalog[0].requiresTools).toBe(true);
+		expect(catalog[1].scoringMode).toBe("code-module");
 		expect(catalog[1].tags).toEqual(["z"]);
 	});
 
@@ -73,6 +82,31 @@ describe("discoverTestCatalog", () => {
 		createTestDir(root, "smoke");
 
 		expect(() => discoverTestCatalog(root)).toThrow(TEST_METADATA_FILE);
+	});
+
+	it("rejects workspace-scored tests that do not require tools", () => {
+		const root = createTempRoot();
+		createTestDir(root, "bad-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+			requiresTools: false,
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			'requiresTools must be true when scoringMode is "workspace"',
+		);
+	});
+
+	it("rejects workspace-scored tests when requiresTools is omitted", () => {
+		const root = createTempRoot();
+		createTestDir(root, "missing-tools-workspace-test", {
+			category: "computer-use",
+			scoringMode: "workspace",
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow(
+			'requiresTools must be true when scoringMode is "workspace"',
+		);
 	});
 });
 

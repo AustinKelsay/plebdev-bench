@@ -1,0 +1,8 @@
+{
+	"category": "computer-use",
+	"description": "Baseline workspace task covering create, append, and JSON output",
+	"tags": ["workspace", "filesystem", "foundational"],
+	"scoringMode": "workspace",
+	"requiresTools": true,
+	"schemaVersion": 1
+}

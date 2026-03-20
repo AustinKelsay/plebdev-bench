@@ -8,7 +8,9 @@
 import type { ScoringSpec } from "../../schemas/index.js";
 
 export const spec: ScoringSpec = {
+	schemaVersion: 1,
 	testSlug: "calculator-basic",
+	mode: "code-module",
 
 	expectedExports: [
 		{ name: "add", type: "function" },

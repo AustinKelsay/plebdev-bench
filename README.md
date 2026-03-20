@@ -16,8 +16,8 @@ Test categories:
 - `computer-use`
 
 Scoring:
-- **Automated**: runs a test suite against generated code (Vitest).
-- **Optional frontier eval**: rubric scoring via **OpenRouter** (auto-enabled when API key is present).
+- **Automated**: either imports generated code and runs scoring cases, or scores a seeded workspace against exact filesystem assertions.
+- **Optional frontier eval**: rubric scoring via **OpenRouter** for code-module tests when an API key is present.
 
 Outputs (per run):
 - `results/<run-id>/plan.json` — resolved config + expanded matrix plan (reproducibility)
@@ -41,6 +41,11 @@ Current benchmark tests:
 - `rate-limiter` — per-key fixed-window quota semantics
 - `ttl-cache` — deterministic cache expiration and mutation semantics
 - `event-emitter` — listener lifecycle and ordering semantics
+- `workspace-smoke` — create `logs/session.log`, rewrite `checklist/steps.txt` to the exact three-line final state, and emit `artifacts/summary.json`
+- `file-locator` — search a noisy workspace and extract key values into one report
+- `targeted-edit` — make one precise edit to a single existing file
+- `workspace-reorg` — move files into a new directory structure and emit an index manifest
+- `safe-cleanup` — delete only approved files and write an audit report
 
 ## Status
 
@@ -97,7 +102,7 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 - `src/runtimes/` — runtime adapters (inference backends like Ollama)
 - `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI)
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
-  - includes `test.meta.json` for category metadata
+  - includes `test.meta.json` for category metadata, scoring mode, and tool requirements
 - `src/results/` — result schemas, read/write, compare
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
 - `results/` — local runtime output (ignored by git)
@@ -130,6 +135,9 @@ bun pb --machine-id mac-mini-m4-pro --machine-label "Austin Mac Mini"
 
 # Run only coding category tests
 bun pb --categories coding
+
+# Run only computer-use tests on tool harnesses
+bun pb --categories computer-use --harnesses goose opencode
 
 # Run with specific runtime and harness
 bun pb --runtimes ollama --harnesses direct

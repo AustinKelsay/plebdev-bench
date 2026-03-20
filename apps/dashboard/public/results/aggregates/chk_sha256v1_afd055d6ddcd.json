@@ -1,0 +1,700 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-03-20T15:38:18.832Z",
+  "checkpointId": "chk_sha256v1_afd055d6ddcd",
+  "summary": {
+    "runsConsidered": 7,
+    "runsMatched": 1,
+    "rawItems": 20,
+    "dedupedItems": 20,
+    "machines": 1,
+    "automatedScoreItems": 20,
+    "frontierEvalItems": 0
+  },
+  "machines": [
+    {
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "runCount": 1,
+      "itemCount": 20
+    }
+  ],
+  "items": [
+    {
+      "id": "01",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "file-locator",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:38:09.949Z",
+      "completedAt": "2026-03-09T02:40:10.469Z",
+      "generation": {
+        "success": true,
+        "output": "I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 120437
+      },
+      "automatedScore": {
+        "passed": 2,
+        "failed": 3,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 80,
+        "scoringDurationMs": 80
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/found-values.json\"; Failed to read JSON \"reports/found-values.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-locator-UHwh9B/reports/found-values.json'; Expected created paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:40:10.469Z"
+    },
+    {
+      "id": "02",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "file-locator",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:40:10.473Z",
+      "completedAt": "2026-03-09T02:41:37.047Z",
+      "generation": {
+        "success": true,
+        "output": "I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 86502
+      },
+      "automatedScore": {
+        "passed": 2,
+        "failed": 3,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 72,
+        "scoringDurationMs": 72
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/found-values.json\"; Failed to read JSON \"reports/found-values.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-locator-iQ2Mbf/reports/found-values.json'; Expected created paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:41:37.047Z"
+    },
+    {
+      "id": "03",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "safe-cleanup",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:41:37.051Z",
+      "completedAt": "2026-03-09T02:42:11.583Z",
+      "generation": {
+        "success": true,
+        "output": "I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 34477
+      },
+      "automatedScore": {
+        "passed": 5,
+        "failed": 3,
+        "total": 8
+      },
+      "scoringMetrics": {
+        "durationMs": 55,
+        "scoringDurationMs": 55
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/cleanup-report.json\"; Failed to read JSON \"reports/cleanup-report.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-EGJ1Ag/reports/cleanup-report.json'; Expected created paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:42:11.583Z"
+    },
+    {
+      "id": "04",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "safe-cleanup",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:42:11.586Z",
+      "completedAt": "2026-03-09T02:43:07.675Z",
+      "generation": {
+        "success": true,
+        "output": "I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 56032
+      },
+      "automatedScore": {
+        "passed": 1,
+        "failed": 7,
+        "total": 8
+      },
+      "scoringMetrics": {
+        "durationMs": 57,
+        "scoringDurationMs": 57
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/cleanup-report.json\"; Path should be absent: \"build/tmp/app.tmp\"; Path should be absent: \"cache/session.cache\"; Path should be absent: \"logs/2026-01-01.log\"; Failed to read JSON \"reports/cleanup-report.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-r8rwWp/reports/cleanup-report.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:43:07.675Z"
+    },
+    {
+      "id": "05",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:43:07.678Z",
+      "completedAt": "2026-03-09T02:43:15.727Z",
+      "generation": {
+        "success": true,
+        "output": "I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 7980
+      },
+      "automatedScore": {
+        "passed": 3,
+        "failed": 2,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 68,
+        "scoringDurationMs": 68
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Expected modified paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:43:15.727Z"
+    },
+    {
+      "id": "06",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:43:15.729Z",
+      "completedAt": "2026-03-09T02:45:29.746Z",
+      "generation": {
+        "success": true,
+        "output": "I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 133946
+      },
+      "automatedScore": {
+        "passed": 3,
+        "failed": 2,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 70,
+        "scoringDurationMs": 70
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Expected modified paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:45:29.746Z"
+    },
+    {
+      "id": "07",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "workspace-reorg",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:45:29.749Z",
+      "completedAt": "2026-03-09T02:47:20.136Z",
+      "generation": {
+        "success": true,
+        "output": "I'll start by examining the current workspace structure to understand where these files are and what already exists in the docs directory.I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 110329
+      },
+      "automatedScore": {
+        "passed": 1,
+        "failed": 13,
+        "total": 14
+      },
+      "scoringMetrics": {
+        "durationMs": 57,
+        "scoringDurationMs": 57
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"docs/guides/install.md\"; Missing required path \"docs/index.json\"; Missing required path \"docs/reference/config.md\"; Missing required path \"docs/release-notes/changelog.md\"; Path should be absent: \"incoming/guides/install.md\"; Path should be absent: \"incoming/reference/config.md\"; Path should be absent: \"incoming/release-notes/changelog.md\"; Failed to read \"docs/guides/install.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-h7piBm/docs/guides/install.md'; Failed to read \"docs/reference/config.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-h7piBm/docs/reference/config.md'; Failed to read \"docs/release-notes/changelog.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-h7piBm/docs/release-notes/changelog.md'; Failed to read JSON \"docs/index.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-h7piBm/docs/index.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:47:20.136Z"
+    },
+    {
+      "id": "08",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "workspace-reorg",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:47:20.138Z",
+      "completedAt": "2026-03-09T02:50:16.287Z",
+      "generation": {
+        "success": true,
+        "output": "I'll complete this task by moving the three files to their new locations in the docs tree and creating the index.json file.I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 176079
+      },
+      "automatedScore": {
+        "passed": 1,
+        "failed": 13,
+        "total": 14
+      },
+      "scoringMetrics": {
+        "durationMs": 68,
+        "scoringDurationMs": 68
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"docs/guides/install.md\"; Missing required path \"docs/index.json\"; Missing required path \"docs/reference/config.md\"; Missing required path \"docs/release-notes/changelog.md\"; Path should be absent: \"incoming/guides/install.md\"; Path should be absent: \"incoming/reference/config.md\"; Path should be absent: \"incoming/release-notes/changelog.md\"; Failed to read \"docs/guides/install.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-NSyw6M/docs/guides/install.md'; Failed to read \"docs/reference/config.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-NSyw6M/docs/reference/config.md'; Failed to read \"docs/release-notes/changelog.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-NSyw6M/docs/release-notes/changelog.md'; Failed to read JSON \"docs/index.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-NSyw6M/docs/index.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:50:16.287Z"
+    },
+    {
+      "id": "09",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:50:16.290Z",
+      "completedAt": "2026-03-09T02:51:58.645Z",
+      "generation": {
+        "success": true,
+        "output": "I'll complete all three tasks. Let me first check the existing files and directories, then perform each operation.I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 102296
+      },
+      "automatedScore": {
+        "passed": 2,
+        "failed": 7,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"artifacts/summary.json\"; Missing required path \"logs/session.log\"; Failed to read \"logs/session.log\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-smoke-uQburA/logs/session.log'; Failed to read JSON \"artifacts/summary.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-smoke-uQburA/artifacts/summary.json'; Expected created paths to match exactly; Expected modified paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:51:58.645Z"
+    },
+    {
+      "id": "10",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "goose",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:51:58.647Z",
+      "completedAt": "2026-03-09T02:53:08.005Z",
+      "generation": {
+        "success": true,
+        "output": "I've reached the maximum number of actions I can do without user input. Would you like me to continue?",
+        "durationMs": 69299
+      },
+      "automatedScore": {
+        "passed": 2,
+        "failed": 7,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 58,
+        "scoringDurationMs": 58
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"artifacts/summary.json\"; Missing required path \"logs/session.log\"; Failed to read \"logs/session.log\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-smoke-dXPwqn/logs/session.log'; Failed to read JSON \"artifacts/summary.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-smoke-dXPwqn/artifacts/summary.json'; Expected created paths to match exactly; Expected modified paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:53:08.005Z"
+    },
+    {
+      "id": "11",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "file-locator",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:53:08.007Z",
+      "completedAt": "2026-03-09T02:53:32.293Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024804824,\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"part\":{\"id\":\"prt_cd0837fd4001eB8vH0sXjygc7L\",\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"messageID\":\"msg_cd08341220012Y5ttSTqJaIQUW\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024807362,\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"part\":{\"id\":\"prt_cd08389bd001B2dUFZlZIPnWrs\",\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"messageID\":\"msg_cd08341220012Y5ttSTqJaIQUW\",\"type\":\"tool\",\"callID\":\"call_p2dpr9p3\",\"tool\":\"invalid\",\"state\":{\"status\":\"completed\",\"input\":{\"tool\":\"glob\",\"error\":\"Model tried to call unavailable tool 'glob'. Available tools: invalid, read, edit, write, todowrite, skill, searxng_searxng_web_search, searxng_web_url_read.\"},\"output\":\"The arguments provided to the tool are invalid: Model tried to call unavailable tool 'glob'. Available tools: invalid, read, edit, write, todowrite, skill, searxng_searxng_web_search, searxng_web_url_read.\",\"title\":\"Invalid Tool\",\"metadata\":{\"truncated\":false},\"time\":{\"start\":1773024807360,\"end\":1773024807361}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024807393,\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"part\":{\"id\":\"prt_cd08389df001ZQEVZcaLr8jiuc\",\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"messageID\":\"msg_cd08341220012Y5ttSTqJaIQUW\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6804,\"input\":6727,\"output\":77,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024808083,\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"part\":{\"id\":\"prt_cd0838c90001OWHYFHMecwxC11\",\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"messageID\":\"msg_cd08389e3001o3ublC9TtwhB2a\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024810182,\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"part\":{\"id\":\"prt_cd08394c5001ShynR0wYEMPvLJ\",\"sessionID\":\"ses_32f7cbefbffeYl6hquxfKuDAwH\",\"messageID\":\"msg_cd08389e3001o3ublC9TtwhB2a\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6943,\"input\":6880,\"output\":63,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 24219
+      },
+      "automatedScore": {
+        "passed": 2,
+        "failed": 3,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 65,
+        "scoringDurationMs": 65
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/found-values.json\"; Failed to read JSON \"reports/found-values.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-locator-kztRq5/reports/found-values.json'; Expected created paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:53:32.293Z"
+    },
+    {
+      "id": "12",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "file-locator",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:53:32.296Z",
+      "completedAt": "2026-03-09T02:53:53.093Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024818558,\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"part\":{\"id\":\"prt_cd083b57b001Y0bP4bwdhlM0zD\",\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"messageID\":\"msg_cd0839f47001MVqGEzDbF6K4jp\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024823647,\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"part\":{\"id\":\"prt_cd083c958001giZyIaAtXvxqbx\",\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"messageID\":\"msg_cd0839f47001MVqGEzDbF6K4jp\",\"type\":\"tool\",\"callID\":\"call_fogb92z9\",\"tool\":\"invalid\",\"state\":{\"status\":\"completed\",\"input\":{\"tool\":\"glob\",\"error\":\"Model tried to call unavailable tool 'glob'. Available tools: invalid, read, edit, write, todowrite, skill, searxng_searxng_web_search, searxng_web_url_read.\"},\"output\":\"The arguments provided to the tool are invalid: Model tried to call unavailable tool 'glob'. Available tools: invalid, read, edit, write, todowrite, skill, searxng_searxng_web_search, searxng_web_url_read.\",\"title\":\"Invalid Tool\",\"metadata\":{\"truncated\":false},\"time\":{\"start\":1773024823645,\"end\":1773024823646}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024823670,\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"part\":{\"id\":\"prt_cd083c974001wQQV8lOX6mlm8u\",\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"messageID\":\"msg_cd0839f47001MVqGEzDbF6K4jp\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6861,\"input\":6709,\"output\":152,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024824330,\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"part\":{\"id\":\"prt_cd083cc0900102PzjIm0wJ5XkR\",\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"messageID\":\"msg_cd083c978001oQRlagHpJ1PTmw\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024827394,\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"part\":{\"id\":\"prt_cd083d801001u2DPKJiL2ya2mk\",\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"messageID\":\"msg_cd083c978001oQRlagHpJ1PTmw\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6953,\"input\":6862,\"output\":91,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024828359,\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"part\":{\"id\":\"prt_cd083dbc5001tGFr8yEsnNt2vY\",\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"messageID\":\"msg_cd083d803001AIx4OJpdkPOCr8\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024830982,\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"part\":{\"id\":\"prt_cd083e603001KBHdNo59JzjpG8\",\"sessionID\":\"ses_32f7c60d2ffeNhNSGxP5UyERZK\",\"messageID\":\"msg_cd083d803001AIx4OJpdkPOCr8\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":7078,\"input\":7000,\"output\":78,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 20735
+      },
+      "automatedScore": {
+        "passed": 2,
+        "failed": 3,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 62,
+        "scoringDurationMs": 62
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/found-values.json\"; Failed to read JSON \"reports/found-values.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-file-locator-PNeA3c/reports/found-values.json'; Expected created paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:53:53.093Z"
+    },
+    {
+      "id": "13",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "safe-cleanup",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:53:53.097Z",
+      "completedAt": "2026-03-09T02:54:12.874Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024839341,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd08406aa001t9ugnNFHwYpTTx\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd083f088001TenlLYcc8yQo5T\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024842737,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd08413ea001CLNX5RpUENqXGK\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd083f088001TenlLYcc8yQo5T\",\"type\":\"tool\",\"callID\":\"call_juzmkp2v\",\"tool\":\"invalid\",\"state\":{\"status\":\"completed\",\"input\":{\"tool\":\"glob\",\"error\":\"Model tried to call unavailable tool 'glob'. Available tools: invalid, read, edit, write, todowrite, skill, searxng_searxng_web_search, searxng_web_url_read.\"},\"output\":\"The arguments provided to the tool are invalid: Model tried to call unavailable tool 'glob'. Available tools: invalid, read, edit, write, todowrite, skill, searxng_searxng_web_search, searxng_web_url_read.\",\"title\":\"Invalid Tool\",\"metadata\":{\"truncated\":false},\"time\":{\"start\":1773024842735,\"end\":1773024842737}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024842765,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd084140b001619E8PYyJIHXQC\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd083f088001TenlLYcc8yQo5T\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6807,\"input\":6705,\"output\":102,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024843430,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd08416a3001oYBLVRkjaKTaNw\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd0841411001Q9YLSKbVU15mII\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024846397,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd0842235001e2bcONz60WPX5H\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd0841411001Q9YLSKbVU15mII\",\"type\":\"tool\",\"callID\":\"call_zxo3xu0w\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-xwEW1q\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-xwEW1q</path>\\n<type>directory</type>\\n<entries>\\n.plebdev-bench-baseline.json\\nbuild/\\ncache/\\nconfig/\\nlogs/\\nnotes/\\n\\n(6 entries)\\n</entries>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-xwEW1q\",\"metadata\":{\"preview\":\".plebdev-bench-baseline.json\\nbuild/\\ncache/\\nconfig/\\nlogs/\\nnotes/\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773024846392,\"end\":1773024846396}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024846421,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd0842254001YjcNAK6Lx3bhqL\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd0841411001Q9YLSKbVU15mII\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6947,\"input\":6858,\"output\":89,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024847457,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd084265f001CZHeZ2jhVhXK4r\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd0842256001M6ZvRUFERQDg49\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024850775,\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"part\":{\"id\":\"prt_cd0843354001dU32Hxwf9Pl4gO\",\"sessionID\":\"ses_32f7c0f92ffe7Y8bHQbBHdpY9z\",\"messageID\":\"msg_cd0842256001M6ZvRUFERQDg49\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":7136,\"input\":7037,\"output\":99,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 19715
+      },
+      "automatedScore": {
+        "passed": 1,
+        "failed": 7,
+        "total": 8
+      },
+      "scoringMetrics": {
+        "durationMs": 62,
+        "scoringDurationMs": 62
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/cleanup-report.json\"; Path should be absent: \"build/tmp/app.tmp\"; Path should be absent: \"cache/session.cache\"; Path should be absent: \"logs/2026-01-01.log\"; Failed to read JSON \"reports/cleanup-report.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-xwEW1q/reports/cleanup-report.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:54:12.874Z"
+    },
+    {
+      "id": "14",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "safe-cleanup",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:54:12.877Z",
+      "completedAt": "2026-03-09T02:54:43.112Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024859192,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd08454340014SjggXxWbvPYOA\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0843dd6001NlsEszJ9aqq5Xp\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024865266,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd0846be6001PTiayqx4qBuNPr\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0843dd6001NlsEszJ9aqq5Xp\",\"type\":\"tool\",\"callID\":\"call_3v8v7tfp\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl</path>\\n<type>directory</type>\\n<entries>\\n.plebdev-bench-baseline.json\\nbuild/\\ncache/\\nconfig/\\nlogs/\\nnotes/\\n\\n(6 entries)\\n</entries>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl\",\"metadata\":{\"preview\":\".plebdev-bench-baseline.json\\nbuild/\\ncache/\\nconfig/\\nlogs/\\nnotes/\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773024865261,\"end\":1773024865265}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024865287,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd0846c050016k5X5iQkSOafbK\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0843dd6001NlsEszJ9aqq5Xp\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6890,\"input\":6709,\"output\":181,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024866016,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd0846edf001KCBl246ERVOasF\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0846c09001AEplAIDM9s1yUj\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024871137,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd08482d8001QSzTUjHiXYwMrz\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0846c09001AEplAIDM9s1yUj\",\"type\":\"tool\",\"callID\":\"call_szl91dal\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl/build/tmp/app.tmp\",\"limit\":100},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl/build/tmp/app.tmp</path>\\n<type>file</type>\\n<content>1: temporary build output\\n2: \\n\\n(End of file - total 2 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl/build/tmp/app.tmp\",\"metadata\":{\"preview\":\"temporary build output\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773024871130,\"end\":1773024871136}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024871163,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd08482fa001e0xFoVbo6Bgf6y\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0846c09001AEplAIDM9s1yUj\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":7039,\"input\":6886,\"output\":153,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024872338,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd084878f001m7ydnXsuWYdb4Y\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd08482fc001jELYYbrtEYGTE7\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024875831,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd0849535001Y20HwhTUwSxdZP\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd08482fc001jELYYbrtEYGTE7\",\"type\":\"tool\",\"callID\":\"call_j5xm4fal\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl/cache/session.cache\",\"limit\":100},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl/cache/session.cache</path>\\n<type>file</type>\\n<content>1: cache-data\\n2: \\n\\n(End of file - total 2 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl/cache/session.cache\",\"metadata\":{\"preview\":\"cache-data\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773024875829,\"end\":1773024875831}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024875863,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd08495560011znKBuN4SLI8ND\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd08482fc001jELYYbrtEYGTE7\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":7180,\"input\":7075,\"output\":105,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024877440,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd0849b80001GS9sQYf4sYWVvP\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0849558001LXE6c65NRKJr4M\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024881005,\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"part\":{\"id\":\"prt_cd084a96b0019EgbsKxYFnqTxc\",\"sessionID\":\"ses_32f7bc245ffes2qb0QLtUyq5Zm\",\"messageID\":\"msg_cd0849558001LXE6c65NRKJr4M\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":7367,\"input\":7261,\"output\":106,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 30173
+      },
+      "automatedScore": {
+        "passed": 1,
+        "failed": 7,
+        "total": 8
+      },
+      "scoringMetrics": {
+        "durationMs": 61,
+        "scoringDurationMs": 61
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"reports/cleanup-report.json\"; Path should be absent: \"build/tmp/app.tmp\"; Path should be absent: \"cache/session.cache\"; Path should be absent: \"logs/2026-01-01.log\"; Failed to read JSON \"reports/cleanup-report.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-safe-cleanup-Ybw8Pl/reports/cleanup-report.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:54:43.112Z"
+    },
+    {
+      "id": "15",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:54:43.114Z",
+      "completedAt": "2026-03-09T02:55:08.307Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024889418,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd084ca47001oGM0pdL1AVyTx9\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084b414001oQlKdUtM44XTh6\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024893183,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd084d8f40011IjFIiczfWs57R\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084b414001oQlKdUtM44XTh6\",\"type\":\"tool\",\"callID\":\"call_hzxnfnef\",\"tool\":\"read\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\"},\"output\":\"<path>/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts</path>\\n<type>file</type>\\n<content>1: /**\\n2:  * Targeted-edit benchmark fixture.\\n3:  */\\n4: \\n5: /**\\n6:  * Static application config fixture with mode, retryLimit, syncEnabled, and logLevel fields.\\n7:  */\\n8: export const appConfig = {\\n9: \\tmode: \\\"production\\\",\\n10: \\tretryLimit: 1,\\n11: \\tsyncEnabled: false,\\n12: \\tlogLevel: \\\"info\\\",\\n13: };\\n14: \\n\\n(End of file - total 14 lines)\\n</content>\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\",\"metadata\":{\"preview\":\"/**\\n * Targeted-edit benchmark fixture.\\n */\\n\\n/**\\n * Static application config fixture with mode, retryLimit, syncEnabled, and logLevel fields.\\n */\\nexport const appConfig = {\\n\\tmode: \\\"production\\\",\\n\\tretryLimit: 1,\\n\\tsyncEnabled: false,\\n\\tlogLevel: \\\"info\\\",\\n};\\n\",\"truncated\":false,\"loaded\":[]},\"time\":{\"start\":1773024893176,\"end\":1773024893181}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024893208,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd084d917001Q8UtJi9GkkDrMr\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084b414001oQlKdUtM44XTh6\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6796,\"input\":6682,\"output\":114,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024894085,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd084dc820019i05CUqbY3NaVI\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084d91a001dI6rPp1NhYE84a\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1773024901008,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd084f6e5001eEsLHYBRCVkKYl\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084d91a001dI6rPp1NhYE84a\",\"type\":\"tool\",\"callID\":\"call_3u1n5swn\",\"tool\":\"edit\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\",\"oldString\":\"    retryLimit: 1,\",\"newString\":\"    retryLimit: 3,\"},\"output\":\"Edit applied successfully.\",\"title\":\"private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\",\"metadata\":{\"diagnostics\":{\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\":[]},\"diff\":\"Index: /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\\n===================================================================\\n--- /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\\n+++ /private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\\n@@ -6,8 +6,8 @@\\n  * Static application config fixture with mode, retryLimit, syncEnabled, and logLevel fields.\\n  */\\n export const appConfig = {\\n \\tmode: \\\"production\\\",\\n-\\tretryLimit: 1,\\n+    retryLimit: 3,\\n \\tsyncEnabled: false,\\n \\tlogLevel: \\\"info\\\",\\n };\\n\",\"filediff\":{\"file\":\"/private/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-targeted-edit-ApkHm8/src/app-config.ts\",\"before\":\"/**\\n * Targeted-edit benchmark fixture.\\n */\\n\\n/**\\n * Static application config fixture with mode, retryLimit, syncEnabled, and logLevel fields.\\n */\\nexport const appConfig = {\\n\\tmode: \\\"production\\\",\\n\\tretryLimit: 1,\\n\\tsyncEnabled: false,\\n\\tlogLevel: \\\"info\\\",\\n};\\n\",\"after\":\"/**\\n * Targeted-edit benchmark fixture.\\n */\\n\\n/**\\n * Static application config fixture with mode, retryLimit, syncEnabled, and logLevel fields.\\n */\\nexport const appConfig = {\\n\\tmode: \\\"production\\\",\\n    retryLimit: 3,\\n\\tsyncEnabled: false,\\n\\tlogLevel: \\\"info\\\",\\n};\\n\",\"additions\":1,\"deletions\":1},\"truncated\":false},\"time\":{\"start\":1773024900841,\"end\":1773024901007}}}}\n{\"type\":\"step_finish\",\"timestamp\":1773024901011,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd084f790001YbdIglULFkZCmB\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084d91a001dI6rPp1NhYE84a\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":7168,\"input\":6967,\"output\":201,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n{\"type\":\"step_start\",\"timestamp\":1773024902234,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd084fc59001sct0vmVq044Sqd\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084f796001trmLH5X7acyA0c\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024906205,\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"part\":{\"id\":\"prt_cd0850bd9001PlXarAj8rtF7LE\",\"sessionID\":\"ses_32f7b4c06ffelF6FrAmD5zGW6w\",\"messageID\":\"msg_cd084f796001trmLH5X7acyA0c\",\"type\":\"step-finish\",\"reason\":\"stop\",\"cost\":0,\"tokens\":{\"total\":7216,\"input\":7098,\"output\":118,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 25134
+      },
+      "automatedScore": {
+        "passed": 4,
+        "failed": 1,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 59,
+        "scoringDurationMs": 59
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:55:08.307Z"
+    },
+    {
+      "id": "16",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "targeted-edit",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:55:08.309Z",
+      "completedAt": "2026-03-09T02:55:19.000Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024914535,\"sessionID\":\"ses_32f7ae9c7ffef7dTcF3X6m7Whc\",\"part\":{\"id\":\"prt_cd0852c66001kpyiZlb0RXRftZ\",\"sessionID\":\"ses_32f7ae9c7ffef7dTcF3X6m7Whc\",\"messageID\":\"msg_cd0851652001R3uPGHmL6MjMqw\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024916900,\"sessionID\":\"ses_32f7ae9c7ffef7dTcF3X6m7Whc\",\"part\":{\"id\":\"prt_cd08535a2001urUEpH08SeQOiF\",\"sessionID\":\"ses_32f7ae9c7ffef7dTcF3X6m7Whc\",\"messageID\":\"msg_cd0851652001R3uPGHmL6MjMqw\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6747,\"input\":6676,\"output\":71,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 10629
+      },
+      "automatedScore": {
+        "passed": 3,
+        "failed": 2,
+        "total": 5
+      },
+      "scoringMetrics": {
+        "durationMs": 62,
+        "scoringDurationMs": 62
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Expected modified paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:55:19.000Z"
+    },
+    {
+      "id": "17",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "workspace-reorg",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:55:19.003Z",
+      "completedAt": "2026-03-09T02:55:32.498Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024925398,\"sessionID\":\"ses_32f7ac005ffeYrGCbmg1S4Opel\",\"part\":{\"id\":\"prt_cd08556d30018E3aPhoz8Qlcx6\",\"sessionID\":\"ses_32f7ac005ffeYrGCbmg1S4Opel\",\"messageID\":\"msg_cd0854015001vW1jWBYugRH1rt\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024930399,\"sessionID\":\"ses_32f7ac005ffeYrGCbmg1S4Opel\",\"part\":{\"id\":\"prt_cd0856a5d0018OfZ12p7t6yeck\",\"sessionID\":\"ses_32f7ac005ffeYrGCbmg1S4Opel\",\"messageID\":\"msg_cd0854015001vW1jWBYugRH1rt\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6886,\"input\":6737,\"output\":149,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 13439
+      },
+      "automatedScore": {
+        "passed": 1,
+        "failed": 13,
+        "total": 14
+      },
+      "scoringMetrics": {
+        "durationMs": 55,
+        "scoringDurationMs": 55
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"docs/guides/install.md\"; Missing required path \"docs/index.json\"; Missing required path \"docs/reference/config.md\"; Missing required path \"docs/release-notes/changelog.md\"; Path should be absent: \"incoming/guides/install.md\"; Path should be absent: \"incoming/reference/config.md\"; Path should be absent: \"incoming/release-notes/changelog.md\"; Failed to read \"docs/guides/install.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-yL5li6/docs/guides/install.md'; Failed to read \"docs/reference/config.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-yL5li6/docs/reference/config.md'; Failed to read \"docs/release-notes/changelog.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-yL5li6/docs/release-notes/changelog.md'; Failed to read JSON \"docs/index.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-yL5li6/docs/index.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:55:32.498Z"
+    },
+    {
+      "id": "18",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "workspace-reorg",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:55:32.502Z",
+      "completedAt": "2026-03-09T02:55:45.444Z",
+      "generation": {
+        "success": true,
+        "output": "{\"type\":\"step_start\",\"timestamp\":1773024938958,\"sessionID\":\"ses_32f7a8adaffeRHZQzhyeO7sjpf\",\"part\":{\"id\":\"prt_cd0858bcd001dzta3H7yJOCRP0\",\"sessionID\":\"ses_32f7a8adaffeRHZQzhyeO7sjpf\",\"messageID\":\"msg_cd0857540001K4jd49gPhhZBhD\",\"type\":\"step-start\"}}\n{\"type\":\"step_finish\",\"timestamp\":1773024943334,\"sessionID\":\"ses_32f7a8adaffeRHZQzhyeO7sjpf\",\"part\":{\"id\":\"prt_cd0859ce3001Eq5S6m8Kv7J5Ff\",\"sessionID\":\"ses_32f7a8adaffeRHZQzhyeO7sjpf\",\"messageID\":\"msg_cd0857540001K4jd49gPhhZBhD\",\"type\":\"step-finish\",\"reason\":\"tool-calls\",\"cost\":0,\"tokens\":{\"total\":6861,\"input\":6731,\"output\":130,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}}\n",
+        "durationMs": 12881
+      },
+      "automatedScore": {
+        "passed": 1,
+        "failed": 13,
+        "total": 14
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"docs/guides/install.md\"; Missing required path \"docs/index.json\"; Missing required path \"docs/reference/config.md\"; Missing required path \"docs/release-notes/changelog.md\"; Path should be absent: \"incoming/guides/install.md\"; Path should be absent: \"incoming/reference/config.md\"; Path should be absent: \"incoming/release-notes/changelog.md\"; Failed to read \"docs/guides/install.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-6ExpGK/docs/guides/install.md'; Failed to read \"docs/reference/config.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-6ExpGK/docs/reference/config.md'; Failed to read \"docs/release-notes/changelog.md\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-6ExpGK/docs/release-notes/changelog.md'; Failed to read JSON \"docs/index.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-reorg-6ExpGK/docs/index.json'; Expected created paths to match exactly; Expected deleted paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:55:45.444Z"
+    },
+    {
+      "id": "19",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:55:45.447Z",
+      "completedAt": "2026-03-09T02:56:05.752Z",
+      "generation": {
+        "success": true,
+        "output": "session-started\nworkspace-smoke\n",
+        "durationMs": 20244
+      },
+      "automatedScore": {
+        "passed": 4,
+        "failed": 5,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 60,
+        "scoringDurationMs": 60
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Missing required path \"artifacts/summary.json\"; Failed to read JSON \"artifacts/summary.json\": ENOENT: no such file or directory, open '/var/folders/xl/9mh5gbz93fx1szntgl0mkx1w0000gn/T/plebdev-bench-workspace-smoke-3vETt2/artifacts/summary.json'; Expected created paths to match exactly; Expected modified paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:56:05.752Z"
+    },
+    {
+      "id": "20",
+      "runtime": "ollama",
+      "model": "qwen3.5:4b",
+      "harness": "opencode",
+      "test": "workspace-smoke",
+      "category": "computer-use",
+      "passType": "informed",
+      "status": "completed",
+      "startedAt": "2026-03-09T02:56:05.753Z",
+      "completedAt": "2026-03-09T02:56:57.387Z",
+      "generation": {
+        "success": true,
+        "output": "session-started\nworkspace-smoke\n",
+        "durationMs": 51567
+      },
+      "automatedScore": {
+        "passed": 7,
+        "failed": 2,
+        "total": 9
+      },
+      "scoringMetrics": {
+        "durationMs": 66,
+        "scoringDurationMs": 66
+      },
+      "scoringFailure": {
+        "type": "test_execution",
+        "message": "Expected modified paths to match exactly"
+      },
+      "machineProfileId": "anon_6fe55c56c31d",
+      "verificationStatus": "self_reported",
+      "sourceRunId": "20260308-193809-8e0d6e",
+      "sourceCompletedAt": "2026-03-09T02:56:57.387Z"
+    }
+  ]
+}
