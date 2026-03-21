@@ -35,7 +35,6 @@ src/
 │   ├── direct-adapter.ts    # Direct HTTP to runtime (was ollama-adapter)
 │   ├── goose-adapter.ts     # CLI via Goose (headless mode)
 │   ├── opencode-adapter.ts  # CLI via OpenCode (direct mode)
-│   ├── opencode-server.ts   # OpenCode server lifecycle (deprecated)
 │   ├── discovery.ts         # Detect available harnesses
 │   └── index.ts             # Factory + re-exports
 ├── lib/
@@ -324,7 +323,6 @@ Error: No models found in Ollama. Pull a model first: ollama pull llama3.2:3b
 | `src/harnesses/direct-adapter.ts` | Direct HTTP adapter (was ollama-adapter) |
 | `src/harnesses/goose-adapter.ts` | Goose CLI adapter (headless mode) |
 | `src/harnesses/opencode-adapter.ts` | OpenCode CLI adapter (direct mode) |
-| `src/harnesses/opencode-server.ts` | OpenCode server lifecycle (deprecated) |
 | `src/harnesses/discovery.ts` | Detect available harnesses |
 | `src/lib/logger.ts` | Pino setup |
 | `src/lib/timeout.ts` | Dynamic timeout calculation |

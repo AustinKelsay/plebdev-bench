@@ -59,7 +59,6 @@ src/
 │   ├── direct-adapter.ts # Direct HTTP to runtime (was ollama-adapter)
 │   ├── goose-adapter.ts  # CLI via Goose (headless mode)
 │   ├── opencode-adapter.ts # CLI via OpenCode (direct mode)
-│   ├── opencode-server.ts  # OpenCode server lifecycle (deprecated, kept for reference)
 │   ├── tool-prompt.ts    # Tool-calling prompt builder
 │   ├── discovery.ts      # Detect available harnesses
 │   └── index.ts          # Factory + exports
@@ -121,8 +120,9 @@ The architecture separates **runtimes** (inference backends) from **harnesses** 
 | Runtime | Method | Description |
 |---------|--------|-------------|
 | `ollama` | HTTP | Local Ollama server at configured URL |
+| `vllm` | HTTP | External OpenAI-compatible server at configured URL |
 
-Discovery: `discoverRuntimes()` checks if Ollama endpoint is reachable.
+Discovery: `discoverRuntimes()` checks whether each configured runtime endpoint is reachable.
 
 ### Harnesses
 

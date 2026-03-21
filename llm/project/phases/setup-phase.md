@@ -72,15 +72,8 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
      - `stdin: "ignore"` - Prevent hanging on stdin (critical for headless)
    - Use stdout (validated for non-empty, min 10 chars); handle non-zero exit as structured error
 6. Implement `src/harnesses/opencode-adapter.ts` using `execa` with **direct mode**:
-   - **Problem**: Cold boot takes 2+ min (32+ LSP servers, MCP connections, plugins)
-   - **Solution**: Use persistent server + `--attach` mode
-   - Implement `src/harnesses/opencode-server.ts` for server lifecycle:
-     - `ensureServerRunning()` - Start server on port 4096 (or reuse existing)
-     - `stopServer()` - Cleanup at end of benchmark run
-     - Health check polls until server ready (30s timeout)
-     - **Crash prevention**: Always check port health BEFORE starting new server
-   - Server: `opencode serve --port 4096` (runs in /tmp, stdio: ignore)
-   - Run: `opencode run "<prompt>" --model ollama/<model> --attach http://localhost:4096`
+   - Early phase note: the original plan considered persistent server + `--attach` mode to offset cold boot.
+   - Current implementation stayed on direct mode only; the server helper was later removed from the repo.
    - **Execution optimizations**:
      - `cwd: /tmp` - Avoid codebase scanning
      - `stdin: "ignore"` - Prevent hanging on stdin

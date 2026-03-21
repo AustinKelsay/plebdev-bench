@@ -3,6 +3,7 @@
   "runId": "20260318-091214-a0dbda",
   "machine": {
     "profileId": "anon_6fe55c56c31d",
+    "label": "M4 Mac Mini 64GB",
     "hardware": {
       "platform": "darwin",
       "arch": "arm64",

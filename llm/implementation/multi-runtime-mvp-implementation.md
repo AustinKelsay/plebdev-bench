@@ -16,7 +16,7 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
   - Multi-runtime execution in one run plan.
   - Cross-runtime model aliasing for apples-to-apples comparisons.
   - Runtime-aware harness behavior for `direct`, `goose`, and `opencode`.
-  - vLLM containerized local runtime setup (OrbStack + Docker Compose).
+  - vLLM compatibility through an external OpenAI-compatible endpoint.
   - Dashboard compatibility with richer run metadata and failure types.
   - Stale/hung process handling improvements in OpenCode harness.
   - Branch-level tracked result snapshots for MVP evidence.
@@ -142,17 +142,13 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
 - vLLM default URL:
   - `http://localhost:8000`
 
-### vLLM Docker Compose baseline
-- File:
-  - `docker/vllm/docker-compose.yml`
-- Image:
-  - `public.ecr.aws/q9t5s3a7/vllm-arm64-cpu-release-repo:v${VLLM_VERSION:-0.14.1}`
-- Host port:
+### vLLM endpoint baseline
+- Expected server shape:
+  - OpenAI-compatible HTTP API
+- Default host port:
   - `8000`
-- Model:
-  - `${VLLM_MODEL}`
-- HF cache mount:
-  - `${HOME}/.cache/huggingface:/root/.cache/huggingface`
+- CLI flag:
+  - `--vllm-url`
 
 ### Auth behavior
 - OpenAI-compatible harness paths accept `VLLM_API_KEY` or `OPENAI_API_KEY`.

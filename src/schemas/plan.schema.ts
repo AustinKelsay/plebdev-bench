@@ -18,7 +18,6 @@ import {
 	TestCategorySchema,
 	TestScoringModeSchema,
 } from "./common.schema.js";
-import { ManagedVllmSchema } from "./config.schema.js";
 
 /** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
 export const MatrixItemSchema = z.object({
@@ -99,7 +98,6 @@ export const RunPlanSchema = z.object({
 		gooseWorkspaceRetryMaxTurns: z.number().int().positive().optional(),
 		passTypes: z.array(PassTypeSchema),
 		categories: z.array(TestCategorySchema).optional(),
-		managedVllm: ManagedVllmSchema.optional(),
 	}),
 
 	/** Expanded matrix items to execute. */

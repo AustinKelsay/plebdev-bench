@@ -59,8 +59,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const log = logger.child({ runId });
 
 	log.info("Building run plan...");
-	const managedVllm =
-		config.managedVllm?.enabled === true ? config.managedVllm : undefined;
 	const benchmarkCheckpoint = computeBenchmarkCheckpoint();
 	const resolvedMachine: ResolvedMachineProfile = collectMachineProfile({
 		machineProfileId: config.machineProfileId,
@@ -118,18 +116,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 	}
 
-	// Ensure managed vLLM is included even if it's not currently reachable.
-	if (managedVllm) {
-		const hasVllm = runtimes.includes("vllm");
-		if (!hasVllm) {
-			runtimes = [...runtimes, "vllm"];
-			log.info(
-				{ runtimes },
-				"Managed vLLM enabled; including vLLM runtime even if not currently reachable",
-			);
-		}
-	}
-
 	// Discover models per runtime
 	const runtimeModels = new Map<RuntimeName, string[]>();
 	// Track runtime-scoped resolved model name -> canonical alias name (avoid collisions across runtimes)
@@ -142,42 +128,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	}
 
 	for (const runtimeName of runtimes) {
-		if (runtimeName === "vllm" && managedVllm) {
-			// Defer reachability/model discovery; use configured model(s) for reproducibility.
-			const modelsForVllm: string[] = [];
-
-			if (config.models.length > 0) {
-				for (const modelSpec of config.models) {
-					if (isAlias(modelSpec, aliases)) {
-						const resolved = resolveModelForRuntime(
-							modelSpec,
-							runtimeName,
-							aliases,
-						);
-						if (resolved) {
-							modelsForVllm.push(resolved);
-							modelCanonicalMap.set(`${runtimeName}::${resolved}`, modelSpec);
-							log.debug(
-								{ alias: modelSpec, runtime: runtimeName, resolved },
-								"Resolved model alias (managed vLLM)",
-							);
-						}
-					} else {
-						modelsForVllm.push(modelSpec);
-					}
-				}
-			} else {
-				modelsForVllm.push(managedVllm.model);
-			}
-
-			runtimeModels.set(runtimeName, modelsForVllm);
-			log.info(
-				{ runtime: runtimeName, count: modelsForVllm.length },
-				"Models discovered (managed vLLM)",
-			);
-			continue;
-		}
-
 		const runtime = createRuntime(runtimeName, {
 			ollamaBaseUrl: config.ollamaBaseUrl,
 			vllmBaseUrl: config.vllmBaseUrl,
@@ -443,7 +393,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			gooseWorkspaceRetryMaxTurns: config.gooseWorkspaceRetryMaxTurns,
 			passTypes: config.passTypes,
 			categories: config.categories,
-			...(managedVllm ? { managedVllm } : {}),
 		},
 		items,
 		summary: {

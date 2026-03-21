@@ -29,10 +29,6 @@ import {
 	type RuntimeName,
 	createRuntime,
 } from "../runtimes/index.js";
-import {
-	startManagedVllm,
-	stopManagedVllm,
-} from "../runtimes/vllm-lifecycle.js";
 import type {
 	BenchConfig,
 	MatrixItemResult,
@@ -111,9 +107,6 @@ function buildRunResultSnapshot(
 export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const startedAt = new Date().toISOString();
 	const startTime = performance.now();
-	const managedVllm =
-		config.managedVllm?.enabled === true ? config.managedVllm : undefined;
-	let managedVllmStarted = false;
 
 	// Build plan
 	const plan = await buildRunPlan(config);
@@ -213,216 +206,170 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		log.warn("No preflight tests present in plan; tool preflight is disabled");
 	}
 
-	try {
-		for (let i = 0; i < plan.items.length; i++) {
-			const item = plan.items[i];
-			const itemNum = String(i + 1).padStart(2, "0");
-			const runtimeName = item.runtime as RuntimeName;
-			const nextItem = plan.items[i + 1];
-			const isLastForRuntime =
-				!nextItem || (nextItem.runtime as RuntimeName) !== runtimeName;
+	for (let i = 0; i < plan.items.length; i++) {
+		const item = plan.items[i];
+		const itemNum = String(i + 1).padStart(2, "0");
+		const nextItem = plan.items[i + 1];
 
-			if (managedVllm && runtimeName === "vllm" && !managedVllmStarted) {
-				log.info("Managed vLLM enabled; starting vLLM for vLLM segment...");
-				try {
-					await startManagedVllm(managedVllm, config.vllmBaseUrl);
-					managedVllmStarted = true;
-				} catch (error) {
-					log.error(
-						{ error },
-						"Failed to start managed vLLM; attempting cleanup...",
-					);
-					try {
-						await stopManagedVllm(managedVllm);
-					} catch (cleanupError) {
-						log.warn(
-							{ cleanupError },
-							"Best-effort cleanup of managed vLLM failed",
-						);
-					}
-					throw error;
-				}
-			}
+		// Calculate dynamic timeout based on model size and harness
+		const modelInfo = modelInfoCache.get(`${item.runtime}:${item.model}`);
+		const paramsBillions = modelInfo?.parametersBillions ?? 7;
+		const dynamicTimeout = calculateTimeout(
+			paramsBillions,
+			item.harness as HarnessName,
+			config.generateTimeoutMs,
+			item.model,
+			item.timeoutMultiplier,
+		);
 
-			// Calculate dynamic timeout based on model size and harness
-			const modelInfo = modelInfoCache.get(`${item.runtime}:${item.model}`);
-			const paramsBillions = modelInfo?.parametersBillions ?? 7;
-			const dynamicTimeout = calculateTimeout(
-				paramsBillions,
-				item.harness as HarnessName,
-				config.generateTimeoutMs,
-				item.model,
-				item.timeoutMultiplier,
-			);
+		// Progress counter (terminal-native UX)
+		console.log(
+			`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
+		);
 
-			// Progress counter (terminal-native UX)
-			console.log(
-				`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
-			);
+		const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
+		const isToolHarness = toolCallingHarnesses.has(
+			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
+		);
+		const isPreflight = isPreflightTest(item.tags);
 
-			const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
-			const isToolHarness = toolCallingHarnesses.has(
-				item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
-			);
-			const isPreflight = isPreflightTest(item.tags);
-
-			if (isToolHarness && !isPreflight) {
-				const status = preflightStatus.get(preflightKey);
-				if (status?.skip) {
-					const now = new Date().toISOString();
-					const message =
-						status.message ??
-						"preflight failed; skipping remaining items for this harness/model";
-					log.warn(
-						{ harness: item.harness, model: item.model, test: item.test },
-						"Skipping item due to preflight failure",
-					);
-					results.push({
-						id: item.id,
-						runtime: item.runtime,
-						model: item.model,
-						harness: item.harness,
-						test: item.test,
-						passType: item.passType,
-						status: "failed",
-						startedAt: now,
-						completedAt: now,
-						generation: {
-							success: false,
-							error: `Skipped: ${message}`,
-							failureType: "tool_missing",
-							durationMs: 0,
-						},
-						generationFailure: {
-							type: "tool_missing",
-							message: `Skipped: ${message}`,
-						},
-					});
-					const itemCount = results.length;
-					const shouldCheckpoint =
-						itemCount === total ||
-						itemCount - lastCheckpointItemCount >=
-							PARTIAL_RESULT_CHECKPOINT_INTERVAL;
-					if (shouldCheckpoint) {
-						const partialSnapshot = buildRunResultSnapshot(
-							plan,
-							startedAt,
-							startTime,
-							total,
-							results,
-						);
-						await writePartialResult(config.outputDir, partialSnapshot);
-						log.info(
-							{
-								completedItems: itemCount,
-								totalItems: total,
-								checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
-							},
-							"Wrote run checkpoint",
-						);
-						lastCheckpointItemCount = itemCount;
-					}
-					continue;
-				}
-			}
-
-			// Unload model only when switching to a different model/runtime (or last item)
-			// Must check both: same model name on different runtimes should trigger unload
-			const isLastForModel =
-				!nextItem ||
-				nextItem.model !== item.model ||
-				nextItem.runtime !== item.runtime;
-
-			const result = await executeItem(
-				item,
-				{
-					ollamaBaseUrl: config.ollamaBaseUrl,
-					vllmBaseUrl: config.vllmBaseUrl,
-					gooseMaxTurns: config.gooseMaxTurns,
-					gooseRetryMaxTurns: config.gooseRetryMaxTurns,
-					gooseWorkspaceMaxTurns: config.gooseWorkspaceMaxTurns,
-					gooseWorkspaceRetryMaxTurns: config.gooseWorkspaceRetryMaxTurns,
-				},
-				dynamicTimeout,
-				isLastForModel,
-			);
-			results.push(result);
-			const itemCount = results.length;
-			const shouldCheckpoint =
-				itemCount === total ||
-				itemCount - lastCheckpointItemCount >=
-					PARTIAL_RESULT_CHECKPOINT_INTERVAL;
-			if (shouldCheckpoint) {
-				const partialSnapshot = buildRunResultSnapshot(
-					plan,
-					startedAt,
-					startTime,
-					total,
-					results,
-				);
-				await writePartialResult(config.outputDir, partialSnapshot);
-				log.info(
-					{
-						completedItems: itemCount,
-						totalItems: total,
-						checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
-					},
-					"Wrote run checkpoint",
-				);
-				lastCheckpointItemCount = itemCount;
-			}
-
-			if (isToolHarness && isPreflight) {
-				const failureMessage =
-					result.generation?.error ?? result.generationFailure?.message;
-				const passed = result.generation?.success === true;
-				const shouldSkip =
-					result.generation?.success === false &&
-					result.generation?.failureType === "tool_missing";
-				preflightStatus.set(preflightKey, {
-					status: passed ? "passed" : "failed",
-					skip: shouldSkip,
-					message: failureMessage,
-				});
-			}
-
-			if (
-				isToolHarness &&
-				!isPreflight &&
-				result.generation?.success === false &&
-				result.generation?.failureType === "tool_missing"
-			) {
-				preflightStatus.set(preflightKey, {
-					status: "failed",
-					skip: true,
-					message:
-						result.generation?.error ??
-						result.generationFailure?.message ??
-						"tool_missing detected; skipping remaining items",
-				});
+		if (isToolHarness && !isPreflight) {
+			const status = preflightStatus.get(preflightKey);
+			if (status?.skip) {
+				const now = new Date().toISOString();
+				const message =
+					status.message ??
+					"preflight failed; skipping remaining items for this harness/model";
 				log.warn(
-					{ harness: item.harness, model: item.model },
-					"tool_missing detected; skipping remaining items for this harness/model",
+					{ harness: item.harness, model: item.model, test: item.test },
+					"Skipping item due to preflight failure",
 				);
-			}
-
-			if (
-				managedVllm &&
-				runtimeName === "vllm" &&
-				isLastForRuntime &&
-				managedVllm.stopAfterRun
-			) {
-				log.info("Managed vLLM enabled; stopping vLLM after vLLM segment...");
-				await stopManagedVllm(managedVllm);
-				managedVllmStarted = false;
+				results.push({
+					id: item.id,
+					runtime: item.runtime,
+					model: item.model,
+					harness: item.harness,
+					test: item.test,
+					passType: item.passType,
+					status: "failed",
+					startedAt: now,
+					completedAt: now,
+					generation: {
+						success: false,
+						error: `Skipped: ${message}`,
+						failureType: "tool_missing",
+						durationMs: 0,
+					},
+					generationFailure: {
+						type: "tool_missing",
+						message: `Skipped: ${message}`,
+					},
+				});
+				const itemCount = results.length;
+				const shouldCheckpoint =
+					itemCount === total ||
+					itemCount - lastCheckpointItemCount >=
+						PARTIAL_RESULT_CHECKPOINT_INTERVAL;
+				if (shouldCheckpoint) {
+					const partialSnapshot = buildRunResultSnapshot(
+						plan,
+						startedAt,
+						startTime,
+						total,
+						results,
+					);
+					await writePartialResult(config.outputDir, partialSnapshot);
+					log.info(
+						{
+							completedItems: itemCount,
+							totalItems: total,
+							checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
+						},
+						"Wrote run checkpoint",
+					);
+					lastCheckpointItemCount = itemCount;
+				}
+				continue;
 			}
 		}
-	} finally {
-		if (managedVllm && managedVllmStarted && managedVllm.stopAfterRun) {
-			log.warn(
-				"Benchmark ended while managed vLLM was running; stopping vLLM in finally...",
+
+		// Unload model only when switching to a different model/runtime (or last item)
+		// Must check both: same model name on different runtimes should trigger unload
+		const isLastForModel =
+			!nextItem ||
+			nextItem.model !== item.model ||
+			nextItem.runtime !== item.runtime;
+
+		const result = await executeItem(
+			item,
+			{
+				ollamaBaseUrl: config.ollamaBaseUrl,
+				vllmBaseUrl: config.vllmBaseUrl,
+				gooseMaxTurns: config.gooseMaxTurns,
+				gooseRetryMaxTurns: config.gooseRetryMaxTurns,
+				gooseWorkspaceMaxTurns: config.gooseWorkspaceMaxTurns,
+				gooseWorkspaceRetryMaxTurns: config.gooseWorkspaceRetryMaxTurns,
+			},
+			dynamicTimeout,
+			isLastForModel,
+		);
+		results.push(result);
+		const itemCount = results.length;
+		const shouldCheckpoint =
+			itemCount === total ||
+			itemCount - lastCheckpointItemCount >= PARTIAL_RESULT_CHECKPOINT_INTERVAL;
+		if (shouldCheckpoint) {
+			const partialSnapshot = buildRunResultSnapshot(
+				plan,
+				startedAt,
+				startTime,
+				total,
+				results,
 			);
-			await stopManagedVllm(managedVllm);
+			await writePartialResult(config.outputDir, partialSnapshot);
+			log.info(
+				{
+					completedItems: itemCount,
+					totalItems: total,
+					checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
+				},
+				"Wrote run checkpoint",
+			);
+			lastCheckpointItemCount = itemCount;
+		}
+
+		if (isToolHarness && isPreflight) {
+			const failureMessage =
+				result.generation?.error ?? result.generationFailure?.message;
+			const passed = result.generation?.success === true;
+			const shouldSkip =
+				result.generation?.success === false &&
+				result.generation?.failureType === "tool_missing";
+			preflightStatus.set(preflightKey, {
+				status: passed ? "passed" : "failed",
+				skip: shouldSkip,
+				message: failureMessage,
+			});
+		}
+
+		if (
+			isToolHarness &&
+			!isPreflight &&
+			result.generation?.success === false &&
+			result.generation?.failureType === "tool_missing"
+		) {
+			preflightStatus.set(preflightKey, {
+				status: "failed",
+				skip: true,
+				message:
+					result.generation?.error ??
+					result.generationFailure?.message ??
+					"tool_missing detected; skipping remaining items",
+			});
+			log.warn(
+				{ harness: item.harness, model: item.model },
+				"tool_missing detected; skipping remaining items for this harness/model",
+			);
 		}
 	}
 

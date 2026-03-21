@@ -61,7 +61,7 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - Benchmark run `20260208-122510-cb6911` completed `53/54` items with `91.2%` overall pass rate.
 - Dashboard can be hosted as a static frontend that reads published run data from `apps/dashboard/public/results/index.json`.
 - Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
-- vLLM local setup notes (OrbStack/Docker, memory sizing, troubleshooting): `llm/implementation/vllm-orbstack-setup.md`.
+- `vllm` remains supported as an externally managed OpenAI-compatible runtime at `--vllm-url` (default `http://localhost:8000`).
 
 ### Computer-Use Hardening Checkpoint (2026-03-13)
 
@@ -179,31 +179,19 @@ To run locally (unpublished output in `results/`):
 bun pb
 ```
 
-### Managed vLLM Lifecycle (Single Run)
+### vLLM Runtime
 
-If you want a single run that starts vLLM only when needed (after the Ollama segment) and stops it afterward to free memory:
+`vllm` is supported as an OpenAI-compatible runtime. `plebdev-bench` now expects that server to already be running; it does not manage Docker or OrbStack lifecycle inside the repo.
 
 ```bash
-cd /path/to/plebdev-bench
-
 bun pb \
-  --runtimes ollama vllm \
+  --runtimes vllm \
   --harnesses direct goose opencode \
-  --timeout 900000 \
-  --manage-vllm \
-  --vllm-model "Qwen/Qwen2.5-14B-Instruct" \
-  --vllm-compose-file docker/vllm/docker-compose.yml \
-  --vllm-startup-timeout 1800000
+  --vllm-url http://localhost:8000 \
+  --models "Qwen/Qwen2.5-14B-Instruct"
 ```
 
-Optional: start/stop OrbStack around the vLLM segment too (disruptive if you use OrbStack for other containers):
-
-```bash
-  --manage-orbstack \
-  --orbctl-path orbctl
-```
-
-Full vLLM setup/troubleshooting: `llm/implementation/vllm-orbstack-setup.md`.
+Run `vllm` however you prefer outside the bench, then point the CLI at that endpoint.
 
 ### Long-Run Stability
 

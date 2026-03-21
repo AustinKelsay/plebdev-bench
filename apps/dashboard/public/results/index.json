@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-20T17:16:35.041Z",
+  "generatedAt": "2026-03-21T15:50:23.255Z",
   "latestCheckpointId": "chk_sha256v1_2c13ad3e58b3",
   "runs": [
     {
@@ -16,6 +16,7 @@
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
+      "machineLabel": "M4 Mac Mini 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -32,6 +33,7 @@
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
+      "machineLabel": "M4 Mac Mini 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -48,6 +50,7 @@
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
+      "machineLabel": "M4 Mac Mini 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -64,6 +67,7 @@
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
+      "machineLabel": "M4 Mac Mini 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -80,6 +84,7 @@
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
       "machineProfileId": "anon_6fe55c56c31d",
+      "machineLabel": "M4 Mac Mini 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },

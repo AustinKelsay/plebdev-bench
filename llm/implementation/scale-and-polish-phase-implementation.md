@@ -370,7 +370,7 @@ const args = [
 
 ### B.3 — OpenCode Server Optimization
 
-**File:** `src/harnesses/opencode-server.ts`
+**Historical file:** `src/harnesses/opencode-server.ts` (removed after direct mode became the only supported path)
 
 #### Changes Made
 
@@ -518,7 +518,7 @@ for (const { model, info } of modelInfoResults) {
 | File | Lines Changed | Purpose |
 |------|---------------|---------|
 | `src/lib/timeout.ts` | ~30 | Dynamic OpenCode overhead, lower minimum |
-| `src/harnesses/opencode-server.ts` | ~20 | Exponential backoff health checks (deprecated) |
+| `src/harnesses/opencode-server.ts` | ~20 | Historical server helper removed in later cleanup |
 | `src/runner/index.ts` | ~25 | Parallel model discovery |
 | `src/harnesses/opencode-adapter.ts` | ~3 | Add `--format json` flag |
 | `src/harnesses/goose-adapter.ts` | ~20 | Stdin prompts, env vars for stability |

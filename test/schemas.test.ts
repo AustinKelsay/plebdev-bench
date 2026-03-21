@@ -81,7 +81,6 @@ describe("BenchConfigSchema", () => {
 		expect(config.gooseWorkspaceMaxTurns).toBe(8);
 		expect(config.gooseWorkspaceRetryMaxTurns).toBe(12);
 		expect(config.outputDir).toBe("results");
-		expect(config.managedVllm).toBeUndefined();
 	});
 
 	it("should parse custom values", () => {

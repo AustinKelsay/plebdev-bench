@@ -30,7 +30,6 @@ src/harnesses/            # Harness adapters (interface layer)
 ├── direct-adapter.ts     # Direct HTTP to runtime (was ollama-adapter)
 ├── goose-adapter.ts      # CLI via execa (headless mode)
 ├── opencode-adapter.ts   # CLI via execa (direct mode with tool-calling)
-├── opencode-server.ts    # OpenCode server lifecycle (deprecated, kept for reference)
 ├── tool-prompt.ts        # Tool-calling prompt builder
 ├── discovery.ts          # Detect available harnesses
 └── index.ts              # Factory + re-exports
@@ -342,11 +341,9 @@ Without `"tools": true`, OpenCode will NOT pass tool calls to the model, and `so
 - If tools still don't work, try increasing `num_ctx` in Ollama (16k-32k minimum recommended)
 - Verify the model supports tool/function calling (not all models do)
 
-### OpenCode Server Module (Deprecated)
+### OpenCode Direct Mode
 
-`src/harnesses/opencode-server.ts` was used for server mode with `--attach`. Now deprecated in favor of direct mode, but kept for reference.
-
-The current implementation runs OpenCode directly without a server, which provides:
+The repo no longer carries the old `--attach` server helper. The current implementation runs OpenCode directly without a server, which provides:
 - Simpler architecture (no server lifecycle management)
 - Reliable tool execution (server mode had tool call issues)
 - Per-generation isolation (unique work directory)

@@ -1,13 +1,15 @@
-import { fetchRuns } from "@/lib/api";
-import type { RunListItem } from "@/lib/types";
 /**
  * Purpose: React hook for fetching the list of all runs.
  * Exports: useRuns
  */
+import { fetchDashboardIndex } from "@/lib/api";
+import type { DashboardCheckpointSummary, RunListItem } from "@/lib/types";
 import { useCallback, useEffect, useState } from "react";
 
 export interface UseRunsResult {
 	runs: RunListItem[];
+	checkpoints: DashboardCheckpointSummary[];
+	latestCheckpointId: string | null;
 	loading: boolean;
 	error: string | null;
 	refetch: () => void;
@@ -19,6 +21,12 @@ export interface UseRunsResult {
  */
 export function useRuns(): UseRunsResult {
 	const [runs, setRuns] = useState<RunListItem[]>([]);
+	const [checkpoints, setCheckpoints] = useState<DashboardCheckpointSummary[]>(
+		[],
+	);
+	const [latestCheckpointId, setLatestCheckpointId] = useState<string | null>(
+		null,
+	);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -26,13 +34,15 @@ export function useRuns(): UseRunsResult {
 		setLoading(true);
 		setError(null);
 		try {
-			const data = await fetchRuns();
+			const index = await fetchDashboardIndex();
 			// Sort by startedAt descending (newest first)
-			const sorted = data.sort(
+			const sortedRuns = [...index.runs].sort(
 				(a, b) =>
 					new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
 			);
-			setRuns(sorted);
+			setRuns(sortedRuns);
+			setCheckpoints(index.checkpoints);
+			setLatestCheckpointId(index.latestCheckpointId);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to fetch runs");
 		} finally {
@@ -44,5 +54,12 @@ export function useRuns(): UseRunsResult {
 		void fetchData();
 	}, [fetchData]);
 
-	return { runs, loading, error, refetch: fetchData };
+	return {
+		runs,
+		checkpoints,
+		latestCheckpointId,
+		loading,
+		error,
+		refetch: fetchData,
+	};
 }

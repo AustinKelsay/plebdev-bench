@@ -108,35 +108,6 @@ export const runCommand = new Command("run")
 	)
 	.option("--machine-label <label>", "Optional machine display label")
 	.option(
-		"--manage-vllm",
-		"Manage vLLM lifecycle during a single run (docker compose up/down around the vLLM segment)",
-		false,
-	)
-	.option(
-		"--vllm-model <name>",
-		"vLLM model to serve when --manage-vllm is enabled (sets VLLM_MODEL)",
-	)
-	.option(
-		"--vllm-compose-file <path>",
-		"Docker compose file for vLLM when --manage-vllm is enabled",
-		"docker/vllm/docker-compose.yml",
-	)
-	.option(
-		"--vllm-startup-timeout <ms>",
-		"Timeout (ms) to wait for vLLM readiness when --manage-vllm is enabled",
-		"1800000",
-	)
-	.option(
-		"--manage-orbstack",
-		"Attempt to start/stop OrbStack around the vLLM segment when --manage-vllm is enabled",
-		false,
-	)
-	.option(
-		"--orbctl-path <path>",
-		"OrbStack CLI name or absolute path (used when --manage-orbstack is enabled)",
-		"orbctl",
-	)
-	.option(
 		"--model-config <file>",
 		"JSON file with model aliases for cross-runtime mapping",
 	)
@@ -201,27 +172,6 @@ export const runCommand = new Command("run")
 						: undefined,
 				modelAliases,
 			};
-
-			if (options.manageVllm) {
-				if (
-					typeof options.vllmModel !== "string" ||
-					options.vllmModel.trim().length === 0
-				) {
-					throw new Error("--manage-vllm requires --vllm-model <name>");
-				}
-				configInput.managedVllm = {
-					enabled: true,
-					model: options.vllmModel.trim(),
-					composeFile: String(options.vllmComposeFile),
-					startupTimeoutMs: Number.parseInt(
-						String(options.vllmStartupTimeout),
-						10,
-					),
-					stopAfterRun: true,
-					manageOrbStack: Boolean(options.manageOrbstack),
-					orbctlPath: String(options.orbctlPath),
-				};
-			}
 
 			// Add optional arrays if provided
 			if (options.runtimes) {

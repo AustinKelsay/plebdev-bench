@@ -1,20 +1,27 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { RunListItem } from "@/lib/types";
-import { formatDate, formatDuration, formatPercent } from "@/lib/utils";
 /**
  * Purpose: Card component for displaying a single run summary.
  * Shows runId, timestamp, duration, pass rate, and item counts.
  */
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { RunListItem } from "@/lib/types";
+import { cn, formatDate, formatDuration, formatPercent } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
 interface RunCardProps {
 	run: RunListItem;
 	/** Optional pass rate (0-1 scale) */
 	passRate?: number;
+	showCheckpointBadge?: boolean;
+	accent?: "default" | "latest";
 }
 
-export function RunCard({ run, passRate }: RunCardProps) {
+export function RunCard({
+	run,
+	passRate,
+	showCheckpointBadge = true,
+	accent = "default",
+}: RunCardProps) {
 	const {
 		runId,
 		startedAt,
@@ -29,7 +36,13 @@ export function RunCard({ run, passRate }: RunCardProps) {
 
 	return (
 		<Link to={`/runs/${runId}`}>
-			<Card className="card-glow transition-colors hover:bg-accent/50">
+			<Card
+				className={cn(
+					"card-glow transition-colors hover:bg-accent/50",
+					accent === "latest" &&
+						"border-brand/40 bg-accent/20 shadow-[0_0_0_1px_hsla(142,60%,49%,0.12)]",
+				)}
+			>
 				<CardHeader className="pb-2">
 					<div className="flex items-start justify-between">
 						<CardTitle className="text-sm truncate">{runId}</CardTitle>
@@ -47,15 +60,16 @@ export function RunCard({ run, passRate }: RunCardProps) {
 						{formatDate(startedAt)}
 					</p>
 					<div className="mt-1 flex flex-wrap gap-1">
-						{checkpointId ? (
-							<Badge variant="secondary" className="text-[10px]">
-								{checkpointId}
-							</Badge>
-						) : (
-							<Badge variant="warning" className="text-[10px]">
-								no-checkpoint
-							</Badge>
-						)}
+						{showCheckpointBadge &&
+							(checkpointId ? (
+								<Badge variant="secondary" className="text-[10px]">
+									{checkpointId}
+								</Badge>
+							) : (
+								<Badge variant="warning" className="text-[10px]">
+									no-checkpoint
+								</Badge>
+							))}
 						{(machineLabel || machineProfileId) && (
 							<Badge variant="secondary" className="text-[10px]">
 								{machineLabel ?? machineProfileId}
