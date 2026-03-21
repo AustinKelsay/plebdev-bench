@@ -54,7 +54,7 @@ export function buildRunCheckpointGroups(
 		const seasonNumber = checkpoints.length - index;
 		return {
 			key: checkpoint.checkpointId,
-			title: `Checkpoint Season ${String(seasonNumber).padStart(2, "0")}`,
+			title: `Season ${String(seasonNumber).padStart(2, "0")}`,
 			checkpointId: checkpoint.checkpointId,
 			seasonNumber,
 			isLatest: checkpoint.checkpointId === latestCheckpointId,

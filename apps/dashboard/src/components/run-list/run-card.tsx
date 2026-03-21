@@ -37,10 +37,12 @@ export function RunCard({
 	return (
 		<Link to={`/runs/${runId}`}>
 			<Card
+				glow
 				className={cn(
-					"card-glow transition-colors hover:bg-accent/50",
-					accent === "latest" &&
-						"border-brand/40 bg-accent/20 shadow-[0_0_0_1px_hsla(142,60%,49%,0.12)]",
+					"transition-colors hover:bg-accent/50",
+					accent === "latest"
+						? "border-l-2 border-l-success border-brand/40 bg-accent/20 shadow-[0_0_0_1px_hsla(142,60%,49%,0.12)]"
+						: "border-l-2 border-l-border",
 				)}
 			>
 				<CardHeader className="pb-2">

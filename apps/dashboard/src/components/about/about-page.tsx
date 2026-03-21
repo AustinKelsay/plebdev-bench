@@ -18,6 +18,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import {
 	Table,
 	TableBody,
@@ -54,15 +55,6 @@ const FACT_ACCENTS = [
 	"hsl(38, 80%, 58%)",  // warm amber — Score
 	"hsl(265, 50%, 62%)", // soft purple — Failures
 ];
-
-function SectionHeading({ title, description }: { title: string; description: string }) {
-	return (
-		<div className="space-y-1 border-l-2 border-l-success pl-4">
-			<h2 className="text-lg font-semibold text-foreground">{title}</h2>
-			<p className="text-sm text-foreground-muted">{description}</p>
-		</div>
-	);
-}
 
 /**
  * Renders the benchmark about page.
@@ -223,9 +215,9 @@ export function AboutPage() {
 
 					<Card glow className="border-l-2 border-l-warning">
 						<CardHeader>
-							<CardTitle className="text-base">Checkpoints</CardTitle>
+							<CardTitle className="text-base">Seasons &amp; Checkpoints</CardTitle>
 							<CardDescription className="text-xs">
-								Prevents unfair comparisons across changed benchmark definitions.
+								Each season is pinned to a checkpoint — a snapshot of benchmark definitions that keeps comparisons fair.
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-2">

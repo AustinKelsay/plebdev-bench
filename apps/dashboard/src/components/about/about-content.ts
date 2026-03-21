@@ -151,8 +151,8 @@ export const artifactRows: ArtifactRow[] = [
 
 /** Checkpoint fairness notes. */
 export const checkpointNotes: string[] = [
-	"Checkpoints roll when benchmark-defining assets change (prompts, specs, rubrics, harness code).",
-	"Leaderboard defaults to the latest checkpoint so models are compared against the same definition.",
+	"A new season starts when benchmark-defining assets change (prompts, specs, rubrics, harness code).",
+	"The leaderboard defaults to the latest season so models are compared against the same definition.",
 	"Aggregates prefer the strongest result per machine + matrix key; recency is a tiebreaker.",
 	"`tool-smoke` is a preflight: if a harness can't use tools, the rest of that slice is skipped.",
 ];
