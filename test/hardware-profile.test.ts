@@ -3,65 +3,79 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-	MACHINE_ID_ENV_VAR,
-	MACHINE_LABEL_ENV_VAR,
-	collectMachineProfile,
-} from "../src/lib/hardware-profile.js";
+import { collectMachineProfile } from "../src/lib/hardware-profile.js";
 import type { HardwareProfile } from "../src/schemas/index.js";
+
+const MACHINE_DISPLAY_LABEL_ENV_VAR = "BENCH_MACHINE_DISPLAY_LABEL";
+const MACHINE_INSTANCE_ID_ENV_VAR = "BENCH_MACHINE_INSTANCE_ID";
 
 const TEST_HARDWARE: HardwareProfile = {
 	platform: "darwin",
 	arch: "arm64",
 	osRelease: "24.3.0",
-	cpuModel: "Apple M4 Pro",
+	cpuModelRaw: "Apple M4 Pro",
 	logicalCores: 14,
 	totalMemoryBytes: 68_719_476_736,
+	accelerators: [
+		{
+			vendor: "Apple",
+			modelRaw: "Apple M4 Pro GPU",
+			kind: "integrated",
+			backend: "metal",
+		},
+	],
+	acceleratorDetection: {
+		status: "detected",
+	},
 };
 
 describe("hardware profile resolution", () => {
-	it("uses explicit config machine ID and label when provided", () => {
-		const resolved = collectMachineProfile({
-			machineProfileId: "mac-mini-lab",
-			machineLabel: "Mac Mini Lab",
-			hardwareProfile: TEST_HARDWARE,
+	it("uses explicit config machine ID and label when provided", async () => {
+		const resolved = await collectMachineProfile({
+			machineInstanceId: "machine-inst-a",
+			machineDisplayLabel: "Mac Mini Lab",
+			observedHardware: TEST_HARDWARE,
 			env: {},
 		});
 
-		expect(resolved.machine.profileId).toBe("mac-mini-lab");
-		expect(resolved.machine.label).toBe("Mac Mini Lab");
+		expect(resolved.machine.instanceId).toBe("machine-inst-a");
+		expect(resolved.machine.displayLabel).toBe("Mac Mini Lab");
+		expect(resolved.machine.profileKey).toContain("apple");
 		expect(resolved.identitySource).toBe("config");
 		expect(resolved.isAnonymous).toBe(false);
 	});
 
-	it("falls back to environment machine ID when config is absent", () => {
-		const resolved = collectMachineProfile({
-			hardwareProfile: TEST_HARDWARE,
+	it("falls back to environment machine ID when config is absent", async () => {
+		const resolved = await collectMachineProfile({
+			observedHardware: TEST_HARDWARE,
 			env: {
-				[MACHINE_ID_ENV_VAR]: "env-machine",
-				[MACHINE_LABEL_ENV_VAR]: "Env Machine",
+				[MACHINE_INSTANCE_ID_ENV_VAR]: "env-machine",
+				[MACHINE_DISPLAY_LABEL_ENV_VAR]: "Env Machine",
 			},
 		});
 
-		expect(resolved.machine.profileId).toBe("env-machine");
-		expect(resolved.machine.label).toBe("Env Machine");
+		expect(resolved.machine.instanceId).toBe("env-machine");
+		expect(resolved.machine.displayLabel).toBe("Env Machine");
 		expect(resolved.identitySource).toBe("env");
 		expect(resolved.isAnonymous).toBe(false);
 	});
 
-	it("generates deterministic anonymous IDs when explicit IDs are missing", () => {
-		const first = collectMachineProfile({
-			hardwareProfile: TEST_HARDWARE,
+	it("generates stable local instance IDs when explicit IDs are missing", async () => {
+		const instanceIdFilePath = "/tmp/plebdev-bench-machine-instance-id.test";
+		const first = await collectMachineProfile({
+			observedHardware: TEST_HARDWARE,
+			instanceIdFilePath,
 			env: {},
 		});
-		const second = collectMachineProfile({
-			hardwareProfile: TEST_HARDWARE,
+		const second = await collectMachineProfile({
+			observedHardware: TEST_HARDWARE,
+			instanceIdFilePath,
 			env: {},
 		});
 
-		expect(first.machine.profileId).toMatch(/^anon_[a-f0-9]{12}$/);
-		expect(first.machine.profileId).toBe(second.machine.profileId);
-		expect(first.identitySource).toBe("anonymous");
+		expect(first.machine.instanceId).toMatch(/^inst_[a-f0-9]{32}$/);
+		expect(first.machine.instanceId).toBe(second.machine.instanceId);
+		expect(first.identitySource).toBe("generated");
 		expect(first.isAnonymous).toBe(true);
 	});
 });

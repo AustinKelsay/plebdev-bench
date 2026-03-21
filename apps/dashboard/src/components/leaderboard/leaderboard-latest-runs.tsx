@@ -93,9 +93,9 @@ export function LeaderboardLatestRuns({
 											) : (
 												<Badge variant="warning">no-checkpoint</Badge>
 											)}
-											{run.machineLabel || run.machineProfileId ? (
+											{run.machineDisplayLabel || run.machineProfileLabel ? (
 												<Badge variant="outline">
-													{run.machineLabel ?? run.machineProfileId}
+													{run.machineDisplayLabel ?? run.machineProfileLabel}
 												</Badge>
 											) : null}
 										</div>

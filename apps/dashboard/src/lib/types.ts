@@ -94,6 +94,7 @@ export interface GenerationResult {
 	promptTokens?: number;
 	completionTokens?: number;
 	codeFilePath?: string;
+	sourcePathToken?: string;
 }
 
 /** Scoring execution metrics */
@@ -116,21 +117,71 @@ export interface RuntimeEnvironment {
 	bunVersion: string;
 }
 
-/** Sanitized machine hardware metadata */
+/** Accelerator detection status for observed hardware */
+export type AcceleratorDetectionStatus =
+	| "detected"
+	| "none_detected"
+	| "unavailable";
+
+/** Observed accelerator kind */
+export type ObservedAcceleratorKind = "integrated" | "discrete" | "unknown";
+
+/** Observed accelerator metadata */
+export interface ObservedAccelerator {
+	vendor?: string;
+	modelRaw: string;
+	memoryBytes?: number;
+	backend?: string;
+	kind: ObservedAcceleratorKind;
+}
+
+/** Accelerator probe status */
+export interface AcceleratorDetection {
+	status: AcceleratorDetectionStatus;
+	detail?: string;
+}
+
+/** Sanitized observed machine hardware metadata */
 export interface HardwareProfile {
 	platform: string;
 	arch: string;
 	osRelease: string;
-	cpuModel: string;
+	cpuModelRaw: string;
+	cpuVendor?: string;
+	physicalCores?: number;
 	logicalCores: number;
 	totalMemoryBytes: number;
+	accelerators: ObservedAccelerator[];
+	acceleratorDetection: AcceleratorDetection;
+}
+
+/** Canonical normalized machine profile used for aggregation */
+export interface NormalizedMachineProfile {
+	platformFamily: "macos" | "linux" | "windows" | "unknown";
+	arch: string;
+	cpuVendor: string;
+	cpuModelKey: string;
+	physicalCores?: number;
+	logicalCores: number;
+	memoryGiB: number;
+	acceleratorKey: string;
+	acceleratorMemoryGiB?: number;
+	acceleratorCount: number;
 }
 
 /** Machine profile metadata for aggregation */
 export interface MachineProfile {
-	profileId: string;
-	label?: string;
-	hardware: HardwareProfile;
+	instanceId: string;
+	instanceIdSource:
+		| "config"
+		| "env"
+		| "generated"
+		| "legacy_profile_id";
+	displayLabel?: string;
+	profileKey: string;
+	profileLabel: string;
+	normalizedProfile: NormalizedMachineProfile;
+	observedHardware: HardwareProfile;
 }
 
 /** Provenance metadata attached to plans/runs */
@@ -236,8 +287,12 @@ export interface RunListItem {
 	durationMs: number;
 	summary: RunSummary;
 	checkpointId?: string;
+	machineProfileKey?: string;
 	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	verificationStatus?: VerificationStatus;
 	isLegacy?: boolean;
 }
@@ -248,6 +303,7 @@ export interface DashboardCheckpointSummary {
 	runCount: number;
 	rawItemCount: number;
 	machineCount: number;
+	instanceCount: number;
 	latestRunAt: string;
 }
 
@@ -262,8 +318,12 @@ export interface DashboardIndex {
 
 /** Aggregated leaderboard item from checkpoint aggregate payloads */
 export interface LeaderboardAggregatedItem extends MatrixItemResult {
-	machineProfileId: string;
+	machineProfileKey: string;
+	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	verificationStatus: VerificationStatus;
 	sourceRunId: string;
 	sourceCompletedAt: string;
@@ -271,11 +331,14 @@ export interface LeaderboardAggregatedItem extends MatrixItemResult {
 
 /** Per-machine summary in checkpoint aggregate payload */
 export interface LeaderboardMachineSummary {
-	machineProfileId: string;
+	machineProfileKey: string;
+	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
 	verificationStatus: VerificationStatus;
 	runCount: number;
 	itemCount: number;
+	instanceCount: number;
 }
 
 /** Aggregate summary counters for leaderboard payload */
@@ -285,13 +348,14 @@ export interface LeaderboardAggregateSummary {
 	rawItems: number;
 	dedupedItems: number;
 	machines: number;
+	instances: number;
 	automatedScoreItems: number;
 	frontierEvalItems: number;
 }
 
 /** Checkpoint aggregate payload rendered by leaderboard page */
 export interface LeaderboardAggregate {
-	schemaVersion: 1;
+	schemaVersion: 2;
 	generatedAt: string;
 	checkpointId: string;
 	summary: LeaderboardAggregateSummary;

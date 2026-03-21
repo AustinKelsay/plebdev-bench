@@ -2,7 +2,6 @@
  * Purpose: Regression tests for capability-aware run plan expansion.
  */
 
-import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const discoverHarnessesMock = vi.fn();
@@ -15,6 +14,8 @@ const collectMachineProfileMock = vi.fn();
 const generateRunIdMock = vi.fn();
 
 function fallbackCollectMachineProfile(options: {
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	machineProfileId?: string;
 	machineLabel?: string;
 	env?: NodeJS.ProcessEnv;
@@ -22,9 +23,18 @@ function fallbackCollectMachineProfile(options: {
 		platform: string;
 		arch: string;
 		osRelease: string;
-		cpuModel: string;
+		cpuModelRaw: string;
 		logicalCores: number;
 		totalMemoryBytes: number;
+		accelerators: Array<{
+			modelRaw: string;
+			kind: "integrated" | "discrete" | "unknown";
+			vendor?: string;
+			backend?: string;
+		}>;
+		acceleratorDetection: {
+			status: "detected" | "none_detected" | "unavailable";
+		};
 	};
 } = {}) {
 	const env = options.env ?? process.env;
@@ -33,48 +43,59 @@ function fallbackCollectMachineProfile(options: {
 			platform: "darwin",
 			arch: "arm64",
 			osRelease: "unknown",
-			cpuModel: "unknown",
+			cpuModelRaw: "unknown",
 			logicalCores: 1,
 			totalMemoryBytes: 1,
+			accelerators: [],
+			acceleratorDetection: {
+				status: "unavailable" as const,
+			},
 		};
 	const readNonEmpty = (value: string | undefined) => {
 		if (typeof value !== "string") return undefined;
 		const trimmed = value.trim();
 		return trimmed.length > 0 ? trimmed : undefined;
 	};
-	const profileId =
+	const instanceId =
+		readNonEmpty(options.machineInstanceId) ??
 		readNonEmpty(options.machineProfileId) ??
+		readNonEmpty(env.BENCH_MACHINE_INSTANCE_ID) ??
 		readNonEmpty(env.BENCH_MACHINE_ID) ??
-		`anon_${createHash("sha256")
-			.update(
-				[
-					hardware.platform,
-					hardware.arch,
-					hardware.osRelease,
-					hardware.cpuModel,
-					String(hardware.logicalCores),
-					String(hardware.totalMemoryBytes),
-				].join("|"),
-			)
-			.digest("hex")
-			.slice(0, 12)}`;
-	const label =
+		"inst_0123456789abcdef0123456789abcdef";
+	const displayLabel =
+		readNonEmpty(options.machineDisplayLabel) ??
 		readNonEmpty(options.machineLabel) ??
-		readNonEmpty(env.BENCH_MACHINE_LABEL);
+		readNonEmpty(env.BENCH_MACHINE_LABEL) ??
+		readNonEmpty(env.BENCH_MACHINE_DISPLAY_LABEL);
 	const identitySource =
+		readNonEmpty(options.machineInstanceId) !== undefined ||
 		readNonEmpty(options.machineProfileId) !== undefined
 			? "config"
-			: readNonEmpty(env.BENCH_MACHINE_ID) !== undefined
-				? "env"
-				: "anonymous";
+		: readNonEmpty(env.BENCH_MACHINE_ID) !== undefined
+				|| readNonEmpty(env.BENCH_MACHINE_INSTANCE_ID) !== undefined
+			? "env"
+		: "generated";
 
 	return {
 		machine: {
-			profileId,
-			...(label ? { label } : {}),
-			hardware,
+			instanceId,
+			instanceIdSource: identitySource,
+			...(displayLabel ? { displayLabel } : {}),
+			profileKey: "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro-gpu_na_x1",
+			profileLabel: "Apple M4 Pro / 64GB / Apple M4 Pro GPU",
+			normalizedProfile: {
+				platformFamily: "macos" as const,
+				arch: hardware.arch,
+				cpuVendor: "apple",
+				cpuModelKey: "m4-pro",
+				logicalCores: hardware.logicalCores,
+				memoryGiB: 64,
+				acceleratorKey: "apple/m4-pro-gpu",
+				acceleratorCount: 1,
+			},
+			observedHardware: hardware,
 		},
-		isAnonymous: identitySource === "anonymous",
+		isAnonymous: identitySource === "generated",
 		identitySource,
 	};
 }
@@ -132,6 +153,8 @@ vi.mock("../src/lib/benchmark-checkpoint.js", () => ({
 vi.mock("../src/lib/hardware-profile.js", () => ({
 	MACHINE_ID_ENV_VAR: "BENCH_MACHINE_ID",
 	MACHINE_LABEL_ENV_VAR: "BENCH_MACHINE_LABEL",
+	MACHINE_INSTANCE_ID_ENV_VAR: "BENCH_MACHINE_INSTANCE_ID",
+	MACHINE_DISPLAY_LABEL_ENV_VAR: "BENCH_MACHINE_DISPLAY_LABEL",
 	collectMachineProfile: collectMachineProfileMock,
 }));
 
@@ -172,14 +195,38 @@ describe("buildRunPlan", () => {
 			isAnonymous: false,
 			identitySource: "config",
 			machine: {
-				profileId: "machine-a",
-				hardware: {
+				instanceId: "machine-a",
+				instanceIdSource: "config",
+				profileKey: "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro-gpu_na_x1",
+				profileLabel: "Apple M4 Pro / 64GB / Apple M4 Pro GPU",
+				normalizedProfile: {
+					platformFamily: "macos",
+					arch: "arm64",
+					cpuVendor: "apple",
+					cpuModelKey: "m4-pro",
+					logicalCores: 12,
+					memoryGiB: 64,
+					acceleratorKey: "apple/m4-pro-gpu",
+					acceleratorCount: 1,
+				},
+				observedHardware: {
 					platform: "darwin",
 					arch: "arm64",
 					osRelease: "25.0.0",
-					cpuModel: "Apple M4 Pro",
+					cpuModelRaw: "Apple M4 Pro",
 					logicalCores: 12,
 					totalMemoryBytes: 68_719_476_736,
+					accelerators: [
+						{
+							vendor: "Apple",
+							modelRaw: "Apple M4 Pro GPU",
+							kind: "integrated",
+							backend: "metal",
+						},
+					],
+					acceleratorDetection: {
+						status: "detected",
+					},
 				},
 			},
 		});

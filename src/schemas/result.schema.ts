@@ -47,6 +47,9 @@ export const GenerationResultSchema = z.object({
 
 	/** Path to code file written by tool-calling harness (e.g., Goose developer extension). */
 	codeFilePath: z.string().optional(),
+
+	/** Redacted path token preserved in published artifacts for source traceability. */
+	sourcePathToken: z.string().optional(),
 });
 
 /** Generation result from a harness call. */

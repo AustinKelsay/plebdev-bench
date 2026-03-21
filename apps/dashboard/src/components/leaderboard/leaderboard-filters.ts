@@ -69,20 +69,24 @@ export function uniqueValues(
 export function buildMachineFilterOptions(
 	items: LeaderboardAggregatedItem[],
 ): MachineFilterOption[] {
-	const machineMap = new Map<string, { machineLabel?: string }>();
+	const machineMap = new Map<string, { machineProfileLabel?: string }>();
 	for (const item of items) {
-		const existing = machineMap.get(item.machineProfileId);
-		if (!existing || (!existing.machineLabel && item.machineLabel)) {
-			machineMap.set(item.machineProfileId, {
-				...(item.machineLabel ? { machineLabel: item.machineLabel } : {}),
+		const existing = machineMap.get(item.machineProfileKey);
+		if (!existing || (!existing.machineProfileLabel && item.machineProfileLabel)) {
+			machineMap.set(item.machineProfileKey, {
+				...(item.machineProfileLabel
+					? { machineProfileLabel: item.machineProfileLabel }
+					: {}),
 			});
 		}
 	}
 
-	const baseOptions = [...machineMap.entries()].map(([machineProfileId, value]) => ({
-		value: machineProfileId,
-		label: value.machineLabel ?? machineProfileId,
-	}));
+	const baseOptions = [...machineMap.entries()].map(
+		([machineProfileKey, value]) => ({
+			value: machineProfileKey,
+			label: value.machineProfileLabel ?? machineProfileKey,
+		}),
+	);
 	const labelCounts = new Map<string, number>();
 	for (const option of baseOptions) {
 		labelCounts.set(option.label, (labelCounts.get(option.label) ?? 0) + 1);
@@ -116,7 +120,7 @@ export function filterItems(
 ): LeaderboardAggregatedItem[] {
 	return items.filter((item) => {
 		if (filters.machine !== ALL_FILTER_VALUE) {
-			if (item.machineProfileId !== filters.machine) return false;
+			if (item.machineProfileKey !== filters.machine) return false;
 		}
 		if (filters.models.length > 0 && !filters.models.includes(item.model)) {
 			return false;

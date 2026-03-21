@@ -19,8 +19,8 @@ const RUN_LIST_SKELETON_KEYS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 /** Left-border accent colors for stat cards (matches about page FACT_ACCENTS). */
 const STAT_ACCENTS = [
 	"hsl(142, 60%, 49%)", // green — Live Runs
-	"hsl(215, 70%, 60%)", // blue — Machines
-	"hsl(38, 80%, 58%)",  // amber — Scored Items
+	"hsl(215, 70%, 60%)", // blue — Profiles
+	"hsl(38, 80%, 58%)",  // amber — Instances
 	"hsl(265, 50%, 62%)", // purple — Last Published
 ];
 
@@ -124,8 +124,8 @@ export function RunListPage() {
 							<div className="grid gap-3 md:grid-cols-4">
 								{[
 									{ label: "Live Runs", value: formatNumber(liveGroup?.runCount ?? 0), large: true },
-									{ label: "Machines", value: formatNumber(liveGroup?.machineCount ?? 0), large: true },
-									{ label: "Scored Items", value: formatNumber(liveGroup?.rawItemCount ?? 0), large: true },
+									{ label: "Profiles", value: formatNumber(liveGroup?.machineCount ?? 0), large: true },
+									{ label: "Instances", value: formatNumber(liveGroup?.instanceCount ?? 0), large: true },
 									{ label: "Last Published", value: liveGroup ? formatDate(liveGroup.latestRunAt) : "n/a", large: false },
 								].map((stat, i) => (
 									<div
@@ -191,7 +191,7 @@ export function RunListPage() {
 									</div>
 									<CardTitle className="text-base">{group.title}</CardTitle>
 								</CardHeader>
-								<CardContent className="grid grid-cols-3 gap-3 text-sm">
+								<CardContent className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
 									<div>
 										<p className="text-xs text-foreground-muted">Runs</p>
 										<p className="font-medium tabular-nums">
@@ -199,9 +199,15 @@ export function RunListPage() {
 										</p>
 									</div>
 									<div>
-										<p className="text-xs text-foreground-muted">Machines</p>
+										<p className="text-xs text-foreground-muted">Profiles</p>
 										<p className="font-medium tabular-nums">
 											{formatNumber(group.machineCount)}
+										</p>
+									</div>
+									<div>
+										<p className="text-xs text-foreground-muted">Instances</p>
+										<p className="font-medium tabular-nums">
+											{formatNumber(group.instanceCount)}
 										</p>
 									</div>
 									<div>
@@ -249,7 +255,7 @@ export function RunListPage() {
 										<Badge variant="outline">{group.checkpointId}</Badge>
 									) : null}
 									<span className="text-foreground-muted">
-										{formatNumber(group.runCount)} runs · {formatNumber(group.machineCount)} machines · {formatNumber(group.rawItemCount)} items · last published {formatDate(group.latestRunAt)}
+										{formatNumber(group.runCount)} runs · {formatNumber(group.machineCount)} profiles · {formatNumber(group.instanceCount)} instances · {formatNumber(group.rawItemCount)} items · last published {formatDate(group.latestRunAt)}
 									</span>
 								</div>
 

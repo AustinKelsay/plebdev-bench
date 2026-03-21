@@ -65,6 +65,7 @@ const GenerationResultSchema = z.object({
 	promptTokens: z.number().optional(),
 	completionTokens: z.number().optional(),
 	codeFilePath: z.string().optional(),
+	sourcePathToken: z.string().optional(),
 });
 
 /** Automated score schema. */
@@ -102,21 +103,77 @@ const RuntimeEnvironmentSchema = z.object({
 	bunVersion: z.string(),
 });
 
+/** Observed accelerator kind schema. */
+const ObservedAcceleratorKindSchema = z.enum([
+	"integrated",
+	"discrete",
+	"unknown",
+]);
+
+/** Observed accelerator schema. */
+const ObservedAcceleratorSchema = z.object({
+	vendor: z.string().optional(),
+	modelRaw: z.string(),
+	memoryBytes: z.number().optional(),
+	backend: z.string().optional(),
+	kind: ObservedAcceleratorKindSchema,
+});
+
+/** Accelerator detection status schema. */
+const AcceleratorDetectionStatusSchema = z.enum([
+	"detected",
+	"none_detected",
+	"unavailable",
+]);
+
+/** Accelerator detection schema. */
+const AcceleratorDetectionSchema = z.object({
+	status: AcceleratorDetectionStatusSchema,
+	detail: z.string().optional(),
+});
+
 /** Hardware profile schema. */
 const HardwareProfileSchema = z.object({
 	platform: z.string(),
 	arch: z.string(),
 	osRelease: z.string(),
-	cpuModel: z.string(),
+	cpuModelRaw: z.string(),
+	cpuVendor: z.string().optional(),
+	physicalCores: z.number().optional(),
 	logicalCores: z.number(),
 	totalMemoryBytes: z.number(),
+	accelerators: z.array(ObservedAcceleratorSchema),
+	acceleratorDetection: AcceleratorDetectionSchema,
+});
+
+/** Normalized machine profile schema. */
+const NormalizedMachineProfileSchema = z.object({
+	platformFamily: z.enum(["macos", "linux", "windows", "unknown"]),
+	arch: z.string(),
+	cpuVendor: z.string(),
+	cpuModelKey: z.string(),
+	physicalCores: z.number().optional(),
+	logicalCores: z.number(),
+	memoryGiB: z.number(),
+	acceleratorKey: z.string(),
+	acceleratorMemoryGiB: z.number().optional(),
+	acceleratorCount: z.number(),
 });
 
 /** Machine profile schema. */
 const MachineProfileSchema = z.object({
-	profileId: z.string(),
-	label: z.string().optional(),
-	hardware: HardwareProfileSchema,
+	instanceId: z.string(),
+	instanceIdSource: z.enum([
+		"config",
+		"env",
+		"generated",
+		"legacy_profile_id",
+	]),
+	displayLabel: z.string().optional(),
+	profileKey: z.string(),
+	profileLabel: z.string(),
+	normalizedProfile: NormalizedMachineProfileSchema,
+	observedHardware: HardwareProfileSchema,
 });
 
 /** Run provenance schema. */
@@ -244,8 +301,12 @@ export const RunListItemSchema = z.object({
 	durationMs: z.number(),
 	summary: RunSummarySchema,
 	checkpointId: z.string().optional(),
+	machineProfileKey: z.string().optional(),
 	machineProfileId: z.string().optional(),
+	machineProfileLabel: z.string().optional(),
 	machineLabel: z.string().optional(),
+	machineInstanceId: z.string().optional(),
+	machineDisplayLabel: z.string().optional(),
 	verificationStatus: VerificationStatusSchema.optional(),
 	isLegacy: z.boolean().optional(),
 });
@@ -259,6 +320,7 @@ export const DashboardCheckpointSummarySchema = z.object({
 	runCount: z.number(),
 	rawItemCount: z.number(),
 	machineCount: z.number(),
+	instanceCount: z.number(),
 	latestRunAt: z.string(),
 });
 
@@ -279,8 +341,12 @@ export const DashboardIndexLegacyOrV2Schema = z.union([
 
 /** Aggregated leaderboard item schema. */
 const LeaderboardAggregatedItemSchema = MatrixItemResultSchema.extend({
-	machineProfileId: z.string(),
+	machineProfileKey: z.string(),
+	machineProfileId: z.string().optional(),
+	machineProfileLabel: z.string().optional(),
 	machineLabel: z.string().optional(),
+	machineInstanceId: z.string().optional(),
+	machineDisplayLabel: z.string().optional(),
 	verificationStatus: VerificationStatusSchema,
 	sourceRunId: z.string(),
 	sourceCompletedAt: z.string(),
@@ -288,11 +354,14 @@ const LeaderboardAggregatedItemSchema = MatrixItemResultSchema.extend({
 
 /** Aggregated machine summary schema. */
 const LeaderboardMachineSummarySchema = z.object({
-	machineProfileId: z.string(),
+	machineProfileKey: z.string(),
+	machineProfileId: z.string().optional(),
+	machineProfileLabel: z.string().optional(),
 	machineLabel: z.string().optional(),
 	verificationStatus: VerificationStatusSchema,
 	runCount: z.number(),
 	itemCount: z.number(),
+	instanceCount: z.number(),
 });
 
 /** Aggregated summary counters schema. */
@@ -302,13 +371,14 @@ const LeaderboardAggregateSummarySchema = z.object({
 	rawItems: z.number(),
 	dedupedItems: z.number(),
 	machines: z.number(),
+	instances: z.number(),
 	automatedScoreItems: z.number(),
 	frontierEvalItems: z.number(),
 });
 
 /** Leaderboard aggregate payload schema. */
 export const LeaderboardAggregateSchema = z.object({
-	schemaVersion: z.literal(1),
+	schemaVersion: z.literal(2),
 	generatedAt: z.string(),
 	checkpointId: z.string(),
 	summary: LeaderboardAggregateSummarySchema,

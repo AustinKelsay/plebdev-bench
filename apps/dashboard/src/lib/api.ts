@@ -11,6 +11,10 @@ import {
 	RunPlanSchema,
 	RunResultSchema,
 } from "./schemas";
+import {
+	migrateLegacyPlanPayload,
+	migrateLegacyRunPayload,
+} from "../../../../src/lib/machine-profile/legacy.js";
 import type {
 	DashboardIndex,
 	LeaderboardAggregate,
@@ -63,7 +67,7 @@ function createEmptyAggregate(
 	checkpointId: string | null,
 ): LeaderboardAggregate {
 	return {
-		schemaVersion: 1,
+		schemaVersion: 2,
 		generatedAt: new Date(0).toISOString(),
 		checkpointId: checkpointId ?? "unknown",
 		summary: {
@@ -72,6 +76,7 @@ function createEmptyAggregate(
 			rawItems: 0,
 			dedupedItems: 0,
 			machines: 0,
+			instances: 0,
 			automatedScoreItems: 0,
 			frontierEvalItems: 0,
 		},
@@ -157,7 +162,7 @@ export async function fetchRun(
 		throw new Error(`Failed to fetch run ${runId}: ${response.status}`);
 	}
 	const data = await response.json();
-	return RunResultSchema.parse(data);
+	return RunResultSchema.parse(migrateLegacyRunPayload(data));
 }
 
 /**
@@ -180,7 +185,7 @@ export async function fetchPlan(
 		throw new Error(`Failed to fetch plan ${runId}: ${response.status}`);
 	}
 	const data = await response.json();
-	return RunPlanSchema.parse(data);
+	return RunPlanSchema.parse(migrateLegacyPlanPayload(data));
 }
 
 /**

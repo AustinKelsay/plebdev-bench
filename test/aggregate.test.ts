@@ -4,11 +4,40 @@
 
 import { describe, expect, it } from "vitest";
 import {
+	buildMachineProfileKey,
+	buildMachineProfileLabel,
+	normalizeMachineProfile,
+} from "../src/lib/machine-profile/normalization.js";
+import {
 	type AggregateRunInput,
 	aggregateRunsForCheckpoint,
 } from "../src/results/aggregate.js";
 import type { MatrixItemResult, RunResult } from "../src/schemas/index.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
+
+const TEST_HARDWARE = {
+	platform: "darwin",
+	arch: "arm64",
+	osRelease: "24.3.0",
+	cpuModelRaw: "Apple M4 Pro",
+	logicalCores: 14,
+	totalMemoryBytes: 68_719_476_736,
+	accelerators: [
+		{
+			vendor: "Apple",
+			modelRaw: "Apple M4 Pro GPU",
+			kind: "integrated" as const,
+			backend: "metal",
+		},
+	],
+	acceleratorDetection: { status: "detected" as const },
+};
+const TEST_NORMALIZED_PROFILE = normalizeMachineProfile(TEST_HARDWARE);
+const TEST_PROFILE_KEY = buildMachineProfileKey(TEST_NORMALIZED_PROFILE);
+const TEST_PROFILE_LABEL = buildMachineProfileLabel(
+	TEST_HARDWARE,
+	TEST_NORMALIZED_PROFILE,
+);
 
 /**
  * Creates a matrix item for aggregation tests.
@@ -48,22 +77,21 @@ function createItem(
 function createRun(
 	runId: string,
 	checkpointId: string,
-	machineProfileId: string,
+	machineProfileKey: string,
+	instanceId: string,
 	items: MatrixItemResult[],
 ): RunResult {
 	return {
 		schemaVersion: SCHEMA_VERSION,
 		runId,
 		machine: {
-			profileId: machineProfileId,
-			hardware: {
-				platform: "darwin",
-				arch: "arm64",
-				osRelease: "24.3.0",
-				cpuModel: "Apple M4 Pro",
-				logicalCores: 14,
-				totalMemoryBytes: 68_719_476_736,
-			},
+			instanceId,
+			instanceIdSource: "config",
+			displayLabel: "Machine A",
+			profileKey: machineProfileKey,
+			profileLabel: TEST_PROFILE_LABEL,
+			normalizedProfile: TEST_NORMALIZED_PROFILE,
+			observedHardware: TEST_HARDWARE,
 		},
 		benchmarkCheckpoint: {
 			checkpointId,
@@ -111,8 +139,16 @@ describe("aggregateRunsForCheckpoint", () => {
 		});
 
 		const runs: AggregateRunInput[] = [
-			{ run: createRun("run-old", checkpointId, "machine-a", [olderItem]) },
-			{ run: createRun("run-new", checkpointId, "machine-a", [newerItem]) },
+			{
+				run: createRun("run-old", checkpointId, TEST_PROFILE_KEY, "instance-a", [
+					olderItem,
+				]),
+			},
+			{
+				run: createRun("run-new", checkpointId, TEST_PROFILE_KEY, "instance-b", [
+					newerItem,
+				]),
+			},
 		];
 
 		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
@@ -127,8 +163,16 @@ describe("aggregateRunsForCheckpoint", () => {
 		const newerItem = createItem("01", "2026-03-04T12:10:00.000Z");
 
 		const runs: AggregateRunInput[] = [
-			{ run: createRun("run-old", checkpointId, "machine-a", [olderItem]) },
-			{ run: createRun("run-new", checkpointId, "machine-a", [newerItem]) },
+			{
+				run: createRun("run-old", checkpointId, TEST_PROFILE_KEY, "instance-a", [
+					olderItem,
+				]),
+			},
+			{
+				run: createRun("run-new", checkpointId, TEST_PROFILE_KEY, "instance-b", [
+					newerItem,
+				]),
+			},
 		];
 
 		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
@@ -136,12 +180,24 @@ describe("aggregateRunsForCheckpoint", () => {
 		expect(aggregate.items[0].sourceRunId).toBe("run-new");
 	});
 
-	it("does not dedupe across different machines", () => {
+	it("does not dedupe across different profiles", () => {
 		const checkpointId = "chk_sha256v1_latest";
 		const item = createItem("01", "2026-03-04T12:00:00.000Z");
 		const runs: AggregateRunInput[] = [
-			{ run: createRun("run-a", checkpointId, "machine-a", [item]) },
-			{ run: createRun("run-b", checkpointId, "machine-b", [item]) },
+			{
+				run: createRun("run-a", checkpointId, TEST_PROFILE_KEY, "instance-a", [
+					item,
+				]),
+			},
+			{
+				run: createRun(
+					"run-b",
+					checkpointId,
+					"windows_x64_intel_i9_13900k_24c_64gb_nvidia-rtx-4090_24gb_x1",
+					"instance-b",
+					[item],
+				),
+			},
 		];
 
 		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
@@ -154,12 +210,17 @@ describe("aggregateRunsForCheckpoint", () => {
 		const other = "chk_sha256v1_other";
 		const runs: AggregateRunInput[] = [
 			{
-				run: createRun("run-target", target, "machine-a", [
+				run: createRun("run-target", target, TEST_PROFILE_KEY, "instance-a", [
 					createItem("01", "2026-03-04T12:00:00.000Z"),
 				]),
 			},
 			{
-				run: createRun("run-other", other, "machine-a", [
+				run: createRun("run-other", other, TEST_PROFILE_KEY, "instance-a", [
+					createItem("01", "2026-03-04T12:00:00.000Z"),
+				]),
+			},
+			{
+				run: createRun("run-other-2", other, TEST_PROFILE_KEY, "instance-b", [
 					createItem("02", "2026-03-04T12:10:00.000Z"),
 				]),
 			},

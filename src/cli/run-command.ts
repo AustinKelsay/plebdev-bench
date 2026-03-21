@@ -103,10 +103,21 @@ export const runCommand = new Command("run")
 	)
 	.option("-o, --output <dir>", "Output directory", "results")
 	.option(
-		"--machine-id <id>",
-		"Machine profile ID for cross-run aggregation (default: BENCH_MACHINE_ID env or deterministic anonymous ID)",
+		"--machine-instance-id <id>",
+		"Stable machine instance ID (default: BENCH_MACHINE_INSTANCE_ID env or generated local ID)",
 	)
-	.option("--machine-label <label>", "Optional machine display label")
+	.option(
+		"--machine-display-label <label>",
+		"Optional display label for a specific machine instance",
+	)
+	.option(
+		"--machine-id <id>",
+		"Deprecated alias for --machine-instance-id",
+	)
+	.option(
+		"--machine-label <label>",
+		"Deprecated alias for --machine-display-label",
+	)
 	.option(
 		"--model-config <file>",
 		"JSON file with model aliases for cross-runtime mapping",
@@ -160,15 +171,16 @@ export const runCommand = new Command("run")
 					options.gooseWorkspaceRetryMaxTurns,
 				),
 				outputDir: options.output,
-				machineProfileId:
-					typeof options.machineId === "string" &&
-					options.machineId.trim().length > 0
-						? options.machineId.trim()
+				machineInstanceId:
+					typeof (options.machineInstanceId ?? options.machineId) === "string" &&
+					(options.machineInstanceId ?? options.machineId).trim().length > 0
+						? (options.machineInstanceId ?? options.machineId).trim()
 						: undefined,
-				machineLabel:
-					typeof options.machineLabel === "string" &&
-					options.machineLabel.trim().length > 0
-						? options.machineLabel.trim()
+				machineDisplayLabel:
+					typeof (options.machineDisplayLabel ?? options.machineLabel) ===
+						"string" &&
+					(options.machineDisplayLabel ?? options.machineLabel).trim().length > 0
+						? (options.machineDisplayLabel ?? options.machineLabel).trim()
 						: undefined,
 				modelAliases,
 			};

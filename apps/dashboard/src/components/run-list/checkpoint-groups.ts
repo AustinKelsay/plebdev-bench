@@ -19,6 +19,7 @@ export interface RunCheckpointGroup {
 	isLegacy: boolean;
 	runCount: number;
 	machineCount: number;
+	instanceCount: number;
 	rawItemCount: number;
 	latestRunAt: string;
 	runs: RunListItem[];
@@ -61,6 +62,7 @@ export function buildRunCheckpointGroups(
 			isLegacy: false,
 			runCount: checkpoint.runCount,
 			machineCount: checkpoint.machineCount,
+			instanceCount: checkpoint.instanceCount,
 			rawItemCount: checkpoint.rawItemCount,
 			latestRunAt: checkpoint.latestRunAt,
 			runs: runsByCheckpoint.get(checkpoint.checkpointId) ?? [],
@@ -77,8 +79,13 @@ export function buildRunCheckpointGroups(
 		new Date(0).toISOString();
 	const machineIds = new Set(
 		legacyRuns
-			.map((run) => run.machineProfileId)
+			.map((run) => run.machineProfileKey)
 			.filter((machineId): machineId is string => Boolean(machineId)),
+	);
+	const instanceIds = new Set(
+		legacyRuns
+			.map((run) => run.machineInstanceId)
+			.filter((instanceId): instanceId is string => Boolean(instanceId)),
 	);
 
 	return [
@@ -92,6 +99,7 @@ export function buildRunCheckpointGroups(
 			isLegacy: true,
 			runCount: legacyRuns.length,
 			machineCount: machineIds.size,
+			instanceCount: instanceIds.size,
 			rawItemCount: legacyRuns.reduce(
 				(total, run) => total + run.summary.total,
 				0,

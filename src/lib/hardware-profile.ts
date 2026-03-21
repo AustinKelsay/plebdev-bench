@@ -1,35 +1,57 @@
 /**
- * Purpose: Collect sanitized hardware metadata and resolve machine profile identity.
- * Exports: collectMachineProfile, collectHardwareProfile
+ * Purpose: Resolve stable machine instance identity plus canonical machine profile.
+ * Exports: collectMachineProfile, MACHINE_* env constants
  *
  * Invariants:
- * - Hardware metadata excludes hostname, serials, usernames, and raw device IDs
- * - Anonymous profile IDs are deterministic for a given sanitized hardware fingerprint
+ * - Instance identity is never derived from hardware
+ * - Profile keys are deterministic and derived from normalized hardware only
  */
 
-import { createHash } from "node:crypto";
-import * as os from "node:os";
 import type { HardwareProfile, MachineProfile } from "../schemas/index.js";
+import {
+	MACHINE_INSTANCE_ID_ENV_VAR,
+	LEGACY_MACHINE_ID_ENV_VAR,
+	resolveMachineInstanceId,
+} from "./machine-profile/instance-id.js";
+import {
+	buildMachineProfileKey,
+	buildMachineProfileLabel,
+	normalizeMachineProfile,
+} from "./machine-profile/normalization.js";
+import { collectObservedHardwareProfile } from "./machine-profile/probe.js";
 
-/** Environment variable name for machine profile IDs. */
-export const MACHINE_ID_ENV_VAR = "BENCH_MACHINE_ID";
+/** New environment variable name for machine display labels. */
+export const MACHINE_DISPLAY_LABEL_ENV_VAR = "BENCH_MACHINE_DISPLAY_LABEL";
 
-/** Environment variable name for machine labels. */
-export const MACHINE_LABEL_ENV_VAR = "BENCH_MACHINE_LABEL";
+/** Deprecated legacy environment variable name for machine display labels. */
+export const LEGACY_MACHINE_LABEL_ENV_VAR = "BENCH_MACHINE_LABEL";
+
+/** Backward-compatible export for the deprecated machine ID env var. */
+export const MACHINE_ID_ENV_VAR = LEGACY_MACHINE_ID_ENV_VAR;
+
+/** Backward-compatible export for the deprecated machine label env var. */
+export const MACHINE_LABEL_ENV_VAR = LEGACY_MACHINE_LABEL_ENV_VAR;
+
+/** Public export for the new machine instance ID env var. */
+export { MACHINE_INSTANCE_ID_ENV_VAR };
 
 /** Options for resolving machine profile metadata. */
 export interface MachineProfileOptions {
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	machineProfileId?: string;
 	machineLabel?: string;
 	env?: NodeJS.ProcessEnv;
+	observedHardware?: HardwareProfile;
 	hardwareProfile?: HardwareProfile;
+	instanceIdFilePath?: string;
 }
 
 /** Resolved machine profile metadata plus identity resolution details. */
 export interface ResolvedMachineProfile {
 	machine: MachineProfile;
 	isAnonymous: boolean;
-	identitySource: "config" | "env" | "anonymous";
+	identitySource: MachineProfile["instanceIdSource"];
 }
 
 /**
@@ -45,87 +67,65 @@ function readNonEmpty(value: string | undefined): string | undefined {
 }
 
 /**
- * Creates a deterministic anonymous machine profile ID from hardware metadata.
+ * Collects observed hardware metadata from the current host.
  *
- * @param hardware - Sanitized hardware profile
- * @returns Anonymous machine profile ID
+ * @returns Observed hardware metadata
  */
-function buildAnonymousProfileId(hardware: HardwareProfile): string {
-	const fingerprint = [
-		hardware.platform,
-		hardware.arch,
-		hardware.osRelease,
-		hardware.cpuModel,
-		String(hardware.logicalCores),
-		String(hardware.totalMemoryBytes),
-	].join("|");
-	const hash = createHash("sha256").update(fingerprint).digest("hex");
-	return `anon_${hash.slice(0, 12)}`;
+export async function collectHardwareProfile(): Promise<HardwareProfile> {
+	return collectObservedHardwareProfile();
 }
 
 /**
- * Collects sanitized hardware metadata from the current host.
- *
- * @returns Sanitized hardware profile
- * @throws {Error} If CPU metadata is unavailable
- */
-export function collectHardwareProfile(): HardwareProfile {
-	const cpus = os.cpus();
-	if (cpus.length === 0) {
-		throw new Error(
-			"Unable to collect hardware profile: os.cpus() returned empty",
-		);
-	}
-
-	return {
-		platform: os.platform(),
-		arch: os.arch(),
-		osRelease: os.release(),
-		cpuModel: cpus[0].model,
-		logicalCores: cpus.length,
-		totalMemoryBytes: os.totalmem(),
-	};
-}
-
-/**
- * Resolves machine profile metadata from config/env with deterministic anonymous fallback.
+ * Resolves machine profile metadata from config/env/local state with canonical profiling.
  *
  * Resolution precedence:
- * 1. Explicit config `machineProfileId` / `machineLabel`
- * 2. Environment (`BENCH_MACHINE_ID` / `BENCH_MACHINE_LABEL`)
- * 3. Anonymous deterministic ID from hardware fingerprint
+ * 1. Explicit config `machineInstanceId` / `machineDisplayLabel`
+ * 2. Deprecated config aliases `machineProfileId` / `machineLabel`
+ * 3. Environment (`BENCH_MACHINE_INSTANCE_ID` / `BENCH_MACHINE_DISPLAY_LABEL`)
+ * 4. Generated local machine instance ID persisted on disk
  *
  * @param options - Optional config/env overrides
  * @returns Resolved machine profile and identity source
  */
-export function collectMachineProfile(
+export async function collectMachineProfile(
 	options: MachineProfileOptions = {},
-): ResolvedMachineProfile {
+): Promise<ResolvedMachineProfile> {
 	const env = options.env ?? process.env;
-	const hardware = options.hardwareProfile ?? collectHardwareProfile();
+	const observedHardware =
+		options.observedHardware ??
+		options.hardwareProfile ??
+		(await collectObservedHardwareProfile());
+	const normalizedProfile = normalizeMachineProfile(observedHardware);
+	const profileKey = buildMachineProfileKey(normalizedProfile);
+	const profileLabel = buildMachineProfileLabel(
+		observedHardware,
+		normalizedProfile,
+	);
 
-	const configId = readNonEmpty(options.machineProfileId);
-	const envId = readNonEmpty(env[MACHINE_ID_ENV_VAR]);
-	const profileId = configId ?? envId ?? buildAnonymousProfileId(hardware);
+	const resolvedInstance = resolveMachineInstanceId({
+		configuredInstanceId: options.machineInstanceId,
+		legacyConfiguredInstanceId: options.machineProfileId,
+		env,
+		instanceIdFilePath: options.instanceIdFilePath,
+	});
 
-	const configLabel = readNonEmpty(options.machineLabel);
-	const envLabel = readNonEmpty(env[MACHINE_LABEL_ENV_VAR]);
-	const label = configLabel ?? envLabel;
-
-	const identitySource =
-		configId !== undefined
-			? "config"
-			: envId !== undefined
-				? "env"
-				: "anonymous";
+	const displayLabel =
+		readNonEmpty(options.machineDisplayLabel) ??
+		readNonEmpty(options.machineLabel) ??
+		readNonEmpty(env[MACHINE_DISPLAY_LABEL_ENV_VAR]) ??
+		readNonEmpty(env[LEGACY_MACHINE_LABEL_ENV_VAR]);
 
 	return {
 		machine: {
-			profileId,
-			...(label ? { label } : {}),
-			hardware,
+			instanceId: resolvedInstance.instanceId,
+			instanceIdSource: resolvedInstance.instanceIdSource,
+			...(displayLabel ? { displayLabel } : {}),
+			profileKey,
+			profileLabel,
+			normalizedProfile,
+			observedHardware,
 		},
-		isAnonymous: identitySource === "anonymous",
-		identitySource,
+		isAnonymous: resolvedInstance.instanceIdSource === "generated",
+		identitySource: resolvedInstance.instanceIdSource,
 	};
 }

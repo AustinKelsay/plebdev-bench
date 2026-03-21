@@ -72,13 +72,20 @@ export function LeaderboardResultsTable({
 					<TableBody>
 						{items.map((item) => (
 							<TableRow
-								key={`${item.machineProfileId}|${item.id}|${item.sourceRunId}`}
+								key={`${item.machineProfileKey}|${item.id}|${item.sourceRunId}`}
 							>
 								<TableCell>
 									<div className="flex flex-col gap-1">
 										<span className="font-medium">
-											{item.machineLabel ?? item.machineProfileId}
+											{item.machineDisplayLabel ??
+												item.machineProfileLabel ??
+												item.machineProfileKey}
 										</span>
+										{item.machineInstanceId && (
+											<span className="text-xs text-foreground-faint">
+												{item.machineInstanceId}
+											</span>
+										)}
 										<Badge variant="secondary" className="w-fit">
 											{item.verificationStatus}
 										</Badge>

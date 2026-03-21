@@ -25,7 +25,7 @@ Outputs (per run):
 - `results/<run-id>/run.partial.json` — periodic crash-safe snapshot during execution (removed on success)
 - each artifact now includes:
   - benchmark checkpoint metadata (`checkpointId`, manifest hash, asset count)
-  - machine profile + sanitized hardware metadata
+  - machine instance identity + canonical machine profile metadata
   - run provenance metadata (`verificationStatus`, source)
 
 Built-ins:
@@ -146,8 +146,8 @@ bun pb
 # Run with specific options
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
-# Run with explicit machine identity metadata (recommended for shared aggregation)
-bun pb --machine-id mac-mini-m4-pro --machine-label "Austin Mac Mini"
+# Run with explicit machine instance metadata (recommended for shared aggregation)
+bun pb --machine-instance-id mac-mini-m4-pro --machine-display-label "Austin Mac Mini"
 
 # Run only coding category tests
 bun pb --categories coding
@@ -218,6 +218,9 @@ bun run src/index.ts compare <run-a> <run-b>
 # Force compare across checkpoint mismatches (normally blocked)
 bun run src/index.ts compare <run-a> <run-b> --allow-cross-checkpoint
 
+# Rewrite legacy artifacts to the standardized machine-profile schema
+bun run src/index.ts migrate-machine-profiles --dir apps/dashboard/public/results --rebuild-dashboard-index
+
 # Run tests
 bun test
 
@@ -231,6 +234,11 @@ Each run creates:
 - `results/<run-id>/plan.json` — expanded matrix plan
 - `results/<run-id>/run.json` — execution results
 - `results/<run-id>/run.partial.json` — periodic in-flight checkpoint (deleted after successful completion)
+
+Machine metadata now splits:
+- `machine.instanceId` — stable per-machine identity, never derived from hardware
+- `machine.profileKey` — canonical normalized hardware class used for aggregation
+- `machine.observedHardware` — exact sanitized hardware facts retained for audit/debug
 
 ## Interpreting Results Fairly
 

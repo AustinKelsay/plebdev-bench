@@ -4,6 +4,11 @@
 
 import { describe, expect, it } from "vitest";
 import {
+	buildMachineProfileKey,
+	buildMachineProfileLabel,
+	normalizeMachineProfile,
+} from "../src/lib/machine-profile/normalization.js";
+import {
 	BenchConfigSchema,
 	FrontierEvalFailureTypeSchema,
 	HarnessCapabilitySchema,
@@ -20,6 +25,32 @@ import {
 	defaultConfig,
 } from "../src/schemas/index.js";
 
+const TEST_HARDWARE = {
+	platform: "darwin",
+	arch: "arm64",
+	osRelease: "24.3.0",
+	cpuModelRaw: "Apple M4 Pro",
+	logicalCores: 14,
+	totalMemoryBytes: 68_719_476_736,
+	accelerators: [
+		{
+			vendor: "Apple",
+			modelRaw: "Apple M4 Pro GPU",
+			kind: "integrated" as const,
+			backend: "metal",
+		},
+	],
+	acceleratorDetection: {
+		status: "detected" as const,
+	},
+};
+const TEST_NORMALIZED_PROFILE = normalizeMachineProfile(TEST_HARDWARE);
+const TEST_PROFILE_KEY = buildMachineProfileKey(TEST_NORMALIZED_PROFILE);
+const TEST_PROFILE_LABEL = buildMachineProfileLabel(
+	TEST_HARDWARE,
+	TEST_NORMALIZED_PROFILE,
+);
+
 describe("common schemas", () => {
 	it("should validate pass types", () => {
 		expect(PassTypeSchema.parse("blind")).toBe("blind");
@@ -28,7 +59,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.4.0");
+		expect(SCHEMA_VERSION).toBe("0.5.0");
 	});
 
 	it("should validate runtime names", () => {
@@ -169,16 +200,13 @@ describe("RunPlanSchema", () => {
 				bunVersion: "1.0.0",
 			},
 			machine: {
-				profileId: "mac-mini-m4-pro",
-				label: "Mac Mini M4 Pro",
-				hardware: {
-					platform: "darwin",
-					arch: "arm64",
-					osRelease: "24.3.0",
-					cpuModel: "Apple M4 Pro",
-					logicalCores: 14,
-					totalMemoryBytes: 68_719_476_736,
-				},
+				instanceId: "machine-a",
+				instanceIdSource: "config",
+				displayLabel: "Mac Mini M4 Pro",
+				profileKey: TEST_PROFILE_KEY,
+				profileLabel: TEST_PROFILE_LABEL,
+				normalizedProfile: TEST_NORMALIZED_PROFILE,
+				observedHardware: TEST_HARDWARE,
 			},
 			benchmarkCheckpoint: {
 				checkpointId: "chk_sha256v1_abc123def456",
@@ -373,15 +401,12 @@ describe("RunResultSchema", () => {
 		const result = RunResultSchema.parse({
 			runId: "20260114-143052-abc123",
 			machine: {
-				profileId: "mac-mini-m4-pro",
-				hardware: {
-					platform: "darwin",
-					arch: "arm64",
-					osRelease: "24.3.0",
-					cpuModel: "Apple M4 Pro",
-					logicalCores: 14,
-					totalMemoryBytes: 68_719_476_736,
-				},
+				instanceId: "machine-a",
+				instanceIdSource: "config",
+				profileKey: TEST_PROFILE_KEY,
+				profileLabel: TEST_PROFILE_LABEL,
+				normalizedProfile: TEST_NORMALIZED_PROFILE,
+				observedHardware: TEST_HARDWARE,
 			},
 			benchmarkCheckpoint: {
 				checkpointId: "chk_sha256v1_abc123def456",

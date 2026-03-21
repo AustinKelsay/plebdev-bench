@@ -72,8 +72,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 			(part): part is string => typeof part === "string" && part.length > 0,
 		)
 		.join(" · ");
-	const machineLabel = plan.machine?.label ?? plan.machine?.profileId;
-	const machineHardware = plan.machine?.hardware;
+	const machineLabel =
+		plan.machine?.displayLabel ?? plan.machine?.profileLabel;
+	const machineHardware = plan.machine?.observedHardware;
 	const checkpointId = plan.benchmarkCheckpoint?.checkpointId;
 
 	return (

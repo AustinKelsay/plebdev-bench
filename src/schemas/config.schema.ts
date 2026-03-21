@@ -64,10 +64,16 @@ export const BenchConfigSchema = z
 		/** Output directory for results. */
 		outputDir: z.string().default("results"),
 
-		/** Optional machine profile identifier used for cross-run aggregation. */
+		/** Optional explicit machine instance identifier. */
+		machineInstanceId: z.string().min(1).optional(),
+
+		/** Optional human-readable display label for a specific machine instance. */
+		machineDisplayLabel: z.string().min(1).optional(),
+
+		/** Deprecated alias for machine instance identity. */
 		machineProfileId: z.string().min(1).optional(),
 
-		/** Optional human-readable machine label for dashboard display. */
+		/** Deprecated alias for machine display label. */
 		machineLabel: z.string().min(1).optional(),
 
 		/** Model aliases for cross-runtime mapping. */

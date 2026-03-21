@@ -60,23 +60,29 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 	log.info("Building run plan...");
 	const benchmarkCheckpoint = computeBenchmarkCheckpoint();
-	const resolvedMachine: ResolvedMachineProfile = collectMachineProfile({
+	const resolvedMachine: ResolvedMachineProfile = await collectMachineProfile({
+		machineInstanceId: config.machineInstanceId,
+		machineDisplayLabel: config.machineDisplayLabel,
 		machineProfileId: config.machineProfileId,
 		machineLabel: config.machineLabel,
 	});
 
 	if (resolvedMachine.isAnonymous) {
 		log.warn(
-			{ machineProfileId: resolvedMachine.machine.profileId },
-			"Machine profile ID not provided; using deterministic anonymous machine ID",
+			{
+				machineInstanceId: resolvedMachine.machine.instanceId,
+				machineProfileKey: resolvedMachine.machine.profileKey,
+			},
+			"Machine instance ID not provided; using generated local machine ID",
 		);
 	} else {
 		log.info(
 			{
-				machineProfileId: resolvedMachine.machine.profileId,
+				machineInstanceId: resolvedMachine.machine.instanceId,
+				machineProfileKey: resolvedMachine.machine.profileKey,
 				identitySource: resolvedMachine.identitySource,
 			},
-			"Using explicit machine profile identity",
+			"Using explicit machine instance identity",
 		);
 	}
 	log.info(

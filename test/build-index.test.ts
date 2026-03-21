@@ -16,6 +16,11 @@ import {
 	resolveResultsDir,
 } from "../apps/dashboard/scripts/build-index.js";
 import { computeBenchmarkCheckpoint } from "../src/lib/benchmark-checkpoint.js";
+import {
+	buildMachineProfileKey,
+	buildMachineProfileLabel,
+	normalizeMachineProfile,
+} from "../src/lib/machine-profile/normalization.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const tempRoots: string[] = [];
@@ -42,6 +47,44 @@ const REQUIRED_SOURCE_DIR_FIXTURES = [
 	["src/runtimes", "ollama-runtime.ts", "export const ollamaRuntime = 1;\n"],
 	["src/runner", "index.ts", "export const runnerIndex = 1;\n"],
 ] as const;
+
+const TEST_HARDWARE = {
+	platform: "darwin",
+	arch: "arm64",
+	osRelease: "24.3.0",
+	cpuModelRaw: "Apple M4 Pro",
+	logicalCores: 14,
+	totalMemoryBytes: 68_719_476_736,
+	accelerators: [
+		{
+			vendor: "Apple",
+			modelRaw: "Apple M4 Pro GPU",
+			kind: "integrated" as const,
+			backend: "metal",
+		},
+	],
+	acceleratorDetection: {
+		status: "detected" as const,
+	},
+};
+const TEST_NORMALIZED_PROFILE = normalizeMachineProfile(TEST_HARDWARE);
+const TEST_PROFILE_KEY = buildMachineProfileKey(TEST_NORMALIZED_PROFILE);
+const TEST_PROFILE_LABEL = buildMachineProfileLabel(
+	TEST_HARDWARE,
+	TEST_NORMALIZED_PROFILE,
+);
+
+function buildMachine(instanceId: string) {
+	return {
+		instanceId,
+		instanceIdSource: "config" as const,
+		displayLabel: "Machine A",
+		profileKey: TEST_PROFILE_KEY,
+		profileLabel: TEST_PROFILE_LABEL,
+		normalizedProfile: TEST_NORMALIZED_PROFILE,
+		observedHardware: TEST_HARDWARE,
+	};
+}
 
 /**
  * Creates a temporary benchmark project root with minimal benchmark assets.
@@ -121,8 +164,11 @@ type LatestAggregateFixture = {
 	checkpointId: string;
 	summary: { runsMatched: number };
 	items: Array<{
+		machineProfileId?: string;
+		machineLabel?: string;
 		generation?: {
 			codeFilePath?: string;
+			sourcePathToken?: string;
 			output?: string;
 		};
 		scoringFailure?: {
@@ -147,18 +193,7 @@ describe("buildDashboardIndexArtifacts", () => {
 			{
 				schemaVersion: SCHEMA_VERSION,
 				runId: "run-latest",
-				machine: {
-					profileId: "machine-a",
-					label: "Machine A",
-					hardware: {
-						platform: "darwin",
-						arch: "arm64",
-						osRelease: "24.3.0",
-						cpuModel: "Apple M4 Pro",
-						logicalCores: 14,
-						totalMemoryBytes: 68_719_476_736,
-					},
-				},
+				machine: buildMachine("machine-a"),
 				benchmarkCheckpoint: checkpoint,
 				provenance: {
 					verificationStatus: "self_reported",
@@ -201,18 +236,7 @@ describe("buildDashboardIndexArtifacts", () => {
 				runId: "run-latest",
 				createdAt: "2026-03-04T10:00:00.000Z",
 				runtimeEnvironment: { platform: "darwin", bunVersion: "1.3.3" },
-				machine: {
-					profileId: "machine-a",
-					label: "Machine A",
-					hardware: {
-						platform: "darwin",
-						arch: "arm64",
-						osRelease: "24.3.0",
-						cpuModel: "Apple M4 Pro",
-						logicalCores: 14,
-						totalMemoryBytes: 68_719_476_736,
-					},
-				},
+				machine: buildMachine("machine-a"),
 				benchmarkCheckpoint: checkpoint,
 				provenance: {
 					verificationStatus: "self_reported",
@@ -308,6 +332,9 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(
 			latestAggregate.items[0]?.generation?.codeFilePath,
 		).toBeUndefined();
+		expect(
+			latestAggregate.items[0]?.generation?.sourcePathToken,
+		).toBe("[path:solution.ts]");
 		expect(latestAggregate.items[0]?.generation?.output).toContain(
 			"[path:solution.ts]",
 		);
@@ -320,10 +347,38 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
 			"/private/var/folders",
 		);
+		expect(latestAggregate.items[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
+		expect(latestAggregate.items[0]?.machineLabel).toBe("Machine A");
 		expect(output.index.runs[0]?.runId).toBe("run-latest");
-		expect(
-			fs.existsSync(path.join(outputResultsDir, "run-latest", "run.json")),
-		).toBe(false);
+		expect(output.index.runs[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
+		expect(output.index.runs[0]?.machineLabel).toBe("Machine A");
+		const publishedRunPath = path.join(outputResultsDir, "run-latest", "run.json");
+		expect(fs.existsSync(publishedRunPath)).toBe(true);
+		const publishedRun = JSON.parse(
+			fs.readFileSync(publishedRunPath, "utf-8"),
+		) as {
+			items: Array<{
+				generation?: {
+					codeFilePath?: string;
+					sourcePathToken?: string;
+					output?: string;
+				};
+				scoringFailure?: { message?: string };
+			}>;
+		};
+		expect(publishedRun.items[0]?.generation?.codeFilePath).toBeUndefined();
+		expect(publishedRun.items[0]?.generation?.sourcePathToken).toBe(
+			"[path:solution.ts]",
+		);
+		expect(publishedRun.items[0]?.generation?.output).toContain(
+			"[path:solution.ts]",
+		);
+		expect(publishedRun.items[0]?.generation?.output).not.toContain(
+			"/Users/example",
+		);
+		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
+			"/private/var/folders",
+		);
 	});
 
 	it("falls back latestCheckpointId to the newest published checkpoint", async () => {

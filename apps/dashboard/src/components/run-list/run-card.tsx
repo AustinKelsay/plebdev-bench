@@ -28,8 +28,8 @@ export function RunCard({
 		durationMs,
 		summary,
 		checkpointId,
-		machineLabel,
-		machineProfileId,
+		machineDisplayLabel,
+		machineProfileLabel,
 		isLegacy,
 	} = run;
 	const hasFailures = summary.failed > 0;
@@ -72,9 +72,9 @@ export function RunCard({
 									no-checkpoint
 								</Badge>
 							))}
-						{(machineLabel || machineProfileId) && (
+						{(machineDisplayLabel || machineProfileLabel) && (
 							<Badge variant="secondary" className="text-[10px]">
-								{machineLabel ?? machineProfileId}
+								{machineDisplayLabel ?? machineProfileLabel}
 							</Badge>
 						)}
 						{isLegacy && (
