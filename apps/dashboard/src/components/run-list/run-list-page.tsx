@@ -120,7 +120,7 @@ export function RunListPage() {
 								</Link>
 							</div>
 						</CardHeader>
-						<CardContent className="space-y-4">
+						<CardContent className="space-y-4 pt-6">
 							<div className="grid gap-3 md:grid-cols-4">
 								{[
 									{ label: "Live Runs", value: formatNumber(liveGroup?.runCount ?? 0), large: true },
