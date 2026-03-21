@@ -41,7 +41,7 @@ export function RunCard({
 				className={cn(
 					"transition-colors hover:bg-accent/50",
 					accent === "latest"
-						? "border-l-2 border-l-success border-brand/40 bg-accent/20 shadow-[0_0_0_1px_hsla(142,60%,49%,0.12)]"
+						? "border-l-2 border-l-success border-success/20 bg-success/5"
 						: "border-l-2 border-l-border",
 				)}
 			>

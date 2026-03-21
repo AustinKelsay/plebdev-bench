@@ -16,6 +16,14 @@ import { RunCard } from "./run-card";
 
 const RUN_LIST_SKELETON_KEYS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 
+/** Left-border accent colors for stat cards (matches about page FACT_ACCENTS). */
+const STAT_ACCENTS = [
+	"hsl(142, 60%, 49%)", // green — Live Runs
+	"hsl(215, 70%, 60%)", // blue — Machines
+	"hsl(38, 80%, 58%)",  // amber — Scored Items
+	"hsl(265, 50%, 62%)", // purple — Last Published
+];
+
 /** Left-border accent color per group type. */
 function groupBorderColor(group: { isLatest: boolean; isLegacy: boolean }) {
 	if (group.isLatest) return "border-l-success";
@@ -77,8 +85,8 @@ export function RunListPage() {
 			) : (
 				<div className="space-y-8">
 					{/* ── Hero card ── */}
-					<Card className="overflow-hidden border-brand/30 bg-[linear-gradient(135deg,hsla(142,60%,49%,0.12),hsla(212,100%,67%,0.08))]" glow>
-						<CardHeader className="gap-4 md:flex-row md:items-end md:justify-between">
+					<Card className="overflow-hidden border-success/20" glow>
+						<CardHeader className="gap-4 border-b border-border/80 bg-success/5 md:flex-row md:items-end md:justify-between">
 							<div className="space-y-3">
 								<div className="flex flex-wrap items-center gap-2">
 									<Badge variant="success">live season</Badge>
@@ -91,10 +99,10 @@ export function RunListPage() {
 										{liveGroup?.title ?? "Published Run History"}
 									</CardTitle>
 									<p className="mt-2 max-w-3xl text-sm text-foreground-muted">
-										Every benchmark run is published into a season — a fixed
-										snapshot of prompts, specs, and scoring rubrics. The live
-										season powers the leaderboard; older seasons stay here as
-										audit history.
+										Published benchmark runs, grouped by season. Each season is
+										a snapshot of prompts, specs, and scoring rubrics. The live
+										season powers the leaderboard; older seasons stay for audit
+										history.
 									</p>
 								</div>
 							</div>
@@ -122,7 +130,8 @@ export function RunListPage() {
 								].map((stat, i) => (
 									<div
 										key={stat.label}
-										className={`rounded border border-white/10 bg-background/40 p-3 animate-fade-slide-up animate-stagger-${i + 1}`}
+										className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up animate-stagger-${i + 1}`}
+										style={{ borderLeftColor: STAT_ACCENTS[i] }}
 									>
 										<p className="text-xs uppercase tracking-[0.16em] text-foreground-faint">
 											{stat.label}
@@ -133,10 +142,20 @@ export function RunListPage() {
 									</div>
 								))}
 							</div>
-							<div className="rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted">
-								<span className="font-medium text-foreground">What are seasons?</span>{" "}
-								A season starts when benchmark definitions change (prompts, rubrics, harness code).
-								Models within the same season are compared on identical ground — no moving targets.
+							<div className="space-y-2">
+								<p className="text-sm font-medium text-foreground">How seasons work</p>
+								{[
+									"A new season starts when benchmark definitions change — prompts, specs, rubrics, or harness code. Each season is pinned to a checkpoint hash.",
+									"The leaderboard defaults to the live season so models are compared on identical ground — no moving targets.",
+									"Older seasons are archived here for auditability. They stay browsable but are excluded from the leaderboard.",
+								].map((note, i) => (
+									<div
+										key={note}
+										className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up animate-stagger-${i + 1}`}
+									>
+										{note}
+									</div>
+								))}
 							</div>
 						</CardContent>
 					</Card>
@@ -149,9 +168,9 @@ export function RunListPage() {
 								glow
 								className={`border-l-2 ${groupBorderColor(group)} animate-fade-slide-up animate-stagger-${i + 1} ${
 									group.isLatest
-										? "border-brand/30 bg-accent/20"
+										? "border-success/20 bg-success/5"
 										: group.isLegacy
-											? "border-warning/30"
+											? "border-warning/20 bg-warning/5"
 											: ""
 								}`}
 							>
@@ -206,7 +225,7 @@ export function RunListPage() {
 										group.isLatest
 											? "Live season — these runs power the current leaderboard."
 											: group.isLegacy
-												? "Pre-checkpoint runs kept for auditability. Excluded from season-aware aggregation."
+												? "Runs without checkpoint metadata, kept for auditability."
 												: "Archived season preserved for historical comparison."
 									}
 								/>

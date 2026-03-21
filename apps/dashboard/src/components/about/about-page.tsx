@@ -88,8 +88,8 @@ export function AboutPage() {
 						Reproducible matrix runs for local LLMs
 					</CardTitle>
 					<CardDescription className="max-w-3xl text-sm leading-6">
-						Each run expands a fixed matrix of runtime × harness × model × test
-						× prompt mode, then saves plan and results as JSON artifacts. The
+						Each run expands a matrix of runtime × harness × model × test
+						× prompt mode, then saves results as JSON artifacts and exits. The
 						dashboard reads those artifacts — it never runs the benchmark itself.
 					</CardDescription>
 				</CardHeader>
@@ -216,8 +216,8 @@ export function AboutPage() {
 					<Card glow className="border-l-2 border-l-warning">
 						<CardHeader>
 							<CardTitle className="text-base">Seasons &amp; Checkpoints</CardTitle>
-							<CardDescription className="text-xs">
-								Each season is pinned to a checkpoint — a snapshot of benchmark definitions that keeps comparisons fair.
+							<CardDescription className="text-xs leading-5">
+								A checkpoint is a content-hash of all benchmark definitions (prompts, specs, rubrics, harness code). Each season is pinned to one checkpoint so comparisons stay fair.
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-2">
