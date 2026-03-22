@@ -77,8 +77,8 @@ export function LeaderboardResultsTable({
 								<TableCell>
 									<div className="flex flex-col gap-1">
 										<span className="font-medium">
-											{item.machineDisplayLabel ??
-												item.machineProfileLabel ??
+											{item.machineDisplayLabel?.trim() ||
+												item.machineProfileLabel?.trim() ||
 												item.machineProfileKey}
 										</span>
 										{item.machineInstanceId && (

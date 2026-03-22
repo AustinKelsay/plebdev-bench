@@ -12,8 +12,8 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
 import {
-	migrateLegacyPlanPayload,
-	migrateLegacyRunPayload,
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
 } from "../../../src/lib/machine-profile/legacy.js";
 import {
 	type AggregateRunInput,
@@ -24,8 +24,6 @@ import {
 import {
 	type RunPlan,
 	type RunResult,
-	RunPlanSchema,
-	RunResultSchema,
 } from "../../../src/schemas/index.js";
 import type {
 	DashboardIndex,
@@ -54,7 +52,7 @@ export interface BuildDashboardIndexArtifactsOptions {
 
 const PUBLIC_PATH_PATTERNS = [
 	/(?:\/Users\/|\/private\/var\/|\/var\/|\/tmp\/)[^\s"'`()<>]+/g,
-	/[A-Za-z]:\\[^\s"'`()<>]+/g,
+	/(?<![A-Za-z])[A-Za-z]:[\\/][^\s"'`()<>]+/g,
 ] as const;
 const STACK_FRAME_PATTERN = /^\s*at\s+(?:.+\s\(|\S+:\d+:\d+)/;
 
@@ -318,10 +316,10 @@ async function readRunBundle(
 	const runJsonPath = join(runDir, "run.json");
 	try {
 		const content = await readFile(runJsonPath, "utf-8");
-		const runParsed = RunResultSchema.safeParse(
-			migrateLegacyRunPayload(JSON.parse(content) as unknown),
-		);
-		if (!runParsed.success) {
+		let run: RunResult;
+		try {
+			run = parseKnownRunPayload(JSON.parse(content) as unknown);
+		} catch {
 			return undefined;
 		}
 
@@ -329,19 +327,16 @@ async function readRunBundle(
 		let plan: AggregateRunInput["plan"] | undefined;
 		try {
 			const planContent = await readFile(planJsonPath, "utf-8");
-			const planParsed = RunPlanSchema.safeParse(
-				migrateLegacyPlanPayload(JSON.parse(planContent) as unknown),
+			plan = sanitizePublishedPlan(
+				parseKnownPlanPayload(JSON.parse(planContent) as unknown),
 			);
-			if (planParsed.success) {
-				plan = sanitizePublishedPlan(planParsed.data);
-			}
 		} catch {
 			plan = undefined;
 		}
 
 		return {
 			runDirName: basename(runDir),
-			run: sanitizePublishedRun(runParsed.data),
+			run: sanitizePublishedRun(run),
 			...(plan ? { plan } : {}),
 		};
 	} catch {

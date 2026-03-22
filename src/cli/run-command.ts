@@ -149,6 +149,29 @@ export const runCommand = new Command("run")
 				);
 			}
 
+			const legacyMachineId =
+				typeof options.machineId === "string" &&
+				options.machineId.trim().length > 0
+					? options.machineId.trim()
+					: undefined;
+			const legacyMachineLabel =
+				typeof options.machineLabel === "string" &&
+				options.machineLabel.trim().length > 0
+					? options.machineLabel.trim()
+					: undefined;
+			if (legacyMachineId) {
+				logger.warn(
+					"Warning: --machine-id is deprecated; use --machine-instance-id",
+				);
+				options.machineInstanceId ??= legacyMachineId;
+			}
+			if (legacyMachineLabel) {
+				logger.warn(
+					"Warning: --machine-label is deprecated; use --machine-display-label",
+				);
+				options.machineDisplayLabel ??= legacyMachineLabel;
+			}
+
 			// Build config from CLI options
 			const configInput: Partial<BenchConfig> = {
 				ollamaBaseUrl: options.ollamaUrl,
@@ -172,15 +195,14 @@ export const runCommand = new Command("run")
 				),
 				outputDir: options.output,
 				machineInstanceId:
-					typeof (options.machineInstanceId ?? options.machineId) === "string" &&
-					(options.machineInstanceId ?? options.machineId).trim().length > 0
-						? (options.machineInstanceId ?? options.machineId).trim()
+					typeof options.machineInstanceId === "string" &&
+					options.machineInstanceId.trim().length > 0
+						? options.machineInstanceId.trim()
 						: undefined,
 				machineDisplayLabel:
-					typeof (options.machineDisplayLabel ?? options.machineLabel) ===
-						"string" &&
-					(options.machineDisplayLabel ?? options.machineLabel).trim().length > 0
-						? (options.machineDisplayLabel ?? options.machineLabel).trim()
+					typeof options.machineDisplayLabel === "string" &&
+					options.machineDisplayLabel.trim().length > 0
+						? options.machineDisplayLabel.trim()
 						: undefined,
 				modelAliases,
 			};

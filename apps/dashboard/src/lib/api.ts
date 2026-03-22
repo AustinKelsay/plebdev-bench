@@ -8,12 +8,10 @@
 import {
 	DashboardIndexLegacyOrV2Schema,
 	LeaderboardAggregateSchema,
-	RunPlanSchema,
-	RunResultSchema,
 } from "./schemas";
 import {
-	migrateLegacyPlanPayload,
-	migrateLegacyRunPayload,
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
 } from "../../../../src/lib/machine-profile/legacy.js";
 import type {
 	DashboardIndex,
@@ -162,7 +160,7 @@ export async function fetchRun(
 		throw new Error(`Failed to fetch run ${runId}: ${response.status}`);
 	}
 	const data = await response.json();
-	return RunResultSchema.parse(migrateLegacyRunPayload(data));
+	return parseKnownRunPayload(data);
 }
 
 /**
@@ -185,7 +183,7 @@ export async function fetchPlan(
 		throw new Error(`Failed to fetch plan ${runId}: ${response.status}`);
 	}
 	const data = await response.json();
-	return RunPlanSchema.parse(migrateLegacyPlanPayload(data));
+	return parseKnownPlanPayload(data);
 }
 
 /**

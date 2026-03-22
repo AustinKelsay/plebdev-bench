@@ -1,6 +1,8 @@
 /**
  * Purpose: Migrate legacy run/plan machine payloads to the current schema shape.
- * Exports: migrateLegacyMachineProfile, migrateLegacyPlanPayload, migrateLegacyRunPayload
+ * Exports: migrateLegacyMachineProfile, migrateLegacyPlanPayload, migrateLegacyRunPayload,
+ *          normalizeKnownPlanPayload, normalizeKnownRunPayload,
+ *          parseKnownPlanPayload, parseKnownRunPayload
  *
  * Invariants:
  * - Legacy machine artifacts remain readable indefinitely
@@ -11,13 +13,21 @@ import type {
 	HardwareProfile,
 	LegacyMachineProfile,
 	MachineProfile,
+	RunPlan,
+	RunResult,
 } from "../../schemas/index.js";
-import { SCHEMA_VERSION } from "../../schemas/index.js";
+import {
+	RunPlanSchema,
+	RunResultSchema,
+	SCHEMA_VERSION,
+} from "../../schemas/index.js";
 import {
 	buildMachineProfileKey,
 	buildMachineProfileLabel,
 	normalizeMachineProfile,
 } from "./normalization.js";
+
+const LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set(["0.2.2", "0.3.0", "0.4.0"]);
 
 /**
  * Type guard for plain object records.
@@ -27,6 +37,33 @@ import {
  */
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Reads a schemaVersion string from an arbitrary payload.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @returns Explicit schema version when present
+ */
+function readArtifactSchemaVersion(raw: unknown): string | undefined {
+	if (!isRecord(raw) || typeof raw.schemaVersion !== "string") {
+		return undefined;
+	}
+	return raw.schemaVersion;
+}
+
+/**
+ * Returns whether an arbitrary machine payload matches the legacy shape.
+ *
+ * @param rawMachine - Arbitrary machine payload
+ * @returns True when the payload resembles the pre-0.5.0 machine schema
+ */
+function hasLegacyMachineProfileShape(rawMachine: unknown): boolean {
+	return (
+		isRecord(rawMachine) &&
+		typeof rawMachine.profileId === "string" &&
+		isRecord(rawMachine.hardware)
+	);
 }
 
 /**
@@ -106,6 +143,64 @@ export function migrateLegacyMachineProfile(
 }
 
 /**
+ * Determines whether a plan payload should be migrated before validation.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @returns True when the payload matches a known legacy plan shape
+ */
+function hasLegacyPlanShape(raw: unknown): boolean {
+	return (
+		isRecord(raw) &&
+		(hasLegacyMachineProfileShape(raw.machine) || isRecord(raw.environment))
+	);
+}
+
+/**
+ * Determines whether a run payload should be migrated before validation.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @returns True when the payload matches a known legacy run shape
+ */
+function hasLegacyRunShape(raw: unknown): boolean {
+	return isRecord(raw) && hasLegacyMachineProfileShape(raw.machine);
+}
+
+/**
+ * Normalizes a run or plan payload while rejecting unsupported schema versions.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @param artifactKind - Human-readable artifact kind for error messages
+ * @param hasLegacyShape - Legacy-shape detector
+ * @param migrateLegacyPayload - Legacy migration function
+ * @returns Current-schema payload without stripping additive fields
+ */
+function normalizeKnownArtifactPayload(
+	raw: unknown,
+	artifactKind: "plan" | "run",
+	hasLegacyShape: (raw: unknown) => boolean,
+	migrateLegacyPayload: (raw: unknown) => unknown,
+): unknown {
+	const schemaVersion = readArtifactSchemaVersion(raw);
+	if (schemaVersion === SCHEMA_VERSION) {
+		return raw;
+	}
+	if (typeof schemaVersion === "string") {
+		if (LEGACY_ARTIFACT_SCHEMA_VERSIONS.has(schemaVersion)) {
+			return migrateLegacyPayload(raw);
+		}
+		throw new Error(
+			`Unsupported ${artifactKind} artifact schemaVersion: ${schemaVersion}`,
+		);
+	}
+	if (hasLegacyShape(raw)) {
+		return migrateLegacyPayload(raw);
+	}
+	throw new Error(
+		`Unsupported ${artifactKind} artifact: missing recognized schemaVersion`,
+	);
+}
+
+/**
  * Migrates a legacy plan payload to the current schema shape.
  *
  * @param raw - Parsed JSON payload
@@ -130,6 +225,21 @@ export function migrateLegacyPlanPayload(raw: unknown): unknown {
 }
 
 /**
+ * Normalizes a known run-plan payload to the current schema without dropping additive fields.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @returns Current-schema run-plan payload
+ */
+export function normalizeKnownPlanPayload(raw: unknown): unknown {
+	return normalizeKnownArtifactPayload(
+		raw,
+		"plan",
+		hasLegacyPlanShape,
+		migrateLegacyPlanPayload,
+	);
+}
+
+/**
  * Migrates a legacy run payload to the current schema shape.
  *
  * @param raw - Parsed JSON payload
@@ -146,4 +256,39 @@ export function migrateLegacyRunPayload(raw: unknown): unknown {
 		schemaVersion: SCHEMA_VERSION,
 		...(machine ? { machine } : {}),
 	};
+}
+
+/**
+ * Normalizes a known run-result payload to the current schema without dropping additive fields.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @returns Current-schema run-result payload
+ */
+export function normalizeKnownRunPayload(raw: unknown): unknown {
+	return normalizeKnownArtifactPayload(
+		raw,
+		"run",
+		hasLegacyRunShape,
+		migrateLegacyRunPayload,
+	);
+}
+
+/**
+ * Parses a run-plan payload after applying supported legacy migration rules.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @returns Parsed current-schema run plan
+ */
+export function parseKnownPlanPayload(raw: unknown): RunPlan {
+	return RunPlanSchema.parse(normalizeKnownPlanPayload(raw));
+}
+
+/**
+ * Parses a run-result payload after applying supported legacy migration rules.
+ *
+ * @param raw - Arbitrary artifact payload
+ * @returns Parsed current-schema run result
+ */
+export function parseKnownRunPayload(raw: unknown): RunResult {
+	return RunResultSchema.parse(normalizeKnownRunPayload(raw));
 }

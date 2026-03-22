@@ -12,33 +12,74 @@ import * as path from "node:path";
 import { Command } from "commander";
 import { buildDashboardIndexArtifacts } from "../../apps/dashboard/scripts/build-index.js";
 import {
-	migrateLegacyPlanPayload,
-	migrateLegacyRunPayload,
+	normalizeKnownPlanPayload,
+	normalizeKnownRunPayload,
 } from "../lib/machine-profile/legacy.js";
 import { logger } from "../lib/logger.js";
 import { RunPlanSchema, RunResultSchema } from "../schemas/index.js";
 
 /**
- * Rewrites one JSON artifact after applying a migration function.
+ * Prepared rewrite state for one artifact file.
+ */
+interface PreparedArtifactRewrite {
+	artifactPath: string;
+	nextContent: string;
+	changed: boolean;
+}
+
+/**
+ * Loads and validates one JSON artifact rewrite without touching the filesystem.
  *
  * @param artifactPath - Absolute artifact path
- * @param migrate - Migration function
+ * @param normalize - Version-aware normalization function
  * @param validate - Schema validation callback
- * @returns True when the file changed on disk
+ * @returns Prepared rewrite or undefined when the file is missing
  */
-async function rewriteArtifact(
+async function prepareArtifactRewrite(
 	artifactPath: string,
-	migrate: (raw: unknown) => unknown,
-	validate: (raw: unknown) => unknown,
-): Promise<boolean> {
-	const original = await fs.readFile(artifactPath, "utf-8");
-	const migrated = validate(migrate(JSON.parse(original) as unknown));
-	const nextContent = `${JSON.stringify(migrated, null, 2)}\n`;
-	if (original === nextContent) {
-		return false;
+	normalize: (raw: unknown) => unknown,
+	validate: (raw: unknown) => void,
+): Promise<PreparedArtifactRewrite | undefined> {
+	let original: string;
+	try {
+		original = await fs.readFile(artifactPath, "utf-8");
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			return undefined;
+		}
+		throw error;
 	}
-	await fs.writeFile(artifactPath, nextContent, "utf-8");
-	return true;
+
+	const normalized = normalize(JSON.parse(original) as unknown);
+	validate(normalized);
+	const nextContent = `${JSON.stringify(normalized, null, 2)}\n`;
+	return {
+		artifactPath,
+		nextContent,
+		changed: original !== nextContent,
+	};
+}
+
+/**
+ * Writes one prepared artifact atomically using a temporary file and rename.
+ *
+ * @param rewrite - Prepared artifact rewrite
+ */
+async function writePreparedArtifact(
+	rewrite: PreparedArtifactRewrite,
+): Promise<void> {
+	const tempPath = `${rewrite.artifactPath}.${process.pid}.${Date.now()}.tmp`;
+	try {
+		await fs.writeFile(tempPath, rewrite.nextContent, "utf-8");
+		await fs.rename(tempPath, rewrite.artifactPath);
+	} catch (error) {
+		try {
+			await fs.unlink(tempPath);
+		} catch {
+			// Best-effort cleanup only.
+		}
+		throw error;
+	}
 }
 
 /**
@@ -60,35 +101,30 @@ async function migrateResultsDirectory(resultsDir: string): Promise<{
 		const runDir = path.join(resultsDir, entry.name);
 		const runPath = path.join(runDir, "run.json");
 		const planPath = path.join(runDir, "plan.json");
+		const preparedRun = await prepareArtifactRewrite(
+			runPath,
+			normalizeKnownRunPayload,
+			(raw) => {
+				RunResultSchema.parse(raw);
+			},
+		);
+		const preparedPlan = await prepareArtifactRewrite(
+			planPath,
+			normalizeKnownPlanPayload,
+			(raw) => {
+				RunPlanSchema.parse(raw);
+			},
+		);
 
-		try {
-			if (
-				await rewriteArtifact(runPath, migrateLegacyRunPayload, (raw) =>
-					RunResultSchema.parse(raw),
-				)
-			) {
-				runFilesUpdated++;
-			}
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-				throw error;
-			}
-			// Missing run.json is ignored.
+		// Validate both siblings before writing either file so a bad plan cannot
+		// leave a successfully rewritten run paired with an invalid companion.
+		if (preparedPlan?.changed) {
+			await writePreparedArtifact(preparedPlan);
+			planFilesUpdated++;
 		}
-
-		try {
-			if (
-				await rewriteArtifact(planPath, migrateLegacyPlanPayload, (raw) =>
-					RunPlanSchema.parse(raw),
-				)
-			) {
-				planFilesUpdated++;
-			}
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-				throw error;
-			}
-			// Missing plan.json is ignored.
+		if (preparedRun?.changed) {
+			await writePreparedArtifact(preparedRun);
+			runFilesUpdated++;
 		}
 	}
 
@@ -106,15 +142,17 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 	)
 	.option(
 		"--dashboard-output-dir <path>",
-		"Output directory for rebuilt dashboard artifacts (defaults to --dir)",
+		"Output directory for rebuilt dashboard artifacts",
 	)
 	.action(async (options) => {
 		const resultsDir = path.resolve(options.dir);
-		const dashboardOutputDir = path.resolve(
-			options.dashboardOutputDir ?? resultsDir,
-		);
 
 		try {
+			if (options.rebuildDashboardIndex && !options.dashboardOutputDir) {
+				throw new Error(
+					"--rebuild-dashboard-index requires --dashboard-output-dir to avoid mutating the source results directory",
+				);
+			}
 			const migrated = await migrateResultsDirectory(resultsDir);
 			logger.info(
 				{ resultsDir, ...migrated },
@@ -122,6 +160,7 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 			);
 
 			if (options.rebuildDashboardIndex) {
+				const dashboardOutputDir = path.resolve(options.dashboardOutputDir);
 				const result = await buildDashboardIndexArtifacts({
 					sourceResultsDir: resultsDir,
 					outputResultsDir: dashboardOutputDir,
@@ -136,6 +175,9 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 				);
 			}
 		} catch (error) {
+			console.error(
+				error instanceof Error ? error.message : String(error),
+			);
 			logger.error({ error }, "Machine-profile migration failed");
 			process.exit(1);
 		}

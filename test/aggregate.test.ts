@@ -12,7 +12,12 @@ import {
 	type AggregateRunInput,
 	aggregateRunsForCheckpoint,
 } from "../src/results/aggregate.js";
-import type { MatrixItemResult, RunResult } from "../src/schemas/index.js";
+import type {
+	HardwareProfile,
+	MatrixItemResult,
+	NormalizedMachineProfile,
+	RunResult,
+} from "../src/schemas/index.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const TEST_HARDWARE = {
@@ -38,6 +43,37 @@ const TEST_PROFILE_LABEL = buildMachineProfileLabel(
 	TEST_HARDWARE,
 	TEST_NORMALIZED_PROFILE,
 );
+const WINDOWS_HARDWARE = {
+	platform: "win32",
+	arch: "x64",
+	osRelease: "10.0.22631",
+	cpuModelRaw: "Intel(R) Core(TM) i9-13900K",
+	cpuVendor: "Intel",
+	physicalCores: 24,
+	logicalCores: 32,
+	totalMemoryBytes: 68_719_476_736,
+	accelerators: [
+		{
+			vendor: "NVIDIA",
+			modelRaw: "NVIDIA GeForce RTX 4090",
+			memoryBytes: 25_769_803_776,
+			backend: "cuda",
+			kind: "discrete" as const,
+		},
+	],
+	acceleratorDetection: { status: "detected" as const },
+};
+const WINDOWS_NORMALIZED_PROFILE = normalizeMachineProfile(WINDOWS_HARDWARE);
+const WINDOWS_PROFILE_LABEL = buildMachineProfileLabel(
+	WINDOWS_HARDWARE,
+	WINDOWS_NORMALIZED_PROFILE,
+);
+
+interface RunProfileOverrides {
+	profileLabel?: typeof TEST_PROFILE_LABEL;
+	normalizedProfile?: NormalizedMachineProfile;
+	observedHardware?: HardwareProfile;
+}
 
 /**
  * Creates a matrix item for aggregation tests.
@@ -80,6 +116,7 @@ function createRun(
 	machineProfileKey: string,
 	instanceId: string,
 	items: MatrixItemResult[],
+	profile: RunProfileOverrides = {},
 ): RunResult {
 	return {
 		schemaVersion: SCHEMA_VERSION,
@@ -89,9 +126,10 @@ function createRun(
 			instanceIdSource: "config",
 			displayLabel: "Machine A",
 			profileKey: machineProfileKey,
-			profileLabel: TEST_PROFILE_LABEL,
-			normalizedProfile: TEST_NORMALIZED_PROFILE,
-			observedHardware: TEST_HARDWARE,
+			profileLabel: profile.profileLabel ?? TEST_PROFILE_LABEL,
+			normalizedProfile:
+				profile.normalizedProfile ?? TEST_NORMALIZED_PROFILE,
+			observedHardware: profile.observedHardware ?? TEST_HARDWARE,
 		},
 		benchmarkCheckpoint: {
 			checkpointId,
@@ -196,6 +234,11 @@ describe("aggregateRunsForCheckpoint", () => {
 					"windows_x64_intel_i9_13900k_24c_64gb_nvidia-rtx-4090_24gb_x1",
 					"instance-b",
 					[item],
+					{
+						profileLabel: WINDOWS_PROFILE_LABEL,
+						normalizedProfile: WINDOWS_NORMALIZED_PROFILE,
+						observedHardware: WINDOWS_HARDWARE,
+					},
 				),
 			},
 		];

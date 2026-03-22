@@ -5,7 +5,25 @@
  *          runtimeNames, RuntimeNameSchema, RuntimeName,
  *          testCategories, TestCategorySchema, TestCategory,
  *          testScoringModes, TestScoringModeSchema, TestScoringMode,
- *          benchmark/machine/provenance metadata schemas
+ *          harnessCapabilities, HarnessCapabilitySchema, HarnessCapability,
+ *          generationFailureTypes, GenerationFailureTypeSchema, GenerationFailureType,
+ *          scoringFailureTypes, ScoringFailureTypeSchema, ScoringFailureType,
+ *          frontierEvalFailureTypes, FrontierEvalFailureTypeSchema, FrontierEvalFailureType,
+ *          verificationStatusTypes, VerificationStatusSchema, VerificationStatus,
+ *          BenchmarkCheckpointSchema, BenchmarkCheckpoint,
+ *          RuntimeEnvironmentSchema, RuntimeEnvironment,
+ *          machinePlatformFamilies, MachinePlatformFamilySchema, MachinePlatformFamily,
+ *          machineInstanceIdSources, MachineInstanceIdSourceSchema, MachineInstanceIdSource,
+ *          acceleratorDetectionStatuses, AcceleratorDetectionStatusSchema, AcceleratorDetectionStatus,
+ *          observedAcceleratorKinds, ObservedAcceleratorKindSchema, ObservedAcceleratorKind,
+ *          LegacyHardwareProfileSchema, LegacyHardwareProfile,
+ *          ObservedAcceleratorSchema, ObservedAccelerator,
+ *          AcceleratorDetectionSchema, AcceleratorDetection,
+ *          HardwareProfileSchema, HardwareProfile,
+ *          NormalizedMachineProfileSchema, NormalizedMachineProfile,
+ *          LegacyMachineProfileSchema, LegacyMachineProfile,
+ *          MachineProfileSchema, MachineProfile,
+ *          RunProvenanceSchema, RunProvenance
  */
 
 import { z } from "zod";
@@ -179,7 +197,7 @@ export const RuntimeEnvironmentSchema = z.object({
 /** Runtime environment metadata. */
 export type RuntimeEnvironment = z.infer<typeof RuntimeEnvironmentSchema>;
 
-/** Legacy host platform families for standardized machine profiles. */
+/** Host platform families for standardized machine profiles. */
 export const machinePlatformFamilies = [
 	"macos",
 	"linux",

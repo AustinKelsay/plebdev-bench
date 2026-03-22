@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-21T20:56:45.502Z",
+  "generatedAt": "2026-03-22T22:08:04.371Z",
   "checkpointId": "chk_sha256v1_61a037f87105",
   "summary": {
     "runsConsidered": 9,
@@ -7313,7 +7313,7 @@
       "completedAt": "2026-03-06T17:08:06.223Z",
       "generation": {
         "success": true,
-        "output": "```\n{\"name\": \"Read\", \"parameters\": {\"filePath\": \"https://en.wikipedia.org/wiki/Opendoc\"}} \n```",
+        "output": "```\n{\"name\": \"Read\", \"parameters\": {\"filePath\": \"[path:http/Opendoc]\"}} \n```",
         "durationMs": 9049
       },
       "automatedScore": {

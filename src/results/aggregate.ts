@@ -320,22 +320,22 @@ export function aggregateRunsForCheckpoint(
 			rawItems++;
 			const key = buildAggregateKey(machineProfileKey, item);
 			const timestamp = resolveItemTimestamp(input.run, item);
-				const aggregated: AggregatedMatrixItem = {
-					...item,
-					machineProfileKey,
-					machineProfileId: machineProfileKey,
-					...(metadata.machineProfileLabel
-						? { machineProfileLabel: metadata.machineProfileLabel }
-						: {}),
-					...(metadata.machineDisplayLabel ?? metadata.machineProfileLabel
-						? {
-								machineLabel:
-									metadata.machineDisplayLabel ?? metadata.machineProfileLabel,
-							}
-						: {}),
-					...(metadata.machineInstanceId
-						? { machineInstanceId: metadata.machineInstanceId }
-						: {}),
+			const aggregated: AggregatedMatrixItem = {
+				...item,
+				machineProfileKey,
+				machineProfileId: machineProfileKey,
+				...(metadata.machineProfileLabel
+					? { machineProfileLabel: metadata.machineProfileLabel }
+					: {}),
+				...(metadata.machineDisplayLabel ?? metadata.machineProfileLabel
+					? {
+							machineLabel:
+								metadata.machineDisplayLabel ?? metadata.machineProfileLabel,
+						}
+					: {}),
+				...(metadata.machineInstanceId
+					? { machineInstanceId: metadata.machineInstanceId }
+					: {}),
 				...(metadata.machineDisplayLabel
 					? { machineDisplayLabel: metadata.machineDisplayLabel }
 					: {}),

@@ -1,5 +1,10 @@
 /**
  * Purpose: Verify legacy machine artifact migration and CLI rewrite behavior.
+ * Exports: none
+ *
+ * Invariants:
+ * - Uses temporary directories only; no shared repo state is mutated
+ * - Executes deterministic fixture migrations under Vitest
  */
 
 import * as fs from "node:fs";
@@ -11,6 +16,8 @@ import {
 	migrateLegacyMachineProfile,
 	migrateLegacyPlanPayload,
 	migrateLegacyRunPayload,
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
 } from "../src/lib/machine-profile/legacy.js";
 import {
 	RunPlanSchema,
@@ -122,8 +129,10 @@ describe("migrate-machine-profiles command", () => {
 	it("rewrites legacy artifacts and rebuilds dashboard index output", () => {
 		const root = createTempRoot();
 		const resultsDir = path.join(root, "results");
+		const dashboardOutputDir = path.join(root, "published-results");
 		const runDir = path.join(resultsDir, "run-legacy");
 		fs.mkdirSync(runDir, { recursive: true });
+		fs.mkdirSync(dashboardOutputDir, { recursive: true });
 
 		const benchmarkCheckpoint = {
 			checkpointId: "chk_sha256v1_testfixture",
@@ -146,6 +155,7 @@ describe("migrate-machine-profiles command", () => {
 					},
 					machine: LEGACY_MACHINE,
 					benchmarkCheckpoint,
+					extraMetadata: { keep: "plan" },
 					config: {
 						ollamaBaseUrl: "http://localhost:11434",
 						vllmBaseUrl: "http://localhost:8000",
@@ -182,6 +192,7 @@ describe("migrate-machine-profiles command", () => {
 					runId: "run-legacy",
 					machine: LEGACY_MACHINE,
 					benchmarkCheckpoint,
+					extraMetadata: { keep: "run" },
 					startedAt: "2026-03-05T21:51:18.583Z",
 					completedAt: "2026-03-05T21:52:18.583Z",
 					durationMs: 60_000,
@@ -223,7 +234,7 @@ describe("migrate-machine-profiles command", () => {
 				resultsDir,
 				"--rebuild-dashboard-index",
 				"--dashboard-output-dir",
-				resultsDir,
+				dashboardOutputDir,
 			],
 			{
 				cwd: REPO_ROOT,
@@ -241,7 +252,7 @@ describe("migrate-machine-profiles command", () => {
 			JSON.parse(fs.readFileSync(path.join(runDir, "run.json"), "utf-8")),
 		);
 		const index = JSON.parse(
-			fs.readFileSync(path.join(resultsDir, "index.json"), "utf-8"),
+			fs.readFileSync(path.join(dashboardOutputDir, "index.json"), "utf-8"),
 		) as {
 			schemaVersion: number;
 			runs: Array<{
@@ -251,7 +262,7 @@ describe("migrate-machine-profiles command", () => {
 		};
 		const latestAggregate = JSON.parse(
 			fs.readFileSync(
-				path.join(resultsDir, "aggregates", "latest.json"),
+				path.join(dashboardOutputDir, "aggregates", "latest.json"),
 				"utf-8",
 			),
 		) as {
@@ -261,10 +272,20 @@ describe("migrate-machine-profiles command", () => {
 
 		expect(migratedPlan.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(migratedPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
+		expect(
+			(JSON.parse(fs.readFileSync(path.join(runDir, "plan.json"), "utf-8")) as {
+				extraMetadata?: { keep?: string };
+			}).extraMetadata?.keep,
+		).toBe("plan");
 		expect(migratedRun.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(migratedRun.machine?.profileKey).toBe(
 			"macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
 		);
+		expect(
+			(JSON.parse(fs.readFileSync(path.join(runDir, "run.json"), "utf-8")) as {
+				extraMetadata?: { keep?: string };
+			}).extraMetadata?.keep,
+		).toBe("run");
 		expect(index.schemaVersion).toBe(2);
 		expect(index.runs[0]?.machineProfileKey).toBe(
 			"macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
@@ -273,5 +294,47 @@ describe("migrate-machine-profiles command", () => {
 		expect(latestAggregate.schemaVersion).toBe(2);
 		expect(latestAggregate.summary.machines).toBe(1);
 		expect(latestAggregate.summary.instances).toBe(1);
+	});
+
+	it("requires --dashboard-output-dir when rebuilding dashboard artifacts", () => {
+		const root = createTempRoot();
+		const resultsDir = path.join(root, "results");
+		fs.mkdirSync(resultsDir, { recursive: true });
+
+		const completed = spawnSync(
+			process.execPath,
+			[
+				"run",
+				"src/index.ts",
+				"migrate-machine-profiles",
+				"--dir",
+				resultsDir,
+				"--rebuild-dashboard-index",
+			],
+			{
+				cwd: REPO_ROOT,
+				encoding: "utf-8",
+			},
+		);
+
+		expect(completed.status).toBe(1);
+		expect(completed.stderr).toContain("--dashboard-output-dir");
+	});
+});
+
+describe("known artifact parsing", () => {
+	it("rejects unsupported run and plan schema versions", () => {
+		expect(() =>
+			parseKnownPlanPayload({
+				schemaVersion: "9.9.9",
+				runId: "bad-plan",
+			}),
+		).toThrow("Unsupported plan artifact schemaVersion: 9.9.9");
+		expect(() =>
+			parseKnownRunPayload({
+				schemaVersion: "9.9.9",
+				runId: "bad-run",
+			}),
+		).toThrow("Unsupported run artifact schemaVersion: 9.9.9");
 	});
 });

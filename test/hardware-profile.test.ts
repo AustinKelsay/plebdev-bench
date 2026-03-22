@@ -2,6 +2,10 @@
  * Purpose: Validate machine profile resolution and anonymous ID behavior.
  */
 
+import { randomUUID } from "node:crypto";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { collectMachineProfile } from "../src/lib/hardware-profile.js";
 import type { HardwareProfile } from "../src/schemas/index.js";
@@ -61,21 +65,28 @@ describe("hardware profile resolution", () => {
 	});
 
 	it("generates stable local instance IDs when explicit IDs are missing", async () => {
-		const instanceIdFilePath = "/tmp/plebdev-bench-machine-instance-id.test";
-		const first = await collectMachineProfile({
-			observedHardware: TEST_HARDWARE,
-			instanceIdFilePath,
-			env: {},
-		});
-		const second = await collectMachineProfile({
-			observedHardware: TEST_HARDWARE,
-			instanceIdFilePath,
-			env: {},
-		});
+		const instanceIdFilePath = path.join(
+			os.tmpdir(),
+			`plebdev-bench-machine-instance-id-${randomUUID()}.test`,
+		);
+		try {
+			const first = await collectMachineProfile({
+				observedHardware: TEST_HARDWARE,
+				instanceIdFilePath,
+				env: {},
+			});
+			const second = await collectMachineProfile({
+				observedHardware: TEST_HARDWARE,
+				instanceIdFilePath,
+				env: {},
+			});
 
-		expect(first.machine.instanceId).toMatch(/^inst_[a-f0-9]{32}$/);
-		expect(first.machine.instanceId).toBe(second.machine.instanceId);
-		expect(first.identitySource).toBe("generated");
-		expect(first.isAnonymous).toBe(true);
+			expect(first.machine.instanceId).toMatch(/^inst_[a-f0-9]{32}$/);
+			expect(first.machine.instanceId).toBe(second.machine.instanceId);
+			expect(first.identitySource).toBe("generated");
+			expect(first.isAnonymous).toBe(true);
+		} finally {
+			fs.rmSync(instanceIdFilePath, { force: true });
+		}
 	});
 });

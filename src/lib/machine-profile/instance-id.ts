@@ -80,6 +80,7 @@ function writeGeneratedInstanceId(targetPath: string, value: string): string {
 	const tempPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
 	try {
 		fs.writeFileSync(tempPath, `${value}\n`, "utf-8");
+		fs.chmodSync(tempPath, 0o600);
 		fs.renameSync(tempPath, targetPath);
 	} catch (error) {
 		try {

@@ -226,7 +226,7 @@ describe("buildDashboardIndexArtifacts", () => {
 						scoringFailure: {
 							type: "test_execution",
 							message:
-								"Failed to read '/private/var/folders/abc/reports/output.json' at /Users/example/project/file.ts:9:3",
+								"Failed to read '/private/var/folders/abc/reports/output.json' at /Users/example/project/file.ts:9:3 and C:/Users/example/project/logs/output.txt",
 						},
 					},
 				],
@@ -344,8 +344,14 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
 			"reports/output.json",
 		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
+			"logs/output.txt",
+		);
 		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
 			"/private/var/folders",
+		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
+			"C:/Users/example",
 		);
 		expect(latestAggregate.items[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
 		expect(latestAggregate.items[0]?.machineLabel).toBe("Machine A");
@@ -378,6 +384,9 @@ describe("buildDashboardIndexArtifacts", () => {
 		);
 		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
 			"/private/var/folders",
+		);
+		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
+			"C:/Users/example",
 		);
 	});
 

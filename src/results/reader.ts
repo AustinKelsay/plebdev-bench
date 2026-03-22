@@ -8,10 +8,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
-	migrateLegacyPlanPayload,
-	migrateLegacyRunPayload,
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
 } from "../lib/machine-profile/legacy.js";
-import { RunPlanSchema, RunResultSchema, type RunPlan, type RunResult } from "../schemas/index.js";
+import type { RunPlan, RunResult } from "../schemas/index.js";
 
 /**
  * Finds a run directory by run ID or path.
@@ -56,9 +56,7 @@ export function readPlan(runDir: string): RunPlan {
 	}
 
 	const content = fs.readFileSync(planPath, "utf-8");
-	const data = migrateLegacyPlanPayload(JSON.parse(content) as unknown);
-
-	return RunPlanSchema.parse(data);
+	return parseKnownPlanPayload(JSON.parse(content) as unknown);
 }
 
 /**
@@ -77,7 +75,5 @@ export function readResult(runDir: string): RunResult {
 	}
 
 	const content = fs.readFileSync(resultPath, "utf-8");
-	const data = migrateLegacyRunPayload(JSON.parse(content) as unknown);
-
-	return RunResultSchema.parse(data);
+	return parseKnownRunPayload(JSON.parse(content) as unknown);
 }

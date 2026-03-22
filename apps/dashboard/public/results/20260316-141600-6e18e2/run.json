@@ -1713,7 +1713,7 @@
       "completedAt": "2026-03-17T02:45:55.531Z",
       "generation": {
         "success": true,
-        "output": "Ran into this error: Request failed: error sending request for url (http://localhost:11434/v1/chat/completions).\n\nPlease retry if you think this is a transient or recoverable error.",
+        "output": "Ran into this error: Request failed: error sending request for url ([path:htt/completions]).\n\nPlease retry if you think this is a transient or recoverable error.",
         "durationMs": 683999
       },
       "generationAttempts": 1,
@@ -1956,7 +1956,7 @@
       "completedAt": "2026-03-17T04:06:40.966Z",
       "generation": {
         "success": true,
-        "output": "Ran into this error: Request failed: error sending request for url (http://localhost:11434/v1/chat/completions).\n\nPlease retry if you think this is a transient or recoverable error.",
+        "output": "Ran into this error: Request failed: error sending request for url ([path:htt/completions]).\n\nPlease retry if you think this is a transient or recoverable error.",
         "durationMs": 614341
       },
       "generationAttempts": 1,
