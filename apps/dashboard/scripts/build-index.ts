@@ -8,7 +8,7 @@
  *   bun run apps/dashboard/scripts/build-index.ts --source-dir results --output-dir apps/dashboard/public/results
  */
 
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
 import {
@@ -404,6 +404,8 @@ async function writePublishedRunBundles(
 	bundles: PublishedRunBundle[],
 	outputResultsDir: string,
 ): Promise<void> {
+	await rm(outputResultsDir, { recursive: true, force: true });
+	await mkdir(outputResultsDir, { recursive: true });
 	for (const bundle of bundles) {
 		const outputRunDir = join(outputResultsDir, bundle.runDirName);
 		await mkdir(outputRunDir, { recursive: true });
@@ -461,9 +463,6 @@ export async function buildDashboardIndexArtifacts(
 	const indexPath = join(outputResultsDir, "index.json");
 	const aggregatesDir = join(outputResultsDir, "aggregates");
 
-	await mkdir(outputResultsDir, { recursive: true });
-	await mkdir(aggregatesDir, { recursive: true });
-
 	const entries = await readdir(sourceResultsDir, { withFileTypes: true });
 	const bundles: PublishedRunBundle[] = [];
 	for (const entry of entries) {
@@ -475,6 +474,7 @@ export async function buildDashboardIndexArtifacts(
 		}
 	}
 	await writePublishedRunBundles(bundles, outputResultsDir);
+	await mkdir(aggregatesDir, { recursive: true });
 
 	const checkpoints = summarizeCheckpoints(bundles);
 	const preferredLatestCheckpointId =

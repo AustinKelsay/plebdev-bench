@@ -92,13 +92,7 @@ function writeGeneratedInstanceId(targetPath: string, value: string): string {
 					return persisted;
 				}
 			}
-			const persisted = readPersistedInstanceId(targetPath);
-			if (persisted) {
-				return persisted;
-			}
-			throw new Error(
-				`Machine instance ID file already exists but could not be read: ${targetPath}`,
-			);
+			return repairPersistedInstanceId(targetPath, value);
 		}
 		try {
 			if (fileDescriptor !== undefined) {
@@ -125,6 +119,32 @@ function writeGeneratedInstanceId(targetPath: string, value: string): string {
 			// Best-effort cleanup only.
 		}
 	}
+}
+
+/**
+ * Repairs a blank persisted instance-ID file and returns the final stored value.
+ *
+ * @param targetPath - Path to the persisted ID file
+ * @param fallbackValue - Generated instance ID to persist when repair is needed
+ * @returns Persisted non-empty instance ID
+ * @throws {Error} When the file cannot be repaired into a readable non-empty value
+ */
+function repairPersistedInstanceId(
+	targetPath: string,
+	fallbackValue: string,
+): string {
+	fs.writeFileSync(targetPath, `${fallbackValue}\n`, {
+		encoding: "utf-8",
+		mode: 0o600,
+	});
+	fs.chmodSync(targetPath, 0o600);
+	const persisted = readPersistedInstanceId(targetPath);
+	if (persisted) {
+		return persisted;
+	}
+	throw new Error(
+		`Machine instance ID file exists but could not be repaired: ${targetPath}`,
+	);
 }
 
 /**
@@ -183,16 +203,6 @@ export function resolveMachineInstanceId(
 		};
 	}
 
-	const envInstanceId =
-		readNonEmpty(env[MACHINE_INSTANCE_ID_ENV_VAR]) ??
-		readNonEmpty(env[LEGACY_MACHINE_ID_ENV_VAR]);
-	if (envInstanceId) {
-		return {
-			instanceId: envInstanceId,
-			instanceIdSource: "env",
-		};
-	}
-
 	const legacyConfiguredInstanceId = readNonEmpty(
 		options.legacyConfiguredInstanceId,
 	);
@@ -203,12 +213,31 @@ export function resolveMachineInstanceId(
 		};
 	}
 
+	const envInstanceId =
+		readNonEmpty(env[MACHINE_INSTANCE_ID_ENV_VAR]) ??
+		readNonEmpty(env[LEGACY_MACHINE_ID_ENV_VAR]);
+	if (envInstanceId) {
+		return {
+			instanceId: envInstanceId,
+			instanceIdSource: "env",
+		};
+	}
+
 	const instanceIdFilePath =
 		options.instanceIdFilePath ?? resolveDefaultInstanceIdPath(process.platform, env);
 	const persisted = readPersistedInstanceId(instanceIdFilePath);
 	if (persisted) {
 		return {
 			instanceId: persisted,
+			instanceIdSource: "generated",
+		};
+	}
+	if (fs.existsSync(instanceIdFilePath)) {
+		return {
+			instanceId: repairPersistedInstanceId(
+				instanceIdFilePath,
+				buildGeneratedInstanceId(),
+			),
 			instanceIdSource: "generated",
 		};
 	}

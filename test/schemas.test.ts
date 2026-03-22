@@ -187,6 +187,15 @@ describe("BenchConfigSchema", () => {
 		).toThrow(/Conflicting bench config machine labels/);
 	});
 
+	it("should reject blank machine config strings before alias backfill", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				machineInstanceId: "   ",
+				machineProfileId: "legacy-machine",
+			}),
+		).toThrow(/must not be blank strings/);
+	});
+
 	it("should provide default config", () => {
 		expect(defaultConfig.harnesses).toEqual([]); // Auto-discover all available
 	});

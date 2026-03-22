@@ -164,7 +164,10 @@ type LatestAggregateFixture = {
 	checkpointId: string;
 	summary: { runsMatched: number };
 	items: Array<{
+		machineProfileKey?: string;
 		machineProfileId?: string;
+		machineInstanceId?: string;
+		machineDisplayLabel?: string;
 		machineLabel?: string;
 		generation?: {
 			codeFilePath?: string;
@@ -365,10 +368,16 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
 			"/root/secret",
 		);
+		expect(latestAggregate.items[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
 		expect(latestAggregate.items[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
+		expect(latestAggregate.items[0]?.machineInstanceId).toBe("machine-a");
+		expect(latestAggregate.items[0]?.machineDisplayLabel).toBe("Machine A");
 		expect(latestAggregate.items[0]?.machineLabel).toBe("Machine A");
 		expect(output.index.runs[0]?.runId).toBe("run-latest");
+		expect(output.index.runs[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
 		expect(output.index.runs[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
+		expect(output.index.runs[0]?.machineInstanceId).toBe("machine-a");
+		expect(output.index.runs[0]?.machineDisplayLabel).toBe("Machine A");
 		expect(output.index.runs[0]?.machineLabel).toBe("Machine A");
 		const publishedRunPath = path.join(outputResultsDir, "run-latest", "run.json");
 		expect(fs.existsSync(publishedRunPath)).toBe(true);
@@ -477,6 +486,77 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(output.latestAggregate.checkpointId).toBe(
 			publishedCheckpoint.checkpointId,
 		);
+	});
+
+	it("removes stale published files before rewriting bundles", async () => {
+		const projectRoot = createProjectRoot();
+		const sourceResultsDir = path.join(projectRoot, "results");
+		const outputResultsDir = path.join(projectRoot, "published-results");
+		fs.mkdirSync(sourceResultsDir, { recursive: true });
+		fs.mkdirSync(path.join(outputResultsDir, "stale-run"), { recursive: true });
+		fs.mkdirSync(path.join(outputResultsDir, "aggregates"), { recursive: true });
+		fs.writeFileSync(
+			path.join(outputResultsDir, "stale-run", "run.json"),
+			'{"stale":true}\n',
+		);
+		fs.writeFileSync(
+			path.join(outputResultsDir, "aggregates", "stale.json"),
+			'{"stale":true}\n',
+		);
+
+		const checkpoint = computeBenchmarkCheckpoint(projectRoot);
+		writeRunDir(
+			sourceResultsDir,
+			"run-fresh",
+			{
+				schemaVersion: SCHEMA_VERSION,
+				runId: "run-fresh",
+				machine: buildMachine("machine-fresh"),
+				benchmarkCheckpoint: checkpoint,
+				provenance: {
+					verificationStatus: "self_reported",
+					source: "local_cli",
+				},
+				startedAt: "2026-03-05T10:00:00.000Z",
+				completedAt: "2026-03-05T10:01:00.000Z",
+				durationMs: 60_000,
+				summary: {
+					total: 1,
+					completed: 1,
+					failed: 0,
+					pending: 0,
+				},
+				items: [],
+			},
+			{
+				schemaVersion: SCHEMA_VERSION,
+				runId: "run-fresh",
+				machine: buildMachine("machine-fresh"),
+				benchmarkCheckpoint: checkpoint,
+				runtimeEnvironment: {
+					platform: "darwin",
+					bunVersion: "1.2.3",
+				},
+				provenance: {
+					verificationStatus: "self_reported",
+					source: "local_cli",
+				},
+				matrix: [],
+			},
+		);
+
+		await buildDashboardIndexArtifacts({
+			sourceResultsDir,
+			outputResultsDir,
+			projectRoot,
+			latestCheckpointId: checkpoint.checkpointId,
+		});
+
+		expect(fs.existsSync(path.join(outputResultsDir, "stale-run"))).toBe(false);
+		expect(
+			fs.existsSync(path.join(outputResultsDir, "aggregates", "stale.json")),
+		).toBe(false);
+		expect(fs.existsSync(path.join(outputResultsDir, "run-fresh"))).toBe(true);
 	});
 });
 

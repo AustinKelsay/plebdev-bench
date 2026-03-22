@@ -17,15 +17,19 @@ import {
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
 
 /**
- * Trims a candidate string and returns undefined when empty.
+ * Trims a candidate string and returns undefined when absent.
  *
  * @param value - Candidate config field
  * @returns Trimmed non-empty string or undefined
+ * @throws {Error} When the value is a blank string
  */
 function readNonEmptyString(value: unknown): string | undefined {
 	if (typeof value !== "string") return undefined;
 	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : undefined;
+	if (trimmed.length === 0) {
+		throw new Error("Machine config fields must not be blank strings");
+	}
+	return trimmed;
 }
 
 /**

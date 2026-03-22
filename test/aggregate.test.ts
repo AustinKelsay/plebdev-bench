@@ -194,6 +194,8 @@ describe("aggregateRunsForCheckpoint", () => {
 		expect(aggregate.items).toHaveLength(1);
 		expect(aggregate.items[0].sourceRunId).toBe("run-old");
 		expect(aggregate.items[0].automatedScore?.passed).toBe(6);
+		expect(aggregate.summary.instances).toBe(2);
+		expect(aggregate.machines[0]?.instanceCount).toBe(2);
 	});
 
 	it("falls back to latest item when duplicate results are equally strong", () => {
@@ -217,6 +219,8 @@ describe("aggregateRunsForCheckpoint", () => {
 		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
 		expect(aggregate.items).toHaveLength(1);
 		expect(aggregate.items[0].sourceRunId).toBe("run-new");
+		expect(aggregate.summary.instances).toBe(2);
+		expect(aggregate.machines[0]?.instanceCount).toBe(2);
 	});
 
 	it("does not dedupe across different profiles", () => {

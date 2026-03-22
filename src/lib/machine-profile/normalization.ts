@@ -30,6 +30,20 @@ function slugify(value: string): string {
 }
 
 /**
+ * Produces a stable slug for optional vendor-like strings.
+ *
+ * @param value - Optional raw string
+ * @returns Trimmed lowercase slug, or undefined when blank
+ */
+function normalizeOptionalSlug(value: string | undefined): string | undefined {
+	if (typeof value !== "string") {
+		return undefined;
+	}
+	const normalized = slugify(value.trim());
+	return normalized.length > 0 ? normalized : undefined;
+}
+
+/**
  * Resolves a canonical platform family from the runtime platform.
  *
  * @param platform - Raw runtime platform
@@ -61,12 +75,13 @@ function normalizeCpuVendor(
 	cpuModelRaw: string,
 	explicitVendor?: string,
 ): string {
+	const explicitVendorSlug = normalizeOptionalSlug(explicitVendor);
 	const candidate = `${explicitVendor ?? ""} ${cpuModelRaw}`.toLowerCase();
 	if (candidate.includes("apple")) return "apple";
 	if (candidate.includes("intel")) return "intel";
 	if (candidate.includes("amd")) return "amd";
 	if (candidate.includes("qualcomm")) return "qualcomm";
-	return explicitVendor ? slugify(explicitVendor) : "unknown";
+	return explicitVendorSlug ?? "unknown";
 }
 
 /**
@@ -99,12 +114,13 @@ function normalizeCpuModelKey(cpuModelRaw: string, cpuVendor: string): string {
  * @returns Canonical vendor slug
  */
 function normalizeAcceleratorVendor(accelerator: ObservedAccelerator): string {
+	const explicitVendorSlug = normalizeOptionalSlug(accelerator.vendor);
 	const candidate = `${accelerator.vendor ?? ""} ${accelerator.modelRaw}`.toLowerCase();
 	if (candidate.includes("apple")) return "apple";
 	if (candidate.includes("nvidia")) return "nvidia";
 	if (candidate.includes("amd") || candidate.includes("radeon")) return "amd";
 	if (candidate.includes("intel")) return "intel";
-	return accelerator.vendor ? slugify(accelerator.vendor) : "unknown";
+	return explicitVendorSlug ?? "unknown";
 }
 
 /**
@@ -156,6 +172,7 @@ function toRoundedGiB(bytes: number): number {
  *
  * @param observedHardware - Observed machine hardware
  * @returns Normalized canonical machine profile
+ * @throws none
  */
 export function normalizeMachineProfile(
 	observedHardware: HardwareProfile,
@@ -200,6 +217,7 @@ export function normalizeMachineProfile(
  *
  * @param normalizedProfile - Normalized machine profile
  * @returns Stable machine profile key
+ * @throws none
  */
 export function buildMachineProfileKey(
 	normalizedProfile: NormalizedMachineProfile,
@@ -229,6 +247,7 @@ export function buildMachineProfileKey(
  * @param observedHardware - Observed hardware metadata
  * @param normalizedProfile - Normalized machine profile
  * @returns Stable human-readable machine profile label
+ * @throws none
  */
 export function buildMachineProfileLabel(
 	observedHardware: HardwareProfile,

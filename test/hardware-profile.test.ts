@@ -65,6 +65,19 @@ describe("hardware profile resolution", () => {
 		expect(resolved.isAnonymous).toBe(false);
 	});
 
+	it("prefers legacy configured machine IDs over environment values", async () => {
+		const resolved = await collectMachineProfile({
+			machineProfileId: "legacy-config-machine",
+			observedHardware: TEST_HARDWARE,
+			env: {
+				[MACHINE_INSTANCE_ID_ENV_VAR]: "env-machine",
+			},
+		});
+
+		expect(resolved.machine.instanceId).toBe("legacy-config-machine");
+		expect(resolved.identitySource).toBe("config");
+	});
+
 	it("generates stable local instance IDs when explicit IDs are missing", async () => {
 		const instanceIdFilePath = path.join(
 			os.tmpdir(),
@@ -86,6 +99,31 @@ describe("hardware profile resolution", () => {
 			expect(first.machine.instanceId).toBe(second.machine.instanceId);
 			expect(first.identitySource).toBe("generated");
 			expect(first.isAnonymous).toBe(true);
+		} finally {
+			fs.rmSync(instanceIdFilePath, { force: true });
+		}
+	});
+
+	it("repairs blank persisted instance ID files", async () => {
+		const instanceIdFilePath = path.join(
+			os.tmpdir(),
+			`plebdev-bench-machine-instance-id-${randomUUID()}.blank`,
+		);
+		try {
+			fs.writeFileSync(instanceIdFilePath, "   \n", "utf-8");
+			const resolved = await collectMachineProfile({
+				observedHardware: TEST_HARDWARE,
+				instanceIdFilePath,
+				env: {},
+			});
+			const reread = await collectMachineProfile({
+				observedHardware: TEST_HARDWARE,
+				instanceIdFilePath,
+				env: {},
+			});
+
+			expect(resolved.machine.instanceId).toMatch(/^inst_[a-f0-9]{32}$/);
+			expect(reread.machine.instanceId).toBe(resolved.machine.instanceId);
 		} finally {
 			fs.rmSync(instanceIdFilePath, { force: true });
 		}

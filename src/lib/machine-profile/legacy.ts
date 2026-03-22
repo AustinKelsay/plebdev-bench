@@ -17,6 +17,7 @@ import type {
 	RunResult,
 } from "../../schemas/index.js";
 import {
+	MachineProfileSchema,
 	RunPlanSchema,
 	RunResultSchema,
 	SCHEMA_VERSION,
@@ -95,6 +96,7 @@ function migrateLegacyObservedHardware(
  *
  * @param rawMachine - Legacy or current machine payload
  * @returns Migrated machine payload when recognized
+ * @throws {Error} None
  */
 export function migrateLegacyMachineProfile(
 	rawMachine: unknown,
@@ -103,13 +105,8 @@ export function migrateLegacyMachineProfile(
 		return undefined;
 	}
 
-	if (
-		typeof rawMachine.instanceId === "string" &&
-		typeof rawMachine.profileKey === "string" &&
-		isRecord(rawMachine.normalizedProfile) &&
-		isRecord(rawMachine.observedHardware)
-	) {
-		return rawMachine as unknown as MachineProfile;
+	if (MachineProfileSchema.safeParse(rawMachine).success) {
+		return rawMachine as MachineProfile;
 	}
 
 	if (
@@ -257,6 +254,7 @@ function normalizeKnownArtifactPayload(
  *
  * @param raw - Parsed JSON payload
  * @returns Migrated payload
+ * @throws {Error} When a present machine payload cannot be migrated
  */
 export function migrateLegacyPlanPayload(raw: unknown): unknown {
 	if (!isRecord(raw)) {
@@ -281,6 +279,7 @@ export function migrateLegacyPlanPayload(raw: unknown): unknown {
  *
  * @param raw - Arbitrary artifact payload
  * @returns Current-schema run-plan payload
+ * @throws {Error} When the payload uses an unsupported schema version or shape
  */
 export function normalizeKnownPlanPayload(raw: unknown): unknown {
 	return normalizeKnownArtifactPayload(
@@ -296,6 +295,7 @@ export function normalizeKnownPlanPayload(raw: unknown): unknown {
  *
  * @param raw - Parsed JSON payload
  * @returns Migrated payload
+ * @throws {Error} When a present machine payload cannot be migrated
  */
 export function migrateLegacyRunPayload(raw: unknown): unknown {
 	if (!isRecord(raw)) {
@@ -315,6 +315,7 @@ export function migrateLegacyRunPayload(raw: unknown): unknown {
  *
  * @param raw - Arbitrary artifact payload
  * @returns Current-schema run-result payload
+ * @throws {Error} When the payload uses an unsupported schema version or shape
  */
 export function normalizeKnownRunPayload(raw: unknown): unknown {
 	return normalizeKnownArtifactPayload(
@@ -330,6 +331,7 @@ export function normalizeKnownRunPayload(raw: unknown): unknown {
  *
  * @param raw - Arbitrary artifact payload
  * @returns Parsed current-schema run plan
+ * @throws {Error} When migration fails or the normalized payload is invalid
  */
 export function parseKnownPlanPayload(raw: unknown): RunPlan {
 	return RunPlanSchema.parse(normalizeKnownPlanPayload(raw));
@@ -340,6 +342,7 @@ export function parseKnownPlanPayload(raw: unknown): RunPlan {
  *
  * @param raw - Arbitrary artifact payload
  * @returns Parsed current-schema run result
+ * @throws {Error} When migration fails or the normalized payload is invalid
  */
 export function parseKnownRunPayload(raw: unknown): RunResult {
 	return RunResultSchema.parse(normalizeKnownRunPayload(raw));

@@ -212,6 +212,32 @@ function parseLspciAccelerators(stdout: string): ObservedAccelerator[] {
 }
 
 /**
+ * Deduplicates accelerators merged from multiple probe sources.
+ *
+ * @param accelerators - Candidate accelerator entries
+ * @returns Stable deduplicated accelerator list
+ */
+function dedupeAccelerators(
+	accelerators: ObservedAccelerator[],
+): ObservedAccelerator[] {
+	const seen = new Set<string>();
+	return accelerators.filter((accelerator) => {
+		const key = [
+			accelerator.vendor?.trim().toLowerCase() ?? "",
+			accelerator.modelRaw.trim().toLowerCase(),
+			accelerator.kind,
+			accelerator.backend ?? "",
+			accelerator.memoryBytes ?? "",
+		].join("|");
+		if (seen.has(key)) {
+			return false;
+		}
+		seen.add(key);
+		return true;
+	});
+}
+
+/**
  * Extracts accelerator entries from Windows PowerShell JSON.
  *
  * @param rawJson - Raw PowerShell JSON
@@ -305,17 +331,17 @@ async function collectLinuxAccelerators(): Promise<{
 		accelerators.push(...parseRocmAccelerators(rocm));
 	}
 
-	if (accelerators.length === 0) {
-		const lspci = await runProbe("lspci", []);
-		if (lspci) {
-			probeCount++;
-			accelerators.push(...parseLspciAccelerators(lspci));
-		}
+	const lspci = await runProbe("lspci", []);
+	if (lspci) {
+		probeCount++;
+		accelerators.push(...parseLspciAccelerators(lspci));
 	}
 
-	if (accelerators.length > 0) {
+	const dedupedAccelerators = dedupeAccelerators(accelerators);
+
+	if (dedupedAccelerators.length > 0) {
 		return {
-			accelerators,
+			accelerators: dedupedAccelerators,
 			status: { status: "detected" },
 		};
 	}
