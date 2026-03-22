@@ -55,6 +55,28 @@ function parseStrictIntegerOption(
 	return parsed;
 }
 
+/**
+ * Normalizes an optional CLI string flag and rejects explicit blank values.
+ *
+ * @param optionName - CLI flag name for error messages
+ * @param rawValue - Raw commander option value
+ * @returns Trimmed non-empty value or undefined
+ * @throws {Error} When the flag was provided as only whitespace
+ */
+function normalizeOptionalStringOption(
+	optionName: string,
+	rawValue: unknown,
+): string | undefined {
+	if (typeof rawValue !== "string") {
+		return undefined;
+	}
+	const trimmed = rawValue.trim();
+	if (trimmed.length === 0) {
+		throw new Error(`${optionName} must not be empty`);
+	}
+	return trimmed;
+}
+
 /** CLI run command. */
 export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
@@ -149,26 +171,22 @@ export const runCommand = new Command("run")
 				);
 			}
 
-			const legacyMachineId =
-				typeof options.machineId === "string" &&
-				options.machineId.trim().length > 0
-					? options.machineId.trim()
-					: undefined;
-			const legacyMachineLabel =
-				typeof options.machineLabel === "string" &&
-				options.machineLabel.trim().length > 0
-					? options.machineLabel.trim()
-					: undefined;
-			const canonicalMachineId =
-				typeof options.machineInstanceId === "string" &&
-				options.machineInstanceId.trim().length > 0
-					? options.machineInstanceId.trim()
-					: undefined;
-			const canonicalMachineLabel =
-				typeof options.machineDisplayLabel === "string" &&
-				options.machineDisplayLabel.trim().length > 0
-					? options.machineDisplayLabel.trim()
-					: undefined;
+			const legacyMachineId = normalizeOptionalStringOption(
+				"--machine-id",
+				options.machineId,
+			);
+			const legacyMachineLabel = normalizeOptionalStringOption(
+				"--machine-label",
+				options.machineLabel,
+			);
+			const canonicalMachineId = normalizeOptionalStringOption(
+				"--machine-instance-id",
+				options.machineInstanceId,
+			);
+			const canonicalMachineLabel = normalizeOptionalStringOption(
+				"--machine-display-label",
+				options.machineDisplayLabel,
+			);
 			if (
 				legacyMachineId &&
 				canonicalMachineId &&
@@ -187,17 +205,24 @@ export const runCommand = new Command("run")
 					`Conflicting machine label flags: --machine-label="${legacyMachineLabel}" does not match --machine-display-label="${canonicalMachineLabel}"`,
 				);
 			}
+			const resolvedMachineId = canonicalMachineId ?? legacyMachineId;
+			const resolvedMachineLabel =
+				canonicalMachineLabel ?? legacyMachineLabel;
 			if (legacyMachineId) {
 				logger.warn(
 					"Warning: --machine-id is deprecated; use --machine-instance-id",
 				);
-				options.machineInstanceId ??= legacyMachineId;
+				options.machineInstanceId = resolvedMachineId;
+			} else if (canonicalMachineId) {
+				options.machineInstanceId = canonicalMachineId;
 			}
 			if (legacyMachineLabel) {
 				logger.warn(
 					"Warning: --machine-label is deprecated; use --machine-display-label",
 				);
-				options.machineDisplayLabel ??= legacyMachineLabel;
+				options.machineDisplayLabel = resolvedMachineLabel;
+			} else if (canonicalMachineLabel) {
+				options.machineDisplayLabel = canonicalMachineLabel;
 			}
 
 			// Build config from CLI options
@@ -222,16 +247,8 @@ export const runCommand = new Command("run")
 					options.gooseWorkspaceRetryMaxTurns,
 				),
 				outputDir: options.output,
-				machineInstanceId:
-					typeof options.machineInstanceId === "string" &&
-					options.machineInstanceId.trim().length > 0
-						? options.machineInstanceId.trim()
-						: undefined,
-				machineDisplayLabel:
-					typeof options.machineDisplayLabel === "string" &&
-					options.machineDisplayLabel.trim().length > 0
-						? options.machineDisplayLabel.trim()
-						: undefined,
+				machineInstanceId: resolvedMachineId,
+				machineDisplayLabel: resolvedMachineLabel,
 				modelAliases,
 			};
 

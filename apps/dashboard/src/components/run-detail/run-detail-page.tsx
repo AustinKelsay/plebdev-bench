@@ -73,7 +73,9 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 		)
 		.join(" · ");
 	const machineLabel =
-		plan.machine?.displayLabel ?? plan.machine?.profileLabel;
+		plan.machine?.displayLabel ??
+		plan.machine?.profileLabel ??
+		plan.machine?.profileKey;
 	const machineHardware = plan.machine?.observedHardware;
 	const checkpointId = plan.benchmarkCheckpoint?.checkpointId;
 

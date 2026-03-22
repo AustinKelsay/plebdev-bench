@@ -166,6 +166,58 @@ function hasLegacyRunShape(raw: unknown): boolean {
 }
 
 /**
+ * Returns whether a record has an own `machine` field.
+ *
+ * @param raw - Parsed artifact record
+ * @returns True when `machine` is explicitly present on the artifact
+ */
+function hasOwnMachineField(raw: Record<string, unknown>): boolean {
+	return Object.prototype.hasOwnProperty.call(raw, "machine");
+}
+
+/**
+ * Builds a short artifact-context suffix for migration error messages.
+ *
+ * @param raw - Parsed artifact record
+ * @returns Human-readable context suffix
+ */
+function describeArtifactContext(raw: Record<string, unknown>): string {
+	const parts = [
+		typeof raw.schemaVersion === "string"
+			? `schemaVersion=${raw.schemaVersion}`
+			: undefined,
+		typeof raw.runId === "string" ? `runId=${raw.runId}` : undefined,
+	]
+		.filter((part): part is string => part !== undefined)
+		.join(", ");
+	return parts.length > 0 ? ` (${parts})` : "";
+}
+
+/**
+ * Migrates a present machine payload or throws when the machine field cannot be understood.
+ *
+ * @param raw - Parsed artifact record
+ * @param artifactKind - Artifact kind for error messages
+ * @returns Migrated machine payload, or undefined when no machine field exists
+ * @throws {Error} When a present machine field cannot be migrated
+ */
+function migrateArtifactMachineOrThrow(
+	raw: Record<string, unknown>,
+	artifactKind: "plan" | "run",
+): MachineProfile | undefined {
+	if (!hasOwnMachineField(raw)) {
+		return undefined;
+	}
+	const machine = migrateLegacyMachineProfile(raw.machine);
+	if (machine === undefined) {
+		throw new Error(
+			`Unable to migrate ${artifactKind} machine payload${describeArtifactContext(raw)}`,
+		);
+	}
+	return machine;
+}
+
+/**
  * Normalizes a run or plan payload while rejecting unsupported schema versions.
  *
  * @param raw - Arbitrary artifact payload
@@ -211,7 +263,7 @@ export function migrateLegacyPlanPayload(raw: unknown): unknown {
 		return raw;
 	}
 
-	const machine = migrateLegacyMachineProfile(raw.machine);
+	const machine = migrateArtifactMachineOrThrow(raw, "plan");
 	const runtimeEnvironment =
 		raw.runtimeEnvironment ??
 		(isRecord(raw.environment) ? raw.environment : undefined);
@@ -250,7 +302,7 @@ export function migrateLegacyRunPayload(raw: unknown): unknown {
 		return raw;
 	}
 
-	const machine = migrateLegacyMachineProfile(raw.machine);
+	const machine = migrateArtifactMachineOrThrow(raw, "run");
 	return {
 		...raw,
 		schemaVersion: SCHEMA_VERSION,

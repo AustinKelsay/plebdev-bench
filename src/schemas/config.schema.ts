@@ -123,16 +123,16 @@ const BenchConfigObjectSchema = z
 		outputDir: z.string().default("results"),
 
 		/** Optional explicit machine instance identifier. */
-		machineInstanceId: z.string().min(1).optional(),
+		machineInstanceId: z.string().trim().min(1).optional(),
 
 		/** Optional human-readable display label for a specific machine instance. */
-		machineDisplayLabel: z.string().min(1).optional(),
+		machineDisplayLabel: z.string().trim().min(1).optional(),
 
 		/** Deprecated alias for machine instance identity. */
-		machineProfileId: z.string().min(1).optional(),
+		machineProfileId: z.string().trim().min(1).optional(),
 
 		/** Deprecated alias for machine display label. */
-		machineLabel: z.string().min(1).optional(),
+		machineLabel: z.string().trim().min(1).optional(),
 
 		/** Model aliases for cross-runtime mapping. */
 		modelAliases: ModelAliasMapSchema.default({}),

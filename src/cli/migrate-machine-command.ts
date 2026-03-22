@@ -10,6 +10,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { Command } from "commander";
+import { z } from "zod";
 import { buildDashboardIndexArtifacts } from "../../apps/dashboard/scripts/build-index.js";
 import {
 	normalizeKnownPlanPayload,
@@ -34,6 +35,26 @@ interface StagedArtifactRewrite extends PreparedArtifactRewrite {
 	tempPath: string;
 	backupPath: string;
 }
+
+const MigrateMachineCommandOptionsSchema = z
+	.object({
+		dir: z.string().min(1),
+		rebuildDashboardIndex: z.boolean(),
+		dashboardOutputDir: z.string().min(1).optional(),
+	})
+	.superRefine((options, context) => {
+		if (
+			options.rebuildDashboardIndex &&
+			options.dashboardOutputDir === undefined
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["dashboardOutputDir"],
+				message:
+					"--rebuild-dashboard-index requires --dashboard-output-dir to avoid mutating the source results directory",
+			});
+		}
+	});
 
 /**
  * Loads and validates one JSON artifact rewrite without touching the filesystem.
@@ -189,22 +210,23 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 		"Output directory for rebuilt dashboard artifacts",
 	)
 	.action(async (options) => {
-		const resultsDir = path.resolve(options.dir);
-
 		try {
-			if (options.rebuildDashboardIndex && !options.dashboardOutputDir) {
-				throw new Error(
-					"--rebuild-dashboard-index requires --dashboard-output-dir to avoid mutating the source results directory",
-				);
-			}
+			const parsedOptions = MigrateMachineCommandOptionsSchema.parse(options);
+			const resultsDir = path.resolve(parsedOptions.dir);
 			const migrated = await migrateResultsDirectory(resultsDir);
 			logger.info(
 				{ resultsDir, ...migrated },
 				"Migrated machine-profile artifacts",
 			);
 
-			if (options.rebuildDashboardIndex) {
-				const dashboardOutputDir = path.resolve(options.dashboardOutputDir);
+			if (parsedOptions.rebuildDashboardIndex) {
+				const dashboardOutputDirInput = parsedOptions.dashboardOutputDir;
+				if (dashboardOutputDirInput === undefined) {
+					throw new Error(
+						"--rebuild-dashboard-index requires --dashboard-output-dir to avoid mutating the source results directory",
+					);
+				}
+				const dashboardOutputDir = path.resolve(dashboardOutputDirInput);
 				const result = await buildDashboardIndexArtifacts({
 					sourceResultsDir: resultsDir,
 					outputResultsDir: dashboardOutputDir,

@@ -182,7 +182,7 @@ function parseRocmAccelerators(stdout: string): ObservedAccelerator[] {
 	return stdout
 		.split("\n")
 		.map((line) => line.trim())
-		.filter((line) => /gpu|card/i.test(line))
+		.filter((line) => /product\s*name/i.test(line))
 		.map((line) => ({
 			vendor: "AMD",
 			modelRaw: line.replace(/^[^:]+:\s*/, ""),

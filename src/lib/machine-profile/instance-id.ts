@@ -77,22 +77,54 @@ export function resolveDefaultInstanceIdPath(
  */
 function writeGeneratedInstanceId(targetPath: string, value: string): string {
 	fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-	const tempPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
+	let fileDescriptor: number | undefined;
 	try {
-		fs.writeFileSync(tempPath, `${value}\n`, "utf-8");
-		fs.chmodSync(tempPath, 0o600);
-		fs.renameSync(tempPath, targetPath);
+		fileDescriptor = fs.openSync(targetPath, "wx", 0o600);
+		fs.writeFileSync(fileDescriptor, `${value}\n`, "utf-8");
+		fs.fchmodSync(fileDescriptor, 0o600);
+		return value;
 	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+			const deadline = Date.now() + 50;
+			while (Date.now() < deadline) {
+				const persisted = readPersistedInstanceId(targetPath);
+				if (persisted) {
+					return persisted;
+				}
+			}
+			const persisted = readPersistedInstanceId(targetPath);
+			if (persisted) {
+				return persisted;
+			}
+			throw new Error(
+				`Machine instance ID file already exists but could not be read: ${targetPath}`,
+			);
+		}
 		try {
-			if (fs.existsSync(tempPath)) {
-				fs.unlinkSync(tempPath);
+			if (fileDescriptor !== undefined) {
+				fs.closeSync(fileDescriptor);
+				fileDescriptor = undefined;
+			}
+		} catch {
+			// Best-effort cleanup only.
+		}
+		try {
+			if (fs.existsSync(targetPath) && readPersistedInstanceId(targetPath) === value) {
+				fs.unlinkSync(targetPath);
 			}
 		} catch {
 			// Best-effort cleanup only.
 		}
 		throw error;
+	} finally {
+		try {
+			if (fileDescriptor !== undefined) {
+				fs.closeSync(fileDescriptor);
+			}
+		} catch {
+			// Best-effort cleanup only.
+		}
 	}
-	return value;
 }
 
 /**

@@ -30,7 +30,9 @@ function getRunMachineBadgeLabel(run: RunListItem): string | undefined {
 	return (
 		run.machineDisplayLabel?.trim() ||
 		run.machineInstanceId?.trim() ||
+		run.machineLabel?.trim() ||
 		run.machineProfileLabel?.trim() ||
+		run.machineProfileId?.trim() ||
 		run.machineProfileKey?.trim() ||
 		undefined
 	);
