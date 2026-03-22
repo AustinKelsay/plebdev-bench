@@ -65,8 +65,8 @@ function fallbackCollectMachineProfile(options: {
 	const displayLabel =
 		readNonEmpty(options.machineDisplayLabel) ??
 		readNonEmpty(options.machineLabel) ??
-		readNonEmpty(env.BENCH_MACHINE_LABEL) ??
-		readNonEmpty(env.BENCH_MACHINE_DISPLAY_LABEL);
+		readNonEmpty(env.BENCH_MACHINE_DISPLAY_LABEL) ??
+		readNonEmpty(env.BENCH_MACHINE_LABEL);
 	const identitySource =
 		readNonEmpty(options.machineInstanceId) !== undefined ||
 		readNonEmpty(options.machineProfileId) !== undefined

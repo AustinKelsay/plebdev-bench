@@ -203,7 +203,10 @@ function parseLspciAccelerators(stdout: string): ObservedAccelerator[] {
 		.map((line) => line.trim())
 		.filter((line) => /(vga|3d|display)/i.test(line))
 		.map((line) => ({
-			modelRaw: line.replace(/^[^:]+:\s*/, ""),
+			modelRaw: line.replace(
+				/^[0-9a-fA-F:.]+\s+[^:]+:\s*/,
+				"",
+			),
 			kind: "unknown" as const,
 		}));
 }

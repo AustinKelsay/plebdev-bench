@@ -51,7 +51,7 @@ export interface BuildDashboardIndexArtifactsOptions {
 }
 
 const PUBLIC_PATH_PATTERNS = [
-	/(?:\/Users\/|\/private\/var\/|\/var\/|\/tmp\/)[^\s"'`()<>]+/g,
+	/(?:\/Users\/|\/home\/|\/root\/|\/private\/var\/|\/var\/|\/tmp\/)[^\s"'`()<>]+/g,
 	/(?<![A-Za-z])[A-Za-z]:[\\/][^\s"'`()<>]+/g,
 ] as const;
 const STACK_FRAME_PATTERN = /^\s*at\s+(?:.+\s\(|\S+:\d+:\d+)/;

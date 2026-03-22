@@ -64,6 +64,7 @@ const WINDOWS_HARDWARE = {
 	acceleratorDetection: { status: "detected" as const },
 };
 const WINDOWS_NORMALIZED_PROFILE = normalizeMachineProfile(WINDOWS_HARDWARE);
+const WINDOWS_PROFILE_KEY = buildMachineProfileKey(WINDOWS_NORMALIZED_PROFILE);
 const WINDOWS_PROFILE_LABEL = buildMachineProfileLabel(
 	WINDOWS_HARDWARE,
 	WINDOWS_NORMALIZED_PROFILE,
@@ -231,7 +232,7 @@ describe("aggregateRunsForCheckpoint", () => {
 				run: createRun(
 					"run-b",
 					checkpointId,
-					"windows_x64_intel_i9_13900k_24c_64gb_nvidia-rtx-4090_24gb_x1",
+					WINDOWS_PROFILE_KEY,
 					"instance-b",
 					[item],
 					{

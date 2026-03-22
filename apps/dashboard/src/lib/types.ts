@@ -169,14 +169,17 @@ export interface NormalizedMachineProfile {
 	acceleratorCount: number;
 }
 
+/** Source used to resolve a machine instance identifier. */
+export type InstanceIdSource =
+	| "config"
+	| "env"
+	| "generated"
+	| "legacy_profile_id";
+
 /** Machine profile metadata for aggregation */
 export interface MachineProfile {
 	instanceId: string;
-	instanceIdSource:
-		| "config"
-		| "env"
-		| "generated"
-		| "legacy_profile_id";
+	instanceIdSource: InstanceIdSource;
 	displayLabel?: string;
 	profileKey: string;
 	profileLabel: string;
@@ -288,6 +291,7 @@ export interface RunListItem {
 	summary: RunSummary;
 	checkpointId?: string;
 	machineProfileKey?: string;
+	/** Deprecated compatibility alias for machineProfileKey. */
 	machineProfileId?: string;
 	machineProfileLabel?: string;
 	machineLabel?: string;
@@ -319,6 +323,7 @@ export interface DashboardIndex {
 /** Aggregated leaderboard item from checkpoint aggregate payloads */
 export interface LeaderboardAggregatedItem extends MatrixItemResult {
 	machineProfileKey: string;
+	/** Deprecated compatibility alias for machineProfileKey. */
 	machineProfileId?: string;
 	machineProfileLabel?: string;
 	machineLabel?: string;
@@ -332,6 +337,7 @@ export interface LeaderboardAggregatedItem extends MatrixItemResult {
 /** Per-machine summary in checkpoint aggregate payload */
 export interface LeaderboardMachineSummary {
 	machineProfileKey: string;
+	/** Deprecated compatibility alias for machineProfileKey. */
 	machineProfileId?: string;
 	machineProfileLabel?: string;
 	machineLabel?: string;

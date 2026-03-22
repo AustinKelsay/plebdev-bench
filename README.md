@@ -275,6 +275,7 @@ High level:
 - Bench runs produce `plan.json` + `run.json` in an output directory.
 - Published runs live in `apps/dashboard/public/results/<runId>/`.
 - An index (`apps/dashboard/public/results/index.json`) is generated from the published runs.
+  - `machineProfileKey` is the canonical machine-profile identifier; `machineProfileId` is still emitted as a deprecated compatibility alias and will be removed in a future release.
 - Checkpoint aggregate artifacts are generated in `apps/dashboard/public/results/aggregates/`:
   - `<checkpointId>.json` for each discovered checkpoint
   - `latest.json` for the checkpoint computed from current benchmark source

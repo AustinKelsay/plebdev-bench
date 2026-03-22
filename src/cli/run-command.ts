@@ -159,6 +159,34 @@ export const runCommand = new Command("run")
 				options.machineLabel.trim().length > 0
 					? options.machineLabel.trim()
 					: undefined;
+			const canonicalMachineId =
+				typeof options.machineInstanceId === "string" &&
+				options.machineInstanceId.trim().length > 0
+					? options.machineInstanceId.trim()
+					: undefined;
+			const canonicalMachineLabel =
+				typeof options.machineDisplayLabel === "string" &&
+				options.machineDisplayLabel.trim().length > 0
+					? options.machineDisplayLabel.trim()
+					: undefined;
+			if (
+				legacyMachineId &&
+				canonicalMachineId &&
+				legacyMachineId !== canonicalMachineId
+			) {
+				throw new Error(
+					`Conflicting machine identity flags: --machine-id="${legacyMachineId}" does not match --machine-instance-id="${canonicalMachineId}"`,
+				);
+			}
+			if (
+				legacyMachineLabel &&
+				canonicalMachineLabel &&
+				legacyMachineLabel !== canonicalMachineLabel
+			) {
+				throw new Error(
+					`Conflicting machine label flags: --machine-label="${legacyMachineLabel}" does not match --machine-display-label="${canonicalMachineLabel}"`,
+				);
+			}
 			if (legacyMachineId) {
 				logger.warn(
 					"Warning: --machine-id is deprecated; use --machine-instance-id",

@@ -112,11 +112,11 @@ const ObservedAcceleratorKindSchema = z.enum([
 
 /** Observed accelerator schema. */
 const ObservedAcceleratorSchema = z.object({
-	vendor: z.string().optional(),
-	modelRaw: z.string(),
-	memoryBytes: z.number().optional(),
-	backend: z.string().optional(),
-	kind: ObservedAcceleratorKindSchema,
+	vendor: z.string().min(1).optional(),
+	modelRaw: z.string().min(1),
+	memoryBytes: z.number().int().positive().optional(),
+	backend: z.string().min(1).optional(),
+	kind: ObservedAcceleratorKindSchema.default("unknown"),
 });
 
 /** Accelerator detection status schema. */
@@ -129,49 +129,49 @@ const AcceleratorDetectionStatusSchema = z.enum([
 /** Accelerator detection schema. */
 const AcceleratorDetectionSchema = z.object({
 	status: AcceleratorDetectionStatusSchema,
-	detail: z.string().optional(),
+	detail: z.string().min(1).optional(),
 });
 
 /** Hardware profile schema. */
 const HardwareProfileSchema = z.object({
-	platform: z.string(),
-	arch: z.string(),
-	osRelease: z.string(),
-	cpuModelRaw: z.string(),
-	cpuVendor: z.string().optional(),
-	physicalCores: z.number().optional(),
-	logicalCores: z.number(),
-	totalMemoryBytes: z.number(),
-	accelerators: z.array(ObservedAcceleratorSchema),
+	platform: z.string().min(1),
+	arch: z.string().min(1),
+	osRelease: z.string().min(1),
+	cpuModelRaw: z.string().min(1),
+	cpuVendor: z.string().min(1).optional(),
+	physicalCores: z.number().int().positive().optional(),
+	logicalCores: z.number().int().positive(),
+	totalMemoryBytes: z.number().int().positive(),
+	accelerators: z.array(ObservedAcceleratorSchema).default([]),
 	acceleratorDetection: AcceleratorDetectionSchema,
 });
 
 /** Normalized machine profile schema. */
 const NormalizedMachineProfileSchema = z.object({
 	platformFamily: z.enum(["macos", "linux", "windows", "unknown"]),
-	arch: z.string(),
-	cpuVendor: z.string(),
-	cpuModelKey: z.string(),
-	physicalCores: z.number().optional(),
-	logicalCores: z.number(),
-	memoryGiB: z.number(),
-	acceleratorKey: z.string(),
-	acceleratorMemoryGiB: z.number().optional(),
-	acceleratorCount: z.number(),
+	arch: z.string().min(1),
+	cpuVendor: z.string().min(1),
+	cpuModelKey: z.string().min(1),
+	physicalCores: z.number().int().positive().optional(),
+	logicalCores: z.number().int().positive(),
+	memoryGiB: z.number().int().positive(),
+	acceleratorKey: z.string().min(1),
+	acceleratorMemoryGiB: z.number().int().positive().optional(),
+	acceleratorCount: z.number().int().nonnegative(),
 });
 
 /** Machine profile schema. */
 const MachineProfileSchema = z.object({
-	instanceId: z.string(),
+	instanceId: z.string().min(1),
 	instanceIdSource: z.enum([
 		"config",
 		"env",
 		"generated",
 		"legacy_profile_id",
 	]),
-	displayLabel: z.string().optional(),
-	profileKey: z.string(),
-	profileLabel: z.string(),
+	displayLabel: z.string().min(1).optional(),
+	profileKey: z.string().min(1),
+	profileLabel: z.string().min(1),
 	normalizedProfile: NormalizedMachineProfileSchema,
 	observedHardware: HardwareProfileSchema,
 });
@@ -302,6 +302,7 @@ export const RunListItemSchema = z.object({
 	summary: RunSummarySchema,
 	checkpointId: z.string().optional(),
 	machineProfileKey: z.string().optional(),
+	// Deprecated compatibility alias for consumers still reading pre-profileKey payloads.
 	machineProfileId: z.string().optional(),
 	machineProfileLabel: z.string().optional(),
 	machineLabel: z.string().optional(),
@@ -342,6 +343,7 @@ export const DashboardIndexLegacyOrV2Schema = z.union([
 /** Aggregated leaderboard item schema. */
 const LeaderboardAggregatedItemSchema = MatrixItemResultSchema.extend({
 	machineProfileKey: z.string(),
+	// Deprecated compatibility alias for consumers still reading pre-profileKey payloads.
 	machineProfileId: z.string().optional(),
 	machineProfileLabel: z.string().optional(),
 	machineLabel: z.string().optional(),
@@ -355,6 +357,7 @@ const LeaderboardAggregatedItemSchema = MatrixItemResultSchema.extend({
 /** Aggregated machine summary schema. */
 const LeaderboardMachineSummarySchema = z.object({
 	machineProfileKey: z.string(),
+	// Deprecated compatibility alias for consumers still reading pre-profileKey payloads.
 	machineProfileId: z.string().optional(),
 	machineProfileLabel: z.string().optional(),
 	machineLabel: z.string().optional(),

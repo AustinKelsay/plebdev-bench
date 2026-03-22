@@ -28,6 +28,14 @@ interface PreparedArtifactRewrite {
 }
 
 /**
+ * Staged rewrite paths used for multi-file replacement with rollback.
+ */
+interface StagedArtifactRewrite extends PreparedArtifactRewrite {
+	tempPath: string;
+	backupPath: string;
+}
+
+/**
  * Loads and validates one JSON artifact rewrite without touching the filesystem.
  *
  * @param artifactPath - Absolute artifact path
@@ -61,24 +69,57 @@ async function prepareArtifactRewrite(
 }
 
 /**
- * Writes one prepared artifact atomically using a temporary file and rename.
+ * Applies one or more prepared artifact rewrites with rollback if a later rename fails.
  *
- * @param rewrite - Prepared artifact rewrite
+ * @param rewrites - Prepared artifact rewrites for one run directory
  */
-async function writePreparedArtifact(
-	rewrite: PreparedArtifactRewrite,
+async function writePreparedArtifacts(
+	rewrites: PreparedArtifactRewrite[],
 ): Promise<void> {
-	const tempPath = `${rewrite.artifactPath}.${process.pid}.${Date.now()}.tmp`;
+	const changedRewrites = rewrites.filter((rewrite) => rewrite.changed);
+	if (changedRewrites.length === 0) {
+		return;
+	}
+
+	const token = `${process.pid}.${Date.now()}`;
+	const stagedRewrites: StagedArtifactRewrite[] = changedRewrites.map(
+		(rewrite, index) => ({
+			...rewrite,
+			tempPath: `${rewrite.artifactPath}.${token}.${index}.tmp`,
+			backupPath: `${rewrite.artifactPath}.${token}.${index}.bak`,
+		}),
+	);
+
 	try {
-		await fs.writeFile(tempPath, rewrite.nextContent, "utf-8");
-		await fs.rename(tempPath, rewrite.artifactPath);
+		for (const rewrite of stagedRewrites) {
+			await fs.writeFile(rewrite.tempPath, rewrite.nextContent, "utf-8");
+			await fs.copyFile(rewrite.artifactPath, rewrite.backupPath);
+		}
+		for (const rewrite of stagedRewrites) {
+			await fs.rename(rewrite.tempPath, rewrite.artifactPath);
+		}
 	} catch (error) {
-		try {
-			await fs.unlink(tempPath);
-		} catch {
-			// Best-effort cleanup only.
+		for (const rewrite of stagedRewrites) {
+			try {
+				await fs.copyFile(rewrite.backupPath, rewrite.artifactPath);
+			} catch {
+				// Best-effort rollback only.
+			}
 		}
 		throw error;
+	} finally {
+		for (const rewrite of stagedRewrites) {
+			try {
+				await fs.unlink(rewrite.tempPath);
+			} catch {
+				// Best-effort cleanup only.
+			}
+			try {
+				await fs.unlink(rewrite.backupPath);
+			} catch {
+				// Best-effort cleanup only.
+			}
+		}
 	}
 }
 
@@ -118,12 +159,15 @@ async function migrateResultsDirectory(resultsDir: string): Promise<{
 
 		// Validate both siblings before writing either file so a bad plan cannot
 		// leave a successfully rewritten run paired with an invalid companion.
+		await writePreparedArtifacts(
+			[preparedPlan, preparedRun].filter(
+				(rewrite): rewrite is PreparedArtifactRewrite => rewrite !== undefined,
+			),
+		);
 		if (preparedPlan?.changed) {
-			await writePreparedArtifact(preparedPlan);
 			planFilesUpdated++;
 		}
 		if (preparedRun?.changed) {
-			await writePreparedArtifact(preparedRun);
 			runFilesUpdated++;
 		}
 	}

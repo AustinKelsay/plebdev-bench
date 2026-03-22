@@ -163,6 +163,30 @@ describe("BenchConfigSchema", () => {
 		).toThrow(/gooseWorkspaceRetryMaxTurns/);
 	});
 
+	it("should normalize deprecated machine config aliases", () => {
+		const config = BenchConfigSchema.parse({
+			machineProfileId: "legacy-machine",
+			machineLabel: "Legacy Label",
+		});
+		expect(config.machineInstanceId).toBe("legacy-machine");
+		expect(config.machineDisplayLabel).toBe("Legacy Label");
+	});
+
+	it("should reject conflicting canonical and deprecated machine config aliases", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				machineInstanceId: "machine-a",
+				machineProfileId: "machine-b",
+			}),
+		).toThrow(/Conflicting bench config machine IDs/);
+		expect(() =>
+			BenchConfigSchema.parse({
+				machineDisplayLabel: "Label A",
+				machineLabel: "Label B",
+			}),
+		).toThrow(/Conflicting bench config machine labels/);
+	});
+
 	it("should provide default config", () => {
 		expect(defaultConfig.harnesses).toEqual([]); // Auto-discover all available
 	});
