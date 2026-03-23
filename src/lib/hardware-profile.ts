@@ -43,6 +43,11 @@ export interface MachineProfileOptions {
 	machineLabel?: string;
 	env?: NodeJS.ProcessEnv;
 	observedHardware?: HardwareProfile;
+	/**
+	 * @deprecated Legacy alias for `observedHardware`. Prefer `observedHardware`.
+	 * When both are provided, `observedHardware` wins and `hardwareProfile` is used
+	 * only as a backward-compatible fallback.
+	 */
 	hardwareProfile?: HardwareProfile;
 	instanceIdFilePath?: string;
 }

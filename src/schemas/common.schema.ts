@@ -296,18 +296,44 @@ export const AcceleratorDetectionSchema = z.object({
 export type AcceleratorDetection = z.infer<typeof AcceleratorDetectionSchema>;
 
 /** Zod schema for observed machine hardware metadata. */
-export const HardwareProfileSchema = z.object({
-	platform: z.string().min(1),
-	arch: z.string().min(1),
-	osRelease: z.string().min(1),
-	cpuModelRaw: z.string().min(1),
-	cpuVendor: z.string().min(1).optional(),
-	physicalCores: z.number().int().positive().optional(),
-	logicalCores: z.number().int().positive(),
-	totalMemoryBytes: z.number().int().positive(),
-	accelerators: z.array(ObservedAcceleratorSchema).default([]),
-	acceleratorDetection: AcceleratorDetectionSchema,
-});
+export const HardwareProfileSchema = z
+	.object({
+		platform: z.string().min(1),
+		arch: z.string().min(1),
+		osRelease: z.string().min(1),
+		cpuModelRaw: z.string().min(1),
+		cpuVendor: z.string().min(1).optional(),
+		physicalCores: z.number().int().positive().optional(),
+		logicalCores: z.number().int().positive(),
+		totalMemoryBytes: z.number().int().positive(),
+		accelerators: z.array(ObservedAcceleratorSchema).default([]),
+		acceleratorDetection: AcceleratorDetectionSchema,
+	})
+	.superRefine((hardware, context) => {
+		if (
+			hardware.acceleratorDetection.status === "detected" &&
+			hardware.accelerators.length === 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					"accelerators must contain at least one accelerator when acceleratorDetection.status is \"detected\"",
+			});
+		}
+
+		if (
+			hardware.acceleratorDetection.status === "none_detected" &&
+			hardware.accelerators.length > 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					"accelerators must be empty when acceleratorDetection.status is \"none_detected\"",
+			});
+		}
+	});
 
 /** Observed machine hardware metadata. */
 export type HardwareProfile = z.infer<typeof HardwareProfileSchema>;

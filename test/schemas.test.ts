@@ -11,6 +11,7 @@ import {
 import {
 	BenchConfigSchema,
 	FrontierEvalFailureTypeSchema,
+	HardwareProfileSchema,
 	HarnessCapabilitySchema,
 	MatrixItemResultSchema,
 	MatrixItemSchema,
@@ -196,6 +197,21 @@ describe("BenchConfigSchema", () => {
 		).toThrow(/must not be blank strings/);
 	});
 
+	it("should reject non-string canonical machine fields before alias backfill", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				machineInstanceId: 123,
+				machineProfileId: "legacy-machine",
+			}),
+		).toThrow(/machineInstanceId must be a string/);
+		expect(() =>
+			BenchConfigSchema.parse({
+				machineDisplayLabel: 123,
+				machineLabel: "Legacy Label",
+			}),
+		).toThrow(/machineDisplayLabel must be a string/);
+	});
+
 	it("should provide default config", () => {
 		expect(defaultConfig.harnesses).toEqual([]); // Auto-discover all available
 	});
@@ -220,6 +236,45 @@ describe("MatrixItemSchema", () => {
 		expect(item.runtime).toBe("ollama");
 		expect(item.model).toBe("llama3.2:3b");
 		expect(item.scoringMode).toBe("code-module");
+	});
+});
+
+describe("HardwareProfileSchema", () => {
+	it("should reject detected accelerators with an empty accelerator list", () => {
+		expect(() =>
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [],
+				acceleratorDetection: {
+					status: "detected",
+				},
+			}),
+		).toThrow(/must contain at least one accelerator/);
+	});
+
+	it("should reject none_detected accelerators with a non-empty accelerator list", () => {
+		expect(() =>
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				acceleratorDetection: {
+					status: "none_detected",
+				},
+			}),
+		).toThrow(/must be empty when acceleratorDetection\.status is \\\"none_detected\\\"/);
+	});
+
+	it("should classify a confirmed accelerator-free machine as none", () => {
+		const normalized = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [],
+				acceleratorDetection: {
+					status: "none_detected",
+				},
+			}),
+		);
+		expect(normalized.acceleratorKey).toBe("none");
+		expect(normalized.acceleratorCount).toBe(0);
 	});
 });
 

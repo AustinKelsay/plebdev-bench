@@ -33,6 +33,28 @@ function readNonEmptyString(value: unknown): string | undefined {
 }
 
 /**
+ * Throws when a canonical machine field is present but not a string.
+ *
+ * @param config - Mutable config-like record
+ * @param fieldName - Canonical field name to validate
+ * @throws {Error} When the field is present with a non-string value
+ */
+function validateCanonicalMachineFieldType(
+	config: Record<string, unknown>,
+	fieldName: "machineInstanceId" | "machineDisplayLabel",
+): void {
+	if (
+		Object.prototype.hasOwnProperty.call(config, fieldName) &&
+		config[fieldName] !== undefined &&
+		typeof config[fieldName] !== "string"
+	) {
+		throw new Error(
+			`Bench config ${fieldName} must be a string when provided`,
+		);
+	}
+}
+
+/**
  * Normalizes deprecated machine config aliases into the canonical machine fields.
  *
  * @param raw - Arbitrary config-like input
@@ -45,6 +67,8 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 
 	const config = { ...(raw as Record<string, unknown>) };
+	validateCanonicalMachineFieldType(config, "machineInstanceId");
+	validateCanonicalMachineFieldType(config, "machineDisplayLabel");
 	const machineInstanceId = readNonEmptyString(config.machineInstanceId);
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
 	const machineDisplayLabel = readNonEmptyString(config.machineDisplayLabel);

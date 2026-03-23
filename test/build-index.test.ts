@@ -415,6 +415,18 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
 			"/root/secret",
 		);
+		const publishedPlanPath = path.join(outputResultsDir, "run-latest", "plan.json");
+		expect(fs.existsSync(publishedPlanPath)).toBe(true);
+		const publishedPlan = JSON.parse(
+			fs.readFileSync(publishedPlanPath, "utf-8"),
+		) as {
+			machine?: {
+				displayLabel?: string;
+				profileLabel?: string;
+			};
+		};
+		expect(publishedPlan.machine?.displayLabel).toBeUndefined();
+		expect(publishedPlan.machine?.profileLabel).toBe(TEST_PROFILE_LABEL);
 	});
 
 	it("falls back latestCheckpointId to the newest published checkpoint", async () => {

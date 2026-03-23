@@ -222,7 +222,18 @@ function sanitizePublishedRun(run: RunResult): RunResult {
  * @returns Sanitized plan artifact
  */
 function sanitizePublishedPlan(plan: RunPlan): RunPlan {
-	return sanitizePublishedValue(plan) as RunPlan;
+	const sanitizedPlan = sanitizePublishedValue(plan) as RunPlan;
+	if (!sanitizedPlan.machine) {
+		return sanitizedPlan;
+	}
+
+	return {
+		...sanitizedPlan,
+		machine: {
+			...sanitizedPlan.machine,
+			displayLabel: undefined,
+		},
+	};
 }
 
 interface PublishedRunBundle extends AggregateRunInput {
@@ -378,7 +389,10 @@ function buildRunListItems(bundles: AggregateRunInput[]): RunListItem[] {
 				? { machineProfileKey: metadata.machineProfileKey }
 				: {}),
 			...(metadata.machineProfileKey
-				? { machineProfileId: metadata.machineProfileKey }
+				? {
+						// Backward-compatible alias for older dashboard consumers.
+						machineProfileId: metadata.machineProfileKey,
+					}
 				: {}),
 			...(metadata.machineProfileLabel
 				? { machineProfileLabel: metadata.machineProfileLabel }
