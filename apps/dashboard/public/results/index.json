@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-21T16:01:01.834Z",
+  "generatedAt": "2026-03-23T01:31:59.547Z",
   "latestCheckpointId": "chk_sha256v1_2c13ad3e58b3",
   "runs": [
     {
@@ -15,8 +15,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileId": "anon_6fe55c56c31d",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -32,8 +36,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileId": "anon_6fe55c56c31d",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -49,8 +57,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileId": "anon_6fe55c56c31d",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -66,8 +78,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileId": "anon_6fe55c56c31d",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -83,8 +99,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileId": "anon_6fe55c56c31d",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -100,8 +120,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileId": "mac-mini-m4-pro-64gb",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -117,8 +141,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileId": "mac-mini-m4-pro-64gb",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -134,8 +162,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileId": "mac-mini-m4-pro-64gb",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     },
@@ -151,8 +183,12 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileId": "mac-mini-m4-pro-64gb",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
+      "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
     }
@@ -163,6 +199,7 @@
       "runCount": 5,
       "rawItemCount": 1638,
       "machineCount": 1,
+      "instanceCount": 1,
       "latestRunAt": "2026-03-20T05:47:47.387Z"
     },
     {
@@ -170,6 +207,7 @@
       "runCount": 4,
       "rawItemCount": 1350,
       "machineCount": 1,
+      "instanceCount": 1,
       "latestRunAt": "2026-03-08T18:18:26.719Z"
     }
   ]

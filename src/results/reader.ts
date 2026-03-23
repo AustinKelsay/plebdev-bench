@@ -7,38 +7,11 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { RunPlanSchema, RunResultSchema, type RunPlan, type RunResult } from "../schemas/index.js";
-
-/**
- * Migrates legacy plan payloads to the current schema shape before validation.
- *
- * @param raw - Parsed JSON payload
- * @returns Migrated payload
- */
-function migrateLegacyPlanPayload(raw: unknown): unknown {
-	if (!raw || typeof raw !== "object") {
-		return raw;
-	}
-	const plan = raw as {
-		runtimeEnvironment?: unknown;
-		environment?: unknown;
-	};
-	if (plan.runtimeEnvironment !== undefined) {
-		return raw;
-	}
-	if (
-		plan.environment &&
-		typeof plan.environment === "object" &&
-		"platform" in plan.environment &&
-		"bunVersion" in plan.environment
-	) {
-		return {
-			...plan,
-			runtimeEnvironment: plan.environment,
-		};
-	}
-	return raw;
-}
+import {
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
+} from "../lib/machine-profile/legacy.js";
+import type { RunPlan, RunResult } from "../schemas/index.js";
 
 /**
  * Finds a run directory by run ID or path.
@@ -83,9 +56,7 @@ export function readPlan(runDir: string): RunPlan {
 	}
 
 	const content = fs.readFileSync(planPath, "utf-8");
-	const data = migrateLegacyPlanPayload(JSON.parse(content) as unknown);
-
-	return RunPlanSchema.parse(data);
+	return parseKnownPlanPayload(JSON.parse(content) as unknown);
 }
 
 /**
@@ -104,7 +75,5 @@ export function readResult(runDir: string): RunResult {
 	}
 
 	const content = fs.readFileSync(resultPath, "utf-8");
-	const data = JSON.parse(content);
-
-	return RunResultSchema.parse(data);
+	return parseKnownRunPayload(JSON.parse(content) as unknown);
 }

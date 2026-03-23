@@ -16,6 +16,11 @@ import {
 	resolveResultsDir,
 } from "../apps/dashboard/scripts/build-index.js";
 import { computeBenchmarkCheckpoint } from "../src/lib/benchmark-checkpoint.js";
+import {
+	buildMachineProfileKey,
+	buildMachineProfileLabel,
+	normalizeMachineProfile,
+} from "../src/lib/machine-profile/normalization.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const tempRoots: string[] = [];
@@ -42,6 +47,44 @@ const REQUIRED_SOURCE_DIR_FIXTURES = [
 	["src/runtimes", "ollama-runtime.ts", "export const ollamaRuntime = 1;\n"],
 	["src/runner", "index.ts", "export const runnerIndex = 1;\n"],
 ] as const;
+
+const TEST_HARDWARE = {
+	platform: "darwin",
+	arch: "arm64",
+	osRelease: "24.3.0",
+	cpuModelRaw: "Apple M4 Pro",
+	logicalCores: 14,
+	totalMemoryBytes: 68_719_476_736,
+	accelerators: [
+		{
+			vendor: "Apple",
+			modelRaw: "Apple M4 Pro GPU",
+			kind: "integrated" as const,
+			backend: "metal",
+		},
+	],
+	acceleratorDetection: {
+		status: "detected" as const,
+	},
+};
+const TEST_NORMALIZED_PROFILE = normalizeMachineProfile(TEST_HARDWARE);
+const TEST_PROFILE_KEY = buildMachineProfileKey(TEST_NORMALIZED_PROFILE);
+const TEST_PROFILE_LABEL = buildMachineProfileLabel(
+	TEST_HARDWARE,
+	TEST_NORMALIZED_PROFILE,
+);
+
+function buildMachine(instanceId: string) {
+	return {
+		instanceId,
+		instanceIdSource: "config" as const,
+		displayLabel: "Machine A",
+		profileKey: TEST_PROFILE_KEY,
+		profileLabel: TEST_PROFILE_LABEL,
+		normalizedProfile: TEST_NORMALIZED_PROFILE,
+		observedHardware: TEST_HARDWARE,
+	};
+}
 
 /**
  * Creates a temporary benchmark project root with minimal benchmark assets.
@@ -121,8 +164,14 @@ type LatestAggregateFixture = {
 	checkpointId: string;
 	summary: { runsMatched: number };
 	items: Array<{
+		machineProfileKey?: string;
+		machineProfileId?: string;
+		machineInstanceId?: string;
+		machineDisplayLabel?: string;
+		machineLabel?: string;
 		generation?: {
 			codeFilePath?: string;
+			sourcePathToken?: string;
 			output?: string;
 		};
 		scoringFailure?: {
@@ -147,18 +196,7 @@ describe("buildDashboardIndexArtifacts", () => {
 			{
 				schemaVersion: SCHEMA_VERSION,
 				runId: "run-latest",
-				machine: {
-					profileId: "machine-a",
-					label: "Machine A",
-					hardware: {
-						platform: "darwin",
-						arch: "arm64",
-						osRelease: "24.3.0",
-						cpuModel: "Apple M4 Pro",
-						logicalCores: 14,
-						totalMemoryBytes: 68_719_476_736,
-					},
-				},
+				machine: buildMachine("machine-a"),
 				benchmarkCheckpoint: checkpoint,
 				provenance: {
 					verificationStatus: "self_reported",
@@ -191,7 +229,7 @@ describe("buildDashboardIndexArtifacts", () => {
 						scoringFailure: {
 							type: "test_execution",
 							message:
-								"Failed to read '/private/var/folders/abc/reports/output.json' at /Users/example/project/file.ts:9:3",
+								"Failed to read '/private/var/folders/abc/reports/output.json' at /Users/example/project/file.ts:9:3 and C:/Users/example/project/logs/output.txt plus /home/example/project/cache/output.log and /root/secret/debug.log",
 						},
 					},
 				],
@@ -201,18 +239,7 @@ describe("buildDashboardIndexArtifacts", () => {
 				runId: "run-latest",
 				createdAt: "2026-03-04T10:00:00.000Z",
 				runtimeEnvironment: { platform: "darwin", bunVersion: "1.3.3" },
-				machine: {
-					profileId: "machine-a",
-					label: "Machine A",
-					hardware: {
-						platform: "darwin",
-						arch: "arm64",
-						osRelease: "24.3.0",
-						cpuModel: "Apple M4 Pro",
-						logicalCores: 14,
-						totalMemoryBytes: 68_719_476_736,
-					},
-				},
+				machine: buildMachine("machine-a"),
 				benchmarkCheckpoint: checkpoint,
 				provenance: {
 					verificationStatus: "self_reported",
@@ -308,6 +335,9 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(
 			latestAggregate.items[0]?.generation?.codeFilePath,
 		).toBeUndefined();
+		expect(
+			latestAggregate.items[0]?.generation?.sourcePathToken,
+		).toBe("[path:solution.ts]");
 		expect(latestAggregate.items[0]?.generation?.output).toContain(
 			"[path:solution.ts]",
 		);
@@ -317,13 +347,86 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
 			"reports/output.json",
 		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
+			"logs/output.txt",
+		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
+			"cache/output.log",
+		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
+			"debug.log",
+		);
 		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
 			"/private/var/folders",
 		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
+			"C:/Users/example",
+		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
+			"/home/example",
+		);
+		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
+			"/root/secret",
+		);
+		expect(latestAggregate.items[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
+		expect(latestAggregate.items[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
+		expect(latestAggregate.items[0]?.machineInstanceId).toBe("machine-a");
+		expect(latestAggregate.items[0]?.machineDisplayLabel).toBe("Machine A");
+		expect(latestAggregate.items[0]?.machineLabel).toBe("Machine A");
 		expect(output.index.runs[0]?.runId).toBe("run-latest");
-		expect(
-			fs.existsSync(path.join(outputResultsDir, "run-latest", "run.json")),
-		).toBe(false);
+		expect(output.index.runs[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
+		expect(output.index.runs[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
+		expect(output.index.runs[0]?.machineInstanceId).toBe("machine-a");
+		expect(output.index.runs[0]?.machineDisplayLabel).toBe("Machine A");
+		expect(output.index.runs[0]?.machineLabel).toBe("Machine A");
+		const publishedRunPath = path.join(outputResultsDir, "run-latest", "run.json");
+		expect(fs.existsSync(publishedRunPath)).toBe(true);
+		const publishedRun = JSON.parse(
+			fs.readFileSync(publishedRunPath, "utf-8"),
+		) as {
+			items: Array<{
+				generation?: {
+					codeFilePath?: string;
+					sourcePathToken?: string;
+					output?: string;
+				};
+				scoringFailure?: { message?: string };
+			}>;
+		};
+		expect(publishedRun.items[0]?.generation?.codeFilePath).toBeUndefined();
+		expect(publishedRun.items[0]?.generation?.sourcePathToken).toBe(
+			"[path:solution.ts]",
+		);
+		expect(publishedRun.items[0]?.generation?.output).toContain(
+			"[path:solution.ts]",
+		);
+		expect(publishedRun.items[0]?.generation?.output).not.toContain(
+			"/Users/example",
+		);
+		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
+			"/private/var/folders",
+		);
+		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
+			"C:/Users/example",
+		);
+		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
+			"/home/example",
+		);
+		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
+			"/root/secret",
+		);
+		const publishedPlanPath = path.join(outputResultsDir, "run-latest", "plan.json");
+		expect(fs.existsSync(publishedPlanPath)).toBe(true);
+		const publishedPlan = JSON.parse(
+			fs.readFileSync(publishedPlanPath, "utf-8"),
+		) as {
+			machine?: {
+				displayLabel?: string;
+				profileLabel?: string;
+			};
+		};
+		expect(publishedPlan.machine?.displayLabel).toBeUndefined();
+		expect(publishedPlan.machine?.profileLabel).toBe(TEST_PROFILE_LABEL);
 	});
 
 	it("falls back latestCheckpointId to the newest published checkpoint", async () => {
@@ -395,6 +498,118 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(output.latestAggregate.checkpointId).toBe(
 			publishedCheckpoint.checkpointId,
 		);
+	});
+
+	it("removes stale published files before rewriting bundles", async () => {
+		const projectRoot = createProjectRoot();
+		const sourceResultsDir = path.join(projectRoot, "results");
+		const outputResultsDir = path.join(projectRoot, "published-results");
+		fs.mkdirSync(sourceResultsDir, { recursive: true });
+		fs.mkdirSync(path.join(outputResultsDir, "stale-run"), { recursive: true });
+		fs.mkdirSync(path.join(outputResultsDir, "aggregates"), { recursive: true });
+		fs.writeFileSync(
+			path.join(outputResultsDir, "stale-run", "run.json"),
+			'{"stale":true}\n',
+		);
+		fs.writeFileSync(
+			path.join(outputResultsDir, "aggregates", "stale.json"),
+			'{"stale":true}\n',
+		);
+
+		const checkpoint = computeBenchmarkCheckpoint(projectRoot);
+		writeRunDir(
+			sourceResultsDir,
+			"run-fresh",
+			{
+				schemaVersion: SCHEMA_VERSION,
+				runId: "run-fresh",
+				machine: buildMachine("machine-fresh"),
+				benchmarkCheckpoint: checkpoint,
+				provenance: {
+					verificationStatus: "self_reported",
+					source: "local_cli",
+				},
+				startedAt: "2026-03-05T10:00:00.000Z",
+				completedAt: "2026-03-05T10:01:00.000Z",
+				durationMs: 60_000,
+				summary: {
+					total: 1,
+					completed: 1,
+					failed: 0,
+					pending: 0,
+				},
+				items: [],
+			},
+			{
+				schemaVersion: SCHEMA_VERSION,
+				runId: "run-fresh",
+				createdAt: "2026-03-05T10:00:00.000Z",
+				machine: buildMachine("machine-fresh"),
+				benchmarkCheckpoint: checkpoint,
+				runtimeEnvironment: {
+					platform: "darwin",
+					bunVersion: "1.2.3",
+				},
+				provenance: {
+					verificationStatus: "self_reported",
+					source: "local_cli",
+				},
+				config: {
+					schemaVersion: SCHEMA_VERSION,
+					runtimes: ["ollama"],
+					models: ["qwen3.5:4b"],
+					harnesses: ["direct"],
+					tests: ["smoke"],
+					categories: [],
+					passTypes: ["blind"],
+					ollamaBaseUrl: "http://localhost:11434",
+					vllmBaseUrl: "http://localhost:8000",
+					generateTimeoutMs: 60_000,
+					gooseMaxTurns: 1,
+					gooseRetryMaxTurns: 3,
+					gooseWorkspaceMaxTurns: 8,
+					gooseWorkspaceRetryMaxTurns: 12,
+					outputDir: "results",
+					modelAliases: {},
+				},
+				items: [
+					{
+						id: "01",
+						runtime: "ollama",
+						model: "qwen3.5:4b",
+						harness: "direct",
+						test: "smoke",
+						category: "coding",
+						scoringMode: "code-module",
+						requiresTools: false,
+						requiredHarnessCapabilities: [],
+						tags: [],
+						passType: "blind",
+					},
+				],
+				summary: {
+					totalItems: 1,
+					runtimes: 1,
+					models: 1,
+					harnesses: 1,
+					tests: 1,
+				},
+				matrix: [],
+			},
+		);
+
+		await buildDashboardIndexArtifacts({
+			sourceResultsDir,
+			outputResultsDir,
+			projectRoot,
+			latestCheckpointId: checkpoint.checkpointId,
+		});
+
+		expect(fs.existsSync(path.join(outputResultsDir, "stale-run"))).toBe(false);
+		expect(
+			fs.existsSync(path.join(outputResultsDir, "aggregates", "stale.json")),
+		).toBe(false);
+		expect(fs.existsSync(path.join(outputResultsDir, "run-fresh"))).toBe(true);
 	});
 });
 

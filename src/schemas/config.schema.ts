@@ -1,6 +1,6 @@
 /**
  * Purpose: BenchConfig schema for CLI input and config file parsing.
- * Exports: BenchConfigSchema, BenchConfig, defaultConfig
+ * Exports: BenchConfigSchema, BenchConfig, defaultConfig, migrateBenchConfigAliases
  *
  * Invariants:
  * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes/categories
@@ -16,8 +16,94 @@ import {
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
 
-/** Zod schema for benchmark configuration. */
-export const BenchConfigSchema = z
+/**
+ * Trims a candidate string and returns undefined when absent.
+ *
+ * @param value - Candidate config field
+ * @returns Trimmed non-empty string or undefined
+ * @throws {Error} When the value is a blank string
+ */
+function readNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	if (trimmed.length === 0) {
+		throw new Error("Machine config fields must not be blank strings");
+	}
+	return trimmed;
+}
+
+/**
+ * Throws when a canonical machine field is present but not a string.
+ *
+ * @param config - Mutable config-like record
+ * @param fieldName - Canonical field name to validate
+ * @throws {Error} When the field is present with a non-string value
+ */
+function validateCanonicalMachineFieldType(
+	config: Record<string, unknown>,
+	fieldName: "machineInstanceId" | "machineDisplayLabel",
+): void {
+	if (
+		Object.prototype.hasOwnProperty.call(config, fieldName) &&
+		config[fieldName] !== undefined &&
+		typeof config[fieldName] !== "string"
+	) {
+		throw new Error(
+			`Bench config ${fieldName} must be a string when provided`,
+		);
+	}
+}
+
+/**
+ * Normalizes deprecated machine config aliases into the canonical machine fields.
+ *
+ * @param raw - Arbitrary config-like input
+ * @returns Normalized config input preserving unknown fields for the next parse step
+ * @throws {Error} When deprecated and canonical keys disagree
+ */
+export function migrateBenchConfigAliases(raw: unknown): unknown {
+	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+		return raw;
+	}
+
+	const config = { ...(raw as Record<string, unknown>) };
+	validateCanonicalMachineFieldType(config, "machineInstanceId");
+	validateCanonicalMachineFieldType(config, "machineDisplayLabel");
+	const machineInstanceId = readNonEmptyString(config.machineInstanceId);
+	const machineProfileId = readNonEmptyString(config.machineProfileId);
+	const machineDisplayLabel = readNonEmptyString(config.machineDisplayLabel);
+	const machineLabel = readNonEmptyString(config.machineLabel);
+
+	if (
+		machineInstanceId !== undefined &&
+		machineProfileId !== undefined &&
+		machineInstanceId !== machineProfileId
+	) {
+		throw new Error(
+			`Conflicting bench config machine IDs: machineInstanceId="${machineInstanceId}" does not match deprecated machineProfileId="${machineProfileId}"`,
+		);
+	}
+	if (
+		machineDisplayLabel !== undefined &&
+		machineLabel !== undefined &&
+		machineDisplayLabel !== machineLabel
+	) {
+		throw new Error(
+			`Conflicting bench config machine labels: machineDisplayLabel="${machineDisplayLabel}" does not match deprecated machineLabel="${machineLabel}"`,
+		);
+	}
+
+	if (machineInstanceId === undefined && machineProfileId !== undefined) {
+		config.machineInstanceId = machineProfileId;
+	}
+	if (machineDisplayLabel === undefined && machineLabel !== undefined) {
+		config.machineDisplayLabel = machineLabel;
+	}
+
+	return config;
+}
+
+const BenchConfigObjectSchema = z
 	.object({
 		/** Schema version for config evolution. */
 		schemaVersion: z.string().default(SCHEMA_VERSION),
@@ -64,11 +150,17 @@ export const BenchConfigSchema = z
 		/** Output directory for results. */
 		outputDir: z.string().default("results"),
 
-		/** Optional machine profile identifier used for cross-run aggregation. */
-		machineProfileId: z.string().min(1).optional(),
+		/** Optional explicit machine instance identifier. */
+		machineInstanceId: z.string().trim().min(1).optional(),
 
-		/** Optional human-readable machine label for dashboard display. */
-		machineLabel: z.string().min(1).optional(),
+		/** Optional human-readable display label for a specific machine instance. */
+		machineDisplayLabel: z.string().trim().min(1).optional(),
+
+		/** Deprecated alias for machine instance identity. */
+		machineProfileId: z.string().trim().min(1).optional(),
+
+		/** Deprecated alias for machine display label. */
+		machineLabel: z.string().trim().min(1).optional(),
 
 		/** Model aliases for cross-runtime mapping. */
 		modelAliases: ModelAliasMapSchema.default({}),
@@ -92,6 +184,12 @@ export const BenchConfigSchema = z
 			});
 		}
 	});
+
+/** Zod schema for benchmark configuration. */
+export const BenchConfigSchema = z.preprocess(
+	migrateBenchConfigAliases,
+	BenchConfigObjectSchema,
+);
 
 /** Benchmark configuration type. */
 export type BenchConfig = z.infer<typeof BenchConfigSchema>;

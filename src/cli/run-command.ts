@@ -55,6 +55,28 @@ function parseStrictIntegerOption(
 	return parsed;
 }
 
+/**
+ * Normalizes an optional CLI string flag and rejects explicit blank values.
+ *
+ * @param optionName - CLI flag name for error messages
+ * @param rawValue - Raw commander option value
+ * @returns Trimmed non-empty value or undefined
+ * @throws {Error} When the flag was provided as only whitespace
+ */
+function normalizeOptionalStringOption(
+	optionName: string,
+	rawValue: unknown,
+): string | undefined {
+	if (typeof rawValue !== "string") {
+		return undefined;
+	}
+	const trimmed = rawValue.trim();
+	if (trimmed.length === 0) {
+		throw new Error(`${optionName} must not be empty`);
+	}
+	return trimmed;
+}
+
 /** CLI run command. */
 export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
@@ -103,10 +125,21 @@ export const runCommand = new Command("run")
 	)
 	.option("-o, --output <dir>", "Output directory", "results")
 	.option(
-		"--machine-id <id>",
-		"Machine profile ID for cross-run aggregation (default: BENCH_MACHINE_ID env or deterministic anonymous ID)",
+		"--machine-instance-id <id>",
+		"Stable machine instance ID (default: BENCH_MACHINE_INSTANCE_ID env or generated local ID)",
 	)
-	.option("--machine-label <label>", "Optional machine display label")
+	.option(
+		"--machine-display-label <label>",
+		"Optional display label for a specific machine instance",
+	)
+	.option(
+		"--machine-id <id>",
+		"Deprecated alias for --machine-instance-id",
+	)
+	.option(
+		"--machine-label <label>",
+		"Deprecated alias for --machine-display-label",
+	)
 	.option(
 		"--model-config <file>",
 		"JSON file with model aliases for cross-runtime mapping",
@@ -138,6 +171,60 @@ export const runCommand = new Command("run")
 				);
 			}
 
+			const legacyMachineId = normalizeOptionalStringOption(
+				"--machine-id",
+				options.machineId,
+			);
+			const legacyMachineLabel = normalizeOptionalStringOption(
+				"--machine-label",
+				options.machineLabel,
+			);
+			const canonicalMachineId = normalizeOptionalStringOption(
+				"--machine-instance-id",
+				options.machineInstanceId,
+			);
+			const canonicalMachineLabel = normalizeOptionalStringOption(
+				"--machine-display-label",
+				options.machineDisplayLabel,
+			);
+			if (
+				legacyMachineId &&
+				canonicalMachineId &&
+				legacyMachineId !== canonicalMachineId
+			) {
+				throw new Error(
+					`Conflicting machine identity flags: --machine-id="${legacyMachineId}" does not match --machine-instance-id="${canonicalMachineId}"`,
+				);
+			}
+			if (
+				legacyMachineLabel &&
+				canonicalMachineLabel &&
+				legacyMachineLabel !== canonicalMachineLabel
+			) {
+				throw new Error(
+					`Conflicting machine label flags: --machine-label="${legacyMachineLabel}" does not match --machine-display-label="${canonicalMachineLabel}"`,
+				);
+			}
+			const resolvedMachineId = canonicalMachineId ?? legacyMachineId;
+			const resolvedMachineLabel =
+				canonicalMachineLabel ?? legacyMachineLabel;
+			if (legacyMachineId) {
+				logger.warn(
+					"Warning: --machine-id is deprecated; use --machine-instance-id",
+				);
+				options.machineInstanceId = resolvedMachineId;
+			} else if (canonicalMachineId) {
+				options.machineInstanceId = canonicalMachineId;
+			}
+			if (legacyMachineLabel) {
+				logger.warn(
+					"Warning: --machine-label is deprecated; use --machine-display-label",
+				);
+				options.machineDisplayLabel = resolvedMachineLabel;
+			} else if (canonicalMachineLabel) {
+				options.machineDisplayLabel = canonicalMachineLabel;
+			}
+
 			// Build config from CLI options
 			const configInput: Partial<BenchConfig> = {
 				ollamaBaseUrl: options.ollamaUrl,
@@ -160,16 +247,8 @@ export const runCommand = new Command("run")
 					options.gooseWorkspaceRetryMaxTurns,
 				),
 				outputDir: options.output,
-				machineProfileId:
-					typeof options.machineId === "string" &&
-					options.machineId.trim().length > 0
-						? options.machineId.trim()
-						: undefined,
-				machineLabel:
-					typeof options.machineLabel === "string" &&
-					options.machineLabel.trim().length > 0
-						? options.machineLabel.trim()
-						: undefined,
+				machineInstanceId: resolvedMachineId,
+				machineDisplayLabel: resolvedMachineLabel,
 				modelAliases,
 			};
 

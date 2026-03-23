@@ -6,8 +6,7 @@
 	"requiresTools": true,
 	"requiredHarnessCapabilities": [
 		"workspace-read",
-		"workspace-write",
-		"workspace-mkdir"
+		"workspace-write"
 	],
 	"timeoutMultiplier": 1.4,
 	"schemaVersion": 1

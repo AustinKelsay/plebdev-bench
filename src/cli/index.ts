@@ -7,6 +7,7 @@
 
 import { Command } from "commander";
 import { compareCommand } from "./compare-command.js";
+import { migrateMachineCommand } from "./migrate-machine-command.js";
 import { runCommand } from "./run-command.js";
 
 /** Main CLI program instance. */
@@ -19,6 +20,7 @@ program
 
 program.addCommand(runCommand);
 program.addCommand(compareCommand);
+program.addCommand(migrateMachineCommand);
 
 /**
  * Runs the CLI with process arguments.

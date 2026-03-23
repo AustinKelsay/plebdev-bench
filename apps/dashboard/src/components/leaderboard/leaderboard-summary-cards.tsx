@@ -23,7 +23,7 @@ interface LeaderboardSummaryCardsProps {
 /** Border accent colors — brand green for primary, semantic colors for specific KPIs. */
 const CARD_ACCENT_COLORS = [
 	"#34c759",             // brand green — matched runs
-	"#34c759",             // brand green — machines
+	"#34c759",             // brand green — profiles
 	"hsl(212, 100%, 67%)", // info blue — deduped items
 	"hsl(156, 67%, 55%)",  // success green — pass rate
 	"hsl(270, 60%, 60%)",  // purple — frontier coverage
@@ -72,9 +72,14 @@ export function LeaderboardSummaryCards({
 			sub: null,
 		},
 		{
-			title: "Machines",
+			title: "Profiles",
 			value: String(aggregate?.summary.machines ?? 0),
-			sub: null,
+			sub:
+				aggregate?.summary.instances !== undefined
+					? `${aggregate.summary.instances} ${
+							aggregate.summary.instances === 1 ? "instance" : "instances"
+						}`
+					: null,
 		},
 		{
 			title: "Deduped Items",

@@ -58,6 +58,13 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 		dimension: DimensionType;
 		name: string;
 	} | null>(null);
+	const readNonEmptyLabel = (value: string | undefined): string | undefined => {
+		if (typeof value !== "string") {
+			return undefined;
+		}
+		const trimmed = value.trim();
+		return trimmed.length > 0 ? trimmed : undefined;
+	};
 
 	const passRate = computePassRate(run.items);
 	const frontierStats = computeFrontierStats(run.items);
@@ -72,8 +79,11 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 			(part): part is string => typeof part === "string" && part.length > 0,
 		)
 		.join(" · ");
-	const machineLabel = plan.machine?.label ?? plan.machine?.profileId;
-	const machineHardware = plan.machine?.hardware;
+	const machineLabel =
+		readNonEmptyLabel(plan.machine?.displayLabel) ??
+		readNonEmptyLabel(plan.machine?.profileLabel) ??
+		plan.machine?.profileKey;
+	const machineHardware = plan.machine?.observedHardware;
 	const checkpointId = plan.benchmarkCheckpoint?.checkpointId;
 
 	return (
