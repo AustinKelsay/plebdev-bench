@@ -92,6 +92,40 @@ function migrateLegacyObservedHardware(
 }
 
 /**
+ * Produces a non-colliding instance ID for legacy profile-only machine payloads.
+ *
+ * @param legacyProfileId - Legacy profile slug used as the old machine identifier
+ * @returns Namespaced legacy instance identifier
+ */
+function buildLegacyInstanceId(legacyProfileId: string): string {
+	return legacyProfileId.startsWith("legacy_profile:")
+		? legacyProfileId
+		: `legacy_profile:${legacyProfileId}`;
+}
+
+/**
+ * Normalizes a current-schema machine payload for backward-compatible rewrites.
+ *
+ * @param machine - Valid current-schema machine payload
+ * @returns Normalized current-schema machine payload
+ */
+function normalizeCurrentMachineProfile(machine: MachineProfile): MachineProfile {
+	const normalizedProfile = normalizeMachineProfile(machine.observedHardware);
+	return {
+		...machine,
+		profileKey: buildMachineProfileKey(normalizedProfile),
+		profileLabel: buildMachineProfileLabel(
+			machine.observedHardware,
+			normalizedProfile,
+		),
+		normalizedProfile,
+		...(machine.instanceIdSource === "legacy_profile_id"
+			? { instanceId: buildLegacyInstanceId(machine.instanceId) }
+			: {}),
+	};
+}
+
+/**
  * Migrates a legacy machine payload to the current standardized shape.
  *
  * @param rawMachine - Legacy or current machine payload
@@ -106,7 +140,7 @@ export function migrateLegacyMachineProfile(
 	}
 
 	if (MachineProfileSchema.safeParse(rawMachine).success) {
-		return rawMachine as MachineProfile;
+		return normalizeCurrentMachineProfile(rawMachine as MachineProfile);
 	}
 
 	if (
@@ -126,7 +160,7 @@ export function migrateLegacyMachineProfile(
 	const observedHardware = migrateLegacyObservedHardware(legacyMachine);
 	const normalizedProfile = normalizeMachineProfile(observedHardware);
 	return {
-		instanceId: legacyMachine.profileId,
+		instanceId: buildLegacyInstanceId(legacyMachine.profileId),
 		instanceIdSource: "legacy_profile_id",
 		...(legacyMachine.label ? { displayLabel: legacyMachine.label } : {}),
 		profileKey: buildMachineProfileKey(normalizedProfile),
@@ -231,7 +265,11 @@ function normalizeKnownArtifactPayload(
 ): unknown {
 	const schemaVersion = readArtifactSchemaVersion(raw);
 	if (schemaVersion === SCHEMA_VERSION) {
-		return raw;
+		if (!isRecord(raw) || !hasOwnMachineField(raw)) {
+			return raw;
+		}
+		const machine = migrateArtifactMachineOrThrow(raw, artifactKind);
+		return machine ? { ...raw, machine } : raw;
 	}
 	if (typeof schemaVersion === "string") {
 		if (LEGACY_ARTIFACT_SCHEMA_VERSIONS.has(schemaVersion)) {

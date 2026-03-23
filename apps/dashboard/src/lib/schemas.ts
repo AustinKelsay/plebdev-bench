@@ -157,7 +157,7 @@ const NormalizedMachineProfileSchema = z.object({
 	memoryGiB: z.number().int().positive(),
 	acceleratorKey: z.string().min(1),
 	acceleratorMemoryGiB: z.number().int().positive().optional(),
-	acceleratorCount: z.number().int().nonnegative(),
+	acceleratorCount: z.number().int().nonnegative().optional(),
 });
 
 /** Machine profile schema. */

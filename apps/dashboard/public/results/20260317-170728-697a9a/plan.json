@@ -7,10 +7,10 @@
     "bunVersion": "1.3.3"
   },
   "machine": {
-    "instanceId": "anon_6fe55c56c31d",
+    "instanceId": "legacy_profile:anon_6fe55c56c31d",
     "instanceIdSource": "legacy_profile_id",
     "displayLabel": "Mac Mini M4 Pro 64GB",
-    "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+    "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
     "profileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
     "normalizedProfile": {
       "platformFamily": "macos",
@@ -19,8 +19,7 @@
       "cpuModelKey": "m4-pro",
       "logicalCores": 12,
       "memoryGiB": 64,
-      "acceleratorKey": "unknown",
-      "acceleratorCount": 0
+      "acceleratorKey": "unknown"
     },
     "observedHardware": {
       "platform": "darwin",

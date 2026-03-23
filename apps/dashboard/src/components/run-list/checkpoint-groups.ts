@@ -79,7 +79,7 @@ export function buildRunCheckpointGroups(
 		new Date(0).toISOString();
 	const machineIds = new Set(
 		legacyRuns
-			.map((run) => run.machineProfileKey)
+			.map((run) => run.machineProfileKey ?? run.machineProfileId)
 			.filter((machineId): machineId is string => Boolean(machineId)),
 	);
 	const instanceIds = new Set(

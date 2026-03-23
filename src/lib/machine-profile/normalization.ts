@@ -208,7 +208,9 @@ export function normalizeMachineProfile(
 		...(primaryAccelerator?.memoryBytes
 			? { acceleratorMemoryGiB: toRoundedGiB(primaryAccelerator.memoryBytes) }
 			: {}),
-		acceleratorCount: observedHardware.accelerators.length,
+		...(observedHardware.acceleratorDetection.status === "unavailable"
+			? {}
+			: { acceleratorCount: observedHardware.accelerators.length }),
 	};
 }
 
@@ -229,6 +231,10 @@ export function buildMachineProfileKey(
 		normalizedProfile.acceleratorMemoryGiB === undefined
 			? "na"
 			: `${normalizedProfile.acceleratorMemoryGiB}gb`;
+	const acceleratorCount =
+		normalizedProfile.acceleratorCount === undefined
+			? "xunknown"
+			: `x${normalizedProfile.acceleratorCount}`;
 	return [
 		normalizedProfile.platformFamily,
 		normalizedProfile.arch,
@@ -237,7 +243,7 @@ export function buildMachineProfileKey(
 		`${normalizedProfile.memoryGiB}gb`,
 		acceleratorKey,
 		acceleratorMemory,
-		`x${normalizedProfile.acceleratorCount}`,
+		acceleratorCount,
 	].join("_");
 }
 

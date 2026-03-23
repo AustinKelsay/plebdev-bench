@@ -314,34 +314,48 @@ async function readRunBundle(
 	runDir: string,
 ): Promise<PublishedRunBundle | undefined> {
 	const runJsonPath = join(runDir, "run.json");
+	const runDirName = basename(runDir);
+	const runContent = await readFile(runJsonPath, "utf-8").catch((error) => {
+		throw new Error(
+			`readRunBundle failed to read run.json for ${runDirName}: ${(error as Error).message}`,
+		);
+	});
+	let run: RunResult;
 	try {
-		const content = await readFile(runJsonPath, "utf-8");
-		let run: RunResult;
-		try {
-			run = parseKnownRunPayload(JSON.parse(content) as unknown);
-		} catch {
-			return undefined;
-		}
+		run = sanitizePublishedRun(
+			parseKnownRunPayload(JSON.parse(runContent) as unknown),
+		);
+	} catch (error) {
+		throw new Error(
+			`readRunBundle failed to parse run.json for ${runDirName}: ${(error as Error).message}`,
+		);
+	}
 
-		const planJsonPath = join(runDir, "plan.json");
-		let plan: AggregateRunInput["plan"] | undefined;
+	const planJsonPath = join(runDir, "plan.json");
+	let plan: AggregateRunInput["plan"] | undefined;
+	try {
+		const planContent = await readFile(planJsonPath, "utf-8");
 		try {
-			const planContent = await readFile(planJsonPath, "utf-8");
 			plan = sanitizePublishedPlan(
 				parseKnownPlanPayload(JSON.parse(planContent) as unknown),
 			);
-		} catch {
-			plan = undefined;
+		} catch (error) {
+			throw new Error(
+				`readRunBundle failed to parse plan.json for ${runDirName}: ${(error as Error).message}`,
+			);
 		}
-
-		return {
-			runDirName: basename(runDir),
-			run: sanitizePublishedRun(run),
-			...(plan ? { plan } : {}),
-		};
-	} catch {
-		return undefined;
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			throw error;
+		}
+		plan = undefined;
 	}
+
+	return {
+		runDirName,
+		run,
+		...(plan ? { plan } : {}),
+	};
 }
 
 /**

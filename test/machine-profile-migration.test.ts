@@ -40,6 +40,9 @@ const LEGACY_MACHINE = {
 		totalMemoryBytes: 68_719_476_736,
 	},
 };
+const LEGACY_INSTANCE_ID = "legacy_profile:mac-mini-m4-pro-64gb";
+const LEGACY_PROFILE_KEY =
+	"macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown";
 
 function createTempRoot(): string {
 	const root = fs.mkdtempSync(path.join(os.tmpdir(), "plebdev-bench-migrate-"));
@@ -57,12 +60,10 @@ describe("legacy machine-profile migration", () => {
 	it("converts legacy machine payloads into standardized profiles", () => {
 		const migrated = migrateLegacyMachineProfile(LEGACY_MACHINE);
 		expect(migrated).toBeDefined();
-		expect(migrated?.instanceId).toBe("mac-mini-m4-pro-64gb");
+		expect(migrated?.instanceId).toBe(LEGACY_INSTANCE_ID);
 		expect(migrated?.instanceIdSource).toBe("legacy_profile_id");
 		expect(migrated?.displayLabel).toBe("Mac Mini M4 Pro 64GB");
-		expect(migrated?.profileKey).toBe(
-			"macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-		);
+		expect(migrated?.profileKey).toBe(LEGACY_PROFILE_KEY);
 		expect(migrated?.profileLabel).toBe(
 			"Apple M4 Pro / 64GB / Accelerator unknown",
 		);
@@ -119,9 +120,7 @@ describe("legacy machine-profile migration", () => {
 		expect(parsedPlan.runtimeEnvironment?.platform).toBe("darwin");
 		expect(parsedPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
 		expect(parsedRun.schemaVersion).toBe(SCHEMA_VERSION);
-		expect(parsedRun.machine?.profileKey).toBe(
-			"macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-		);
+		expect(parsedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 	});
 });
 
@@ -278,19 +277,15 @@ describe("migrate-machine-profiles command", () => {
 			}).extraMetadata?.keep,
 		).toBe("plan");
 		expect(migratedRun.schemaVersion).toBe(SCHEMA_VERSION);
-		expect(migratedRun.machine?.profileKey).toBe(
-			"macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-		);
+		expect(migratedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 		expect(
 			(JSON.parse(fs.readFileSync(path.join(runDir, "run.json"), "utf-8")) as {
 				extraMetadata?: { keep?: string };
 			}).extraMetadata?.keep,
 		).toBe("run");
 		expect(index.schemaVersion).toBe(2);
-		expect(index.runs[0]?.machineProfileKey).toBe(
-			"macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-		);
-		expect(index.runs[0]?.machineInstanceId).toBe("mac-mini-m4-pro-64gb");
+		expect(index.runs[0]?.machineProfileKey).toBe(LEGACY_PROFILE_KEY);
+		expect(index.runs[0]?.machineInstanceId).toBe(LEGACY_INSTANCE_ID);
 		expect(latestAggregate.schemaVersion).toBe(2);
 		expect(latestAggregate.summary.machines).toBe(1);
 		expect(latestAggregate.summary.instances).toBe(1);

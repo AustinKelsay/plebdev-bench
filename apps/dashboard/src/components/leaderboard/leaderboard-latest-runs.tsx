@@ -32,8 +32,8 @@ function getRunMachineBadgeLabel(run: RunListItem): string | undefined {
 		run.machineInstanceId?.trim() ||
 		run.machineLabel?.trim() ||
 		run.machineProfileLabel?.trim() ||
-		run.machineProfileId?.trim() ||
 		run.machineProfileKey?.trim() ||
+		run.machineProfileId?.trim() ||
 		undefined
 	);
 }

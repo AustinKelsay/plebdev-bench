@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-03-22T23:35:23.541Z",
+  "generatedAt": "2026-03-23T01:31:59.547Z",
   "latestCheckpointId": "chk_sha256v1_2c13ad3e58b3",
   "runs": [
     {
@@ -15,11 +15,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "anon_6fe55c56c31d",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -36,11 +36,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "anon_6fe55c56c31d",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -57,11 +57,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "anon_6fe55c56c31d",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -78,11 +78,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "anon_6fe55c56c31d",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -99,11 +99,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "anon_6fe55c56c31d",
+      "machineInstanceId": "legacy_profile:anon_6fe55c56c31d",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -120,11 +120,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "mac-mini-m4-pro-64gb",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -141,11 +141,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "mac-mini-m4-pro-64gb",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -162,11 +162,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "mac-mini-m4-pro-64gb",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false
@@ -183,11 +183,11 @@
         "pending": 0
       },
       "checkpointId": "chk_sha256v1_61a037f87105",
-      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
-      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_x0",
+      "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
+      "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
       "machineLabel": "Mac Mini M4 Pro 64GB",
-      "machineInstanceId": "mac-mini-m4-pro-64gb",
+      "machineInstanceId": "legacy_profile:mac-mini-m4-pro-64gb",
       "machineDisplayLabel": "Mac Mini M4 Pro 64GB",
       "verificationStatus": "self_reported",
       "isLegacy": false

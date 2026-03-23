@@ -166,7 +166,7 @@ export interface NormalizedMachineProfile {
 	memoryGiB: number;
 	acceleratorKey: string;
 	acceleratorMemoryGiB?: number;
-	acceleratorCount: number;
+	acceleratorCount?: number;
 }
 
 /** Source used to resolve a machine instance identifier. */

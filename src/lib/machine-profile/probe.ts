@@ -91,11 +91,13 @@ function parseMacosAccelerators(rawJson: string): ObservedAccelerator[] {
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(rawJson);
-	} catch {
-		return [];
+	} catch (error) {
+		throw new Error(
+			`malformed macOS accelerator probe JSON: ${(error as Error).message}`,
+		);
 	}
 	if (!Array.isArray((parsed as { SPDisplaysDataType?: unknown }).SPDisplaysDataType)) {
-		return [];
+		throw new Error("malformed macOS accelerator probe JSON: missing SPDisplaysDataType array");
 	}
 	const displays = (parsed as { SPDisplaysDataType: Array<Record<string, unknown>> })
 		.SPDisplaysDataType;
@@ -220,21 +222,26 @@ function parseLspciAccelerators(stdout: string): ObservedAccelerator[] {
 function dedupeAccelerators(
 	accelerators: ObservedAccelerator[],
 ): ObservedAccelerator[] {
-	const seen = new Set<string>();
-	return accelerators.filter((accelerator) => {
+	const deduped = new Map<string, ObservedAccelerator>();
+	for (const accelerator of accelerators) {
 		const key = [
 			accelerator.vendor?.trim().toLowerCase() ?? "",
 			accelerator.modelRaw.trim().toLowerCase(),
-			accelerator.kind,
-			accelerator.backend ?? "",
-			accelerator.memoryBytes ?? "",
 		].join("|");
-		if (seen.has(key)) {
-			return false;
+		const current = deduped.get(key);
+		if (!current) {
+			deduped.set(key, accelerator);
+			continue;
 		}
-		seen.add(key);
-		return true;
-	});
+		deduped.set(key, {
+			...current,
+			...(current.vendor ? {} : accelerator.vendor ? { vendor: accelerator.vendor } : {}),
+			...(current.memoryBytes ? {} : accelerator.memoryBytes ? { memoryBytes: accelerator.memoryBytes } : {}),
+			...(current.backend ? {} : accelerator.backend ? { backend: accelerator.backend } : {}),
+			...(current.kind !== "unknown" ? {} : accelerator.kind !== "unknown" ? { kind: accelerator.kind } : {}),
+		});
+	}
+	return [...deduped.values()];
 }
 
 /**
@@ -247,10 +254,17 @@ function parseWindowsAccelerators(rawJson: string): ObservedAccelerator[] {
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(rawJson);
-	} catch {
-		return [];
+	} catch (error) {
+		throw new Error(
+			`malformed Windows accelerator probe JSON: ${(error as Error).message}`,
+		);
 	}
 	const entries = Array.isArray(parsed) ? parsed : [parsed];
+	if (!entries.every((entry) => typeof entry === "object" && entry !== null)) {
+		throw new Error(
+			"malformed Windows accelerator probe JSON: expected object or object array",
+		);
+	}
 	return entries
 		.flatMap((entry): ObservedAccelerator[] => {
 			if (
@@ -295,13 +309,23 @@ async function collectMacosAccelerators(): Promise<{
 			},
 		};
 	}
-	const accelerators = parseMacosAccelerators(displaysJson);
-	return {
-		accelerators,
-		status: {
-			status: accelerators.length > 0 ? "detected" : "none_detected",
-		},
-	};
+	try {
+		const accelerators = parseMacosAccelerators(displaysJson);
+		return {
+			accelerators,
+			status: {
+				status: accelerators.length > 0 ? "detected" : "none_detected",
+			},
+		};
+	} catch (error) {
+		return {
+			accelerators: [],
+			status: {
+				status: "unavailable",
+				detail: (error as Error).message,
+			},
+		};
+	}
 }
 
 /**
@@ -383,13 +407,23 @@ async function collectWindowsAccelerators(): Promise<{
 			},
 		};
 	}
-	const accelerators = parseWindowsAccelerators(json);
-	return {
-		accelerators,
-		status: {
-			status: accelerators.length > 0 ? "detected" : "none_detected",
-		},
-	};
+	try {
+		const accelerators = parseWindowsAccelerators(json);
+		return {
+			accelerators,
+			status: {
+				status: accelerators.length > 0 ? "detected" : "none_detected",
+			},
+		};
+	} catch (error) {
+		return {
+			accelerators: [],
+			status: {
+				status: "unavailable",
+				detail: (error as Error).message,
+			},
+		};
+	}
 }
 
 /**
