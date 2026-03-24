@@ -6,15 +6,29 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 
+/**
+ * Builds the absolute prompt path for a benchmark test.
+ *
+ * @param testName - Test directory name
+ * @param passType - Prompt variant
+ * @returns Absolute prompt file path
+ */
+function buildTestPromptPath(
+	testName: string,
+	passType: "blind" | "informed",
+): string {
+	return path.join(
+		process.cwd(),
+		"src",
+		"tests",
+		testName,
+		`prompt.${passType}.md`,
+	);
+}
+
 describe("workspace prompt parity", () => {
 	it("file-locator informed prompt includes every scored JSON field", () => {
-		const promptPath = path.join(
-			process.cwd(),
-			"src",
-			"tests",
-			"file-locator",
-			"prompt.informed.md",
-		);
+		const promptPath = buildTestPromptPath("file-locator", "informed");
 		const prompt = fs.readFileSync(promptPath, "utf-8");
 
 		expect(prompt).toContain("reports/found-values.json");
@@ -26,23 +40,11 @@ describe("workspace prompt parity", () => {
 
 	it("blind workspace prompts expose required parent-directory creation", () => {
 		const fileDeletePrompt = fs.readFileSync(
-			path.join(
-				process.cwd(),
-				"src",
-				"tests",
-				"file-delete-smoke",
-				"prompt.blind.md",
-			),
+			buildTestPromptPath("file-delete-smoke", "blind"),
 			"utf-8",
 		);
 		const safeCleanupPrompt = fs.readFileSync(
-			path.join(
-				process.cwd(),
-				"src",
-				"tests",
-				"safe-cleanup",
-				"prompt.blind.md",
-			),
+			buildTestPromptPath("safe-cleanup", "blind"),
 			"utf-8",
 		);
 
@@ -56,33 +58,15 @@ describe("workspace prompt parity", () => {
 
 	it("blind coding prompts declare the required public method contracts", () => {
 		const calculatorPrompt = fs.readFileSync(
-			path.join(
-				process.cwd(),
-				"src",
-				"tests",
-				"calculator-stateful",
-				"prompt.blind.md",
-			),
+			buildTestPromptPath("calculator-stateful", "blind"),
 			"utf-8",
 		);
 		const emitterPrompt = fs.readFileSync(
-			path.join(
-				process.cwd(),
-				"src",
-				"tests",
-				"event-emitter",
-				"prompt.blind.md",
-			),
+			buildTestPromptPath("event-emitter", "blind"),
 			"utf-8",
 		);
 		const rateLimiterPrompt = fs.readFileSync(
-			path.join(
-				process.cwd(),
-				"src",
-				"tests",
-				"rate-limiter",
-				"prompt.blind.md",
-			),
+			buildTestPromptPath("rate-limiter", "blind"),
 			"utf-8",
 		);
 

@@ -11,7 +11,12 @@
  * - Items only in run B
  */
 
-import type { RunResult, MatrixItemResult, AutomatedScore, FrontierEval } from "../schemas/index.js";
+import type {
+	AutomatedScore,
+	FrontierEval,
+	MatrixItemResult,
+	RunResult,
+} from "../schemas/index.js";
 import {
 	hasCompleteSignalAssessments,
 	isTaintedItem,
@@ -113,12 +118,84 @@ export interface CompareResult {
 	onlyInB: MatrixItemResult[];
 }
 
+/** Aggregate scoring totals across matched items. */
+interface AggregateScoring {
+	passedTests: number;
+	totalTests: number;
+	passRate: number;
+}
+
+/** Aggregate frontier totals across matched items. */
+interface AggregateFrontier {
+	avgScore: number;
+	itemCount: number;
+}
+
 /**
  * Calculates pass rate as a percentage.
  */
 function calculatePassRate(score: AutomatedScore | undefined): number | null {
 	if (!score || score.total === 0) return null;
 	return (score.passed / score.total) * 100;
+}
+
+/**
+ * Computes aggregate scoring totals for one side of a matched comparison.
+ *
+ * @param matched - Matched rows to aggregate
+ * @param accessor - Reads one side's automated score
+ * @returns Aggregate scoring totals
+ */
+function computeAggregateScoring(
+	matched: readonly MatchedItem[],
+	accessor: (item: MatchedItem) => AutomatedScore | undefined,
+): AggregateScoring {
+	let passedTests = 0;
+	let totalTests = 0;
+
+	for (const item of matched) {
+		const score = accessor(item);
+		if (!score) {
+			continue;
+		}
+		passedTests += score.passed;
+		totalTests += score.total;
+	}
+
+	return {
+		passedTests,
+		totalTests,
+		passRate: totalTests > 0 ? (passedTests / totalTests) * 100 : 0,
+	};
+}
+
+/**
+ * Computes aggregate frontier evaluation stats for one side of a comparison.
+ *
+ * @param matched - Matched rows to aggregate
+ * @param accessor - Reads one side's frontier eval
+ * @returns Aggregate frontier stats
+ */
+function computeAggregateFrontier(
+	matched: readonly MatchedItem[],
+	accessor: (item: MatchedItem) => FrontierEval | undefined,
+): AggregateFrontier {
+	let totalScore = 0;
+	let itemCount = 0;
+
+	for (const item of matched) {
+		const frontierEval = accessor(item);
+		if (!frontierEval) {
+			continue;
+		}
+		totalScore += frontierEval.score;
+		itemCount += 1;
+	}
+
+	return {
+		avgScore: itemCount > 0 ? totalScore / itemCount : 0,
+		itemCount,
+	};
 }
 
 /**
@@ -192,40 +269,39 @@ function computeSummary(
 	// Overall scoring delta
 	let scoringDelta: CompareSummary["scoringDelta"] = null;
 	let trustedScoringDelta: CompareSummary["trustedScoringDelta"] = null;
-	const itemsWithScoreA = matched.filter((m) => m.itemA.automatedScore);
-	const itemsWithScoreB = matched.filter((m) => m.itemB.automatedScore);
+	const rawScoringA = computeAggregateScoring(
+		matched,
+		(item) => item.itemA.automatedScore,
+	);
+	const rawScoringB = computeAggregateScoring(
+		matched,
+		(item) => item.itemB.automatedScore,
+	);
 
-	if (itemsWithScoreA.length > 0 || itemsWithScoreB.length > 0) {
-		const totalTestsA = itemsWithScoreA.reduce((acc, m) => acc + (m.itemA.automatedScore?.total ?? 0), 0);
-		const passedTestsA = itemsWithScoreA.reduce((acc, m) => acc + (m.itemA.automatedScore?.passed ?? 0), 0);
-		const totalTestsB = itemsWithScoreB.reduce((acc, m) => acc + (m.itemB.automatedScore?.total ?? 0), 0);
-		const passedTestsB = itemsWithScoreB.reduce((acc, m) => acc + (m.itemB.automatedScore?.passed ?? 0), 0);
-
-		const passRateA = totalTestsA > 0 ? (passedTestsA / totalTestsA) * 100 : 0;
-		const passRateB = totalTestsB > 0 ? (passedTestsB / totalTestsB) * 100 : 0;
+	if (rawScoringA.totalTests > 0 || rawScoringB.totalTests > 0) {
 
 		scoringDelta = {
-			passRateDelta: passRateB - passRateA,
-			totalTestsDelta: totalTestsB - totalTestsA,
+			passRateDelta: rawScoringB.passRate - rawScoringA.passRate,
+			totalTestsDelta: rawScoringB.totalTests - rawScoringA.totalTests,
 		};
 	}
 
 	// Overall frontier eval delta
 	let frontierEvalDelta: CompareSummary["frontierEvalDelta"] = null;
 	let trustedFrontierEvalDelta: CompareSummary["trustedFrontierEvalDelta"] = null;
-	const itemsWithEvalA = matched.filter((m) => m.itemA.frontierEval);
-	const itemsWithEvalB = matched.filter((m) => m.itemB.frontierEval);
+	const rawFrontierA = computeAggregateFrontier(
+		matched,
+		(item) => item.itemA.frontierEval,
+	);
+	const rawFrontierB = computeAggregateFrontier(
+		matched,
+		(item) => item.itemB.frontierEval,
+	);
 
-	if (itemsWithEvalA.length > 0 || itemsWithEvalB.length > 0) {
-		const avgScoreA = itemsWithEvalA.length > 0
-			? itemsWithEvalA.reduce((acc, m) => acc + (m.itemA.frontierEval?.score ?? 0), 0) / itemsWithEvalA.length
-			: 0;
-		const avgScoreB = itemsWithEvalB.length > 0
-			? itemsWithEvalB.reduce((acc, m) => acc + (m.itemB.frontierEval?.score ?? 0), 0) / itemsWithEvalB.length
-			: 0;
+	if (rawFrontierA.itemCount > 0 || rawFrontierB.itemCount > 0) {
 
 		frontierEvalDelta = {
-			avgScoreDelta: avgScoreB - avgScoreA,
+			avgScoreDelta: rawFrontierB.avgScore - rawFrontierA.avgScore,
 		};
 	}
 
@@ -237,63 +313,33 @@ function computeSummary(
 		const trustedMatched = matched.filter(
 			(match) => !isTaintedItem(match.itemA) && !isTaintedItem(match.itemB),
 		);
-		const trustedItemsWithScoreA = trustedMatched.filter(
-			(match) => match.itemA.automatedScore,
+		const trustedScoringA = computeAggregateScoring(
+			trustedMatched,
+			(item) => item.itemA.automatedScore,
 		);
-		const trustedItemsWithScoreB = trustedMatched.filter(
-			(match) => match.itemB.automatedScore,
+		const trustedScoringB = computeAggregateScoring(
+			trustedMatched,
+			(item) => item.itemB.automatedScore,
 		);
-		if (
-			trustedItemsWithScoreA.length > 0 ||
-			trustedItemsWithScoreB.length > 0
-		) {
-			const totalTestsA = trustedItemsWithScoreA.reduce(
-				(acc, match) => acc + (match.itemA.automatedScore?.total ?? 0),
-				0,
-			);
-			const passedTestsA = trustedItemsWithScoreA.reduce(
-				(acc, match) => acc + (match.itemA.automatedScore?.passed ?? 0),
-				0,
-			);
-			const totalTestsB = trustedItemsWithScoreB.reduce(
-				(acc, match) => acc + (match.itemB.automatedScore?.total ?? 0),
-				0,
-			);
-			const passedTestsB = trustedItemsWithScoreB.reduce(
-				(acc, match) => acc + (match.itemB.automatedScore?.passed ?? 0),
-				0,
-			);
-			const passRateA = totalTestsA > 0 ? (passedTestsA / totalTestsA) * 100 : 0;
-			const passRateB = totalTestsB > 0 ? (passedTestsB / totalTestsB) * 100 : 0;
+		if (trustedScoringA.totalTests > 0 || trustedScoringB.totalTests > 0) {
 			trustedScoringDelta = {
-				passRateDelta: passRateB - passRateA,
-				totalTestsDelta: totalTestsB - totalTestsA,
+				passRateDelta: trustedScoringB.passRate - trustedScoringA.passRate,
+				totalTestsDelta:
+					trustedScoringB.totalTests - trustedScoringA.totalTests,
 			};
 		}
 
-		const trustedItemsWithEvalA = trustedMatched.filter(
-			(match) => match.itemA.frontierEval,
+		const trustedFrontierA = computeAggregateFrontier(
+			trustedMatched,
+			(item) => item.itemA.frontierEval,
 		);
-		const trustedItemsWithEvalB = trustedMatched.filter(
-			(match) => match.itemB.frontierEval,
+		const trustedFrontierB = computeAggregateFrontier(
+			trustedMatched,
+			(item) => item.itemB.frontierEval,
 		);
-		if (trustedItemsWithEvalA.length > 0 || trustedItemsWithEvalB.length > 0) {
-			const avgScoreA =
-				trustedItemsWithEvalA.length > 0
-					? trustedItemsWithEvalA.reduce(
-							(acc, match) => acc + (match.itemA.frontierEval?.score ?? 0),
-							0,
-						) / trustedItemsWithEvalA.length
-					: 0;
-			const avgScoreB =
-				trustedItemsWithEvalB.length > 0
-					? trustedItemsWithEvalB.reduce(
-							(acc, match) => acc + (match.itemB.frontierEval?.score ?? 0),
-							0,
-						) / trustedItemsWithEvalB.length
-					: 0;
+		if (trustedFrontierA.itemCount > 0 || trustedFrontierB.itemCount > 0) {
 			trustedFrontierEvalDelta = {
-				avgScoreDelta: avgScoreB - avgScoreA,
+				avgScoreDelta: trustedFrontierB.avgScore - trustedFrontierA.avgScore,
 			};
 		}
 	}
