@@ -8,5 +8,6 @@ Then create `reports/delete-result.json` with this exact object:
 
 Constraints:
 
+- You may create the missing `reports/` directory if needed for the required output file.
 - Do not delete, edit, or create anything else.
 - Keep `notes/keep.txt` unchanged.

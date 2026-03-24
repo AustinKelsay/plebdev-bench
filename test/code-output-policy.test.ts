@@ -21,6 +21,25 @@ describe("evaluateCodeOnlyOutput", () => {
 		expect(decision.shouldRetry).toBe(false);
 		expect(decision.reason).toBe("ok");
 		expect(decision.method).toBe("markdown-ts");
+		expect(decision.taintReasons).toEqual(["output_contract_violation"]);
+	});
+
+	it("marks mixed prose plus code blocks as salvaged", () => {
+		const decision = evaluateCodeOnlyOutput(
+			[
+				"Here is the implementation you asked for.",
+				"```typescript",
+				"export function createValue(): number {",
+				"\treturn 42;",
+				"}",
+				"```",
+			].join("\n"),
+			10,
+		);
+		expect(decision.shouldRetry).toBe(false);
+		expect(decision.reason).toBe("ok");
+		expect(decision.method).toBe("markdown-ts");
+		expect(decision.taintReasons).toEqual(["mixed_prose_salvaged"]);
 	});
 
 	it("retries known off-task chatter", () => {
@@ -48,6 +67,7 @@ describe("evaluateCodeOnlyOutput", () => {
 		);
 		expect(decision.shouldRetry).toBe(false);
 		expect(decision.reason).toBe("ok");
+		expect(decision.taintReasons).toEqual([]);
 	});
 
 	it("retries short output", () => {

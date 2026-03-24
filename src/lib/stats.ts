@@ -7,6 +7,10 @@
  */
 
 import type { MatrixItemResult } from "../schemas/index.js";
+import {
+	hasCompleteSignalAssessments,
+	isTaintedItem,
+} from "./signal-assessment.js";
 export { formatRunStats } from "./stats-format.js";
 
 /** Timing statistics. */
@@ -46,6 +50,12 @@ export interface DimensionBreakdown {
 	passed: number;
 	total: number;
 	passRate: number;
+}
+
+/** Taint count by harness. */
+export interface TaintBreakdown {
+	name: string;
+	count: number;
 }
 
 /** Scoring statistics. */
@@ -96,6 +106,20 @@ export interface FrontierStats {
 	byModel: FrontierBreakdown[];
 }
 
+/** Signal assessment statistics. */
+export interface SignalStats {
+	/** Number of rows carrying signal assessment. */
+	assessedItems: number;
+	/** Number of rows marked tainted. */
+	taintedItems: number;
+	/** Number of rows considered trustworthy. */
+	trustedItems: number;
+	/** Total scheduled rows. */
+	totalItems: number;
+	/** Taint count by harness. */
+	byHarness: TaintBreakdown[];
+}
+
 /** Failure breakdown by type. */
 export interface FailureBreakdown {
 	type: string;
@@ -115,7 +139,10 @@ export interface RunStats {
 	timing: TimingStats;
 	tokens: TokenStats | null;
 	scoring: ScoringStats | null;
+	trustedScoring: ScoringStats | null;
 	frontier: FrontierStats | null;
+	trustedFrontier: FrontierStats | null;
+	signal: SignalStats | null;
 	generationFailures: GenerationFailureStats | null;
 }
 
@@ -379,6 +406,32 @@ function calculateFrontierStats(
 }
 
 /**
+ * Calculates signal-assessment statistics from results.
+ */
+function calculateSignalStats(results: MatrixItemResult[]): SignalStats | null {
+	if (!hasCompleteSignalAssessments(results)) {
+		return null;
+	}
+
+	const taintedItems = results.filter((result) => isTaintedItem(result));
+	const byHarnessMap = groupBy(
+		taintedItems,
+		(result) => result.harness,
+		(items) => items.length,
+	);
+
+	return {
+		assessedItems: results.length,
+		taintedItems: taintedItems.length,
+		trustedItems: results.length - taintedItems.length,
+		totalItems: results.length,
+		byHarness: Array.from(byHarnessMap.entries())
+			.map(([name, count]) => ({ name, count }))
+			.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+	};
+}
+
+/**
  * Calculates generation failure statistics from results.
  */
 function calculateGenerationFailureStats(
@@ -410,11 +463,20 @@ function calculateGenerationFailureStats(
  * @returns Complete run statistics
  */
 export function calculateRunStats(results: MatrixItemResult[]): RunStats {
+	const signal = calculateSignalStats(results);
+	const trustedResults =
+		signal === null ? null : results.filter((result) => !isTaintedItem(result));
+
 	return {
 		timing: calculateTimingStats(results),
 		tokens: calculateTokenStats(results),
 		scoring: calculateScoringStats(results),
+		trustedScoring:
+			trustedResults === null ? null : calculateScoringStats(trustedResults),
 		frontier: calculateFrontierStats(results),
+		trustedFrontier:
+			trustedResults === null ? null : calculateFrontierStats(trustedResults),
+		signal,
 		generationFailures: calculateGenerationFailureStats(results),
 	};
 }

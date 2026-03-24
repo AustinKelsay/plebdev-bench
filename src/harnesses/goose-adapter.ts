@@ -19,6 +19,7 @@ import * as path from "node:path";
 import { execa } from "execa";
 import { z } from "zod";
 import { logger } from "../lib/logger.js";
+import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -412,6 +413,20 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 							},
 							"Persisted extracted code to solution.ts (tool output absent)",
 						);
+						return {
+							output,
+							durationMs,
+							codeFilePath,
+							signalAssessment: appendSignalAssessmentReasons(
+								undefined,
+								[
+									...decision.taintReasons,
+									...(toolCallDetected
+										? (["tool_call_not_executed"] as const)
+										: []),
+								],
+							),
+						};
 					} else if (decision.shouldRetry) {
 						const elapsedMs = Math.round(performance.now() - startTime);
 						const remainingMs = timeoutMs - elapsedMs;
@@ -464,6 +479,10 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					output,
 					durationMs,
 					codeFilePath,
+					signalAssessment: appendSignalAssessmentReasons(
+						undefined,
+						toolCallDetected ? ["tool_call_not_executed"] : [],
+					),
 					// Goose doesn't provide token counts
 				};
 			} catch (error) {

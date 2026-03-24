@@ -26,6 +26,32 @@ function createResult(
 	};
 }
 
+/**
+ * Builds a RunStats fixture with stable defaults.
+ *
+ * @param overrides - Partial overrides for the fixture
+ * @returns Complete RunStats object
+ */
+function createRunStats(overrides: Partial<RunStats> = {}): RunStats {
+	return {
+		timing: {
+			avgGenerationMs: 1000,
+			avgScoringMs: null,
+			avgFrontierEvalMs: null,
+			minGenerationMs: 1000,
+			maxGenerationMs: 1000,
+		},
+		tokens: null,
+		scoring: null,
+		trustedScoring: null,
+		frontier: null,
+		trustedFrontier: null,
+		signal: null,
+		generationFailures: null,
+		...overrides,
+	};
+}
+
 describe("calculateRunStats", () => {
 	describe("timing stats", () => {
 		it("should calculate average generation time", () => {
@@ -425,7 +451,7 @@ describe("calculateRunStats", () => {
 
 describe("formatRunStats", () => {
 	it("should format basic timing stats", () => {
-		const stats: RunStats = {
+		const stats = createRunStats({
 			timing: {
 				avgGenerationMs: 5000,
 				avgScoringMs: null,
@@ -433,11 +459,7 @@ describe("formatRunStats", () => {
 				minGenerationMs: 2000,
 				maxGenerationMs: 8000,
 			},
-			tokens: null,
-			scoring: null,
-			frontier: null,
-			generationFailures: null,
-		};
+		});
 
 		const output = formatRunStats(
 			stats,
@@ -459,7 +481,7 @@ describe("formatRunStats", () => {
 	});
 
 	it("should include token stats when available", () => {
-		const stats: RunStats = {
+		const stats = createRunStats({
 			timing: {
 				avgGenerationMs: 1000,
 				avgScoringMs: null,
@@ -473,10 +495,7 @@ describe("formatRunStats", () => {
 				avgCompletionTokens: 250,
 				itemsWithTokens: 2,
 			},
-			scoring: null,
-			frontier: null,
-			generationFailures: null,
-		};
+		});
 
 		const output = formatRunStats(stats, "test-run", 2, 0, 2, 10000, "results");
 
@@ -490,7 +509,7 @@ describe("formatRunStats", () => {
 	});
 
 	it("should include scoring stats when available", () => {
-		const stats: RunStats = {
+		const stats = createRunStats({
 			timing: {
 				avgGenerationMs: 1000,
 				avgScoringMs: 100,
@@ -515,9 +534,7 @@ describe("formatRunStats", () => {
 				byHarness: [{ name: "ollama", passed: 15, total: 20, passRate: 75 }],
 				byModel: [{ name: "llama3.2:3b", passed: 15, total: 20, passRate: 75 }],
 			},
-			frontier: null,
-			generationFailures: null,
-		};
+		});
 
 		const output = formatRunStats(stats, "test-run", 2, 0, 2, 10000, "results");
 
@@ -532,7 +549,7 @@ describe("formatRunStats", () => {
 	});
 
 	it("should include frontier stats when available", () => {
-		const stats: RunStats = {
+		const stats = createRunStats({
 			timing: {
 				avgGenerationMs: 1000,
 				avgScoringMs: null,
@@ -550,8 +567,7 @@ describe("formatRunStats", () => {
 				byHarness: [{ name: "ollama", avgScore: 7.5, count: 4 }],
 				byModel: [{ name: "llama3.2:3b", avgScore: 7.5, count: 4 }],
 			},
-			generationFailures: null,
-		};
+		});
 
 		const output = formatRunStats(stats, "test-run", 4, 0, 4, 10000, "results");
 
@@ -563,7 +579,7 @@ describe("formatRunStats", () => {
 	});
 
 	it("should show breakdowns when multiple dimensions", () => {
-		const stats: RunStats = {
+		const stats = createRunStats({
 			timing: {
 				avgGenerationMs: 1000,
 				avgScoringMs: null,
@@ -594,9 +610,7 @@ describe("formatRunStats", () => {
 					{ name: "qwen2.5:7b", passed: 5, total: 10, passRate: 50 },
 				],
 			},
-			frontier: null,
-			generationFailures: null,
-		};
+		});
 
 		const output = formatRunStats(stats, "test-run", 4, 0, 4, 10000, "results");
 
@@ -608,8 +622,55 @@ describe("formatRunStats", () => {
 		expect(output).toContain("By model:");
 	});
 
+	it("should include trusted scoring and signal breakdowns when assessments exist", () => {
+		const stats = createRunStats({
+			scoring: {
+				passRate: 75,
+				totalPassed: 15,
+				totalTests: 20,
+				scoredItems: 2,
+				totalItems: 2,
+				completedItems: 2,
+				itemSuccessRate: 100,
+				scoredItemRate: 100,
+				byTest: [{ name: "test-a", passed: 15, total: 20, passRate: 75 }],
+				byHarness: [{ name: "goose", passed: 15, total: 20, passRate: 75 }],
+				byModel: [{ name: "llama3.2:3b", passed: 15, total: 20, passRate: 75 }],
+			},
+			trustedScoring: {
+				passRate: 90,
+				totalPassed: 9,
+				totalTests: 10,
+				scoredItems: 1,
+				totalItems: 1,
+				completedItems: 1,
+				itemSuccessRate: 100,
+				scoredItemRate: 100,
+				byTest: [{ name: "test-a", passed: 9, total: 10, passRate: 90 }],
+				byHarness: [{ name: "goose", passed: 9, total: 10, passRate: 90 }],
+				byModel: [{ name: "llama3.2:3b", passed: 9, total: 10, passRate: 90 }],
+			},
+			signal: {
+				assessedItems: 2,
+				taintedItems: 1,
+				trustedItems: 1,
+				totalItems: 2,
+				byHarness: [{ name: "opencode", count: 1 }],
+			},
+		});
+
+		const output = formatRunStats(stats, "test-run", 2, 0, 2, 10000, "results");
+
+		expect(output).toContain("Trusted semantic:");
+		expect(output).toContain("90.0% (9/10 scored checks)");
+		expect(output).toContain("Signal");
+		expect(output).toContain("Tainted rows: 1/2");
+		expect(output).toContain("Tainted by harness:");
+		expect(output).toContain("opencode");
+	});
+
 	it("should include results path", () => {
-		const stats: RunStats = {
+		const stats = createRunStats({
 			timing: {
 				avgGenerationMs: 1000,
 				avgScoringMs: null,
@@ -617,11 +678,7 @@ describe("formatRunStats", () => {
 				minGenerationMs: 1000,
 				maxGenerationMs: 1000,
 			},
-			tokens: null,
-			scoring: null,
-			frontier: null,
-			generationFailures: null,
-		};
+		});
 
 		const output = formatRunStats(
 			stats,

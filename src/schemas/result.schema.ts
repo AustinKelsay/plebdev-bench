@@ -19,6 +19,7 @@ import {
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
+	SignalAssessmentSchema,
 	TestCategorySchema,
 } from "./common.schema.js";
 
@@ -206,6 +207,9 @@ export const MatrixItemResultSchema = z.object({
 
 	/** Structured frontier eval failure record (when eval fails). */
 	frontierEvalFailure: FrontierEvalFailureSchema.optional(),
+
+	/** Benchmark signal assessment for this row. */
+	signalAssessment: SignalAssessmentSchema.optional(),
 });
 
 /** Result for a single matrix item execution. */

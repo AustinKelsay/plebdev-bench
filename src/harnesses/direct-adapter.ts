@@ -16,20 +16,20 @@
  */
 
 import { z } from "zod";
+import {
+	appendRetryMarker,
+	buildCodeOnlyPrompt,
+	evaluateCodeOnlyOutput,
+	hasRetryMarker,
+	stripRetryMarker,
+} from "./code-output-policy.js";
+import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
 import { generateOllama } from "../lib/ollama-client.js";
 import { generateOpenAiCompat } from "../lib/openai-compat-client.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
-
 const VllmApiKeySchema = z.string().min(1).optional();
 const vllmApiKey = VllmApiKeySchema.parse(process.env.VLLM_API_KEY);
-
-/** Prompt prefix instructing the model to output code in markdown blocks. */
-const DIRECT_PROMPT_PREFIX = `Output only TypeScript code as a single markdown code block (\`\`\`typescript).
-No explanations, just the code.
-
-Task:
-
-`;
+const MIN_OUTPUT_LENGTH = 10;
 
 /**
  * Creates a direct harness adapter.
@@ -51,9 +51,10 @@ export function createDirectAdapter(): Harness {
 		async generate(opts: GenerateOpts): Promise<GenerateResult> {
 			const { runtime, model, prompt, timeoutMs, unloadAfter } = opts;
 			const startTime = performance.now();
+			const isRetryAttempt = hasRetryMarker(prompt);
+			const promptWithoutMarker = stripRetryMarker(prompt);
 
-			// Prepend prompt prefix for markdown code block output
-			const fullPrompt = DIRECT_PROMPT_PREFIX + prompt;
+			const fullPrompt = buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 
 			// Dispatch to appropriate client based on runtime API format
 			let output: string;
@@ -95,8 +96,34 @@ export function createDirectAdapter(): Harness {
 				}
 			}
 
+			const decision = evaluateCodeOnlyOutput(output, MIN_OUTPUT_LENGTH);
+			if (decision.shouldRetry) {
+				const elapsedMs = Math.round(performance.now() - startTime);
+				const remainingMs = timeoutMs - elapsedMs;
+				if (!isRetryAttempt && remainingMs > 1000) {
+					const retryResult = await createDirectAdapter().generate({
+						...opts,
+						prompt: appendRetryMarker(promptWithoutMarker),
+						timeoutMs: remainingMs,
+					});
+					return {
+						...retryResult,
+						durationMs: Math.round(performance.now() - startTime),
+					};
+				}
+			}
+
 			const durationMs = Math.round(performance.now() - startTime);
-			return { output, durationMs, promptTokens, completionTokens };
+			return {
+				output,
+				durationMs,
+				promptTokens,
+				completionTokens,
+				signalAssessment: appendSignalAssessmentReasons(
+					undefined,
+					decision.taintReasons,
+				),
+			};
 		},
 	};
 }

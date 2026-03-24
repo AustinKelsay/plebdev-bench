@@ -9,6 +9,9 @@
  *          generationFailureTypes, GenerationFailureTypeSchema, GenerationFailureType,
  *          scoringFailureTypes, ScoringFailureTypeSchema, ScoringFailureType,
  *          frontierEvalFailureTypes, FrontierEvalFailureTypeSchema, FrontierEvalFailureType,
+ *          signalAssessmentClassifications, SignalAssessmentClassificationSchema, SignalAssessmentClassification,
+ *          signalAssessmentReasonTypes, SignalAssessmentReasonSchema, SignalAssessmentReason,
+ *          SignalAssessmentSchema, SignalAssessment,
  *          verificationStatusTypes, VerificationStatusSchema, VerificationStatus,
  *          BenchmarkCheckpointSchema, BenchmarkCheckpoint,
  *          RuntimeEnvironmentSchema, RuntimeEnvironment,
@@ -150,6 +153,69 @@ export const FrontierEvalFailureTypeSchema = z.enum(frontierEvalFailureTypes);
 export type FrontierEvalFailureType = z.infer<
 	typeof FrontierEvalFailureTypeSchema
 >;
+
+/** Valid signal assessment classifications. */
+export const signalAssessmentClassifications = [
+	"trustworthy",
+	"tainted",
+] as const;
+
+/** Zod schema for signal assessment classification. */
+export const SignalAssessmentClassificationSchema = z.enum(
+	signalAssessmentClassifications,
+);
+
+/** Signal assessment classification type. */
+export type SignalAssessmentClassification = z.infer<
+	typeof SignalAssessmentClassificationSchema
+>;
+
+/** Stable reason codes for tainted benchmark rows. */
+export const signalAssessmentReasonTypes = [
+	"output_contract_violation",
+	"mixed_prose_salvaged",
+	"tool_permission_denied",
+	"tool_call_not_executed",
+	"confirmation_without_artifact",
+] as const;
+
+/** Zod schema for signal assessment reasons. */
+export const SignalAssessmentReasonSchema = z.enum(signalAssessmentReasonTypes);
+
+/** Signal assessment reason type. */
+export type SignalAssessmentReason = z.infer<
+	typeof SignalAssessmentReasonSchema
+>;
+
+/** Zod schema for per-item benchmark signal assessment. */
+export const SignalAssessmentSchema = z
+	.object({
+		/** High-level signal quality classification for the row. */
+		classification: SignalAssessmentClassificationSchema,
+
+		/** Stable reason codes explaining why the row is tainted. */
+		reasons: z.array(SignalAssessmentReasonSchema).default([]),
+	})
+	.superRefine((value, ctx) => {
+		if (value.classification === "tainted" && value.reasons.length === 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["reasons"],
+				message: 'tainted signal assessments must include at least one reason',
+			});
+		}
+		if (value.classification === "trustworthy" && value.reasons.length > 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["reasons"],
+				message:
+					'trustworthy signal assessments must not include taint reasons',
+			});
+		}
+	});
+
+/** Per-item benchmark signal assessment. */
+export type SignalAssessment = z.infer<typeof SignalAssessmentSchema>;
 
 /** Valid verification status values for externally shared runs. */
 export const verificationStatusTypes = [
