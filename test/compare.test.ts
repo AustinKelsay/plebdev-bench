@@ -83,4 +83,53 @@ describe("compareRuns", () => {
 		expect(comparison2.matched.map((m) => m.key)).toEqual(matchedKeys);
 		expect(comparison2.onlyInA.map((item) => item.test)).toEqual(["todo-app"]);
 	});
+
+	it("separates raw deltas from trusted deltas when runs include tainted rows", () => {
+		const runA = buildRun("run-a", [
+			{
+				...buildItem("01", "smoke", "blind", 1000),
+				automatedScore: { passed: 5, failed: 5, total: 10 },
+				signalAssessment: {
+					classification: "trustworthy",
+					reasons: [],
+				},
+			},
+			{
+				...buildItem("02", "todo-app", "blind", 1000),
+				automatedScore: { passed: 0, failed: 10, total: 10 },
+				signalAssessment: {
+					classification: "tainted",
+					reasons: ["tool_permission_denied"],
+				},
+			},
+		]);
+		const runB = buildRun("run-b", [
+			{
+				...buildItem("01", "smoke", "blind", 900),
+				automatedScore: { passed: 7, failed: 3, total: 10 },
+				signalAssessment: {
+					classification: "trustworthy",
+					reasons: [],
+				},
+			},
+			{
+				...buildItem("02", "todo-app", "blind", 900),
+				automatedScore: { passed: 10, failed: 0, total: 10 },
+				signalAssessment: {
+					classification: "tainted",
+					reasons: ["tool_permission_denied"],
+				},
+			},
+		]);
+
+		const comparison = compareRuns(runA, runB);
+
+		expect(comparison.summary.scoringDelta?.passRateDelta).toBe(60);
+		expect(comparison.summary.trustedScoringDelta?.passRateDelta).toBe(20);
+		expect(comparison.summary.signal).toEqual({
+			trustedMetricsAvailable: true,
+			taintedInA: 1,
+			taintedInB: 1,
+		});
+	});
 });

@@ -74,4 +74,46 @@ describe("createGooseAdapter", () => {
 			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
 		}
 	});
+
+	it("marks unevaluated tool-call payloads as tainted when code is salvaged", async () => {
+		const { createGooseAdapter } = await import(
+			"../src/harnesses/goose-adapter.js"
+		);
+		const runtime: Runtime = {
+			name: "ollama",
+			baseUrl: "http://localhost:11434",
+			apiFormat: "ollama",
+			ping: async () => true,
+			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async () => ({
+				name: "qwen3.5:4b",
+				sizeBytes: 0,
+				parametersBillions: 4,
+			}),
+		};
+		execaMock.mockResolvedValue({
+			exitCode: 0,
+			stdout: JSON.stringify({
+				name: "text_editor",
+				arguments: {
+					file_text: "export function createValue(): number { return 42; }",
+				},
+			}),
+			stderr: "",
+		});
+
+		const adapter = createGooseAdapter();
+		const result = await adapter.generate({
+			model: "qwen3.5:4b",
+			prompt: "Return TypeScript source only.",
+			timeoutMs: 5_000,
+			runtime,
+		});
+
+		expect(result.codeFilePath).toBeDefined();
+		expect(result.signalAssessment).toEqual({
+			classification: "tainted",
+			reasons: ["tool_call_not_executed"],
+		});
+	});
 });

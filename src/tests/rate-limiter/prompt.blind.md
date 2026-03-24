@@ -13,8 +13,10 @@ Export a factory `createRateLimiter` that returns an object supporting per-key r
 Use deterministic timestamps passed in by the caller (`nowMs`) instead of `Date.now()`.
 
 Requirements:
+- Return an object with `allow(key: string, nowMs: number)`, `remaining(key: string, nowMs: number)`, and `reset(key: string)`.
 - Use a fixed policy of 3 requests per 1000ms window.
 - Key quotas are independent.
+- `remaining` must never go below 0.
 - Boundary rule: when a window has fully elapsed, the next call starts a fresh window.
 - `reset(key)` clears only that key's state.
 - Must export `createRateLimiter` as a function (no classes as the primary exported API).

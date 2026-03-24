@@ -23,6 +23,7 @@ import {
 	getOpenRouterKey,
 } from "../lib/openrouter-client.js";
 import { loadRubric } from "../lib/scoring-spec.js";
+import { finalizeItemSignalAssessment } from "../lib/signal-assessment.js";
 import { prepareTestWorkspace } from "../lib/test-workspace.js";
 import { createRuntime } from "../runtimes/index.js";
 import type {
@@ -85,6 +86,7 @@ export async function executeItem(
 
 		let generation: GenerationResult;
 		let generationFailure: MatrixItemResult["generationFailure"];
+		let signalAssessment: MatrixItemResult["signalAssessment"];
 		let promptForRetry = "";
 		let runtimeForRetry: ReturnType<typeof createRuntime> | undefined;
 		let harnessForRetry: ReturnType<typeof createHarness> | undefined;
@@ -131,6 +133,7 @@ export async function executeItem(
 			generation = generationOutcome.generation;
 			generationAttempts = generationOutcome.generationAttempts;
 			generationFailure = generationOutcome.generationFailure;
+			signalAssessment = generationOutcome.signalAssessment;
 			workspace = generationOutcome.workspace;
 		} catch (error) {
 			const errorMessage =
@@ -146,6 +149,12 @@ export async function executeItem(
 				type: failureType,
 				message: errorMessage,
 			};
+			signalAssessment = finalizeItemSignalAssessment({
+				existing: undefined,
+				scoringMode: item.scoringMode,
+				automatedScore: undefined,
+				output: generation.output,
+			});
 			log.warn(
 				{ error: errorMessage, failureType, harness: item.harness },
 				"Generation failed",
@@ -175,6 +184,8 @@ export async function executeItem(
 					supportsCompileRetry,
 				});
 				generation = scoringOutcome.generation;
+				signalAssessment =
+					scoringOutcome.signalAssessment ?? signalAssessment;
 				const scoringResult = scoringOutcome.scoringResult;
 				const scoringOnlyDurationMsRounded = Math.round(
 					scoringOutcome.scoringOnlyDurationMs,
@@ -289,6 +300,12 @@ export async function executeItem(
 		}
 
 		const completedAt = new Date().toISOString();
+		signalAssessment = finalizeItemSignalAssessment({
+			existing: signalAssessment,
+			scoringMode: item.scoringMode,
+			automatedScore,
+			output: generation.output,
+		});
 
 		return {
 			id: item.id,
@@ -312,6 +329,7 @@ export async function executeItem(
 			generationFailure,
 			scoringFailure,
 			frontierEvalFailure,
+			signalAssessment,
 		};
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
@@ -340,6 +358,12 @@ export async function executeItem(
 				type: failureType,
 				message: errorMessage,
 			},
+			signalAssessment: finalizeItemSignalAssessment({
+				existing: undefined,
+				scoringMode: item.scoringMode,
+				automatedScore: undefined,
+				output: undefined,
+			}),
 		};
 	} finally {
 		try {

@@ -13,7 +13,7 @@
  */
 
 import type { Runtime } from "../runtimes/index.js";
-import type { HarnessCapability } from "../schemas/index.js";
+import type { HarnessCapability, SignalAssessment } from "../schemas/index.js";
 
 /** Supported harness names. "direct" replaces "ollama" for clarity. */
 export const HARNESS_NAMES = ["direct", "goose", "opencode"] as const;
@@ -169,6 +169,8 @@ export interface GenerateResult {
 	completionTokens?: number;
 	/** Path to code file written by tool-calling harness (e.g., Goose developer extension). */
 	codeFilePath?: string;
+	/** Optional benchmark signal assessment derived at the harness boundary. */
+	signalAssessment?: SignalAssessment;
 }
 
 /**

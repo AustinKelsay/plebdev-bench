@@ -12,6 +12,10 @@
  */
 
 import type { RunResult, MatrixItemResult, AutomatedScore, FrontierEval } from "../schemas/index.js";
+import {
+	hasCompleteSignalAssessments,
+	isTaintedItem,
+} from "../lib/signal-assessment.js";
 
 /** Composite key for matching items between runs. */
 function buildCompareKey(item: {
@@ -76,9 +80,21 @@ export interface CompareSummary {
 		passRateDelta: number; // Overall pass rate change
 		totalTestsDelta: number;
 	} | null;
+	trustedScoringDelta: {
+		passRateDelta: number;
+		totalTestsDelta: number;
+	} | null;
 	frontierEvalDelta: {
 		avgScoreDelta: number;
 	} | null;
+	trustedFrontierEvalDelta: {
+		avgScoreDelta: number;
+	} | null;
+	signal: {
+		trustedMetricsAvailable: boolean;
+		taintedInA: number | null;
+		taintedInB: number | null;
+	};
 }
 
 /** Complete comparison result. */
@@ -157,6 +173,8 @@ function computeSummary(
 	matched: MatchedItem[],
 	onlyInA: MatrixItemResult[],
 	onlyInB: MatrixItemResult[],
+	runAItems: MatrixItemResult[],
+	runBItems: MatrixItemResult[],
 ): CompareSummary {
 	// Count status changes
 	let improved = 0;
@@ -173,6 +191,7 @@ function computeSummary(
 
 	// Overall scoring delta
 	let scoringDelta: CompareSummary["scoringDelta"] = null;
+	let trustedScoringDelta: CompareSummary["trustedScoringDelta"] = null;
 	const itemsWithScoreA = matched.filter((m) => m.itemA.automatedScore);
 	const itemsWithScoreB = matched.filter((m) => m.itemB.automatedScore);
 
@@ -193,6 +212,7 @@ function computeSummary(
 
 	// Overall frontier eval delta
 	let frontierEvalDelta: CompareSummary["frontierEvalDelta"] = null;
+	let trustedFrontierEvalDelta: CompareSummary["trustedFrontierEvalDelta"] = null;
 	const itemsWithEvalA = matched.filter((m) => m.itemA.frontierEval);
 	const itemsWithEvalB = matched.filter((m) => m.itemB.frontierEval);
 
@@ -209,13 +229,93 @@ function computeSummary(
 		};
 	}
 
+	const trustedMetricsAvailable =
+		hasCompleteSignalAssessments(runAItems) &&
+		hasCompleteSignalAssessments(runBItems);
+
+	if (trustedMetricsAvailable) {
+		const trustedMatched = matched.filter(
+			(match) => !isTaintedItem(match.itemA) && !isTaintedItem(match.itemB),
+		);
+		const trustedItemsWithScoreA = trustedMatched.filter(
+			(match) => match.itemA.automatedScore,
+		);
+		const trustedItemsWithScoreB = trustedMatched.filter(
+			(match) => match.itemB.automatedScore,
+		);
+		if (
+			trustedItemsWithScoreA.length > 0 ||
+			trustedItemsWithScoreB.length > 0
+		) {
+			const totalTestsA = trustedItemsWithScoreA.reduce(
+				(acc, match) => acc + (match.itemA.automatedScore?.total ?? 0),
+				0,
+			);
+			const passedTestsA = trustedItemsWithScoreA.reduce(
+				(acc, match) => acc + (match.itemA.automatedScore?.passed ?? 0),
+				0,
+			);
+			const totalTestsB = trustedItemsWithScoreB.reduce(
+				(acc, match) => acc + (match.itemB.automatedScore?.total ?? 0),
+				0,
+			);
+			const passedTestsB = trustedItemsWithScoreB.reduce(
+				(acc, match) => acc + (match.itemB.automatedScore?.passed ?? 0),
+				0,
+			);
+			const passRateA = totalTestsA > 0 ? (passedTestsA / totalTestsA) * 100 : 0;
+			const passRateB = totalTestsB > 0 ? (passedTestsB / totalTestsB) * 100 : 0;
+			trustedScoringDelta = {
+				passRateDelta: passRateB - passRateA,
+				totalTestsDelta: totalTestsB - totalTestsA,
+			};
+		}
+
+		const trustedItemsWithEvalA = trustedMatched.filter(
+			(match) => match.itemA.frontierEval,
+		);
+		const trustedItemsWithEvalB = trustedMatched.filter(
+			(match) => match.itemB.frontierEval,
+		);
+		if (trustedItemsWithEvalA.length > 0 || trustedItemsWithEvalB.length > 0) {
+			const avgScoreA =
+				trustedItemsWithEvalA.length > 0
+					? trustedItemsWithEvalA.reduce(
+							(acc, match) => acc + (match.itemA.frontierEval?.score ?? 0),
+							0,
+						) / trustedItemsWithEvalA.length
+					: 0;
+			const avgScoreB =
+				trustedItemsWithEvalB.length > 0
+					? trustedItemsWithEvalB.reduce(
+							(acc, match) => acc + (match.itemB.frontierEval?.score ?? 0),
+							0,
+						) / trustedItemsWithEvalB.length
+					: 0;
+			trustedFrontierEvalDelta = {
+				avgScoreDelta: avgScoreB - avgScoreA,
+			};
+		}
+	}
+
 	return {
 		totalMatched: matched.length,
 		totalOnlyInA: onlyInA.length,
 		totalOnlyInB: onlyInB.length,
 		statusChanges: { improved, regressed },
 		scoringDelta,
+		trustedScoringDelta,
 		frontierEvalDelta,
+		trustedFrontierEvalDelta,
+		signal: {
+			trustedMetricsAvailable,
+			taintedInA: trustedMetricsAvailable
+				? runAItems.filter((item) => isTaintedItem(item)).length
+				: null,
+			taintedInB: trustedMetricsAvailable
+				? runBItems.filter((item) => isTaintedItem(item)).length
+				: null,
+		},
 	};
 }
 
@@ -283,7 +383,13 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 	onlyInB.sort((a, b) => buildCompareKey(a).localeCompare(buildCompareKey(b)));
 
 	// Compute summary
-	const summary = computeSummary(matched, onlyInA, onlyInB);
+	const summary = computeSummary(
+		matched,
+		onlyInA,
+		onlyInB,
+		resultA.items,
+		resultB.items,
+	);
 
 	return {
 		runA: {
