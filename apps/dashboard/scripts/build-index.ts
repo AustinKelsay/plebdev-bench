@@ -9,6 +9,7 @@
  */
 
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { basename, join, resolve } from "node:path";
 import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
 import {
@@ -31,9 +32,10 @@ import type {
 	RunListItem,
 } from "../src/lib/types.js";
 
-const DEFAULT_SOURCE_RESULTS_DIR = resolve(import.meta.dir, "../../../results");
-const DEFAULT_OUTPUT_RESULTS_DIR = resolve(import.meta.dir, "../public/results");
-const DEFAULT_PROJECT_ROOT = resolve(import.meta.dir, "../../..");
+const SCRIPT_DIR = fileURLToPath(new URL(".", import.meta.url));
+const DEFAULT_SOURCE_RESULTS_DIR = resolve(SCRIPT_DIR, "../../../results");
+const DEFAULT_OUTPUT_RESULTS_DIR = resolve(SCRIPT_DIR, "../public/results");
+const DEFAULT_PROJECT_ROOT = resolve(SCRIPT_DIR, "../../..");
 
 /** Output metadata from dashboard index build. */
 export interface BuildDashboardIndexArtifactsResult {

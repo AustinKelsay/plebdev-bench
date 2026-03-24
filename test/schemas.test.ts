@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { getModelIdentityKey } from "../src/lib/model-profiles.js";
 import {
 	buildMachineProfileKey,
 	buildMachineProfileLabel,
@@ -173,6 +174,39 @@ describe("BenchConfigSchema", () => {
 		expect(config.machineDisplayLabel).toBe("Legacy Label");
 	});
 
+	it("should normalize deprecated modelAliases into modelProfiles", () => {
+		const config = BenchConfigSchema.parse({
+			modelAliases: {
+				"qwen3-8b-instruct": {
+					ollama: "qwen3:8b",
+					vllm: "Qwen/Qwen3-8B-Instruct",
+				},
+			},
+		});
+		expect(config.modelProfiles["qwen3-8b-instruct"]?.variants.ollama).toBe(
+			"qwen3:8b",
+		);
+	});
+
+	it("should reject simultaneous modelProfiles and modelAliases", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				modelProfiles: {
+					"qwen3-8b-instruct": {
+						variants: {
+							ollama: "qwen3:8b",
+						},
+					},
+				},
+				modelAliases: {
+					"qwen3-8b-instruct": {
+						ollama: "qwen3:8b",
+					},
+				},
+			}),
+		).toThrow(/must not specify both "modelProfiles" and deprecated "modelAliases"/);
+	});
+
 	it("should reject conflicting canonical and deprecated machine config aliases", () => {
 		expect(() =>
 			BenchConfigSchema.parse({
@@ -223,6 +257,23 @@ describe("MatrixItemSchema", () => {
 			id: "01",
 			runtime: "ollama",
 			model: "llama3.2:3b",
+			modelProfile: {
+				canonical: {
+					profileKey: "llama3.2-3b-instruct",
+					profileLabel: "Llama 3.2 3B Instruct",
+					family: "llama3.2",
+					parametersBillions: 3,
+					parameterScaleLabel: "3B",
+					tuning: "instruct",
+				},
+				variant: {
+					variantKey: "ollama-llama3-2-3b",
+					variantLabel: "llama3.2:3b",
+					runtime: "ollama",
+					runtimeModelName: "llama3.2:3b",
+				},
+				resolutionSource: "configured_profile",
+			},
 			harness: "direct",
 			test: "smoke",
 			category: "coding",
@@ -235,6 +286,9 @@ describe("MatrixItemSchema", () => {
 		expect(item.id).toBe("01");
 		expect(item.runtime).toBe("ollama");
 		expect(item.model).toBe("llama3.2:3b");
+		expect(item.modelProfile?.canonical.profileKey).toBe(
+			"llama3.2-3b-instruct",
+		);
 		expect(item.scoringMode).toBe("code-module");
 	});
 });
@@ -412,6 +466,24 @@ describe("MatrixItemResultSchema", () => {
 			id: "01",
 			runtime: "ollama",
 			model: "llama3.2:3b",
+			modelAlias: "llama3.2-3b-instruct",
+			modelProfile: {
+				canonical: {
+					profileKey: "llama3.2-3b-instruct",
+					profileLabel: "Llama 3.2 3B Instruct",
+					family: "llama3.2",
+					parametersBillions: 3,
+					parameterScaleLabel: "3B",
+					tuning: "instruct",
+				},
+				variant: {
+					variantKey: "ollama-llama3-2-3b",
+					variantLabel: "llama3.2:3b",
+					runtime: "ollama",
+					runtimeModelName: "llama3.2:3b",
+				},
+				resolutionSource: "configured_profile",
+			},
 			harness: "direct",
 			test: "smoke",
 			category: "coding",
@@ -429,6 +501,13 @@ describe("MatrixItemResultSchema", () => {
 		});
 		expect(result.status).toBe("completed");
 		expect(result.generation?.success).toBe(true);
+		expect(
+			getModelIdentityKey(
+				result.model,
+				result.modelProfile,
+				result.modelAlias,
+			),
+		).toBe("llama3.2-3b-instruct");
 	});
 
 	it("should validate a failed result", () => {

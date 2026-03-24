@@ -25,7 +25,11 @@ import {
 	collectMachineProfile,
 } from "../lib/hardware-profile.js";
 import { logger } from "../lib/logger.js";
-import { isAlias, resolveModelForRuntime } from "../lib/model-aliases.js";
+import {
+	buildResolvedModelProfile,
+	getModelIdentityKey,
+	resolveModelSelection,
+} from "../lib/model-profiles.js";
 import { generateRunId } from "../lib/run-id.js";
 import { discoverTestCatalog, selectTests } from "../lib/test-catalog.js";
 import { isPreflightTest, selectPreflightPassType } from "../lib/tool-smoke.js";
@@ -124,13 +128,21 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 	// Discover models per runtime
 	const runtimeModels = new Map<RuntimeName, string[]>();
-	// Track runtime-scoped resolved model name -> canonical alias name (avoid collisions across runtimes)
-	const modelCanonicalMap = new Map<string, string>();
-	const aliases = config.modelAliases;
-	const hasAliases = Object.keys(aliases).length > 0;
+	const resolvedModelProfiles = new Map<
+		string,
+		{
+			modelAlias?: string;
+			modelProfile: MatrixItem["modelProfile"];
+		}
+	>();
+	const modelProfiles = config.modelProfiles;
+	const hasModelProfiles = Object.keys(modelProfiles).length > 0;
 
-	if (hasAliases) {
-		log.info({ aliases: Object.keys(aliases) }, "Using model aliases");
+	if (hasModelProfiles) {
+		log.info(
+			{ profiles: Object.keys(modelProfiles) },
+			"Using configured model profiles",
+		);
 	}
 
 	for (const runtimeName of runtimes) {
@@ -154,30 +166,73 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		if (config.models.length > 0) {
 			filtered = [];
 			for (const modelSpec of config.models) {
-				// Check if this is an alias
-				if (isAlias(modelSpec, aliases)) {
-					const resolved = resolveModelForRuntime(
-						modelSpec,
-						runtimeName,
-						aliases,
+				const resolvedSelection = resolveModelSelection(
+					modelSpec,
+					runtimeName,
+					modelProfiles,
+				);
+				if (
+					resolvedSelection !== undefined &&
+					discovered.includes(resolvedSelection.runtimeModelName)
+				) {
+					filtered.push(resolvedSelection.runtimeModelName);
+					resolvedModelProfiles.set(
+						`${runtimeName}::${resolvedSelection.runtimeModelName}`,
+						{
+							...(resolvedSelection.modelAlias
+								? { modelAlias: resolvedSelection.modelAlias }
+								: {}),
+							modelProfile: resolvedSelection.modelProfile,
+						},
 					);
-					if (resolved && discovered.includes(resolved)) {
-						filtered.push(resolved);
-						modelCanonicalMap.set(`${runtimeName}::${resolved}`, modelSpec);
-						log.debug(
-							{ alias: modelSpec, runtime: runtimeName, resolved },
-							"Resolved model alias",
-						);
-					}
-				} else {
-					// Direct model name - check if available
-					if (discovered.includes(modelSpec)) {
-						filtered.push(modelSpec);
-					}
+					log.debug(
+						{
+							requestedModel: modelSpec,
+							runtime: runtimeName,
+							resolved: resolvedSelection.runtimeModelName,
+							profileKey:
+								resolvedSelection.modelProfile.canonical.profileKey,
+						},
+						"Resolved model selector",
+					);
 				}
 			}
 		} else {
 			filtered = discovered;
+			for (const discoveredModel of discovered) {
+				const modelProfile = buildResolvedModelProfile(
+					runtimeName,
+					discoveredModel,
+					modelProfiles,
+				);
+				resolvedModelProfiles.set(`${runtimeName}::${discoveredModel}`, {
+					modelProfile,
+					...(modelProfile.resolutionSource !== "runtime_name"
+						? { modelAlias: modelProfile.canonical.profileKey }
+						: {}),
+				});
+			}
+		}
+
+		// Ensure direct raw model selections still get profile metadata even when no config mapping exists.
+		if (config.models.length > 0) {
+			for (const runtimeModelName of filtered) {
+				const key = `${runtimeName}::${runtimeModelName}`;
+				if (resolvedModelProfiles.has(key)) {
+					continue;
+				}
+				const modelProfile = buildResolvedModelProfile(
+					runtimeName,
+					runtimeModelName,
+					modelProfiles,
+				);
+				resolvedModelProfiles.set(key, {
+					modelProfile,
+					...(modelProfile.resolutionSource !== "runtime_name"
+						? { modelAlias: modelProfile.canonical.profileKey }
+						: {}),
+				});
+			}
 		}
 
 		runtimeModels.set(runtimeName, filtered);
@@ -299,8 +354,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 		for (const harness of compatibleHarnesses) {
 			for (const model of modelsForRuntime) {
-				// Look up canonical alias if this model was resolved from one
-				const modelAlias = modelCanonicalMap.get(`${runtime}::${model}`);
+				const resolvedModel = resolvedModelProfiles.get(`${runtime}::${model}`);
 
 				for (const test of selectedTests) {
 					if (
@@ -333,7 +387,12 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 							runtime,
 							harness,
 							model,
-							...(modelAlias ? { modelAlias } : {}),
+							...(resolvedModel?.modelAlias
+								? { modelAlias: resolvedModel.modelAlias }
+								: {}),
+							...(resolvedModel?.modelProfile
+								? { modelProfile: resolvedModel.modelProfile }
+								: {}),
 							test: test.slug,
 							category: test.category,
 							scoringMode: test.scoringMode,
@@ -362,7 +421,11 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 	// Derive summary from actual expanded matrix items, not requested/discovered sets.
 	const summaryRuntimes = new Set(items.map((item) => item.runtime));
-	const summaryModels = new Set(items.map((item) => item.model));
+	const summaryModels = new Set(
+		items.map((item) =>
+			getModelIdentityKey(item.model, item.modelProfile, item.modelAlias),
+		),
+	);
 	const summaryHarnesses = new Set(items.map((item) => item.harness));
 	const summaryTests = new Set(items.map((item) => item.test));
 	const summaryCategories = new Set(

@@ -337,7 +337,7 @@ describe("buildRunPlan", () => {
 			gooseWorkspaceMaxTurns: 8,
 			gooseWorkspaceRetryMaxTurns: 12,
 			outputDir: "results",
-			modelAliases: {},
+			modelProfiles: {},
 		});
 
 		const rows = plan.items.map((item) => ({
@@ -390,4 +390,77 @@ describe("buildRunPlan", () => {
 				)?.timeoutMultiplier,
 			).toBe(1.2);
 		});
+
+	it("groups runtime-specific variants under one canonical model profile", async () => {
+		createRuntimeMock.mockImplementation((runtimeName: string) => ({
+			ping: async () => true,
+			listModels: async () =>
+				runtimeName === "ollama"
+					? ["qwen3:27b"]
+					: ["Qwen/Qwen3-27B-Instruct-MLX-4bit"],
+		}));
+
+		const catalog = [
+			{
+				slug: "smoke",
+				category: "coding",
+				description: "basic smoke test",
+				tags: [],
+				scoringMode: "code-module",
+				requiresTools: false,
+				requiredHarnessCapabilities: [],
+				timeoutMultiplier: 1,
+				schemaVersion: 1,
+			},
+		];
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+		const plan = await buildRunPlan({
+			schemaVersion: "0.4.0",
+			runtimes: ["ollama", "vllm"],
+			models: ["qwen3-27b-instruct"],
+			harnesses: ["direct"],
+			tests: [],
+			categories: [],
+			passTypes: ["blind"],
+			ollamaBaseUrl: "http://localhost:11434",
+			vllmBaseUrl: "http://localhost:8000",
+			generateTimeoutMs: 300_000,
+			gooseMaxTurns: 1,
+			gooseRetryMaxTurns: 3,
+			gooseWorkspaceMaxTurns: 8,
+			gooseWorkspaceRetryMaxTurns: 12,
+			outputDir: "results",
+			modelProfiles: {
+				"qwen3-27b-instruct": {
+					profileLabel: "Qwen 3 27B Instruct",
+					family: "qwen3",
+					parametersBillions: 27,
+					tuning: "instruct",
+					variants: {
+						ollama: "qwen3:27b",
+						vllm: {
+							modelName: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+							format: "MLX",
+							quantization: "4-bit",
+						},
+					},
+				},
+			},
+		});
+
+		expect(plan.summary.models).toBe(1);
+		expect(plan.items).toHaveLength(2);
+		expect(plan.items.map((item) => item.model)).toEqual([
+			"qwen3:27b",
+			"Qwen/Qwen3-27B-Instruct-MLX-4bit",
+		]);
+		expect(
+			plan.items.map((item) => item.modelProfile?.canonical.profileKey),
+		).toEqual(["qwen3-27b-instruct", "qwen3-27b-instruct"]);
+		expect(plan.items[1].modelProfile?.variant.format).toBe("MLX");
+		expect(plan.items[1].modelProfile?.variant.quantization).toBe("4-bit");
+	});
 	});

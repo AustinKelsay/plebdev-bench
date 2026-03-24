@@ -27,6 +27,7 @@ import {
 
 const tempRoots: string[] = [];
 const REPO_ROOT = process.cwd();
+const BUN_EXECUTABLE = "bun";
 
 const LEGACY_MACHINE = {
 	profileId: "mac-mini-m4-pro-64gb",
@@ -224,7 +225,7 @@ describe("migrate-machine-profiles command", () => {
 		);
 
 		const completed = spawnSync(
-			process.execPath,
+			BUN_EXECUTABLE,
 			[
 				"run",
 				"src/index.ts",
@@ -297,7 +298,7 @@ describe("migrate-machine-profiles command", () => {
 		fs.mkdirSync(resultsDir, { recursive: true });
 
 		const completed = spawnSync(
-			process.execPath,
+			BUN_EXECUTABLE,
 			[
 				"run",
 				"src/index.ts",

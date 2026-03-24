@@ -3,7 +3,7 @@
  * Exports: compareRuns, CompareResult, MatchedItem
  *
  * Performs an outer join on matrix items by composite key:
- * model|harness|test|passType
+ * canonicalModel|harness|test|passType
  *
  * Outputs:
  * - Matched items with deltas
@@ -17,6 +17,7 @@ import type {
 	MatrixItemResult,
 	RunResult,
 } from "../schemas/index.js";
+import { getModelIdentityKey } from "../lib/model-profiles.js";
 import {
 	hasCompleteSignalAssessments,
 	isTaintedItem,
@@ -25,11 +26,18 @@ import {
 /** Composite key for matching items between runs. */
 function buildCompareKey(item: {
 	model: string;
+	modelAlias?: string;
+	modelProfile?: MatrixItemResult["modelProfile"];
 	harness: string;
 	test: string;
 	passType: string;
 }): string {
-	return `${item.model}|${item.harness}|${item.test}|${item.passType}`;
+	const modelKey = getModelIdentityKey(
+		item.model,
+		item.modelProfile,
+		item.modelAlias,
+	);
+	return `${modelKey}|${item.harness}|${item.test}|${item.passType}`;
 }
 
 /** Delta for automated score. */
@@ -403,7 +411,10 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 		if (itemB) {
 			matched.push({
 				key,
-				model: itemA.model,
+				model:
+					itemA.modelProfile?.canonical.profileLabel ??
+					itemA.modelAlias ??
+					itemA.model,
 				harness: itemA.harness,
 				test: itemA.test,
 				passType: itemA.passType,

@@ -140,6 +140,28 @@ export {
 } from "./model-alias.schema.js";
 
 export {
+	modelProfileResolutionSources,
+	ModelProfileResolutionSourceSchema,
+	type ModelProfileResolutionSource,
+	CanonicalModelProfileSchema,
+	type CanonicalModelProfile,
+	ModelVariantSchema,
+	type ModelVariant,
+	ModelProfileSchema,
+	type ModelProfile,
+	ConfiguredModelVariantSchema,
+	type ConfiguredModelVariant,
+	ConfiguredModelVariantValueSchema,
+	type ConfiguredModelVariantValue,
+	ConfiguredModelProfileSchema,
+	type ConfiguredModelProfile,
+	ModelProfileRegistrySchema,
+	type ModelProfileRegistry,
+	ModelProfileFileSchema,
+	type ModelProfileFile,
+} from "./model-profile.schema.js";
+
+export {
 	TestMetadataSchema,
 	type TestMetadata,
 	TestDefinitionSchema,

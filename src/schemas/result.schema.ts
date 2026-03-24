@@ -22,6 +22,7 @@ import {
 	SignalAssessmentSchema,
 	TestCategorySchema,
 } from "./common.schema.js";
+import { ModelProfileSchema } from "./model-profile.schema.js";
 
 /** Zod schema for generation output from a harness. */
 export const GenerationResultSchema = z.object({
@@ -162,6 +163,12 @@ export const MatrixItemResultSchema = z.object({
 
 	/** Model name. */
 	model: z.string(),
+
+	/** Deprecated compatibility alias for canonical model grouping. */
+	modelAlias: z.string().optional(),
+
+	/** Canonical model profile snapshot plus runtime-specific variant metadata. */
+	modelProfile: ModelProfileSchema.optional(),
 
 	/** Harness adapter name. */
 	harness: z.string(),

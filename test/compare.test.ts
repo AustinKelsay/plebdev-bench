@@ -132,4 +132,68 @@ describe("compareRuns", () => {
 			taintedInB: 1,
 		});
 	});
+
+	it("matches different runtime model names when canonical model profiles align", () => {
+		const runA = buildRun("run-a", [
+			{
+				...buildItem("01", "smoke", "blind", 1000),
+				model: "qwen3:27b",
+				modelAlias: "qwen3-27b-instruct",
+				modelProfile: {
+					canonical: {
+						profileKey: "qwen3-27b-instruct",
+						profileLabel: "Qwen 3 27B Instruct",
+						family: "qwen3",
+						parametersBillions: 27,
+						parameterScaleLabel: "27B",
+						tuning: "instruct",
+					},
+					variant: {
+						variantKey: "ollama-qwen3-27b",
+						variantLabel: "qwen3:27b",
+						runtime: "ollama",
+						runtimeModelName: "qwen3:27b",
+					},
+					resolutionSource: "configured_profile",
+				},
+			},
+		]);
+		const runB = buildRun("run-b", [
+			{
+				...buildItem("01", "smoke", "blind", 900),
+				runtime: "vllm",
+				model: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+				modelAlias: "qwen3-27b-instruct",
+				modelProfile: {
+					canonical: {
+						profileKey: "qwen3-27b-instruct",
+						profileLabel: "Qwen 3 27B Instruct",
+						family: "qwen3",
+						parametersBillions: 27,
+						parameterScaleLabel: "27B",
+						tuning: "instruct",
+					},
+					variant: {
+						variantKey: "vllm-qwen3-27b-instruct-mlx-4bit",
+						variantLabel: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+						runtime: "vllm",
+						runtimeModelName: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+						format: "MLX",
+						quantization: "4-bit",
+					},
+					resolutionSource: "configured_profile",
+				},
+			},
+		]);
+
+		const comparison = compareRuns(runA, runB);
+
+		expect(comparison.matched).toHaveLength(1);
+		expect(comparison.matched[0]?.key).toBe(
+			"qwen3-27b-instruct|direct|smoke|blind",
+		);
+		expect(comparison.matched[0]?.model).toBe("Qwen 3 27B Instruct");
+		expect(comparison.onlyInA).toHaveLength(0);
+		expect(comparison.onlyInB).toHaveLength(0);
+	});
 });

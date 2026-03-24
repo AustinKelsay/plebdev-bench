@@ -18,6 +18,7 @@ import {
 	TestCategorySchema,
 	TestScoringModeSchema,
 } from "./common.schema.js";
+import { ModelProfileSchema } from "./model-profile.schema.js";
 
 /** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
 export const MatrixItemSchema = z.object({
@@ -30,8 +31,11 @@ export const MatrixItemSchema = z.object({
 	/** Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),
 
-	/** Model alias if resolved from alias map (e.g., 'qwen3-8b'). Allows grouping across runtimes. */
+	/** Deprecated compatibility alias for canonical model grouping. */
 	modelAlias: z.string().optional(),
+
+	/** Canonical model profile snapshot plus runtime-specific variant metadata. */
+	modelProfile: ModelProfileSchema.optional(),
 
 	/** Harness adapter name (e.g., 'direct'). */
 	harness: z.string(),

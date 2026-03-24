@@ -13,16 +13,16 @@
 import { Command } from "commander";
 import { logger } from "../lib/logger.js";
 import {
-	loadModelAliases,
-	mergeAliases,
-	parseInlineAliases,
-} from "../lib/model-aliases.js";
+	loadModelProfiles,
+	mergeModelProfiles,
+	parseInlineModelProfiles,
+} from "../lib/model-profiles.js";
 import { runBenchmark } from "../runner/index.js";
 import {
 	type BenchConfig,
 	BenchConfigSchema,
-	type ModelAliasMap,
 	testCategories,
+	type ModelProfileRegistry,
 } from "../schemas/index.js";
 
 /** Human-readable category list for CLI help text. */
@@ -86,7 +86,7 @@ export const runCommand = new Command("run")
 	)
 	.option(
 		"-m, --models <models...>",
-		"Limit to specific models or aliases (default: all from runtime)",
+		"Limit to specific runtime models or canonical profile keys (default: all from runtime)",
 	)
 	.option(
 		"-t, --tests <tests...>",
@@ -142,32 +142,32 @@ export const runCommand = new Command("run")
 	)
 	.option(
 		"--model-config <file>",
-		"JSON file with model aliases for cross-runtime mapping",
+		"JSON file with model profiles for cross-runtime mapping",
 	)
 	.option(
 		"--model-alias <def...>",
-		'Inline model alias: "name=runtime:model,runtime:model" (repeatable)',
+		'Inline model profile shorthand: "name=runtime:model,runtime:model" (repeatable)',
 	)
 	.action(async (options) => {
 		try {
-			// Build model aliases from file and/or inline definitions
-			let modelAliases: ModelAliasMap = {};
+			// Build model profiles from file and/or inline definitions.
+			let modelProfiles: ModelProfileRegistry = {};
 
 			if (options.modelConfig) {
-				const fileAliases = loadModelAliases(options.modelConfig);
-				modelAliases = mergeAliases(modelAliases, fileAliases);
+				const fileProfiles = loadModelProfiles(options.modelConfig);
+				modelProfiles = mergeModelProfiles(modelProfiles, fileProfiles);
 				logger.info(
-					{ file: options.modelConfig, count: Object.keys(fileAliases).length },
-					"Loaded model aliases from file",
+					{ file: options.modelConfig, count: Object.keys(fileProfiles).length },
+					"Loaded model profiles from file",
 				);
 			}
 
 			if (options.modelAlias) {
-				const inlineAliases = parseInlineAliases(options.modelAlias);
-				modelAliases = mergeAliases(modelAliases, inlineAliases);
+				const inlineProfiles = parseInlineModelProfiles(options.modelAlias);
+				modelProfiles = mergeModelProfiles(modelProfiles, inlineProfiles);
 				logger.info(
-					{ count: Object.keys(inlineAliases).length },
-					"Parsed inline model aliases",
+					{ count: Object.keys(inlineProfiles).length },
+					"Parsed inline model profile shorthands",
 				);
 			}
 
@@ -249,7 +249,7 @@ export const runCommand = new Command("run")
 				outputDir: options.output,
 				machineInstanceId: resolvedMachineId,
 				machineDisplayLabel: resolvedMachineLabel,
-				modelAliases,
+				modelProfiles,
 			};
 
 			// Add optional arrays if provided

@@ -570,7 +570,7 @@ describe("buildDashboardIndexArtifacts", () => {
 					gooseWorkspaceMaxTurns: 8,
 					gooseWorkspaceRetryMaxTurns: 12,
 					outputDir: "results",
-					modelAliases: {},
+					modelProfiles: {},
 				},
 				items: [
 					{

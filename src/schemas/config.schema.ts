@@ -15,6 +15,7 @@ import {
 	TestCategorySchema,
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
+import { ModelProfileRegistrySchema } from "./model-profile.schema.js";
 
 /**
  * Trims a candidate string and returns undefined when absent.
@@ -52,6 +53,33 @@ function validateCanonicalMachineFieldType(
 			`Bench config ${fieldName} must be a string when provided`,
 		);
 	}
+}
+
+/**
+ * Converts the deprecated alias-only model map into the canonical model-profile registry.
+ *
+ * @param value - Raw legacy alias map candidate
+ * @returns Model-profile registry preserving runtime mappings under `variants`
+ * @throws {Error} When the legacy alias map is malformed
+ */
+function migrateLegacyModelAliases(value: unknown): unknown {
+	const parsed = ModelAliasMapSchema.safeParse(value);
+	if (!parsed.success) {
+		throw new Error(
+			`Invalid deprecated modelAliases config: ${parsed.error.message}`,
+		);
+	}
+
+	return Object.fromEntries(
+		Object.entries(parsed.data).map(([profileKey, runtimeMap]) => [
+			profileKey,
+			{
+				profileLabel: profileKey,
+				family: profileKey,
+				variants: runtimeMap,
+			},
+		]),
+	);
 }
 
 /**
@@ -98,6 +126,22 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 	if (machineDisplayLabel === undefined && machineLabel !== undefined) {
 		config.machineDisplayLabel = machineLabel;
+	}
+
+	if (
+		Object.prototype.hasOwnProperty.call(config, "modelProfiles") &&
+		Object.prototype.hasOwnProperty.call(config, "modelAliases")
+	) {
+		throw new Error(
+			'Bench config must not specify both "modelProfiles" and deprecated "modelAliases"',
+		);
+	}
+
+	if (
+		!Object.prototype.hasOwnProperty.call(config, "modelProfiles") &&
+		Object.prototype.hasOwnProperty.call(config, "modelAliases")
+	) {
+		config.modelProfiles = migrateLegacyModelAliases(config.modelAliases);
 	}
 
 	return config;
@@ -162,8 +206,11 @@ const BenchConfigObjectSchema = z
 		/** Deprecated alias for machine display label. */
 		machineLabel: z.string().trim().min(1).optional(),
 
-		/** Model aliases for cross-runtime mapping. */
-		modelAliases: ModelAliasMapSchema.default({}),
+		/** Canonical model profiles with runtime-specific variant mappings. */
+		modelProfiles: ModelProfileRegistrySchema.default({}),
+
+		/** Deprecated alias-only model mapping format retained for migration. */
+		modelAliases: ModelAliasMapSchema.optional(),
 	})
 	.superRefine((config, context) => {
 		if (config.gooseRetryMaxTurns < config.gooseMaxTurns) {

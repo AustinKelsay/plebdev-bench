@@ -14,7 +14,7 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
 ## Scope
 - In scope:
   - Multi-runtime execution in one run plan.
-  - Cross-runtime model aliasing for apples-to-apples comparisons.
+  - Cross-runtime canonical model mapping for apples-to-apples comparisons.
   - Runtime-aware harness behavior for `direct`, `goose`, and `opencode`.
   - vLLM compatibility through an external OpenAI-compatible endpoint.
   - Dashboard compatibility with richer run metadata and failure types.
@@ -101,7 +101,7 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
   - `apps/dashboard/src/lib/aggregations.ts`
 
 ### Data flow
-1. CLI parses runtime/model/harness/test selections and optional model alias mappings.
+1. CLI parses runtime/model/harness/test selections and optional model-profile mappings.
 2. Plan builder resolves matrix items with explicit runtime+harness+model coordinates.
 3. Runner computes dynamic timeouts using runtime model info estimates.
 4. Item executor runs generation through selected harness/runtime pair.
@@ -116,16 +116,21 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
 
 ### User-facing commands
 - Full cross-runtime execution:
-  - `bun pb --runtimes ollama vllm --harnesses direct goose opencode --models qwen2.5-14b --model-alias "qwen2.5-14b=ollama:qwen2.5:14b,vllm:Qwen/Qwen2.5-14B-Instruct"`
+  - `bun pb --runtimes ollama vllm --harnesses direct goose opencode --models qwen2.5-14b-instruct --model-config models.example.json`
 - Dashboard:
   - `bun run dashboard:index`
   - `bun run dashboard -- --host 127.0.0.1 --port 5173`
 
-### Model aliasing contract
-- A single logical benchmark model can map to runtime-specific identifiers:
-  - `ollama:qwen2.5:14b`
-  - `vllm:Qwen/Qwen2.5-14B-Instruct`
-- This enables true cross-runtime comparisons in one matrix run.
+### Model profile contract
+- A single logical benchmark model maps to one canonical profile plus one or more runtime-specific variants.
+- Canonical profile fields capture stable identity:
+  - family / parameter scale / tuning
+  - stable `profileKey`
+- Variant fields capture runtime-specific execution details:
+  - runtime model name
+  - format (for example `MLX`, `GGUF`)
+  - quantization (for example `4-bit`, `Q4_K_M`)
+- Legacy alias-only mappings are still accepted, but current configs should prefer the richer model-profile structure.
 
 ### Failure-record contract
 - `run.json` item records may include:
@@ -181,7 +186,7 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
   - runtimes: `ollama`, `vllm`
   - harnesses: `direct`, `goose`, `opencode`
   - tests: all discovered (`tool-smoke`, `smoke`, `calculator-basic`, `calculator-stateful`, `todo-app`)
-  - model alias: `qwen2.5-14b`
+  - canonical model profile: `qwen2.5-14b-instruct`
 - Outcome:
   - completed: `53/54`
   - failed: `1`
