@@ -228,7 +228,7 @@ export function evaluateCodeOnlyOutput(
 		return {
 			shouldRetry: false,
 			reason: "ok",
-			code: trimmed,
+			code: candidateCode,
 			method: extracted.method,
 			taintReasons: getAcceptedOutputTaintReasons(trimmed, extracted),
 		};

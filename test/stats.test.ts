@@ -33,6 +33,7 @@ function createResult(
  * @returns Complete RunStats object
  */
 function createRunStats(overrides: Partial<RunStats> = {}): RunStats {
+	const { timing: _timingOverrides, ...restOverrides } = overrides;
 	const timing = {
 		avgGenerationMs: 1000,
 		avgScoringMs: null,
@@ -50,7 +51,7 @@ function createRunStats(overrides: Partial<RunStats> = {}): RunStats {
 		trustedFrontier: null,
 		signal: null,
 		generationFailures: null,
-		...overrides,
+		...restOverrides,
 	};
 }
 

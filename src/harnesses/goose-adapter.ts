@@ -421,7 +421,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 								undefined,
 								[
 									...decision.taintReasons,
-									...(toolCallDetected && !codeFilePath
+									...(toolCallDetected
 										? (["tool_call_not_executed"] as const)
 										: []),
 								],

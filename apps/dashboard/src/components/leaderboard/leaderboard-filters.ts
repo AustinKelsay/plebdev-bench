@@ -61,7 +61,7 @@ export function uniqueValues(
 }
 
 /**
- * Builds machine filter options keyed by stable machine profile ID.
+ * Builds machine filter options keyed by stable machine profile key.
  *
  * @param items - Aggregated leaderboard items
  * @returns Machine options for filter dropdown

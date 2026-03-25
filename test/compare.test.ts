@@ -67,8 +67,8 @@ describe("compareRuns", () => {
 
 		const matchedKeys = comparison1.matched.map((m) => m.key);
 		expect(matchedKeys).toEqual([
-			"llama3.2:3b|ollama|direct|smoke|blind",
-			"llama3.2:3b|ollama|direct|smoke|informed",
+			"llama3.2:3b|ollama|llama3.2:3b|direct|smoke|blind",
+			"llama3.2:3b|ollama|llama3.2:3b|direct|smoke|informed",
 		]);
 
 		const onlyInAKeys = comparison1.onlyInA.map(
@@ -180,6 +180,65 @@ describe("compareRuns", () => {
 						runtimeModelName: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
 						format: "MLX",
 						quantization: "4-bit",
+					},
+					resolutionSource: "configured_profile",
+				},
+			},
+		]);
+
+		const comparison = compareRuns(runA, runB);
+
+		expect(comparison.matched).toHaveLength(0);
+		expect(comparison.onlyInA).toHaveLength(1);
+		expect(comparison.onlyInB).toHaveLength(1);
+	});
+
+	it("does not match different runtime variants within the same runtime", () => {
+		const runA = buildRun("run-a", [
+			{
+				...buildItem("01", "smoke", "blind", 1000),
+				model: "qwen3:27b-q4",
+				modelAlias: "qwen3-27b-instruct",
+				modelProfile: {
+					canonical: {
+						profileKey: "qwen3-27b-instruct",
+						profileLabel: "Qwen 3 27B Instruct",
+						family: "qwen3",
+						parametersBillions: 27,
+						parameterScaleLabel: "27B",
+						tuning: "instruct",
+					},
+					variant: {
+						variantKey: "ollama-qwen3-27b-q4",
+						variantLabel: "qwen3:27b-q4",
+						runtime: "ollama",
+						runtimeModelName: "qwen3:27b-q4",
+						quantization: "Q4",
+					},
+					resolutionSource: "configured_profile",
+				},
+			},
+		]);
+		const runB = buildRun("run-b", [
+			{
+				...buildItem("01", "smoke", "blind", 900),
+				model: "qwen3:27b-q6",
+				modelAlias: "qwen3-27b-instruct",
+				modelProfile: {
+					canonical: {
+						profileKey: "qwen3-27b-instruct",
+						profileLabel: "Qwen 3 27B Instruct",
+						family: "qwen3",
+						parametersBillions: 27,
+						parameterScaleLabel: "27B",
+						tuning: "instruct",
+					},
+					variant: {
+						variantKey: "ollama-qwen3-27b-q6",
+						variantLabel: "qwen3:27b-q6",
+						runtime: "ollama",
+						runtimeModelName: "qwen3:27b-q6",
+						quantization: "Q6",
 					},
 					resolutionSource: "configured_profile",
 				},

@@ -12,7 +12,7 @@ Output contract:
 Export a factory `createCalculator()` that returns an object with:
 - `add(n: number)`, `subtract(n: number)`, `multiply(n: number)`, `divide(n: number)`, `clear()` (each returns the calculator for chaining)
 - `result()` returns the current value
-- `memoryStore`, `memoryAdd`, `memoryClear` (each returns the calculator for chaining)
+- `memoryStore()`, `memoryAdd()`, `memoryClear()` (each returns the calculator for chaining)
 - `memoryRecall()` returns the current memory value (a number) and does NOT change current value
 
 Behavior:

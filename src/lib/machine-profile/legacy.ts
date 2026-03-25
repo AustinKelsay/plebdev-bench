@@ -17,6 +17,7 @@ import type {
 	RunResult,
 } from "../../schemas/index.js";
 import {
+	LegacyMachineProfileSchema,
 	MachineProfileSchema,
 	RunPlanSchema,
 	RunResultSchema,
@@ -144,20 +145,12 @@ export function migrateLegacyMachineProfile(
 		return normalizeCurrentMachineProfile(parsedMachine.data);
 	}
 
-	if (
-		typeof rawMachine.profileId !== "string" ||
-		!isRecord(rawMachine.hardware) ||
-		typeof rawMachine.hardware.platform !== "string" ||
-		typeof rawMachine.hardware.arch !== "string" ||
-		typeof rawMachine.hardware.osRelease !== "string" ||
-		typeof rawMachine.hardware.cpuModel !== "string" ||
-		typeof rawMachine.hardware.logicalCores !== "number" ||
-		typeof rawMachine.hardware.totalMemoryBytes !== "number"
-	) {
+	const parsedLegacyMachine = LegacyMachineProfileSchema.safeParse(rawMachine);
+	if (!parsedLegacyMachine.success) {
 		return undefined;
 	}
 
-	const legacyMachine = rawMachine as unknown as LegacyMachineProfile;
+	const legacyMachine = parsedLegacyMachine.data;
 	const observedHardware = migrateLegacyObservedHardware(legacyMachine);
 	const normalizedProfile = normalizeMachineProfile(observedHardware);
 	return {

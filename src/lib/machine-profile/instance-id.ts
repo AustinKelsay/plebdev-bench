@@ -109,7 +109,7 @@ function writeGeneratedInstanceId(targetPath: string, value: string): string {
 			// Best-effort cleanup only.
 		}
 		try {
-			if (fs.existsSync(targetPath) && readPersistedInstanceId(targetPath) === value) {
+			if (fs.existsSync(targetPath)) {
 				fs.unlinkSync(targetPath);
 			}
 		} catch {

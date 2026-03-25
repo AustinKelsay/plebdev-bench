@@ -1,5 +1,10 @@
 /**
  * Purpose: Unit tests for signal assessment helpers and workspace taint finalization.
+ * Exports: none
+ *
+ * Invariants:
+ * - Signal helper outputs stay deterministic for the same reason inputs
+ * - Finalization preserves trustworthy vs tainted classification rules
  */
 
 import { describe, expect, it } from "vitest";

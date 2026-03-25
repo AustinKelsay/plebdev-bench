@@ -135,6 +135,8 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	>();
 	const modelProfiles = config.modelProfiles;
 	const hasModelProfiles = Object.keys(modelProfiles).length > 0;
+	const matchedModelSelectors = new Set<string>();
+	let reachableRuntimeCount = 0;
 
 	if (hasModelProfiles) {
 		log.info(
@@ -156,6 +158,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			runtimeModels.set(runtimeName, []);
 			continue;
 		}
+		reachableRuntimeCount += 1;
 
 		const discovered = await runtime.listModels();
 
@@ -178,30 +181,32 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				}
 				if (
 					resolvedSelection !== undefined &&
-					discovered.includes(resolvedSelection.runtimeModelName) &&
-					!filteredSet.has(resolvedSelection.runtimeModelName)
+					discovered.includes(resolvedSelection.runtimeModelName)
 				) {
-					filtered.push(resolvedSelection.runtimeModelName);
-					filteredSet.add(resolvedSelection.runtimeModelName);
-					resolvedModelProfiles.set(
-						`${runtimeName}::${resolvedSelection.runtimeModelName}`,
-						{
-							...(resolvedSelection.modelAlias
-								? { modelAlias: resolvedSelection.modelAlias }
-								: {}),
-							modelProfile: resolvedSelection.modelProfile,
-						},
-					);
-					log.debug(
-						{
-							requestedModel: modelSpec,
-							runtime: runtimeName,
-							resolved: resolvedSelection.runtimeModelName,
-							profileKey:
-								resolvedSelection.modelProfile.canonical.profileKey,
-						},
-						"Resolved model selector",
-					);
+					matchedModelSelectors.add(modelSpec);
+					if (!filteredSet.has(resolvedSelection.runtimeModelName)) {
+						filtered.push(resolvedSelection.runtimeModelName);
+						filteredSet.add(resolvedSelection.runtimeModelName);
+						resolvedModelProfiles.set(
+							`${runtimeName}::${resolvedSelection.runtimeModelName}`,
+							{
+								...(resolvedSelection.modelAlias
+									? { modelAlias: resolvedSelection.modelAlias }
+									: {}),
+								modelProfile: resolvedSelection.modelProfile,
+							},
+						);
+						log.debug(
+							{
+								requestedModel: modelSpec,
+								runtime: runtimeName,
+								resolved: resolvedSelection.runtimeModelName,
+								profileKey:
+									resolvedSelection.modelProfile.canonical.profileKey,
+							},
+							"Resolved model selector",
+						);
+					}
 				}
 			}
 		} else {
@@ -247,6 +252,17 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			{ runtime: runtimeName, count: filtered.length },
 			"Models discovered",
 		);
+	}
+
+	if (config.models.length > 0 && reachableRuntimeCount > 0) {
+		const unresolvedSelectors = config.models.filter(
+			(modelSpec) => !matchedModelSelectors.has(modelSpec),
+		);
+		if (unresolvedSelectors.length > 0) {
+			throw new Error(
+				`Requested model selectors not found: ${unresolvedSelectors.join(", ")}`,
+			);
+		}
 	}
 
 	// Validate at least one model exists

@@ -80,7 +80,7 @@ describe("workspace prompt parity", () => {
 		expect(calculatorPrompt).toContain("`multiply(n: number)`");
 		expect(calculatorPrompt).toContain("`divide(n: number)`");
 		expect(calculatorPrompt).toContain("`clear()`");
-		expect(calculatorPrompt).toContain("`memoryClear`");
+		expect(calculatorPrompt).toContain("`memoryClear()`");
 		expect(calculatorPrompt).toContain("`memoryRecall()`");
 		expect(calculatorPrompt).toContain("`result()` returns the current value");
 		expect(calculatorPrompt).toContain("`memoryRecall()` returns the current memory value");

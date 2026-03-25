@@ -77,7 +77,7 @@ export function parseMacosAccelerators(rawJson: string): ObservedAccelerator[] {
 			{
 				modelRaw,
 				...(vendor ? { vendor } : {}),
-				...(memoryBytes ? { memoryBytes } : {}),
+				...(memoryBytes !== undefined ? { memoryBytes } : {}),
 				kind,
 				backend: "metal",
 			},

@@ -198,7 +198,9 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 								: {}),
 							...(item.generation.error
 								? {
-										error: sanitizePublishedText(item.generation.error),
+										error: INTERNAL_TRACE_PATTERN.test(item.generation.error)
+											? "[redacted internal tool transcript]"
+											: sanitizePublishedText(item.generation.error),
 									}
 								: {}),
 							...(item.generation.codeFilePath
@@ -216,7 +218,11 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 				? {
 						generationFailure: {
 							...item.generationFailure,
-							message: sanitizePublishedText(item.generationFailure.message),
+							message: INTERNAL_TRACE_PATTERN.test(
+								item.generationFailure.message,
+							)
+								? "[redacted internal tool transcript]"
+								: sanitizePublishedText(item.generationFailure.message),
 						},
 					}
 				: {}),
@@ -224,7 +230,11 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 				? {
 						scoringFailure: {
 							...item.scoringFailure,
-							message: sanitizePublishedText(item.scoringFailure.message),
+							message: INTERNAL_TRACE_PATTERN.test(
+								item.scoringFailure.message,
+							)
+								? "[redacted internal tool transcript]"
+								: sanitizePublishedText(item.scoringFailure.message),
 						},
 					}
 				: {}),
@@ -232,7 +242,11 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 				? {
 						frontierEvalFailure: {
 							...item.frontierEvalFailure,
-							message: sanitizePublishedText(item.frontierEvalFailure.message),
+							message: INTERNAL_TRACE_PATTERN.test(
+								item.frontierEvalFailure.message,
+							)
+								? "[redacted internal tool transcript]"
+								: sanitizePublishedText(item.frontierEvalFailure.message),
 						},
 					}
 				: {}),

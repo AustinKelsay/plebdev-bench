@@ -38,7 +38,8 @@ function buildCompareKey(item: {
 		item.modelProfile,
 		item.modelAlias,
 	);
-	return `${modelKey}|${item.runtime}|${item.harness}|${item.test}|${item.passType}`;
+	const runtimeVariantKey = item.modelProfile?.variant.variantKey ?? item.model;
+	return `${modelKey}|${item.runtime}|${runtimeVariantKey}|${item.harness}|${item.test}|${item.passType}`;
 }
 
 /** Delta for automated score. */
@@ -449,11 +450,19 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 	const mapB = new Map<string, MatrixItemResult>();
 
 	for (const item of resultA.items) {
-		mapA.set(buildCompareKey(item), item);
+		const key = buildCompareKey(item);
+		if (mapA.has(key)) {
+			throw new Error(`Duplicate compare key in run A: ${key}`);
+		}
+		mapA.set(key, item);
 	}
 
 	for (const item of resultB.items) {
-		mapB.set(buildCompareKey(item), item);
+		const key = buildCompareKey(item);
+		if (mapB.has(key)) {
+			throw new Error(`Duplicate compare key in run B: ${key}`);
+		}
+		mapB.set(key, item);
 	}
 
 	// Find matched items

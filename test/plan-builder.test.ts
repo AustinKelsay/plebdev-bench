@@ -572,4 +572,49 @@ describe("buildRunPlan", () => {
 			'Configured model profile "qwen3-27b-instruct" does not define a variant for runtime "vllm"',
 		);
 	});
+
+	it("fails when requested model selectors are not found on any reachable runtime", async () => {
+		createRuntimeMock.mockReturnValue({
+			ping: async () => true,
+			listModels: async () => ["qwen3:27b"],
+		});
+		const catalog = [
+			{
+				slug: "smoke",
+				category: "coding",
+				description: "basic smoke test",
+				tags: [],
+				scoringMode: "code-module",
+				requiresTools: false,
+				requiredHarnessCapabilities: [],
+				timeoutMultiplier: 1,
+				schemaVersion: 1,
+			},
+		];
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+
+		await expect(
+			buildRunPlan({
+				schemaVersion: SCHEMA_VERSION,
+				runtimes: ["ollama"],
+				models: ["missing-model"],
+				harnesses: ["direct"],
+				tests: [],
+				categories: [],
+				passTypes: ["blind"],
+				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
+				generateTimeoutMs: 300_000,
+				gooseMaxTurns: 1,
+				gooseRetryMaxTurns: 3,
+				gooseWorkspaceMaxTurns: 8,
+				gooseWorkspaceRetryMaxTurns: 12,
+				outputDir: "results",
+				modelProfiles: {},
+			}),
+		).rejects.toThrow('Requested model selectors not found: missing-model');
+	});
 	});

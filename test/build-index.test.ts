@@ -238,15 +238,25 @@ describe("buildDashboardIndexArtifacts", () => {
 							success: true,
 							output:
 								"Wrote /Users/example/.local/share/opencode/tool-output/run-1/solution.ts",
+							error:
+								'{"type":"step_start","sessionID":"abc123"}',
 							durationMs: 1000,
 							codeFilePath:
 								"/Users/example/.local/share/opencode/tool-output/run-1/solution.ts",
+						},
+						generationFailure: {
+							type: "unknown",
+							message: 'THOUGHT: investigating tool transcript',
 						},
 						automatedScore: { passed: 6, failed: 0, total: 6 },
 						scoringFailure: {
 							type: "test_execution",
 							message:
-								"Failed to read '/private/var/folders/abc/reports/output.json' at /Users/example/project/file.ts:9:3 and C:/Users/example/project/logs/output.txt plus /home/example/project/cache/output.log and /root/secret/debug.log",
+								'Failed to read "/private/var/folders/abc/reports/output.json" plus {"type":"tool_use"}',
+						},
+						frontierEvalFailure: {
+							type: "parse_error",
+							message: '"type":"step_finish"',
 						},
 					},
 				],
@@ -361,29 +371,8 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(latestAggregate.items[0]?.generation?.output).not.toContain(
 			"/Users/example",
 		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
-			"reports/output.json",
-		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
-			"logs/output.txt",
-		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
-			"cache/output.log",
-		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).toContain(
-			"debug.log",
-		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
-			"/private/var/folders",
-		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
-			"C:/Users/example",
-		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
-			"/home/example",
-		);
-		expect(latestAggregate.items[0]?.scoringFailure?.message).not.toContain(
-			"/root/secret",
+		expect(latestAggregate.items[0]?.scoringFailure?.message).toBe(
+			"[redacted internal tool transcript]",
 		);
 		expect(latestAggregate.items[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
 		expect(latestAggregate.items[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
@@ -411,8 +400,11 @@ describe("buildDashboardIndexArtifacts", () => {
 					codeFilePath?: string;
 					sourcePathToken?: string;
 					output?: string;
+					error?: string;
 				};
+				generationFailure?: { message?: string };
 				scoringFailure?: { message?: string };
+				frontierEvalFailure?: { message?: string };
 			}>;
 		};
 		expect(publishedRun.machine?.instanceId).toBe(SCRUBBED_MACHINE_A);
@@ -422,6 +414,18 @@ describe("buildDashboardIndexArtifacts", () => {
 		);
 		expect(publishedRun.items[0]?.generation?.output).toContain(
 			"[path:solution.ts]",
+		);
+		expect(publishedRun.items[0]?.generation?.error).toBe(
+			"[redacted internal tool transcript]",
+		);
+		expect(publishedRun.items[0]?.generationFailure?.message).toBe(
+			"[redacted internal tool transcript]",
+		);
+		expect(publishedRun.items[0]?.scoringFailure?.message).toBe(
+			"[redacted internal tool transcript]",
+		);
+		expect(publishedRun.items[0]?.frontierEvalFailure?.message).toBe(
+			"[redacted internal tool transcript]",
 		);
 		expect(publishedRun.items[0]?.generation?.output).not.toContain(
 			"/Users/example",
