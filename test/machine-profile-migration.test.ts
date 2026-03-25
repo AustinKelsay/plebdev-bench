@@ -116,12 +116,16 @@ describe("legacy machine-profile migration", () => {
 
 		const parsedPlan = RunPlanSchema.parse(plan);
 		const parsedRun = RunResultSchema.parse(run);
+		const knownPlan = parseKnownPlanPayload(plan);
+		const knownRun = parseKnownRunPayload(run);
 
 		expect(parsedPlan.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(parsedPlan.runtimeEnvironment?.platform).toBe("darwin");
 		expect(parsedPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
 		expect(parsedRun.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(parsedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
+		expect(knownPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
+		expect(knownRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 	});
 });
 

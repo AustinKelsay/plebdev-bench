@@ -226,7 +226,7 @@ export function evaluateCodeOnlyOutput(
 			reason: "ok",
 			code: trimmed,
 			method: extracted.method,
-			taintReasons: [],
+			taintReasons: getAcceptedOutputTaintReasons(trimmed, extracted),
 		};
 	}
 

@@ -132,6 +132,7 @@ export interface ObservedAccelerator {
 	modelRaw: string;
 	memoryBytes?: number;
 	backend?: string;
+	count?: number;
 	kind: ObservedAcceleratorKind;
 }
 

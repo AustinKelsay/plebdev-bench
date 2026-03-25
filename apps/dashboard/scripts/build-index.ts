@@ -52,6 +52,21 @@ export interface BuildDashboardIndexArtifactsOptions {
 	latestCheckpointId?: string;
 }
 
+/**
+ * Returns true when `candidate` is equal to or nested inside `basePath`.
+ *
+ * @param basePath - Base directory
+ * @param candidate - Candidate path to compare
+ * @returns True when the candidate is the same path or a descendant
+ */
+function isSameOrNestedPath(basePath: string, candidate: string): boolean {
+	if (basePath === candidate) {
+		return true;
+	}
+	const normalizedBase = basePath.endsWith("/") ? basePath : `${basePath}/`;
+	return candidate.startsWith(normalizedBase);
+}
+
 const PUBLIC_PATH_PATTERNS = [
 	/(?:\/Users\/|\/home\/|\/root\/|\/workspace\/|\/workspaces\/|\/Volumes\/|\/mnt\/|\/private\/var\/|\/var\/|\/tmp\/)[^\s"'`()<>]+/g,
 	/(?<![A-Za-z])[A-Za-z]:[\\/][^\s"'`()<>]+/g,
@@ -492,6 +507,20 @@ export async function buildDashboardIndexArtifacts(
 	const projectRoot = resolve(options.projectRoot ?? DEFAULT_PROJECT_ROOT);
 	const indexPath = join(outputResultsDir, "index.json");
 	const aggregatesDir = join(outputResultsDir, "aggregates");
+
+	if (
+		isSameOrNestedPath(sourceResultsDir, outputResultsDir) ||
+		isSameOrNestedPath(outputResultsDir, sourceResultsDir)
+	) {
+		throw new Error(
+			`Dashboard source and output directories must not overlap: source="${sourceResultsDir}" output="${outputResultsDir}"`,
+		);
+	}
+	if (isSameOrNestedPath(sourceResultsDir, aggregatesDir)) {
+		throw new Error(
+			`Dashboard aggregates directory must not be inside the source results tree: source="${sourceResultsDir}" aggregates="${aggregatesDir}"`,
+		);
+	}
 
 	const entries = await readdir(sourceResultsDir, { withFileTypes: true });
 	const bundles: PublishedRunBundle[] = [];

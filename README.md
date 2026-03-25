@@ -152,7 +152,7 @@ bun pb
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
 # Run with explicit machine instance metadata (recommended for shared aggregation)
-bun pb --machine-instance-id mac-mini-m4-pro --machine-display-label "Austin Mac Mini"
+bun pb --machine-instance-id inst-abc123 --machine-display-label "Austin Mac Mini"
 
 # Run only coding category tests
 bun pb --categories coding

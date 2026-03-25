@@ -181,6 +181,21 @@ type LatestAggregateFixture = {
 };
 
 describe("buildDashboardIndexArtifacts", () => {
+	it("rejects overlapping source and output directories before mutating files", async () => {
+		const projectRoot = createProjectRoot();
+		const sourceResultsDir = path.join(projectRoot, "results");
+		const outputResultsDir = path.join(sourceResultsDir, "published-results");
+		fs.mkdirSync(outputResultsDir, { recursive: true });
+
+		await expect(
+			buildDashboardIndexArtifacts({
+				sourceResultsDir,
+				outputResultsDir,
+				projectRoot,
+			}),
+		).rejects.toThrow(/must not overlap/);
+	});
+
 	it("writes v2 index and latest aggregate artifacts", async () => {
 		const projectRoot = createProjectRoot();
 		const sourceResultsDir = path.join(projectRoot, "results");

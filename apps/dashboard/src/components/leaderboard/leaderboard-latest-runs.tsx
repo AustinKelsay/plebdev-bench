@@ -24,12 +24,11 @@ interface LeaderboardLatestRunsProps {
  * Resolves the best machine badge label for a latest-run card.
  *
  * @param run - Published run summary item
- * @returns Best available machine label with instance-preserving fallback order
+ * @returns Best available human-friendly machine label
  */
 function getRunMachineBadgeLabel(run: RunListItem): string | undefined {
 	return (
 		run.machineDisplayLabel?.trim() ||
-		run.machineInstanceId?.trim() ||
 		run.machineLabel?.trim() ||
 		run.machineProfileLabel?.trim() ||
 		run.machineProfileKey?.trim() ||

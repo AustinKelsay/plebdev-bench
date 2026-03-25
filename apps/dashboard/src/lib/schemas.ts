@@ -116,6 +116,7 @@ const ObservedAcceleratorSchema = z.object({
 	modelRaw: z.string().min(1),
 	memoryBytes: z.number().int().positive().optional(),
 	backend: z.string().min(1).optional(),
+	count: z.number().int().positive().optional(),
 	kind: ObservedAcceleratorKindSchema.default("unknown"),
 });
 
@@ -127,24 +128,64 @@ const AcceleratorDetectionStatusSchema = z.enum([
 ]);
 
 /** Accelerator detection schema. */
-const AcceleratorDetectionSchema = z.object({
-	status: AcceleratorDetectionStatusSchema,
-	detail: z.string().min(1).optional(),
-});
+const AcceleratorDetectionSchema = z
+	.object({
+		status: AcceleratorDetectionStatusSchema,
+		detail: z.string().min(1).optional(),
+	})
+	.superRefine((value, context) => {
+		if (
+			value.status === "unavailable" &&
+			(value.detail === undefined || value.detail.trim().length === 0)
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["detail"],
+				message:
+					'AcceleratorDetectionSchema requires detail when status is "unavailable"',
+			});
+		}
+	});
 
 /** Hardware profile schema. */
-const HardwareProfileSchema = z.object({
-	platform: z.string().min(1),
-	arch: z.string().min(1),
-	osRelease: z.string().min(1),
-	cpuModelRaw: z.string().min(1),
-	cpuVendor: z.string().min(1).optional(),
-	physicalCores: z.number().int().positive().optional(),
-	logicalCores: z.number().int().positive(),
-	totalMemoryBytes: z.number().int().positive(),
-	accelerators: z.array(ObservedAcceleratorSchema).default([]),
-	acceleratorDetection: AcceleratorDetectionSchema,
-});
+const HardwareProfileSchema = z
+	.object({
+		platform: z.string().min(1),
+		arch: z.string().min(1),
+		osRelease: z.string().min(1),
+		cpuModelRaw: z.string().min(1),
+		cpuVendor: z.string().min(1).optional(),
+		physicalCores: z.number().int().positive().optional(),
+		logicalCores: z.number().int().positive(),
+		totalMemoryBytes: z.number().int().positive(),
+		accelerators: z.array(ObservedAcceleratorSchema).default([]),
+		acceleratorDetection: AcceleratorDetectionSchema,
+	})
+	.superRefine((hardware, context) => {
+		if (
+			hardware.acceleratorDetection.status === "detected" &&
+			hardware.accelerators.length === 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					'accelerators must contain at least one accelerator when acceleratorDetection.status is "detected"',
+			});
+		}
+
+		if (
+			hardware.acceleratorDetection.status === "none_detected" &&
+			hardware.accelerators.length > 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					'accelerators must be empty when acceleratorDetection.status is "none_detected"',
+			});
+		}
+	});
 
 /** Normalized machine profile schema. */
 const NormalizedMachineProfileSchema = z.object({

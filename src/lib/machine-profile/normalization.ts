@@ -158,6 +158,19 @@ function selectPrimaryAccelerator(
 }
 
 /**
+ * Sums observed accelerator device counts, defaulting each entry to one device.
+ *
+ * @param accelerators - Observed accelerators
+ * @returns Total observed accelerator device count
+ */
+function getObservedAcceleratorCount(accelerators: ObservedAccelerator[]): number {
+	return accelerators.reduce(
+		(total, accelerator) => total + (accelerator.count ?? 1),
+		0,
+	);
+}
+
+/**
  * Rounds a byte count to a stable GiB class.
  *
  * @param bytes - Byte count
@@ -210,7 +223,11 @@ export function normalizeMachineProfile(
 			: {}),
 		...(observedHardware.acceleratorDetection.status === "unavailable"
 			? {}
-			: { acceleratorCount: observedHardware.accelerators.length }),
+			: {
+					acceleratorCount: getObservedAcceleratorCount(
+						observedHardware.accelerators,
+					),
+				}),
 	};
 }
 

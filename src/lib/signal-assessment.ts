@@ -42,7 +42,7 @@ export function createTaintedSignalAssessment(
 ): SignalAssessment {
 	const uniqueReasons = Array.from(new Set(reasons));
 	if (uniqueReasons.length === 0) {
-		return createTrustworthySignalAssessment();
+		throw new Error("createTaintedSignalAssessment called with empty reasons");
 	}
 	return {
 		classification: "tainted",

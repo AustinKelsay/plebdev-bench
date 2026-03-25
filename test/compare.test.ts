@@ -67,8 +67,8 @@ describe("compareRuns", () => {
 
 		const matchedKeys = comparison1.matched.map((m) => m.key);
 		expect(matchedKeys).toEqual([
-			"llama3.2:3b|direct|smoke|blind",
-			"llama3.2:3b|direct|smoke|informed",
+			"llama3.2:3b|ollama|direct|smoke|blind",
+			"llama3.2:3b|ollama|direct|smoke|informed",
 		]);
 
 		const onlyInAKeys = comparison1.onlyInA.map(
@@ -133,7 +133,7 @@ describe("compareRuns", () => {
 		});
 	});
 
-	it("matches different runtime model names when canonical model profiles align", () => {
+	it("does not match different runtimes when canonical model profiles align", () => {
 		const runA = buildRun("run-a", [
 			{
 				...buildItem("01", "smoke", "blind", 1000),
@@ -188,12 +188,8 @@ describe("compareRuns", () => {
 
 		const comparison = compareRuns(runA, runB);
 
-		expect(comparison.matched).toHaveLength(1);
-		expect(comparison.matched[0]?.key).toBe(
-			"qwen3-27b-instruct|direct|smoke|blind",
-		);
-		expect(comparison.matched[0]?.model).toBe("Qwen 3 27B Instruct");
-		expect(comparison.onlyInA).toHaveLength(0);
-		expect(comparison.onlyInB).toHaveLength(0);
+		expect(comparison.matched).toHaveLength(0);
+		expect(comparison.onlyInA).toHaveLength(1);
+		expect(comparison.onlyInB).toHaveLength(1);
 	});
 });

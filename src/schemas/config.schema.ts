@@ -22,52 +22,45 @@ import { ModelProfileRegistrySchema } from "./model-profile.schema.js";
  *
  * @param value - Candidate config field
  * @returns Trimmed non-empty string or undefined
- * @throws {Error} When the value is a blank string
  */
 function readNonEmptyString(value: unknown): string | undefined {
 	if (typeof value !== "string") return undefined;
 	const trimmed = value.trim();
-	if (trimmed.length === 0) {
-		throw new Error("Machine config fields must not be blank strings");
-	}
-	return trimmed;
+	return trimmed.length > 0 ? trimmed : undefined;
 }
 
 /**
- * Throws when a canonical machine field is present but not a string.
+ * Checks whether a machine identity field is present with an invalid type.
  *
  * @param config - Mutable config-like record
  * @param fieldName - Canonical field name to validate
- * @throws {Error} When the field is present with a non-string value
+ * @returns True when the field exists with a non-string value
  */
 function validateCanonicalMachineFieldType(
 	config: Record<string, unknown>,
-	fieldName: "machineInstanceId" | "machineDisplayLabel",
-): void {
-	if (
+	fieldName:
+		| "machineInstanceId"
+		| "machineDisplayLabel"
+		| "machineProfileId"
+		| "machineLabel",
+): boolean {
+	return (
 		Object.prototype.hasOwnProperty.call(config, fieldName) &&
 		config[fieldName] !== undefined &&
 		typeof config[fieldName] !== "string"
-	) {
-		throw new Error(
-			`Bench config ${fieldName} must be a string when provided`,
-		);
-	}
+	);
 }
 
 /**
  * Converts the deprecated alias-only model map into the canonical model-profile registry.
  *
  * @param value - Raw legacy alias map candidate
- * @returns Model-profile registry preserving runtime mappings under `variants`
- * @throws {Error} When the legacy alias map is malformed
+ * @returns Model-profile registry preserving runtime mappings under `variants`, or undefined when malformed
  */
 function migrateLegacyModelAliases(value: unknown): unknown {
 	const parsed = ModelAliasMapSchema.safeParse(value);
 	if (!parsed.success) {
-		throw new Error(
-			`Invalid deprecated modelAliases config: ${parsed.error.message}`,
-		);
+		return undefined;
 	}
 
 	return Object.fromEntries(
@@ -87,7 +80,6 @@ function migrateLegacyModelAliases(value: unknown): unknown {
  *
  * @param raw - Arbitrary config-like input
  * @returns Normalized config input preserving unknown fields for the next parse step
- * @throws {Error} When deprecated and canonical keys disagree
  */
 export function migrateBenchConfigAliases(raw: unknown): unknown {
 	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -95,53 +87,35 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 
 	const config = { ...(raw as Record<string, unknown>) };
-	validateCanonicalMachineFieldType(config, "machineInstanceId");
-	validateCanonicalMachineFieldType(config, "machineDisplayLabel");
+	const hasMachineInstanceId = Object.prototype.hasOwnProperty.call(
+		config,
+		"machineInstanceId",
+	);
+	const hasMachineDisplayLabel = Object.prototype.hasOwnProperty.call(
+		config,
+		"machineDisplayLabel",
+	);
 	const machineInstanceId = readNonEmptyString(config.machineInstanceId);
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
 	const machineDisplayLabel = readNonEmptyString(config.machineDisplayLabel);
 	const machineLabel = readNonEmptyString(config.machineLabel);
 
-	if (
-		machineInstanceId !== undefined &&
-		machineProfileId !== undefined &&
-		machineInstanceId !== machineProfileId
-	) {
-		throw new Error(
-			`Conflicting bench config machine IDs: machineInstanceId="${machineInstanceId}" does not match deprecated machineProfileId="${machineProfileId}"`,
-		);
-	}
-	if (
-		machineDisplayLabel !== undefined &&
-		machineLabel !== undefined &&
-		machineDisplayLabel !== machineLabel
-	) {
-		throw new Error(
-			`Conflicting bench config machine labels: machineDisplayLabel="${machineDisplayLabel}" does not match deprecated machineLabel="${machineLabel}"`,
-		);
-	}
-
-	if (machineInstanceId === undefined && machineProfileId !== undefined) {
+	if (!hasMachineInstanceId && machineProfileId !== undefined) {
 		config.machineInstanceId = machineProfileId;
 	}
-	if (machineDisplayLabel === undefined && machineLabel !== undefined) {
+	if (!hasMachineDisplayLabel && machineLabel !== undefined) {
 		config.machineDisplayLabel = machineLabel;
-	}
-
-	if (
-		Object.prototype.hasOwnProperty.call(config, "modelProfiles") &&
-		Object.prototype.hasOwnProperty.call(config, "modelAliases")
-	) {
-		throw new Error(
-			'Bench config must not specify both "modelProfiles" and deprecated "modelAliases"',
-		);
 	}
 
 	if (
 		!Object.prototype.hasOwnProperty.call(config, "modelProfiles") &&
 		Object.prototype.hasOwnProperty.call(config, "modelAliases")
 	) {
-		config.modelProfiles = migrateLegacyModelAliases(config.modelAliases);
+		const migratedModelAliases = migrateLegacyModelAliases(config.modelAliases);
+		if (migratedModelAliases !== undefined) {
+			config.modelProfiles = migratedModelAliases;
+			delete config.modelAliases;
+		}
 	}
 
 	return config;
@@ -213,6 +187,41 @@ const BenchConfigObjectSchema = z
 		modelAliases: ModelAliasMapSchema.optional(),
 	})
 	.superRefine((config, context) => {
+		if (
+			config.machineInstanceId !== undefined &&
+			config.machineProfileId !== undefined &&
+			config.machineInstanceId !== config.machineProfileId
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["machineProfileId"],
+				message:
+					`Conflicting bench config machine IDs: machineInstanceId="${config.machineInstanceId}" does not match deprecated machineProfileId="${config.machineProfileId}"`,
+			});
+		}
+
+		if (
+			config.machineDisplayLabel !== undefined &&
+			config.machineLabel !== undefined &&
+			config.machineDisplayLabel !== config.machineLabel
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["machineLabel"],
+				message:
+					`Conflicting bench config machine labels: machineDisplayLabel="${config.machineDisplayLabel}" does not match deprecated machineLabel="${config.machineLabel}"`,
+			});
+		}
+
+		if (config.modelProfiles && config.modelAliases) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["modelAliases"],
+				message:
+					'Bench config must not specify both "modelProfiles" and deprecated "modelAliases"',
+			});
+		}
+
 		if (config.gooseRetryMaxTurns < config.gooseMaxTurns) {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
@@ -230,12 +239,33 @@ const BenchConfigObjectSchema = z
 					"gooseWorkspaceRetryMaxTurns must be greater than or equal to gooseWorkspaceMaxTurns",
 			});
 		}
+
+		const rawConfig = config as unknown as Record<string, unknown>;
+		for (const fieldName of [
+			"machineInstanceId",
+			"machineDisplayLabel",
+			"machineProfileId",
+			"machineLabel",
+		] as const) {
+			if (validateCanonicalMachineFieldType(rawConfig, fieldName)) {
+				context.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: [fieldName],
+					message: `Bench config ${fieldName} must be a string when provided`,
+				});
+			}
+		}
 	});
+
+const BenchConfigOutputSchema = BenchConfigObjectSchema.transform(
+	({ machineProfileId: _machineProfileId, machineLabel: _machineLabel, modelAliases: _modelAliases, ...config }) =>
+		config,
+);
 
 /** Zod schema for benchmark configuration. */
 export const BenchConfigSchema = z.preprocess(
 	migrateBenchConfigAliases,
-	BenchConfigObjectSchema,
+	BenchConfigOutputSchema,
 );
 
 /** Benchmark configuration type. */

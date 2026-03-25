@@ -223,6 +223,26 @@ describe("aggregateRunsForCheckpoint", () => {
 		expect(aggregate.machines[0]?.instanceCount).toBe(2);
 	});
 
+	it("counts repeated runs from the same machine instance only once", () => {
+		const checkpointId = "chk_sha256v1_same_instance";
+		const runs: AggregateRunInput[] = [
+			{
+				run: createRun("run-a", checkpointId, TEST_PROFILE_KEY, "instance-a", [
+					createItem("01", "2026-03-04T12:00:00.000Z"),
+				]),
+			},
+			{
+				run: createRun("run-b", checkpointId, TEST_PROFILE_KEY, "instance-a", [
+					createItem("02", "2026-03-04T12:10:00.000Z"),
+				]),
+			},
+		];
+
+		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
+		expect(aggregate.summary.instances).toBe(1);
+		expect(aggregate.machines[0]?.instanceCount).toBe(1);
+	});
+
 	it("does not dedupe across different profiles", () => {
 		const checkpointId = "chk_sha256v1_latest";
 		const item = createItem("01", "2026-03-04T12:00:00.000Z");

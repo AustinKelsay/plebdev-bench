@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	appendSignalAssessmentReasons,
+	createTaintedSignalAssessment,
 	finalizeItemSignalAssessment,
 } from "../src/lib/signal-assessment.js";
 
@@ -26,6 +27,14 @@ describe("appendSignalAssessmentReasons", () => {
 			classification: "tainted",
 			reasons: ["tool_permission_denied"],
 		});
+	});
+});
+
+describe("createTaintedSignalAssessment", () => {
+	it("rejects empty taint assessments", () => {
+		expect(() => createTaintedSignalAssessment([])).toThrow(
+			"createTaintedSignalAssessment called with empty reasons",
+		);
 	});
 });
 

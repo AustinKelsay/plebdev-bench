@@ -17,6 +17,7 @@ import {
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
+	AcceleratorDetectionSchema,
 	RunPlanSchema,
 	RunResultSchema,
 	RuntimeNameSchema,
@@ -172,6 +173,8 @@ describe("BenchConfigSchema", () => {
 		});
 		expect(config.machineInstanceId).toBe("legacy-machine");
 		expect(config.machineDisplayLabel).toBe("Legacy Label");
+		expect("machineProfileId" in config).toBe(false);
+		expect("machineLabel" in config).toBe(false);
 	});
 
 	it("should normalize deprecated modelAliases into modelProfiles", () => {
@@ -186,25 +189,35 @@ describe("BenchConfigSchema", () => {
 		expect(config.modelProfiles["qwen3-8b-instruct"]?.variants.ollama).toBe(
 			"qwen3:8b",
 		);
+		expect("modelAliases" in config).toBe(false);
 	});
 
 	it("should reject simultaneous modelProfiles and modelAliases", () => {
-		expect(() =>
-			BenchConfigSchema.parse({
-				modelProfiles: {
-					"qwen3-8b-instruct": {
-						variants: {
-							ollama: "qwen3:8b",
-						},
-					},
-				},
-				modelAliases: {
-					"qwen3-8b-instruct": {
+		const result = BenchConfigSchema.safeParse({
+			modelProfiles: {
+				"qwen3-8b-instruct": {
+					variants: {
 						ollama: "qwen3:8b",
 					},
 				},
-			}),
-		).toThrow(/must not specify both "modelProfiles" and deprecated "modelAliases"/);
+			},
+			modelAliases: {
+				"qwen3-8b-instruct": {
+					ollama: "qwen3:8b",
+				},
+			},
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some((issue) =>
+				issue.message.includes(
+					'Bench config must not specify both "modelProfiles" and deprecated "modelAliases"',
+				),
+			),
+		).toBe(true);
 	});
 
 	it("should reject conflicting canonical and deprecated machine config aliases", () => {
@@ -223,27 +236,51 @@ describe("BenchConfigSchema", () => {
 	});
 
 	it("should reject blank machine config strings before alias backfill", () => {
-		expect(() =>
-			BenchConfigSchema.parse({
-				machineInstanceId: "   ",
-				machineProfileId: "legacy-machine",
-			}),
-		).toThrow(/must not be blank strings/);
+		const result = BenchConfigSchema.safeParse({
+			machineInstanceId: "   ",
+			machineProfileId: "legacy-machine",
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(result.error.issues.some((issue) => issue.path[0] === "machineInstanceId")).toBe(
+			true,
+		);
 	});
 
 	it("should reject non-string canonical machine fields before alias backfill", () => {
-		expect(() =>
-			BenchConfigSchema.parse({
-				machineInstanceId: 123,
-				machineProfileId: "legacy-machine",
-			}),
-		).toThrow(/machineInstanceId must be a string/);
-		expect(() =>
-			BenchConfigSchema.parse({
-				machineDisplayLabel: 123,
-				machineLabel: "Legacy Label",
-			}),
-		).toThrow(/machineDisplayLabel must be a string/);
+		const idResult = BenchConfigSchema.safeParse({
+			machineInstanceId: 123,
+			machineProfileId: "legacy-machine",
+		});
+		expect(idResult.success).toBe(false);
+		if (idResult.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(
+			idResult.error.issues.some(
+				(issue) =>
+					issue.path[0] === "machineInstanceId" &&
+					issue.message.includes("Expected string"),
+			),
+		).toBe(true);
+
+		const labelResult = BenchConfigSchema.safeParse({
+			machineDisplayLabel: 123,
+			machineLabel: "Legacy Label",
+		});
+		expect(labelResult.success).toBe(false);
+		if (labelResult.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(
+			labelResult.error.issues.some(
+				(issue) =>
+					issue.path[0] === "machineDisplayLabel" &&
+					issue.message.includes("Expected string"),
+			),
+		).toBe(true);
 	});
 
 	it("should provide default config", () => {
@@ -294,6 +331,23 @@ describe("MatrixItemSchema", () => {
 });
 
 describe("HardwareProfileSchema", () => {
+	it("requires detail when accelerator detection is unavailable", () => {
+		const result = AcceleratorDetectionSchema.safeParse({
+			status: "unavailable",
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected AcceleratorDetectionSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some(
+				(issue) =>
+					issue.path[0] === "detail" &&
+					issue.message.includes('requires detail when status is "unavailable"'),
+			),
+		).toBe(true);
+	});
+
 	it("should reject detected accelerators with an empty accelerator list", () => {
 		expect(() =>
 			HardwareProfileSchema.parse({
@@ -307,14 +361,24 @@ describe("HardwareProfileSchema", () => {
 	});
 
 	it("should reject none_detected accelerators with a non-empty accelerator list", () => {
-		expect(() =>
-			HardwareProfileSchema.parse({
-				...TEST_HARDWARE,
-				acceleratorDetection: {
-					status: "none_detected",
-				},
-			}),
-		).toThrow(/must be empty when acceleratorDetection\.status is \\\"none_detected\\\"/);
+		const result = HardwareProfileSchema.safeParse({
+			...TEST_HARDWARE,
+			acceleratorDetection: {
+				status: "none_detected",
+			},
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected HardwareProfileSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some(
+				(issue) =>
+					issue.path[0] === "accelerators" &&
+					issue.message ===
+						'accelerators must be empty when acceleratorDetection.status is "none_detected"',
+			),
+		).toBe(true);
 	});
 
 	it("should classify a confirmed accelerator-free machine as none", () => {
@@ -329,6 +393,25 @@ describe("HardwareProfileSchema", () => {
 		);
 		expect(normalized.acceleratorKey).toBe("none");
 		expect(normalized.acceleratorCount).toBe(0);
+	});
+
+	it("should preserve explicit accelerator device counts during normalization", () => {
+		const normalized = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [
+					{
+						...TEST_HARDWARE.accelerators[0],
+						count: 2,
+					},
+				],
+				acceleratorDetection: {
+					status: "detected",
+				},
+			}),
+		);
+		expect(normalized.acceleratorCount).toBe(2);
+		expect(buildMachineProfileKey(normalized)).toContain("_x2");
 	});
 });
 

@@ -139,8 +139,9 @@ export function migrateLegacyMachineProfile(
 		return undefined;
 	}
 
-	if (MachineProfileSchema.safeParse(rawMachine).success) {
-		return normalizeCurrentMachineProfile(rawMachine as MachineProfile);
+	const parsedMachine = MachineProfileSchema.safeParse(rawMachine);
+	if (parsedMachine.success) {
+		return normalizeCurrentMachineProfile(parsedMachine.data);
 	}
 
 	if (

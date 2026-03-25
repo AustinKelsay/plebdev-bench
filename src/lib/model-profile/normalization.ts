@@ -17,6 +17,14 @@ import type {
 	ModelProfile,
 } from "../../schemas/index.js";
 
+const TUNING_PATTERNS = [
+	"instruct",
+	"chat",
+	"coder",
+	"vision",
+	"reasoning",
+] as const;
+
 /** Lowercase slug helper used for stable profile and variant keys. */
 function toSlug(value: string): string {
 	return value
@@ -33,7 +41,12 @@ function formatCompactNumber(value: number): string {
 		: value.toFixed(1).replace(/\.0$/, "");
 }
 
-/** Converts a slug-like token into a simple human-readable label. */
+/**
+ * Converts a slug-like identifier into a compact human-readable label.
+ *
+ * @param value - Slug or tokenized identifier such as `qwen3-27b-instruct`
+ * @returns Space-separated label with simple capitalization applied
+ */
 export function humanizeSlug(value: string): string {
 	return value
 		.split(/[-_]+/)
@@ -93,8 +106,8 @@ function detectQuantization(value: string): string | undefined {
 /** Detects common model artifact formats from a raw runtime model name. */
 function detectFormat(value: string): string | undefined {
 	const normalized = value.toLowerCase();
-	if (normalized.includes("gguf")) return "GGUF";
-	if (normalized.includes("mlx")) return "MLX";
+	if (normalized.includes("gguf")) return "gguf";
+	if (normalized.includes("mlx")) return "mlx";
 	if (normalized.includes("safetensors")) return "safetensors";
 	return undefined;
 }
@@ -102,8 +115,7 @@ function detectFormat(value: string): string | undefined {
 /** Detects common tuning suffixes that should stay in the canonical profile. */
 function detectTuning(value: string): string | undefined {
 	const normalized = value.toLowerCase();
-	const tuningPatterns = ["instruct", "chat", "coder", "vision", "reasoning"];
-	return tuningPatterns.find((pattern) => normalized.includes(pattern));
+	return TUNING_PATTERNS.find((pattern) => normalized.includes(pattern));
 }
 
 /** Breaks a raw model identifier into lower-case tokens for heuristic grouping. */
@@ -148,7 +160,9 @@ function deriveFamily(value: string): string {
 		if (isParameterToken(token) || isVariantOnlyToken(token)) {
 			break;
 		}
-		if (["instruct", "chat", "coder", "vision", "reasoning"].includes(token)) {
+		if (
+			(TUNING_PATTERNS as readonly string[]).includes(token)
+		) {
 			break;
 		}
 		familyTokens.push(token);
@@ -195,7 +209,12 @@ function buildCanonicalProfileLabel(
 		.join(" ");
 }
 
-/** Resolves a configured variant definition from either shorthand or object form. */
+/**
+ * Resolves a configured model variant from shorthand or expanded object form.
+ *
+ * @param value - Configured variant value from the model-profile registry
+ * @returns Normalized object containing runtime model name and optional metadata
+ */
 export function normalizeConfiguredVariant(
 	value: ConfiguredModelVariantValue,
 ): {
@@ -208,7 +227,13 @@ export function normalizeConfiguredVariant(
 	return typeof value === "string" ? { modelName: value } : value;
 }
 
-/** Builds a resolved model profile from configured metadata. */
+/**
+ * Builds a resolved model profile from an explicit configured registry entry.
+ *
+ * @param args - Configured profile key, profile payload, runtime, and runtime model name
+ * @returns Canonical profile plus runtime-specific variant metadata
+ * @throws {Error} When the configured profile does not define the requested runtime variant
+ */
 export function buildConfiguredModelProfile(args: {
 	profileKey: string;
 	profile: ConfiguredModelProfile;
@@ -216,9 +241,13 @@ export function buildConfiguredModelProfile(args: {
 	runtimeModelName: string;
 	resolutionSource: ModelProfile["resolutionSource"];
 }): ModelProfile {
-	const configuredVariant = normalizeConfiguredVariant(
-		args.profile.variants[args.runtime],
-	);
+	const rawConfiguredVariant = args.profile.variants[args.runtime];
+	if (rawConfiguredVariant === undefined) {
+		throw new Error(
+			`Configured model profile "${args.profileKey}" does not define a variant for runtime "${args.runtime}"`,
+		);
+	}
+	const configuredVariant = normalizeConfiguredVariant(rawConfiguredVariant);
 	const family = args.profile.family ?? args.profileKey;
 	const parametersBillions =
 		args.profile.parametersBillions ??
@@ -257,7 +286,13 @@ export function buildConfiguredModelProfile(args: {
 	};
 }
 
-/** Builds a heuristic model profile when no configured mapping exists. */
+/**
+ * Builds a heuristic model profile when no configured mapping exists.
+ *
+ * @param runtime - Runtime that will execute the model
+ * @param runtimeModelName - Raw runtime-specific model identifier
+ * @returns Heuristically derived canonical profile and runtime-specific variant metadata
+ */
 export function buildFallbackModelProfile(
 	runtime: RuntimeName,
 	runtimeModelName: string,
@@ -303,6 +338,7 @@ export function buildFallbackModelProfile(
  * @param profileKey - Optional matched configured profile key
  * @param profile - Optional matched configured profile
  * @returns Resolved model profile
+ * @throws {Error} When only one of `profileKey` or `profile` is provided
  */
 export function buildResolvedModelProfile(args: {
 	runtime: RuntimeName;
@@ -318,6 +354,12 @@ export function buildResolvedModelProfile(args: {
 			runtimeModelName: args.runtimeModelName,
 			resolutionSource: "configured_profile",
 		});
+	}
+
+	if (args.profileKey || args.profile) {
+		throw new Error(
+			`Invalid configured model-profile resolution for runtime "${args.runtime}" and model "${args.runtimeModelName}": profileKey and profile must either both be provided or both be omitted`,
+		);
 	}
 
 	return buildFallbackModelProfile(args.runtime, args.runtimeModelName);

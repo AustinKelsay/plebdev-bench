@@ -34,6 +34,10 @@ interface PreparedArtifactRewrite {
 interface StagedArtifactRewrite extends PreparedArtifactRewrite {
 	tempPath: string;
 	backupPath: string;
+	tempWritten: boolean;
+	backupCreated: boolean;
+	renameCompleted: boolean;
+	rollbackSucceeded: boolean;
 }
 
 const MigrateMachineCommandOptionsSchema = z
@@ -108,37 +112,93 @@ async function writePreparedArtifacts(
 			...rewrite,
 			tempPath: `${rewrite.artifactPath}.${token}.${index}.tmp`,
 			backupPath: `${rewrite.artifactPath}.${token}.${index}.bak`,
+			tempWritten: false,
+			backupCreated: false,
+			renameCompleted: false,
+			rollbackSucceeded: false,
 		}),
 	);
 
 	try {
 		for (const rewrite of stagedRewrites) {
-			await fs.writeFile(rewrite.tempPath, rewrite.nextContent, "utf-8");
-			await fs.copyFile(rewrite.artifactPath, rewrite.backupPath);
+			try {
+				await fs.writeFile(rewrite.tempPath, rewrite.nextContent, "utf-8");
+				rewrite.tempWritten = true;
+			} catch (error) {
+				throw new Error(
+					`Failed to stage migrated artifact for ${rewrite.artifactPath}: ${(error as Error).message}`,
+				);
+			}
+			try {
+				await fs.copyFile(rewrite.artifactPath, rewrite.backupPath);
+				rewrite.backupCreated = true;
+			} catch (error) {
+				throw new Error(
+					`Failed to create rollback backup for ${rewrite.artifactPath}: ${(error as Error).message}`,
+				);
+			}
 		}
 		for (const rewrite of stagedRewrites) {
-			await fs.rename(rewrite.tempPath, rewrite.artifactPath);
+			try {
+				await fs.rename(rewrite.tempPath, rewrite.artifactPath);
+				rewrite.renameCompleted = true;
+			} catch (error) {
+				throw new Error(
+					`Failed to replace artifact with migrated content for ${rewrite.artifactPath}: ${(error as Error).message}`,
+				);
+			}
 		}
 	} catch (error) {
 		for (const rewrite of stagedRewrites) {
+			if (!rewrite.backupCreated || !rewrite.renameCompleted) {
+				continue;
+			}
 			try {
 				await fs.copyFile(rewrite.backupPath, rewrite.artifactPath);
-			} catch {
-				// Best-effort rollback only.
+				rewrite.rollbackSucceeded = true;
+			} catch (rollbackError) {
+				logger.warn(
+					{
+						artifactPath: rewrite.artifactPath,
+						error: rollbackError,
+					},
+					"Failed to restore artifact backup during migration rollback",
+				);
 			}
 		}
 		throw error;
 	} finally {
 		for (const rewrite of stagedRewrites) {
-			try {
-				await fs.unlink(rewrite.tempPath);
-			} catch {
-				// Best-effort cleanup only.
+			if (rewrite.tempWritten && !rewrite.renameCompleted) {
+				try {
+					await fs.unlink(rewrite.tempPath);
+				} catch (cleanupError) {
+					logger.warn(
+						{
+							artifactPath: rewrite.artifactPath,
+							path: rewrite.tempPath,
+							error: cleanupError,
+						},
+						"Failed to remove staged migration temp file",
+					);
+				}
 			}
-			try {
-				await fs.unlink(rewrite.backupPath);
-			} catch {
-				// Best-effort cleanup only.
+			const shouldDeleteBackup =
+				rewrite.backupCreated &&
+				(rewrite.rollbackSucceeded || !rewrite.renameCompleted);
+			if (shouldDeleteBackup) {
+				try {
+					await fs.unlink(rewrite.backupPath);
+				} catch (cleanupError) {
+					logger.warn(
+						{
+							artifactPath: rewrite.artifactPath,
+							path: rewrite.backupPath,
+							error: cleanupError,
+						},
+						"Failed to remove migration backup file",
+					);
+				}
 			}
 		}
 	}
@@ -220,13 +280,9 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 			);
 
 			if (parsedOptions.rebuildDashboardIndex) {
-				const dashboardOutputDirInput = parsedOptions.dashboardOutputDir;
-				if (dashboardOutputDirInput === undefined) {
-					throw new Error(
-						"--rebuild-dashboard-index requires --dashboard-output-dir to avoid mutating the source results directory",
-					);
-				}
-				const dashboardOutputDir = path.resolve(dashboardOutputDirInput);
+				const dashboardOutputDir = path.resolve(
+					parsedOptions.dashboardOutputDir!,
+				);
 				const result = await buildDashboardIndexArtifacts({
 					sourceResultsDir: resultsDir,
 					outputResultsDir: dashboardOutputDir,

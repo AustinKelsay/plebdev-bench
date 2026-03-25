@@ -70,6 +70,16 @@ describe("evaluateCodeOnlyOutput", () => {
 		expect(decision.taintReasons).toEqual([]);
 	});
 
+	it("preserves taint reasons when raw-code signals salvage fenced output", () => {
+		const decision = evaluateCodeOnlyOutput(
+			"```typescript\nexport function createValue(): number { return 42; }\n```",
+			60,
+		);
+		expect(decision.shouldRetry).toBe(false);
+		expect(decision.reason).toBe("ok");
+		expect(decision.taintReasons).toEqual(["output_contract_violation"]);
+	});
+
 	it("retries short output", () => {
 		const decision = evaluateCodeOnlyOutput("ok", 10);
 		expect(decision.shouldRetry).toBe(true);

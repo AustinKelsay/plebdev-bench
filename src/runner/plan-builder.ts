@@ -67,8 +67,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const resolvedMachine: ResolvedMachineProfile = await collectMachineProfile({
 		machineInstanceId: config.machineInstanceId,
 		machineDisplayLabel: config.machineDisplayLabel,
-		machineProfileId: config.machineProfileId,
-		machineLabel: config.machineLabel,
 	});
 
 	if (resolvedMachine.isAnonymous) {
@@ -166,11 +164,17 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		if (config.models.length > 0) {
 			filtered = [];
 			for (const modelSpec of config.models) {
+				const configuredProfile = modelProfiles[modelSpec];
 				const resolvedSelection = resolveModelSelection(
 					modelSpec,
 					runtimeName,
 					modelProfiles,
 				);
+				if (configuredProfile && resolvedSelection === undefined) {
+					throw new Error(
+						`Configured model profile "${modelSpec}" does not define a variant for runtime "${runtimeName}"`,
+					);
+				}
 				if (
 					resolvedSelection !== undefined &&
 					discovered.includes(resolvedSelection.runtimeModelName)

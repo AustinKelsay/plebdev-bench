@@ -79,6 +79,9 @@ describe("createGooseAdapter", () => {
 		const { createGooseAdapter } = await import(
 			"../src/harnesses/goose-adapter.js"
 		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-goose-tool-call-"),
+		);
 		const runtime: Runtime = {
 			name: "ollama",
 			baseUrl: "http://localhost:11434",
@@ -102,18 +105,23 @@ describe("createGooseAdapter", () => {
 			stderr: "",
 		});
 
-		const adapter = createGooseAdapter();
-		const result = await adapter.generate({
-			model: "qwen3.5:4b",
-			prompt: "Return TypeScript source only.",
-			timeoutMs: 5_000,
-			runtime,
-		});
+		try {
+			const adapter = createGooseAdapter();
+			const result = await adapter.generate({
+				model: "qwen3.5:4b",
+				prompt: "Return TypeScript source only.",
+				timeoutMs: 5_000,
+				runtime,
+				workingDirectory: workspaceDir,
+			});
 
-		expect(result.codeFilePath).toBeDefined();
-		expect(result.signalAssessment).toEqual({
-			classification: "tainted",
-			reasons: ["tool_call_not_executed"],
-		});
+			expect(result.codeFilePath).toBeDefined();
+			expect(result.signalAssessment).toEqual({
+				classification: "tainted",
+				reasons: ["tool_call_not_executed"],
+			});
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
 	});
 });

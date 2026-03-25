@@ -212,17 +212,11 @@ export const runCommand = new Command("run")
 				logger.warn(
 					"Warning: --machine-id is deprecated; use --machine-instance-id",
 				);
-				options.machineInstanceId = resolvedMachineId;
-			} else if (canonicalMachineId) {
-				options.machineInstanceId = canonicalMachineId;
 			}
 			if (legacyMachineLabel) {
 				logger.warn(
 					"Warning: --machine-label is deprecated; use --machine-display-label",
 				);
-				options.machineDisplayLabel = resolvedMachineLabel;
-			} else if (canonicalMachineLabel) {
-				options.machineDisplayLabel = canonicalMachineLabel;
 			}
 
 			// Build config from CLI options

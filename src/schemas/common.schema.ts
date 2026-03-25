@@ -346,6 +346,7 @@ export const ObservedAcceleratorSchema = z.object({
 	modelRaw: z.string().min(1),
 	memoryBytes: z.number().int().positive().optional(),
 	backend: z.string().min(1).optional(),
+	count: z.number().int().positive().optional(),
 	kind: ObservedAcceleratorKindSchema.default("unknown"),
 });
 
@@ -353,10 +354,24 @@ export const ObservedAcceleratorSchema = z.object({
 export type ObservedAccelerator = z.infer<typeof ObservedAcceleratorSchema>;
 
 /** Accelerator probe status with explicit non-silent detection semantics. */
-export const AcceleratorDetectionSchema = z.object({
-	status: AcceleratorDetectionStatusSchema,
-	detail: z.string().min(1).optional(),
-});
+export const AcceleratorDetectionSchema = z
+	.object({
+		status: AcceleratorDetectionStatusSchema,
+		detail: z.string().min(1).optional(),
+	})
+	.superRefine((value, context) => {
+		if (
+			value.status === "unavailable" &&
+			(value.detail === undefined || value.detail.trim().length === 0)
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["detail"],
+				message:
+					'AcceleratorDetectionSchema requires detail when status is "unavailable"',
+			});
+		}
+	});
 
 /** Accelerator probe status type. */
 export type AcceleratorDetection = z.infer<typeof AcceleratorDetectionSchema>;

@@ -292,20 +292,23 @@ export function aggregateRunsForCheckpoint(
 	runs: AggregateRunInput[],
 	checkpointId: string,
 ): CheckpointAggregate {
+	const resolvedRuns = runs.map((input) => ({
+		input,
+		metadata: resolveRunMetadata(input),
+	}));
 	const deduped = new Map<
 		string,
 		{ timestamp: number; aggregated: AggregatedMatrixItem }
 	>();
-	const matchedRuns = runs.filter(
-		(input) => resolveRunMetadata(input).checkpointId === checkpointId,
+	const matchedRuns = resolvedRuns.filter(
+		({ metadata }) => metadata.checkpointId === checkpointId,
 	);
 
 	let rawItems = 0;
 	const profileRunSet = new Map<string, Set<string>>();
 	const profileInstanceSet = new Map<string, Set<string>>();
 
-	for (const input of matchedRuns) {
-		const metadata = resolveRunMetadata(input);
+	for (const { input, metadata } of matchedRuns) {
 		const machineProfileKey = metadata.machineProfileKey ?? `legacy-${input.run.runId}`;
 		const runsForProfile = profileRunSet.get(machineProfileKey) ?? new Set<string>();
 		runsForProfile.add(input.run.runId);
@@ -381,18 +384,18 @@ export function aggregateRunsForCheckpoint(
 	}
 
 	const machines: MachineAggregateSummary[] = [...machineSummary.entries()]
-			.map(([machineProfileKey, value]) => ({
-				machineProfileKey,
-				machineProfileId: machineProfileKey,
-				...(value.machineProfileLabel
-					? { machineProfileLabel: value.machineProfileLabel }
-					: {}),
-				...(value.machineProfileLabel
-					? { machineLabel: value.machineProfileLabel }
-					: {}),
-				verificationStatus: value.verificationStatus,
-				runCount: profileRunSet.get(machineProfileKey)?.size ?? 0,
-				itemCount: value.itemCount,
+		.map(([machineProfileKey, value]) => ({
+			machineProfileKey,
+			machineProfileId: machineProfileKey,
+			...(value.machineProfileLabel
+				? { machineProfileLabel: value.machineProfileLabel }
+				: {}),
+			...(value.machineProfileLabel
+				? { machineLabel: value.machineProfileLabel }
+				: {}),
+			verificationStatus: value.verificationStatus,
+			runCount: profileRunSet.get(machineProfileKey)?.size ?? 0,
+			itemCount: value.itemCount,
 			instanceCount: profileInstanceSet.get(machineProfileKey)?.size ?? 0,
 		}))
 		.sort((left, right) =>
@@ -411,7 +414,7 @@ export function aggregateRunsForCheckpoint(
 			machines: machines.length,
 			instances: new Set(
 				matchedRuns
-					.map((input) => resolveRunMetadata(input).machineInstanceId)
+					.map(({ metadata }) => metadata.machineInstanceId)
 					.filter((value): value is string => Boolean(value)),
 			).size,
 			automatedScoreItems: items.filter((item) => item.automatedScore).length,

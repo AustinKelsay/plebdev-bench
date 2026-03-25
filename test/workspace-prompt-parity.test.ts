@@ -71,12 +71,18 @@ describe("workspace prompt parity", () => {
 		);
 
 		expect(calculatorPrompt).toContain("`add(n: number)`");
+		expect(calculatorPrompt).toContain("`subtract(n: number)`");
+		expect(calculatorPrompt).toContain("`clear()`");
+		expect(calculatorPrompt).toContain("`memoryClear`");
 		expect(calculatorPrompt).toContain("`memoryRecall()`");
 		expect(emitterPrompt).toContain("`listenerCount(event)`");
 		expect(emitterPrompt).toContain("`on(event, listener)`");
+		expect(emitterPrompt).toContain("`once(event, listener)`");
+		expect(emitterPrompt).toContain("`off(event, listener)`");
 		expect(emitterPrompt).toContain("`emit(event, payload)`");
 		expect(rateLimiterPrompt).toContain("`allow(key: string, nowMs: number)`");
 		expect(rateLimiterPrompt).toContain("`remaining(key: string, nowMs: number)`");
+		expect(rateLimiterPrompt).toContain("`reset(key: string)`");
 		expect(rateLimiterPrompt).toContain("never go below 0");
 	});
 });
