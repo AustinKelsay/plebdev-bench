@@ -65,28 +65,20 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 
 	const config = { ...(raw as Record<string, unknown>) };
-	const hasMachineInstanceId = Object.prototype.hasOwnProperty.call(
-		config,
-		"machineInstanceId",
-	);
-	const hasMachineDisplayLabel = Object.prototype.hasOwnProperty.call(
-		config,
-		"machineDisplayLabel",
-	);
-	const machineInstanceId = readNonEmptyString(config.machineInstanceId);
+	const machineInstanceId = config.machineInstanceId;
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
-	const machineDisplayLabel = readNonEmptyString(config.machineDisplayLabel);
+	const machineDisplayLabel = config.machineDisplayLabel;
 	const machineLabel = readNonEmptyString(config.machineLabel);
 
-	if (!hasMachineInstanceId && machineProfileId !== undefined) {
+	if (machineInstanceId === undefined && machineProfileId !== undefined) {
 		config.machineInstanceId = machineProfileId;
 	}
-	if (!hasMachineDisplayLabel && machineLabel !== undefined) {
+	if (machineDisplayLabel === undefined && machineLabel !== undefined) {
 		config.machineDisplayLabel = machineLabel;
 	}
 
 	if (
-		!Object.prototype.hasOwnProperty.call(config, "modelProfiles") &&
+		config.modelProfiles === undefined &&
 		Object.prototype.hasOwnProperty.call(config, "modelAliases")
 	) {
 		const migratedModelAliases = migrateLegacyModelAliases(config.modelAliases);

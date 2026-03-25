@@ -420,6 +420,24 @@ const LeaderboardMachineSummarySchema = z.object({
 	instanceCount: z.number(),
 });
 
+/** Legacy v1 aggregated leaderboard item schema. */
+const LeaderboardAggregatedItemV1Schema = MatrixItemResultSchema.extend({
+	machineProfileId: z.string(),
+	machineLabel: z.string().optional(),
+	verificationStatus: VerificationStatusSchema,
+	sourceRunId: z.string(),
+	sourceCompletedAt: z.string(),
+});
+
+/** Legacy v1 aggregated machine summary schema. */
+const LeaderboardMachineSummaryV1Schema = z.object({
+	machineProfileId: z.string(),
+	machineLabel: z.string().optional(),
+	verificationStatus: VerificationStatusSchema,
+	runCount: z.number(),
+	itemCount: z.number(),
+});
+
 /** Aggregated summary counters schema. */
 const LeaderboardAggregateSummarySchema = z.object({
 	runsConsidered: z.number(),
@@ -432,8 +450,29 @@ const LeaderboardAggregateSummarySchema = z.object({
 	frontierEvalItems: z.number(),
 });
 
-/** Leaderboard aggregate payload schema. */
-export const LeaderboardAggregateSchema = z.object({
+/** Legacy v1 aggregate summary counters schema. */
+const LeaderboardAggregateSummaryV1Schema = z.object({
+	runsConsidered: z.number(),
+	runsMatched: z.number(),
+	rawItems: z.number(),
+	dedupedItems: z.number(),
+	machines: z.number(),
+	automatedScoreItems: z.number(),
+	frontierEvalItems: z.number(),
+});
+
+/** Legacy v1 leaderboard aggregate payload schema. */
+const LeaderboardAggregateV1Schema = z.object({
+	schemaVersion: z.literal(1),
+	generatedAt: z.string(),
+	checkpointId: z.string(),
+	summary: LeaderboardAggregateSummaryV1Schema,
+	machines: z.array(LeaderboardMachineSummaryV1Schema),
+	items: z.array(LeaderboardAggregatedItemV1Schema),
+});
+
+/** Current v2 leaderboard aggregate payload schema. */
+const LeaderboardAggregateV2Schema = z.object({
 	schemaVersion: z.literal(2),
 	generatedAt: z.string(),
 	checkpointId: z.string(),
@@ -441,3 +480,40 @@ export const LeaderboardAggregateSchema = z.object({
 	machines: z.array(LeaderboardMachineSummarySchema),
 	items: z.array(LeaderboardAggregatedItemSchema),
 });
+
+/** Leaderboard aggregate payload schema. */
+export const LeaderboardAggregateSchema = z
+	.union([LeaderboardAggregateV1Schema, LeaderboardAggregateV2Schema])
+	.transform((aggregate) => {
+		if (aggregate.schemaVersion === 2) {
+			return aggregate;
+		}
+
+		return {
+			schemaVersion: 2 as const,
+			generatedAt: aggregate.generatedAt,
+			checkpointId: aggregate.checkpointId,
+			summary: {
+				...aggregate.summary,
+				instances: aggregate.summary.machines,
+			},
+			machines: aggregate.machines.map((machine) => ({
+				machineProfileKey: machine.machineProfileId,
+				machineProfileId: machine.machineProfileId,
+				...(machine.machineLabel ? { machineLabel: machine.machineLabel } : {}),
+				verificationStatus: machine.verificationStatus,
+				runCount: machine.runCount,
+				itemCount: machine.itemCount,
+				instanceCount: machine.runCount > 0 ? 1 : 0,
+			})),
+			items: aggregate.items.map((item) => ({
+				...item,
+				machineProfileKey: item.machineProfileId,
+				machineProfileId: item.machineProfileId,
+				...(item.machineLabel ? { machineLabel: item.machineLabel } : {}),
+				...(item.machineLabel
+					? { machineDisplayLabel: item.machineLabel }
+					: {}),
+			})),
+		};
+	});

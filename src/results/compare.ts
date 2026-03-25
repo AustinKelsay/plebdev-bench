@@ -104,6 +104,18 @@ export interface CompareSummary {
 	trustedFrontierEvalDelta: {
 		avgScoreDelta: number;
 	} | null;
+	metricAvailability: {
+		scoring: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+		frontierEval: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+	};
 	signal: {
 		trustedMetricsAvailable: boolean;
 		taintedInA: number | null;
@@ -278,17 +290,19 @@ function computeSummary(
 	// Overall scoring delta
 	let scoringDelta: CompareSummary["scoringDelta"] = null;
 	let trustedScoringDelta: CompareSummary["trustedScoringDelta"] = null;
+	const matchedWithScoring = matched.filter(
+		(item) => item.itemA.automatedScore && item.itemB.automatedScore,
+	);
 	const rawScoringA = computeAggregateScoring(
-		matched,
+		matchedWithScoring,
 		(item) => item.itemA.automatedScore,
 	);
 	const rawScoringB = computeAggregateScoring(
-		matched,
+		matchedWithScoring,
 		(item) => item.itemB.automatedScore,
 	);
 
-	if (rawScoringA.totalTests > 0 || rawScoringB.totalTests > 0) {
-
+	if (matchedWithScoring.length > 0) {
 		scoringDelta = {
 			passRateDelta: rawScoringB.passRate - rawScoringA.passRate,
 			totalTestsDelta: rawScoringB.totalTests - rawScoringA.totalTests,
@@ -298,17 +312,19 @@ function computeSummary(
 	// Overall frontier eval delta
 	let frontierEvalDelta: CompareSummary["frontierEvalDelta"] = null;
 	let trustedFrontierEvalDelta: CompareSummary["trustedFrontierEvalDelta"] = null;
+	const matchedWithFrontierEval = matched.filter(
+		(item) => item.itemA.frontierEval && item.itemB.frontierEval,
+	);
 	const rawFrontierA = computeAggregateFrontier(
-		matched,
+		matchedWithFrontierEval,
 		(item) => item.itemA.frontierEval,
 	);
 	const rawFrontierB = computeAggregateFrontier(
-		matched,
+		matchedWithFrontierEval,
 		(item) => item.itemB.frontierEval,
 	);
 
-	if (rawFrontierA.itemCount > 0 || rawFrontierB.itemCount > 0) {
-
+	if (matchedWithFrontierEval.length > 0) {
 		frontierEvalDelta = {
 			avgScoreDelta: rawFrontierB.avgScore - rawFrontierA.avgScore,
 		};
@@ -327,15 +343,18 @@ function computeSummary(
 		const trustedMatched = matched.filter(
 			(match) => !isTaintedItem(match.itemA) && !isTaintedItem(match.itemB),
 		);
+		const trustedMatchedWithScoring = trustedMatched.filter(
+			(item) => item.itemA.automatedScore && item.itemB.automatedScore,
+		);
 		const trustedScoringA = computeAggregateScoring(
-			trustedMatched,
+			trustedMatchedWithScoring,
 			(item) => item.itemA.automatedScore,
 		);
 		const trustedScoringB = computeAggregateScoring(
-			trustedMatched,
+			trustedMatchedWithScoring,
 			(item) => item.itemB.automatedScore,
 		);
-		if (trustedScoringA.totalTests > 0 || trustedScoringB.totalTests > 0) {
+		if (trustedMatchedWithScoring.length > 0) {
 			trustedScoringDelta = {
 				passRateDelta: trustedScoringB.passRate - trustedScoringA.passRate,
 				totalTestsDelta:
@@ -343,15 +362,18 @@ function computeSummary(
 			};
 		}
 
+		const trustedMatchedWithFrontierEval = trustedMatched.filter(
+			(item) => item.itemA.frontierEval && item.itemB.frontierEval,
+		);
 		const trustedFrontierA = computeAggregateFrontier(
-			trustedMatched,
+			trustedMatchedWithFrontierEval,
 			(item) => item.itemA.frontierEval,
 		);
 		const trustedFrontierB = computeAggregateFrontier(
-			trustedMatched,
+			trustedMatchedWithFrontierEval,
 			(item) => item.itemB.frontierEval,
 		);
-		if (trustedFrontierA.itemCount > 0 || trustedFrontierB.itemCount > 0) {
+		if (trustedMatchedWithFrontierEval.length > 0) {
 			trustedFrontierEvalDelta = {
 				avgScoreDelta: trustedFrontierB.avgScore - trustedFrontierA.avgScore,
 			};
@@ -367,6 +389,34 @@ function computeSummary(
 		trustedScoringDelta,
 		frontierEvalDelta,
 		trustedFrontierEvalDelta,
+		metricAvailability: {
+			scoring: {
+				matchedRows: matched.length,
+				comparedRows: matchedWithScoring.length,
+				trustedComparedRows: matchedMetricsComplete
+					? matched.filter(
+							(item) =>
+								!isTaintedItem(item.itemA) &&
+								!isTaintedItem(item.itemB) &&
+								item.itemA.automatedScore &&
+								item.itemB.automatedScore,
+						).length
+					: null,
+			},
+			frontierEval: {
+				matchedRows: matched.length,
+				comparedRows: matchedWithFrontierEval.length,
+				trustedComparedRows: matchedMetricsComplete
+					? matched.filter(
+							(item) =>
+								!isTaintedItem(item.itemA) &&
+								!isTaintedItem(item.itemB) &&
+								item.itemA.frontierEval &&
+								item.itemB.frontierEval,
+						).length
+					: null,
+			},
+		},
 		signal: {
 			trustedMetricsAvailable: matchedMetricsComplete,
 			taintedInA: trustedMetricsAvailable

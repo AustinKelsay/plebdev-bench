@@ -104,14 +104,23 @@ export function dedupeAccelerators(
 			deduped.set(key, { ...accelerator });
 			continue;
 		}
-		deduped.set(key, {
+		const merged: ObservedAccelerator = {
 			...current,
-			...(current.vendor ? {} : accelerator.vendor ? { vendor: accelerator.vendor } : {}),
-			...(current.memoryBytes ? {} : accelerator.memoryBytes ? { memoryBytes: accelerator.memoryBytes } : {}),
-			...(current.backend ? {} : accelerator.backend ? { backend: accelerator.backend } : {}),
-			...(current.kind !== "unknown" ? {} : accelerator.kind !== "unknown" ? { kind: accelerator.kind } : {}),
 			count: (current.count ?? 1) + (accelerator.count ?? 1),
-		});
+		};
+		if (!current.vendor && accelerator.vendor) {
+			merged.vendor = accelerator.vendor;
+		}
+		if (!current.memoryBytes && accelerator.memoryBytes) {
+			merged.memoryBytes = accelerator.memoryBytes;
+		}
+		if (!current.backend && accelerator.backend) {
+			merged.backend = accelerator.backend;
+		}
+		if (current.kind === "unknown" && accelerator.kind !== "unknown") {
+			merged.kind = accelerator.kind;
+		}
+		deduped.set(key, merged);
 	}
 	return [...deduped.values()];
 }

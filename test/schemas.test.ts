@@ -177,6 +177,26 @@ describe("BenchConfigSchema", () => {
 		expect("machineLabel" in config).toBe(false);
 	});
 
+	it("should treat explicit undefined canonical machine fields as absent during alias backfill", () => {
+		const config = BenchConfigSchema.parse({
+			machineInstanceId: undefined,
+			machineProfileId: "legacy-machine",
+			machineDisplayLabel: undefined,
+			machineLabel: "Legacy Label",
+			modelProfiles: undefined,
+			modelAliases: {
+				"qwen3-8b-instruct": {
+					ollama: "qwen3:8b",
+				},
+			},
+		});
+		expect(config.machineInstanceId).toBe("legacy-machine");
+		expect(config.machineDisplayLabel).toBe("Legacy Label");
+		expect(config.modelProfiles["qwen3-8b-instruct"]?.variants.ollama).toBe(
+			"qwen3:8b",
+		);
+	});
+
 	it("should normalize deprecated modelAliases into modelProfiles", () => {
 		const config = BenchConfigSchema.parse({
 			modelAliases: {

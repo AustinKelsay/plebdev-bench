@@ -424,6 +424,18 @@ export interface CompareSummary {
 	frontierEvalDelta: {
 		avgScoreDelta: number;
 	} | null;
+	metricAvailability: {
+		scoring: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+		frontierEval: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+	};
 }
 
 /** Full compare result */

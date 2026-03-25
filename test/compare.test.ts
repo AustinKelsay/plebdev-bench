@@ -225,4 +225,60 @@ describe("compareRuns", () => {
 		expect(comparison.summary.signal.taintedInA).toBeNull();
 		expect(comparison.summary.signal.taintedInB).toBeNull();
 	});
+
+	it("computes metric deltas only across matched rows where both sides have the metric", () => {
+		const comparison = compareRuns(
+			buildRun("run-a", [
+				{
+					...buildItem("01", "smoke", "blind", 1000),
+					automatedScore: { passed: 5, failed: 5, total: 10 },
+					frontierEval: { score: 6, reasoning: "ok", model: "grader" },
+					signalAssessment: {
+						classification: "trustworthy",
+						reasons: [],
+					},
+				},
+				{
+					...buildItem("02", "todo-app", "blind", 1100),
+					automatedScore: { passed: 10, failed: 0, total: 10 },
+					frontierEval: { score: 9, reasoning: "great", model: "grader" },
+					signalAssessment: {
+						classification: "trustworthy",
+						reasons: [],
+					},
+				},
+			]),
+			buildRun("run-b", [
+				{
+					...buildItem("01", "smoke", "blind", 900),
+					automatedScore: { passed: 7, failed: 3, total: 10 },
+					frontierEval: { score: 8, reasoning: "better", model: "grader" },
+					signalAssessment: {
+						classification: "trustworthy",
+						reasons: [],
+					},
+				},
+				{
+					...buildItem("02", "todo-app", "blind", 1000),
+					signalAssessment: {
+						classification: "trustworthy",
+						reasons: [],
+					},
+				},
+			]),
+		);
+
+		expect(comparison.summary.scoringDelta?.passRateDelta).toBe(20);
+		expect(comparison.summary.frontierEvalDelta?.avgScoreDelta).toBe(2);
+		expect(comparison.summary.metricAvailability.scoring).toEqual({
+			matchedRows: 2,
+			comparedRows: 1,
+			trustedComparedRows: 1,
+		});
+		expect(comparison.summary.metricAvailability.frontierEval).toEqual({
+			matchedRows: 2,
+			comparedRows: 1,
+			trustedComparedRows: 1,
+		});
+	});
 });
