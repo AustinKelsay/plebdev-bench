@@ -10,7 +10,7 @@
 
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { basename, join, resolve } from "node:path";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
 import {
 	parseKnownPlanPayload,
@@ -60,11 +60,10 @@ export interface BuildDashboardIndexArtifactsOptions {
  * @returns True when the candidate is the same path or a descendant
  */
 function isSameOrNestedPath(basePath: string, candidate: string): boolean {
-	if (basePath === candidate) {
-		return true;
-	}
-	const normalizedBase = basePath.endsWith("/") ? basePath : `${basePath}/`;
-	return candidate.startsWith(normalizedBase);
+	const resolvedBase = resolve(basePath);
+	const resolvedCandidate = resolve(candidate);
+	const rel = relative(resolvedBase, resolvedCandidate);
+	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
 
 const PUBLIC_PATH_PATTERNS = [

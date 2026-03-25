@@ -376,6 +376,18 @@ export function aggregateRunsForCheckpoint(
 		{ machineProfileLabel?: string; verificationStatus: VerificationStatus; itemCount: number }
 	>();
 
+	for (const { input, metadata } of matchedRuns) {
+		const machineProfileKey = metadata.machineProfileKey ?? `legacy-${input.run.runId}`;
+		if (machineSummary.has(machineProfileKey)) {
+			continue;
+		}
+		machineSummary.set(machineProfileKey, {
+			machineProfileLabel: metadata.machineProfileLabel,
+			verificationStatus: metadata.verificationStatus,
+			itemCount: 0,
+		});
+	}
+
 	for (const item of items) {
 		const current = machineSummary.get(item.machineProfileKey);
 		if (!current) {

@@ -171,6 +171,33 @@ function getObservedAcceleratorCount(accelerators: ObservedAccelerator[]): numbe
 }
 
 /**
+ * Builds a deterministic accelerator summary that preserves mixed-model counts.
+ *
+ * @param accelerators - Observed accelerators
+ * @param status - Accelerator detection status
+ * @returns Sorted accelerator summary entries
+ */
+function summarizeAccelerators(
+	accelerators: ObservedAccelerator[],
+	status: HardwareProfile["acceleratorDetection"]["status"],
+): string[] | undefined {
+	if (status === "none_detected") {
+		return ["none:x0"];
+	}
+	if (accelerators.length === 0) {
+		return undefined;
+	}
+	const counts = new Map<string, number>();
+	for (const accelerator of accelerators) {
+		const key = normalizeAcceleratorKey(accelerator);
+		counts.set(key, (counts.get(key) ?? 0) + (accelerator.count ?? 1));
+	}
+	return [...counts.entries()]
+		.sort(([left], [right]) => left.localeCompare(right))
+		.map(([key, count]) => `${key}:x${count}`);
+}
+
+/**
  * Rounds a byte count to a stable GiB class.
  *
  * @param bytes - Byte count
@@ -197,6 +224,10 @@ export function normalizeMachineProfile(
 	const primaryAccelerator = selectPrimaryAccelerator(
 		observedHardware.accelerators,
 	);
+	const acceleratorSummary = summarizeAccelerators(
+		observedHardware.accelerators,
+		observedHardware.acceleratorDetection.status,
+	);
 	const acceleratorKey =
 		primaryAccelerator !== undefined
 			? normalizeAcceleratorKey(primaryAccelerator)
@@ -218,6 +249,7 @@ export function normalizeMachineProfile(
 		logicalCores: observedHardware.logicalCores,
 		memoryGiB: toRoundedGiB(observedHardware.totalMemoryBytes),
 		acceleratorKey,
+		...(acceleratorSummary ? { acceleratorSummary } : {}),
 		...(primaryAccelerator?.memoryBytes
 			? { acceleratorMemoryGiB: toRoundedGiB(primaryAccelerator.memoryBytes) }
 			: {}),
@@ -242,8 +274,11 @@ export function buildMachineProfileKey(
 	normalizedProfile: NormalizedMachineProfile,
 ): string {
 	const cpuCoreCount =
-		normalizedProfile.physicalCores ?? normalizedProfile.logicalCores;
-	const acceleratorKey = normalizedProfile.acceleratorKey.replace(/\//g, "-");
+		normalizedProfile.logicalCores ?? normalizedProfile.physicalCores;
+	const acceleratorKey =
+		normalizedProfile.acceleratorSummary?.map((entry) =>
+			entry.replace(/\//g, "-"),
+		).join("+") ?? normalizedProfile.acceleratorKey.replace(/\//g, "-");
 	const acceleratorMemory =
 		normalizedProfile.acceleratorMemoryGiB === undefined
 			? "na"

@@ -1,5 +1,10 @@
 /**
  * Purpose: Validate dashboard schema compatibility helpers.
+ * Exports: none
+ *
+ * Invariants:
+ * - Dashboard schemas accept legacy payloads only through explicit transforms
+ * - Dashboard boundary validation mirrors item-level model/signal contracts
  */
 
 import { describe, expect, it } from "vitest";
@@ -141,5 +146,38 @@ describe("RunResultSchema", () => {
 			"qwen3-27b-instruct",
 		);
 		expect(parsed.items[0]?.signalAssessment?.classification).toBe("tainted");
+	});
+
+	it("rejects trustworthy signal assessments that include taint reasons", () => {
+		expect(() =>
+			RunResultSchema.parse({
+				schemaVersion: "0.5.0",
+				runId: "run-test",
+				startedAt: "2026-03-25T12:00:00.000Z",
+				completedAt: "2026-03-25T12:01:00.000Z",
+				durationMs: 60_000,
+				summary: {
+					total: 1,
+					completed: 1,
+					failed: 0,
+					pending: 0,
+				},
+				items: [
+					{
+						id: "01",
+						runtime: "ollama",
+						model: "qwen3:27b",
+						harness: "direct",
+						test: "smoke",
+						passType: "blind",
+						status: "completed",
+						signalAssessment: {
+							classification: "trustworthy",
+							reasons: ["tool_call_not_executed"],
+						},
+					},
+				],
+			}),
+		).toThrow("trustworthy signal assessments must not include taint reasons");
 	});
 });

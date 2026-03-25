@@ -114,8 +114,25 @@ async function prepareArtifactRewrite(
 		throw error;
 	}
 
-	const normalized = normalize(JSON.parse(original) as unknown);
-	validate(normalized);
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(original) as unknown;
+	} catch (error) {
+		throw new Error(
+			`Invalid JSON in artifact ${artifactPath}: ${error instanceof Error ? error.message : String(error)}`,
+			{ cause: error },
+		);
+	}
+
+	const normalized = normalize(parsed);
+	try {
+		validate(normalized);
+	} catch (error) {
+		throw new Error(
+			`Invalid migrated artifact ${artifactPath}: ${error instanceof Error ? error.message : String(error)}`,
+			{ cause: error },
+		);
+	}
 	const nextContent = `${JSON.stringify(normalized, null, 2)}\n`;
 	return {
 		artifactPath,

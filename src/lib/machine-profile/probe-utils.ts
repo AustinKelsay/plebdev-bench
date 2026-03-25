@@ -65,10 +65,12 @@ export function parsePositiveInt(value: string | undefined): number | undefined 
 export function parseMemoryBytes(value: string | undefined): number | undefined {
 	if (!value) return undefined;
 	const normalized = value.trim().replace(/,/g, "");
-	const match = normalized.match(/(\d+(?:\.\d+)?)\s*(tb|gb|mb|kb|b)?/i);
+	const match = normalized.match(
+		/(\d+(?:\.\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb|b)?/i,
+	);
 	if (!match) return undefined;
 	const amount = Number.parseFloat(match[1]);
-	const unit = (match[2] ?? "b").toLowerCase();
+	const unit = (match[2] ?? "b").toLowerCase().replace("ib", "b");
 	if (!Number.isFinite(amount) || amount <= 0) return undefined;
 	switch (unit) {
 		case "tb":
@@ -95,10 +97,7 @@ export function dedupeAccelerators(
 ): ObservedAccelerator[] {
 	const deduped = new Map<string, ObservedAccelerator>();
 	for (const accelerator of accelerators) {
-		const key = [
-			accelerator.vendor?.trim().toLowerCase() ?? "",
-			accelerator.modelRaw.trim().toLowerCase(),
-		].join("|");
+		const key = accelerator.modelRaw.trim().toLowerCase();
 		const current = deduped.get(key);
 		if (!current) {
 			deduped.set(key, { ...accelerator });

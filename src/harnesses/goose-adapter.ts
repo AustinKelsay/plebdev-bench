@@ -421,7 +421,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 								undefined,
 								[
 									...decision.taintReasons,
-									...(toolCallDetected
+									...(toolCallDetected && !codeFilePath
 										? (["tool_call_not_executed"] as const)
 										: []),
 								],
@@ -481,7 +481,9 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					codeFilePath,
 					signalAssessment: appendSignalAssessmentReasons(
 						undefined,
-						toolCallDetected ? ["tool_call_not_executed"] : [],
+						toolCallDetected && !codeFilePath
+							? ["tool_call_not_executed"]
+							: [],
 					),
 					// Goose doesn't provide token counts
 				};

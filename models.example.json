@@ -12,9 +12,8 @@
 					"variantLabel": "Qwen 3 27B Ollama"
 				},
 				"vllm": {
-					"modelName": "Qwen/Qwen3-27B-Instruct-MLX-4bit",
-					"format": "MLX",
-					"quantization": "4-bit"
+					"modelName": "Qwen/Qwen3-27B-Instruct",
+					"format": "safetensors"
 				}
 			}
 		},

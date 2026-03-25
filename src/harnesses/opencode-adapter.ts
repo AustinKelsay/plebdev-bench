@@ -124,19 +124,21 @@ export function createOpenCodeAdapter(): Harness {
 				);
 			}
 
-			try {
-				await execa("git", ["init", "--quiet"], { cwd: workDir });
-				await execa("git", ["config", "user.email", "bench@local"], {
-					cwd: workDir,
-				});
-				await execa("git", ["config", "user.name", "Bench"], {
-					cwd: workDir,
-				});
-			} catch (gitErr) {
-				log.warn(
-					{ error: gitErr },
-					"Failed to initialize git repo in workDir",
-				);
+			if (!hasExternalWorkingDirectory) {
+				try {
+					await execa("git", ["init", "--quiet"], { cwd: workDir });
+					await execa("git", ["config", "user.email", "bench@local"], {
+						cwd: workDir,
+					});
+					await execa("git", ["config", "user.name", "Bench"], {
+						cwd: workDir,
+					});
+				} catch (gitErr) {
+					log.warn(
+						{ error: gitErr },
+						"Failed to initialize git repo in workDir",
+					);
+				}
 			}
 
 			const configPath = path.join(configDir, "opencode.json");

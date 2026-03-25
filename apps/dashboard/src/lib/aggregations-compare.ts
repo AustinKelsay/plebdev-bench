@@ -14,8 +14,8 @@ import {
 	computeFrontierStats,
 	computeItemPassRate,
 	computePassRate,
-} from "./aggregations-core";
-import type { CompareResult, MatchedItem, MatrixItemResult } from "./types";
+} from "./aggregations-core.js";
+import type { CompareResult, MatchedItem, MatrixItemResult } from "./types.js";
 
 /**
  * Computes comparison between two runs.
@@ -112,11 +112,13 @@ export function compareRuns(
 		}
 	}
 
-	const passRateA = computePassRate(runA.items);
-	const passRateB = computePassRate(runB.items);
 	const matchedWithScoring = matched.filter(
 		(item) => item.itemA.automatedScore && item.itemB.automatedScore,
 	);
+	const matchedScoringItemsA = matchedWithScoring.map((item) => item.itemA);
+	const matchedScoringItemsB = matchedWithScoring.map((item) => item.itemB);
+	const passRateA = computePassRate(matchedScoringItemsA);
+	const passRateB = computePassRate(matchedScoringItemsB);
 	const scoringDelta =
 		passRateA.total > 0 || passRateB.total > 0
 			? {
@@ -125,11 +127,13 @@ export function compareRuns(
 				}
 			: null;
 
-	const frontierA = computeFrontierStats(runA.items);
-	const frontierB = computeFrontierStats(runB.items);
 	const matchedWithFrontierEval = matched.filter(
 		(item) => item.itemA.frontierEval && item.itemB.frontierEval,
 	);
+	const matchedFrontierItemsA = matchedWithFrontierEval.map((item) => item.itemA);
+	const matchedFrontierItemsB = matchedWithFrontierEval.map((item) => item.itemB);
+	const frontierA = computeFrontierStats(matchedFrontierItemsA);
+	const frontierB = computeFrontierStats(matchedFrontierItemsB);
 	const frontierEvalDelta =
 		frontierA && frontierB
 			? { avgScoreDelta: frontierB.avgScore - frontierA.avgScore }

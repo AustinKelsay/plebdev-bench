@@ -124,9 +124,19 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 		throw new Error(`Model profile file not found: ${filePath}`);
 	}
 
+	let fileContents: string;
+	try {
+		fileContents = fs.readFileSync(filePath, "utf-8");
+	} catch (error) {
+		throw new Error(
+			`Failed to read model profile file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+			{ cause: error },
+		);
+	}
+
 	let parsed: unknown;
 	try {
-		parsed = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+		parsed = JSON.parse(fileContents);
 	} catch {
 		throw new Error(`Invalid JSON in model profile file: ${filePath}`);
 	}
@@ -289,16 +299,28 @@ function findConfiguredVariantByRuntimeModel(
 	runtimeModelName: string,
 	registry: ModelProfileRegistry,
 ): { profileKey: string; profile: ModelProfileRegistry[string] } | undefined {
+	const matches: Array<{
+		profileKey: string;
+		profile: ModelProfileRegistry[string];
+	}> = [];
 	for (const [profileKey, profile] of Object.entries(registry)) {
 		const configuredVariant = profile.variants[runtime];
 		if (!configuredVariant) continue;
 		const normalized = normalizeConfiguredVariant(configuredVariant);
 		if (normalized.modelName === runtimeModelName) {
-			return { profileKey, profile };
+			matches.push({ profileKey, profile });
 		}
 	}
 
-	return undefined;
+	if (matches.length === 0) {
+		return undefined;
+	}
+	if (matches.length === 1) {
+		return matches[0];
+	}
+	throw new Error(
+		`Ambiguous configured model profile reverse match for runtime "${runtime}" and model "${runtimeModelName}": ${matches.map((match) => match.profileKey).join(", ")}`,
+	);
 }
 
 /**

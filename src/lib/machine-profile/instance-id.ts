@@ -92,7 +92,10 @@ function writeGeneratedInstanceId(targetPath: string, value: string): string {
 					return persisted;
 				}
 			}
-			return repairPersistedInstanceId(targetPath, value);
+			throw new Error(
+				`Machine instance ID file was created concurrently but remained unreadable: ${targetPath}`,
+				{ cause: error },
+			);
 		}
 		try {
 			if (fileDescriptor !== undefined) {
@@ -233,13 +236,19 @@ export function resolveMachineInstanceId(
 		};
 	}
 	if (fs.existsSync(instanceIdFilePath)) {
-		return {
-			instanceId: repairPersistedInstanceId(
-				instanceIdFilePath,
-				buildGeneratedInstanceId(),
-			),
-			instanceIdSource: "generated",
-		};
+		const deadline = Date.now() + 50;
+		while (Date.now() < deadline) {
+			const concurrentPersisted = readPersistedInstanceId(instanceIdFilePath);
+			if (concurrentPersisted) {
+				return {
+					instanceId: concurrentPersisted,
+					instanceIdSource: "generated",
+				};
+			}
+		}
+		throw new Error(
+			`Machine instance ID file exists but remained unreadable after waiting: ${instanceIdFilePath}`,
+		);
 	}
 
 	const generated = buildGeneratedInstanceId();

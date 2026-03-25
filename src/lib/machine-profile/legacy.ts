@@ -163,7 +163,9 @@ export function migrateLegacyMachineProfile(
 	return {
 		instanceId: buildLegacyInstanceId(legacyMachine.profileId),
 		instanceIdSource: "legacy_profile_id",
-		...(legacyMachine.label ? { displayLabel: legacyMachine.label } : {}),
+		...(typeof legacyMachine.label === "string" && legacyMachine.label.length > 0
+			? { displayLabel: legacyMachine.label }
+			: {}),
 		profileKey: buildMachineProfileKey(normalizedProfile),
 		profileLabel: buildMachineProfileLabel(
 			observedHardware,

@@ -104,26 +104,20 @@ describe("hardware profile resolution", () => {
 		}
 	});
 
-	it("repairs blank persisted instance ID files", async () => {
+	it("rejects blank persisted instance ID files that remain unreadable", async () => {
 		const instanceIdFilePath = path.join(
 			os.tmpdir(),
 			`plebdev-bench-machine-instance-id-${randomUUID()}.blank`,
 		);
 		try {
 			fs.writeFileSync(instanceIdFilePath, "   \n", "utf-8");
-			const resolved = await collectMachineProfile({
-				observedHardware: TEST_HARDWARE,
-				instanceIdFilePath,
-				env: {},
-			});
-			const reread = await collectMachineProfile({
-				observedHardware: TEST_HARDWARE,
-				instanceIdFilePath,
-				env: {},
-			});
-
-			expect(resolved.machine.instanceId).toMatch(/^inst_[a-f0-9]{32}$/);
-			expect(reread.machine.instanceId).toBe(resolved.machine.instanceId);
+			await expect(
+				collectMachineProfile({
+					observedHardware: TEST_HARDWARE,
+					instanceIdFilePath,
+					env: {},
+				}),
+			).rejects.toThrow("remained unreadable after waiting");
 		} finally {
 			fs.rmSync(instanceIdFilePath, { force: true });
 		}

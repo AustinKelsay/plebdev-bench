@@ -4,7 +4,10 @@
  * Source of truth: src/schemas/result.schema.ts, plan.schema.ts, common.schema.ts
  */
 
-import type { TestCategory } from "../../../../src/schemas/common.schema.js";
+import type {
+	RuntimeName,
+	TestCategory,
+} from "../../../../src/schemas/common.schema.js";
 
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
@@ -85,7 +88,7 @@ export interface CanonicalModelProfile {
 export interface ModelVariant {
 	variantKey: string;
 	variantLabel: string;
-	runtime: string;
+	runtime: RuntimeName;
 	runtimeModelName: string;
 	format?: string;
 	quantization?: string;
@@ -218,6 +221,7 @@ export interface NormalizedMachineProfile {
 	logicalCores: number;
 	memoryGiB: number;
 	acceleratorKey: string;
+	acceleratorSummary?: string[];
 	acceleratorMemoryGiB?: number;
 	acceleratorCount?: number;
 }

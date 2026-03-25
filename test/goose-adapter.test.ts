@@ -75,7 +75,7 @@ describe("createGooseAdapter", () => {
 		}
 	});
 
-	it("marks unevaluated tool-call payloads as tainted when code is salvaged", async () => {
+	it("does not mark salvaged tool-call payloads as unexecuted when code was written", async () => {
 		const { createGooseAdapter } = await import(
 			"../src/harnesses/goose-adapter.js"
 		);
@@ -117,8 +117,8 @@ describe("createGooseAdapter", () => {
 
 			expect(result.codeFilePath).toBeDefined();
 			expect(result.signalAssessment).toEqual({
-				classification: "tainted",
-				reasons: ["tool_call_not_executed"],
+				classification: "trustworthy",
+				reasons: [],
 			});
 		} finally {
 			await fs.promises.rm(workspaceDir, { recursive: true, force: true });

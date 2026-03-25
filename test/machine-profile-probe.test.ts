@@ -1,10 +1,18 @@
 /**
  * Purpose: Validate machine-probe helper behavior.
+ * Exports: none
+ *
+ * Invariants:
+ * - Probe helpers stay deterministic for malformed input
+ * - Parsing helpers preserve explicit binary-unit memory values
  */
 
 import { describe, expect, it } from "vitest";
 import { parseMacosAccelerators } from "../src/lib/machine-profile/probe-macos.js";
-import { dedupeAccelerators } from "../src/lib/machine-profile/probe-utils.js";
+import {
+	dedupeAccelerators,
+	parseMemoryBytes,
+} from "../src/lib/machine-profile/probe-utils.js";
 
 describe("dedupeAccelerators", () => {
 	it("preserves repeated device counts while merging missing fields", () => {
@@ -55,5 +63,12 @@ describe("parseMacosAccelerators", () => {
 				backend: "metal",
 			},
 		]);
+	});
+});
+
+describe("parseMemoryBytes", () => {
+	it("parses binary unit suffixes", () => {
+		expect(parseMemoryBytes("2 GiB")).toBe(2 * 1024 ** 3);
+		expect(parseMemoryBytes("512 MiB")).toBe(512 * 1024 ** 2);
 	});
 });

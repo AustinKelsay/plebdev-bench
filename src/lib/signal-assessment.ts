@@ -36,6 +36,8 @@ export function createTrustworthySignalAssessment(): SignalAssessment {
  *
  * @param reasons - Taint reasons to record
  * @returns Tainted assessment
+ * @throws {Error} When `reasons` is empty or deduplicates to no reasons. Message:
+ * `createTaintedSignalAssessment called with empty reasons`
  */
 export function createTaintedSignalAssessment(
 	reasons: readonly SignalAssessmentReason[],

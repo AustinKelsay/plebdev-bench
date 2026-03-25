@@ -113,8 +113,8 @@ function detectFormat(value: string): string | undefined {
 
 /** Detects common tuning suffixes that should stay in the canonical profile. */
 function detectTuning(value: string): string | undefined {
-	const normalized = value.toLowerCase();
-	return TUNING_PATTERNS.find((pattern) => normalized.includes(pattern));
+	const tokens = tokenizeModelName(value);
+	return TUNING_PATTERNS.find((pattern) => tokens.includes(pattern));
 }
 
 /** Breaks a raw model identifier into lower-case tokens for heuristic grouping. */

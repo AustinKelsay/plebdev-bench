@@ -111,11 +111,21 @@ export async function collectLinuxAccelerators(): Promise<{
 	}
 
 	const dedupedAccelerators = dedupeAccelerators(accelerators);
+	const hasCorroboratedAccelerators = accelerators.some(
+		(accelerator) =>
+			accelerator.backend !== undefined || accelerator.vendor !== undefined,
+	);
 
-	if (dedupedAccelerators.length > 0) {
+	if (dedupedAccelerators.length > 0 && hasCorroboratedAccelerators) {
 		return {
 			accelerators: dedupedAccelerators,
 			status: { status: "detected" },
+		};
+	}
+	if (dedupedAccelerators.length > 0) {
+		return {
+			accelerators: [],
+			status: { status: "none_detected" },
 		};
 	}
 	if (probeCount === 0) {

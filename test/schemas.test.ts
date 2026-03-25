@@ -282,7 +282,7 @@ describe("BenchConfigSchema", () => {
 			idResult.error.issues.some(
 				(issue) =>
 					issue.path[0] === "machineInstanceId" &&
-					issue.message.includes("Expected string"),
+					issue.code === "invalid_type",
 			),
 		).toBe(true);
 
@@ -298,7 +298,7 @@ describe("BenchConfigSchema", () => {
 			labelResult.error.issues.some(
 				(issue) =>
 					issue.path[0] === "machineDisplayLabel" &&
-					issue.message.includes("Expected string"),
+					issue.code === "invalid_type",
 			),
 		).toBe(true);
 	});
@@ -454,6 +454,50 @@ describe("HardwareProfileSchema", () => {
 		);
 		expect(normalized.acceleratorCount).toBe(2);
 		expect(buildMachineProfileKey(normalized)).toContain("_x2");
+	});
+
+	it("should distinguish mixed accelerator summaries in profile keys", () => {
+		const dual4090 = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4090",
+						count: 2,
+						kind: "discrete",
+					},
+				],
+				acceleratorDetection: { status: "detected" },
+			}),
+		);
+		const mixed = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4090",
+						count: 1,
+						kind: "discrete",
+					},
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4060",
+						count: 1,
+						kind: "discrete",
+					},
+				],
+				acceleratorDetection: { status: "detected" },
+			}),
+		);
+
+		expect(dual4090.acceleratorSummary).toEqual(["nvidia/rtx-4090:x2"]);
+		expect(mixed.acceleratorSummary).toEqual([
+			"nvidia/rtx-4060:x1",
+			"nvidia/rtx-4090:x1",
+		]);
+		expect(buildMachineProfileKey(dual4090)).not.toBe(buildMachineProfileKey(mixed));
 	});
 });
 

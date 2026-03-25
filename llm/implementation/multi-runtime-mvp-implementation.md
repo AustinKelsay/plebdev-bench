@@ -116,7 +116,7 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
 
 ### User-facing commands
 - Full cross-runtime execution:
-  - `bun pb --runtimes ollama vllm --harnesses direct goose opencode --models qwen2.5-14b-instruct --model-config models.example.json`
+  - `bun pb --runtimes ollama vllm --harnesses direct goose opencode --models qwen3-27b-instruct --model-config models.example.json`
 - Dashboard:
   - `bun run dashboard:index`
   - `bun run dashboard -- --host 127.0.0.1 --port 5173`
@@ -186,7 +186,7 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
   - runtimes: `ollama`, `vllm`
   - harnesses: `direct`, `goose`, `opencode`
   - tests: all discovered (`tool-smoke`, `smoke`, `calculator-basic`, `calculator-stateful`, `todo-app`)
-  - canonical model profile: `qwen2.5-14b-instruct`
+  - canonical model profile: `qwen3-27b-instruct`
 - Outcome:
   - completed: `53/54`
   - failed: `1`

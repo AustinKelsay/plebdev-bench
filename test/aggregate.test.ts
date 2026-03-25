@@ -297,6 +297,22 @@ describe("aggregateRunsForCheckpoint", () => {
 		expect(aggregate.items[0]?.sourceRunId).toBe("run-b");
 	});
 
+	it("retains machine summaries for matched runs with zero items", () => {
+		const checkpointId = "chk_sha256v1_empty_machine";
+		const aggregate = aggregateRunsForCheckpoint(
+			[
+				{
+					run: createRun("run-empty", checkpointId, TEST_PROFILE_KEY, "instance-a", []),
+				},
+			],
+			checkpointId,
+		);
+
+		expect(aggregate.machines).toHaveLength(1);
+		expect(aggregate.machines[0]?.itemCount).toBe(0);
+		expect(aggregate.machines[0]?.runCount).toBe(1);
+	});
+
 	it("does not dedupe across different profiles", () => {
 		const checkpointId = "chk_sha256v1_latest";
 		const item = createItem("01", "2026-03-04T12:00:00.000Z");

@@ -7,7 +7,11 @@
  * - Profile keys are deterministic and derived from normalized hardware only
  */
 
-import type { HardwareProfile, MachineProfile } from "../schemas/index.js";
+import {
+	HardwareProfileSchema,
+	type HardwareProfile,
+	type MachineProfile,
+} from "../schemas/index.js";
 import {
 	MACHINE_INSTANCE_ID_ENV_VAR,
 	LEGACY_MACHINE_ID_ENV_VAR,
@@ -97,8 +101,11 @@ export async function collectMachineProfile(
 ): Promise<ResolvedMachineProfile> {
 	const env = options.env ?? process.env;
 	const observedHardware =
-		options.observedHardware ??
-		options.hardwareProfile ??
+		(options.observedHardware !== undefined
+			? HardwareProfileSchema.parse(options.observedHardware)
+			: options.hardwareProfile !== undefined
+				? HardwareProfileSchema.parse(options.hardwareProfile)
+				: undefined) ??
 		(await collectObservedHardwareProfile());
 	const normalizedProfile = normalizeMachineProfile(observedHardware);
 	const profileKey = buildMachineProfileKey(normalizedProfile);

@@ -1,5 +1,10 @@
 /**
  * Purpose: Guard prompt/scoring parity for workspace benchmarks.
+ * Exports: none
+ *
+ * Invariants:
+ * - Prompt method contracts stay aligned with scoring expectations
+ * - Prompt assertions are deterministic and read only local benchmark assets
  */
 
 import * as fs from "node:fs";
@@ -75,11 +80,17 @@ describe("workspace prompt parity", () => {
 		expect(calculatorPrompt).toContain("`clear()`");
 		expect(calculatorPrompt).toContain("`memoryClear`");
 		expect(calculatorPrompt).toContain("`memoryRecall()`");
+		expect(calculatorPrompt).toContain("`result()` returns the current value");
+		expect(calculatorPrompt).toContain("`memoryRecall()` returns the current memory value");
+		expect(calculatorPrompt).toContain("the other methods remain chainable");
 		expect(emitterPrompt).toContain("`listenerCount(event)`");
 		expect(emitterPrompt).toContain("`on(event, listener)`");
 		expect(emitterPrompt).toContain("`once(event, listener)`");
 		expect(emitterPrompt).toContain("`off(event, listener)`");
 		expect(emitterPrompt).toContain("`emit(event, payload)`");
+		expect(emitterPrompt).toContain("`on` and `once` return the current listener count");
+		expect(emitterPrompt).toContain("`off` returns `true`");
+		expect(emitterPrompt).toContain("`emit` should return listener return values in call order");
 		expect(rateLimiterPrompt).toContain("`allow(key: string, nowMs: number)`");
 		expect(rateLimiterPrompt).toContain("`remaining(key: string, nowMs: number)`");
 		expect(rateLimiterPrompt).toContain("`reset(key: string)`");

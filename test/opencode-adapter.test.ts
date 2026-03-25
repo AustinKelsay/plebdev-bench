@@ -112,11 +112,17 @@ describe("createOpenCodeAdapter", () => {
 			await expect(fs.promises.readFile(baselinePath, "utf-8")).resolves.toBe(
 				'{"seed":"hash"}',
 			);
-			expect(execaMock).toHaveBeenCalledWith(
-				"git",
-				["init", "--quiet"],
-				expect.objectContaining({ cwd: workspaceDir }),
-			);
+			expect(
+				execaMock.mock.calls.some(([command, , options]) => {
+					return (
+						command === "git" &&
+						typeof options === "object" &&
+						options !== null &&
+						"cwd" in options &&
+						options.cwd === workspaceDir
+					);
+				}),
+			).toBe(false);
 		} finally {
 			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
 		}

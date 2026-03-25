@@ -441,6 +441,7 @@ export const NormalizedMachineProfileSchema = z.object({
 	logicalCores: z.number().int().positive(),
 	memoryGiB: z.number().int().positive(),
 	acceleratorKey: z.string().min(1),
+	acceleratorSummary: z.array(z.string().min(1)).optional(),
 	acceleratorMemoryGiB: z.number().int().positive().optional(),
 	acceleratorCount: z.number().int().nonnegative().optional(),
 });

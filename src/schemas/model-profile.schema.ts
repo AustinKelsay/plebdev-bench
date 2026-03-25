@@ -121,7 +121,7 @@ export type ModelProfileRegistry = z.infer<typeof ModelProfileRegistrySchema>;
 
 /** Versioned model-profile file wrapper. */
 export const ModelProfileFileSchema = z.object({
-	schemaVersion: z.string().default(SCHEMA_VERSION),
+	schemaVersion: z.literal(SCHEMA_VERSION),
 	models: ModelProfileRegistrySchema,
 });
 

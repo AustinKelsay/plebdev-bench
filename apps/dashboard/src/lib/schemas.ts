@@ -10,6 +10,9 @@ import { z } from "zod";
 /** Pass type schema. */
 const PassTypeSchema = z.enum(["blind", "informed"]);
 
+/** Runtime name schema. */
+const RuntimeNameSchema = z.enum(["ollama", "vllm"]);
+
 /** Item status schema. */
 const ItemStatusSchema = z.enum(["pending", "running", "completed", "failed"]);
 
@@ -71,10 +74,31 @@ const SignalAssessmentReasonSchema = z.enum([
 ]);
 
 /** Signal assessment schema. */
-const SignalAssessmentSchema = z.object({
-	classification: SignalAssessmentClassificationSchema,
-	reasons: z.array(SignalAssessmentReasonSchema),
-});
+const SignalAssessmentSchema = z
+	.object({
+		classification: SignalAssessmentClassificationSchema,
+		reasons: z.array(SignalAssessmentReasonSchema),
+	})
+	.superRefine((value, context) => {
+		if (value.classification === "tainted" && value.reasons.length === 0) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["reasons"],
+				message: "tainted signal assessments must include at least one reason",
+			});
+		}
+		if (
+			value.classification === "trustworthy" &&
+			value.reasons.length > 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["reasons"],
+				message:
+					"trustworthy signal assessments must not include taint reasons",
+			});
+		}
+	});
 
 /** Model-profile resolution source schema. */
 const ModelProfileResolutionSourceSchema = z.enum([
@@ -98,7 +122,7 @@ const CanonicalModelProfileSchema = z.object({
 const ModelVariantSchema = z.object({
 	variantKey: z.string().min(1),
 	variantLabel: z.string().min(1),
-	runtime: z.string().min(1),
+	runtime: RuntimeNameSchema,
 	runtimeModelName: z.string().min(1),
 	format: z.string().min(1).optional(),
 	quantization: z.string().min(1).optional(),
@@ -266,6 +290,7 @@ const NormalizedMachineProfileSchema = z.object({
 	logicalCores: z.number().int().positive(),
 	memoryGiB: z.number().int().positive(),
 	acceleratorKey: z.string().min(1),
+	acceleratorSummary: z.array(z.string().min(1)).optional(),
 	acceleratorMemoryGiB: z.number().int().positive().optional(),
 	acceleratorCount: z.number().int().nonnegative().optional(),
 });

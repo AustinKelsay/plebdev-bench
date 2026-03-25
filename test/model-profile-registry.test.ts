@@ -1,5 +1,10 @@
 /**
  * Purpose: Validate model-profile registry parsing and provenance behavior.
+ * Exports: none
+ *
+ * Invariants:
+ * - Versioned model-profile files reject unknown schema versions
+ * - Reverse runtime-model matches must be unambiguous
  */
 
 import * as fs from "node:fs";
@@ -13,6 +18,7 @@ import {
 	resolveModelSelection,
 } from "../src/lib/model-profiles.js";
 import { buildFallbackModelProfile } from "../src/lib/model-profile/normalization.js";
+import { ModelProfileFileSchema } from "../src/schemas/model-profile.schema.js";
 
 describe("parseInlineModelProfile", () => {
 	it("rejects unknown runtimes in inline mappings", () => {
@@ -86,5 +92,39 @@ describe("model-profile normalization", () => {
 
 		expect(profile.canonical.profileKey).toBe("qwen3-1.25b-instruct");
 		expect(profile.canonical.parameterScaleLabel).toBe("1.25B");
+	});
+});
+
+describe("ModelProfileFileSchema", () => {
+	it("rejects unsupported schema versions", () => {
+		expect(
+			ModelProfileFileSchema.safeParse({
+				schemaVersion: "0.4.0",
+				models: {},
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("buildResolvedModelProfile", () => {
+	it("rejects ambiguous reverse runtime-model matches", () => {
+		expect(() =>
+			buildResolvedModelProfile("ollama", "qwen3:27b", {
+				"qwen3-27b-a": {
+					profileLabel: "Qwen 3 27B A",
+					family: "qwen3",
+					variants: {
+						ollama: "qwen3:27b",
+					},
+				},
+				"qwen3-27b-b": {
+					profileLabel: "Qwen 3 27B B",
+					family: "qwen3",
+					variants: {
+						ollama: "qwen3:27b",
+					},
+				},
+			}),
+		).toThrow("Ambiguous configured model profile reverse match");
 	});
 });
