@@ -1,5 +1,5 @@
 /**
- * Purpose: Validate dashboard index v2 and aggregate artifact generation.
+ * Purpose: Validate dashboard index v3 and aggregate artifact generation.
  * Exports: none
  *
  * Invariants:
@@ -196,7 +196,7 @@ describe("buildDashboardIndexArtifacts", () => {
 		).rejects.toThrow(/must not overlap/);
 	});
 
-	it("writes v2 index and latest aggregate artifacts", async () => {
+	it("writes v3 index and latest aggregate artifacts", async () => {
 		const projectRoot = createProjectRoot();
 		const sourceResultsDir = path.join(projectRoot, "results");
 		const outputResultsDir = path.join(projectRoot, "published-results");
@@ -325,7 +325,7 @@ describe("buildDashboardIndexArtifacts", () => {
 			outputResultsDir,
 			projectRoot,
 		});
-		expect(output.index.schemaVersion).toBe(2);
+		expect(output.index.schemaVersion).toBe(3);
 		expect(output.index.latestCheckpointId).toBe(checkpoint.checkpointId);
 		expect(output.index.runs).toHaveLength(2);
 		expect(

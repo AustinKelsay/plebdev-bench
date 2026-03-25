@@ -288,7 +288,7 @@ describe("migrate-machine-profiles command", () => {
 				extraMetadata?: { keep?: string };
 			}).extraMetadata?.keep,
 		).toBe("run");
-		expect(index.schemaVersion).toBe(2);
+		expect(index.schemaVersion).toBe(3);
 		expect(index.runs[0]?.machineProfileKey).toBe(LEGACY_PROFILE_KEY);
 		expect(index.runs[0]?.machineInstanceId).toBe(LEGACY_INSTANCE_ID);
 		expect(latestAggregate.schemaVersion).toBe(2);
@@ -310,6 +310,34 @@ describe("migrate-machine-profiles command", () => {
 				"--dir",
 				resultsDir,
 				"--rebuild-dashboard-index",
+			],
+			{
+				cwd: REPO_ROOT,
+				encoding: "utf-8",
+			},
+		);
+
+		expect(completed.status).toBe(1);
+		expect(completed.stderr).toContain("--dashboard-output-dir");
+	});
+
+	it("rejects dashboard output directories that overlap the source results tree", () => {
+		const root = createTempRoot();
+		const resultsDir = path.join(root, "results");
+		const nestedOutputDir = path.join(resultsDir, "published-results");
+		fs.mkdirSync(nestedOutputDir, { recursive: true });
+
+		const completed = spawnSync(
+			BUN_EXECUTABLE,
+			[
+				"run",
+				"src/index.ts",
+				"migrate-machine-profiles",
+				"--dir",
+				resultsDir,
+				"--rebuild-dashboard-index",
+				"--dashboard-output-dir",
+				nestedOutputDir,
 			],
 			{
 				cwd: REPO_ROOT,

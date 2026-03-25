@@ -33,34 +33,38 @@ export function parseMacosAccelerators(rawJson: string): ObservedAccelerator[] {
 	) {
 		throw new Error("malformed macOS accelerator probe JSON: missing SPDisplaysDataType array");
 	}
-	const displays = (parsed as { SPDisplaysDataType: Array<Record<string, unknown>> })
+	const displays = (parsed as { SPDisplaysDataType: unknown[] })
 		.SPDisplaysDataType;
 	return displays.flatMap((entry): ObservedAccelerator[] => {
+		if (typeof entry !== "object" || entry === null) {
+			return [];
+		}
+		const display = entry as Record<string, unknown>;
 		const modelRaw =
-			(typeof entry.sppci_model === "string" && entry.sppci_model) ||
-			(typeof entry._name === "string" && entry._name) ||
-			(typeof entry.spdisplays_vendor === "string" &&
-			typeof entry.spdisplays_ndrvs === "string"
-				? `${entry.spdisplays_vendor} ${entry.spdisplays_ndrvs}`
+			(typeof display.sppci_model === "string" && display.sppci_model) ||
+			(typeof display._name === "string" && display._name) ||
+			(typeof display.spdisplays_vendor === "string" &&
+			typeof display.spdisplays_ndrvs === "string"
+				? `${display.spdisplays_vendor} ${display.spdisplays_ndrvs}`
 				: undefined);
 		if (!modelRaw) return [];
 		const memoryBytes =
 			parseMemoryBytes(
-				typeof entry.spdisplays_vram === "string"
-					? entry.spdisplays_vram
+				typeof display.spdisplays_vram === "string"
+					? display.spdisplays_vram
 					: undefined,
 			) ??
 			parseMemoryBytes(
-				typeof entry.spdisplays_vram_shared === "string"
-					? entry.spdisplays_vram_shared
+				typeof display.spdisplays_vram_shared === "string"
+					? display.spdisplays_vram_shared
 					: undefined,
 			);
 		const hasPciMetadata =
-			typeof entry.sppci_bus === "string" ||
-			typeof entry.spdisplays_pcie_lane_width === "string";
+			typeof display.sppci_bus === "string" ||
+			typeof display.spdisplays_pcie_lane_width === "string";
 		const vendor =
-			typeof entry.spdisplays_vendor === "string"
-				? entry.spdisplays_vendor
+			typeof display.spdisplays_vendor === "string"
+				? display.spdisplays_vendor
 				: undefined;
 		const kind =
 			hasPciMetadata

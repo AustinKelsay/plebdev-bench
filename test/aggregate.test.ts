@@ -243,6 +243,60 @@ describe("aggregateRunsForCheckpoint", () => {
 		expect(aggregate.machines[0]?.instanceCount).toBe(1);
 	});
 
+	it("dedupes alias variants under the canonical model profile key", () => {
+		const checkpointId = "chk_sha256v1_canonical_model";
+		const canonicalProfile = {
+			canonical: {
+				profileKey: "qwen3-27b-instruct",
+				profileLabel: "Qwen 3 27B Instruct",
+				family: "qwen3",
+				parametersBillions: 27,
+				parameterScaleLabel: "27B",
+				tuning: "instruct",
+			},
+			variant: {
+				variantKey: "ollama-qwen3-27b",
+				variantLabel: "qwen3:27b",
+				runtime: "ollama" as const,
+				runtimeModelName: "qwen3:27b",
+			},
+			resolutionSource: "configured_profile" as const,
+		};
+		const runs: AggregateRunInput[] = [
+			{
+				run: createRun("run-a", checkpointId, TEST_PROFILE_KEY, "instance-a", [
+					createItem("01", "2026-03-04T12:00:00.000Z", {
+						model: "qwen3:27b",
+						modelAlias: "qwen3-27b-instruct",
+						modelProfile: canonicalProfile,
+					}),
+				]),
+			},
+			{
+				run: createRun("run-b", checkpointId, TEST_PROFILE_KEY, "instance-b", [
+					createItem("01", "2026-03-04T12:10:00.000Z", {
+						model: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+						modelAlias: "qwen3-27b-instruct",
+						modelProfile: {
+							...canonicalProfile,
+							variant: {
+								...canonicalProfile.variant,
+								variantKey: "vllm-qwen3-27b-instruct-mlx-4bit",
+								variantLabel: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+								runtime: "ollama",
+								runtimeModelName: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+							},
+						},
+					}),
+				]),
+			},
+		];
+
+		const aggregate = aggregateRunsForCheckpoint(runs, checkpointId);
+		expect(aggregate.items).toHaveLength(1);
+		expect(aggregate.items[0]?.sourceRunId).toBe("run-b");
+	});
+
 	it("does not dedupe across different profiles", () => {
 		const checkpointId = "chk_sha256v1_latest";
 		const item = createItem("01", "2026-03-04T12:00:00.000Z");

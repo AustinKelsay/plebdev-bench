@@ -40,6 +40,17 @@ interface StagedArtifactRewrite extends PreparedArtifactRewrite {
 	rollbackSucceeded: boolean;
 }
 
+/** Returns true when `candidate` equals or is nested beneath `basePath`. */
+function isSameOrNestedPath(basePath: string, candidate: string): boolean {
+	if (basePath === candidate) {
+		return true;
+	}
+	const normalizedBase = basePath.endsWith(path.sep)
+		? basePath
+		: `${basePath}${path.sep}`;
+	return candidate.startsWith(normalizedBase);
+}
+
 const MigrateMachineCommandOptionsSchema = z
 	.object({
 		dir: z.string().min(1),
@@ -57,6 +68,26 @@ const MigrateMachineCommandOptionsSchema = z
 				message:
 					"--rebuild-dashboard-index requires --dashboard-output-dir to avoid mutating the source results directory",
 			});
+		}
+		if (
+			options.rebuildDashboardIndex &&
+			options.dashboardOutputDir !== undefined
+		) {
+			const sourceDir = path.normalize(path.resolve(options.dir));
+			const dashboardOutputDir = path.normalize(
+				path.resolve(options.dashboardOutputDir),
+			);
+			if (
+				isSameOrNestedPath(sourceDir, dashboardOutputDir) ||
+				isSameOrNestedPath(dashboardOutputDir, sourceDir)
+			) {
+				context.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["dashboardOutputDir"],
+					message:
+						"--rebuild-dashboard-index requires --dashboard-output-dir to avoid mutating the source results directory",
+				});
+			}
 		}
 	});
 
@@ -118,6 +149,7 @@ async function writePreparedArtifacts(
 			rollbackSucceeded: false,
 		}),
 	);
+	let writeCommitted = false;
 
 	try {
 		for (const rewrite of stagedRewrites) {
@@ -148,6 +180,7 @@ async function writePreparedArtifacts(
 				);
 			}
 		}
+		writeCommitted = true;
 	} catch (error) {
 		for (const rewrite of stagedRewrites) {
 			if (!rewrite.backupCreated || !rewrite.renameCompleted) {
@@ -185,7 +218,7 @@ async function writePreparedArtifacts(
 			}
 			const shouldDeleteBackup =
 				rewrite.backupCreated &&
-				(rewrite.rollbackSucceeded || !rewrite.renameCompleted);
+				(writeCommitted || rewrite.rollbackSucceeded || !rewrite.renameCompleted);
 			if (shouldDeleteBackup) {
 				try {
 					await fs.unlink(rewrite.backupPath);

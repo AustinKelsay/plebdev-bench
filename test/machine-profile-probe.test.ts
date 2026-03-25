@@ -40,4 +40,20 @@ describe("parseMacosAccelerators", () => {
 			"malformed macOS accelerator probe JSON: missing SPDisplaysDataType array",
 		);
 	});
+
+	it("ignores malformed display entries without throwing", () => {
+		expect(
+			parseMacosAccelerators(
+				JSON.stringify({
+					SPDisplaysDataType: [null, { _name: "Apple M4 Pro GPU" }],
+				}),
+			),
+		).toEqual([
+			{
+				modelRaw: "Apple M4 Pro GPU",
+				kind: "integrated",
+				backend: "metal",
+			},
+		]);
+	});
 });

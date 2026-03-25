@@ -47,6 +47,58 @@ export type FrontierEvalFailureType =
 /** Verification status for run provenance */
 export type VerificationStatus = "self_reported" | "verified" | "rejected";
 
+/** Item-level signal quality classification */
+export type SignalAssessmentClassification = "trustworthy" | "tainted";
+
+/** Stable reason codes for tainted benchmark rows */
+export type SignalAssessmentReason =
+	| "output_contract_violation"
+	| "mixed_prose_salvaged"
+	| "tool_permission_denied"
+	| "tool_call_not_executed"
+	| "confirmation_without_artifact";
+
+/** Item-level benchmark signal assessment */
+export interface SignalAssessment {
+	classification: SignalAssessmentClassification;
+	reasons: SignalAssessmentReason[];
+}
+
+/** Resolution source for canonical model-profile metadata */
+export type ModelProfileResolutionSource =
+	| "configured_profile"
+	| "legacy_alias"
+	| "runtime_name";
+
+/** Runtime-agnostic canonical model identity */
+export interface CanonicalModelProfile {
+	profileKey: string;
+	profileLabel: string;
+	family: string;
+	parametersBillions?: number;
+	parameterScaleLabel?: string;
+	provider?: string;
+	tuning?: string;
+}
+
+/** Runtime-specific model artifact metadata */
+export interface ModelVariant {
+	variantKey: string;
+	variantLabel: string;
+	runtime: string;
+	runtimeModelName: string;
+	format?: string;
+	quantization?: string;
+	sourceId?: string;
+}
+
+/** Canonical model-profile snapshot attached to plan/result items */
+export interface ModelProfile {
+	canonical: CanonicalModelProfile;
+	variant: ModelVariant;
+	resolutionSource: ModelProfileResolutionSource;
+}
+
 /** Generation failure record */
 export interface GenerationFailure {
 	type: GenerationFailureType;
@@ -203,6 +255,7 @@ export interface MatrixItem {
 	runtime: string;
 	model: string;
 	modelAlias?: string;
+	modelProfile?: ModelProfile;
 	harness: string;
 	test: string;
 	category?: TestCategory;
@@ -221,6 +274,7 @@ export interface MatrixItemResult extends MatrixItem {
 	scoringFailure?: ScoringFailure;
 	frontierEval?: FrontierEval;
 	frontierEvalFailure?: FrontierEvalFailure;
+	signalAssessment?: SignalAssessment;
 }
 
 /** Legacy run plan environment info (pre-0.3.0 artifacts) */
@@ -312,9 +366,9 @@ export interface DashboardCheckpointSummary {
 	latestRunAt: string;
 }
 
-/** Dashboard index format v2 */
+/** Dashboard index format v3 */
 export interface DashboardIndex {
-	schemaVersion: 2;
+	schemaVersion: 3;
 	generatedAt: string;
 	latestCheckpointId: string | null;
 	runs: RunListItem[];

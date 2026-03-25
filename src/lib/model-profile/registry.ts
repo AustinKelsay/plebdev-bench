@@ -10,7 +10,10 @@
  */
 
 import * as fs from "node:fs";
-import type { RuntimeName } from "../../schemas/common.schema.js";
+import {
+	RuntimeNameSchema,
+	type RuntimeName,
+} from "../../schemas/common.schema.js";
 import {
 	ModelAliasFileSchema,
 	type ModelAliasMap,
@@ -30,6 +33,50 @@ import {
 	normalizeConfiguredVariant,
 } from "./normalization.js";
 
+const REGISTRY_PROVENANCE = Symbol("modelProfileRegistryProvenance");
+
+type RegistryResolutionSource = Extract<
+	ModelProfile["resolutionSource"],
+	"configured_profile" | "legacy_alias"
+>;
+type RegistryProfile = ModelProfileRegistry[string] & {
+	[REGISTRY_PROVENANCE]?: RegistryResolutionSource;
+};
+
+/** Attaches explicit provenance metadata to a configured profile entry. */
+function withRegistryProfileProvenance(
+	profile: ModelProfileRegistry[string],
+	provenance: RegistryResolutionSource,
+): RegistryProfile {
+	const decorated = { ...profile } as RegistryProfile;
+	Object.defineProperty(decorated, REGISTRY_PROVENANCE, {
+		value: provenance,
+		enumerable: true,
+		configurable: true,
+	});
+	return decorated;
+}
+
+/** Applies shared provenance to every registry entry. */
+function withRegistryProvenance(
+	registry: ModelProfileRegistry,
+	provenance: RegistryResolutionSource,
+): ModelProfileRegistry {
+	return Object.fromEntries(
+		Object.entries(registry).map(([profileKey, profile]) => [
+			profileKey,
+			withRegistryProfileProvenance(profile, provenance),
+		]),
+	);
+}
+
+/** Reads explicit provenance from a configured profile entry. */
+function getRegistryProfileProvenance(
+	profile: ModelProfileRegistry[string],
+): RegistryResolutionSource {
+	return (profile as RegistryProfile)[REGISTRY_PROVENANCE] ?? "configured_profile";
+}
+
 /** Resolved runtime-specific model selection for one matrix row. */
 export interface ResolvedModelSelection {
 	runtimeModelName: string;
@@ -42,13 +89,16 @@ function normalizeLegacyAliasMap(aliases: ModelAliasMap): ModelProfileRegistry {
 	const registry: ModelProfileRegistry = {};
 
 	for (const [profileKey, variants] of Object.entries(aliases)) {
-		registry[profileKey] = {
-			profileLabel: humanizeSlug(profileKey),
-			family: profileKey,
-			variants: Object.fromEntries(
-				Object.entries(variants).map(([runtime, modelName]) => [runtime, modelName]),
-			),
-		};
+		registry[profileKey] = withRegistryProfileProvenance(
+			{
+				profileLabel: humanizeSlug(profileKey),
+				family: profileKey,
+				variants: Object.fromEntries(
+					Object.entries(variants).map(([runtime, modelName]) => [runtime, modelName]),
+				),
+			},
+			"legacy_alias",
+		);
 	}
 
 	return registry;
@@ -87,7 +137,7 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 			{ profileCount: Object.keys(profileWrapper.data.models).length },
 			"Loaded versioned model profile file",
 		);
-		return profileWrapper.data.models;
+		return withRegistryProvenance(profileWrapper.data.models, "configured_profile");
 	}
 
 	const rawProfiles = ModelProfileRegistrySchema.safeParse(parsed);
@@ -96,7 +146,7 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 			{ profileCount: Object.keys(rawProfiles.data).length },
 			"Loaded raw model profiles",
 		);
-		return rawProfiles.data;
+		return withRegistryProvenance(rawProfiles.data, "configured_profile");
 	}
 
 	const aliasWrapper = ModelAliasFileSchema.safeParse(parsed);
@@ -155,22 +205,37 @@ export function parseInlineModelProfile(inline: string): ModelProfileRegistry {
 				`Invalid runtime mapping in profile "${profileKey}": "${entry}"`,
 			);
 		}
-		const runtime = entry.slice(0, colonIndex).trim();
+		const runtimeInput = entry.slice(0, colonIndex).trim();
 		const modelName = entry.slice(colonIndex + 1).trim();
-		if (!runtime || !modelName) {
+		if (!runtimeInput || !modelName) {
 			throw new Error(
 				`Invalid runtime mapping in profile "${profileKey}": "${entry}"`,
+			);
+		}
+		const runtimeResult = RuntimeNameSchema.safeParse(runtimeInput);
+		if (!runtimeResult.success) {
+			throw new Error(
+				`Invalid runtime mapping in profile "${profileKey}": unknown runtime "${runtimeInput}"`,
+			);
+		}
+		const runtime = runtimeResult.data;
+		if (variants[runtime] !== undefined) {
+			throw new Error(
+				`Invalid runtime mapping in profile "${profileKey}": duplicate runtime "${runtime}"`,
 			);
 		}
 		variants[runtime] = modelName;
 	}
 
 	return {
-		[profileKey]: {
-			profileLabel: humanizeSlug(profileKey),
-			family: profileKey,
-			variants,
-		},
+		[profileKey]: withRegistryProfileProvenance(
+			{
+				profileLabel: humanizeSlug(profileKey),
+				family: profileKey,
+				variants,
+			},
+			"configured_profile",
+		),
 	};
 }
 
@@ -258,7 +323,11 @@ export function buildResolvedModelProfile(
 		runtime,
 		runtimeModelName,
 		...(configured
-			? { profileKey: configured.profileKey, profile: configured.profile }
+			? {
+					profileKey: configured.profileKey,
+					profile: configured.profile,
+					resolutionSource: getRegistryProfileProvenance(configured.profile),
+				}
 			: {}),
 	});
 }
@@ -288,12 +357,7 @@ export function resolveModelSelection(
 		}
 
 		const normalizedVariant = normalizeConfiguredVariant(configuredVariant);
-		const resolutionSource: ModelProfile["resolutionSource"] =
-			Object.values(configuredProfile.variants).every(
-				(value) => typeof value === "string",
-			)
-				? "legacy_alias"
-				: "configured_profile";
+		const resolutionSource = getRegistryProfileProvenance(configuredProfile);
 
 		return {
 			runtimeModelName: normalizedVariant.modelName,
@@ -322,7 +386,7 @@ export function resolveModelSelection(
 				profile: reverseMatch.profile,
 				runtime,
 				runtimeModelName: modelSpec,
-				resolutionSource: "configured_profile",
+				resolutionSource: getRegistryProfileProvenance(reverseMatch.profile),
 			}),
 		};
 	}

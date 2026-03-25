@@ -184,8 +184,7 @@ export async function executeItem(
 					supportsCompileRetry,
 				});
 				generation = scoringOutcome.generation;
-				signalAssessment =
-					scoringOutcome.signalAssessment ?? signalAssessment;
+				signalAssessment = scoringOutcome.signalAssessment;
 				const scoringResult = scoringOutcome.scoringResult;
 				const scoringOnlyDurationMsRounded = Math.round(
 					scoringOutcome.scoringOnlyDurationMs,

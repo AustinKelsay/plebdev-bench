@@ -464,6 +464,61 @@ describe("buildRunPlan", () => {
 		expect(plan.items[1].modelProfile?.variant.quantization).toBe("4-bit");
 	});
 
+	it("dedupes overlapping model selectors that resolve to the same runtime model", async () => {
+		createRuntimeMock.mockReturnValue({
+			ping: async () => true,
+			listModels: async () => ["qwen3:27b"],
+		});
+		const catalog = [
+			{
+				slug: "smoke",
+				category: "coding",
+				description: "basic smoke test",
+				tags: [],
+				scoringMode: "code-module",
+				requiresTools: false,
+				requiredHarnessCapabilities: [],
+				timeoutMultiplier: 1,
+				schemaVersion: 1,
+			},
+		];
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+		const plan = await buildRunPlan({
+			schemaVersion: "0.4.0",
+			runtimes: ["ollama"],
+			models: ["qwen3-27b-instruct", "qwen3:27b"],
+			harnesses: ["direct"],
+			tests: [],
+			categories: [],
+			passTypes: ["blind"],
+			ollamaBaseUrl: "http://localhost:11434",
+			vllmBaseUrl: "http://localhost:8000",
+			generateTimeoutMs: 300_000,
+			gooseMaxTurns: 1,
+			gooseRetryMaxTurns: 3,
+			gooseWorkspaceMaxTurns: 8,
+			gooseWorkspaceRetryMaxTurns: 12,
+			outputDir: "results",
+			modelProfiles: {
+				"qwen3-27b-instruct": {
+					profileLabel: "Qwen 3 27B Instruct",
+					family: "qwen3",
+					parametersBillions: 27,
+					tuning: "instruct",
+					variants: {
+						ollama: "qwen3:27b",
+					},
+				},
+			},
+		});
+
+		expect(plan.items).toHaveLength(1);
+		expect(plan.items[0]?.model).toBe("qwen3:27b");
+	});
+
 	it("fails fast when an explicit model profile lacks a runtime variant", async () => {
 		const catalog = [
 			{

@@ -235,7 +235,7 @@ Example file:
 }
 ```
 
-Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work. They are normalized into the new model-profile shape automatically, but new configs should prefer `modelProfiles` / `models`.
+Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work. They are normalized into the new model-profile shape automatically, but new configs should prefer `models` (legacy `modelProfiles` are accepted and normalized too).
 
 ### Long-Run Stability
 

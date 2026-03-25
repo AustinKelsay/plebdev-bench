@@ -163,6 +163,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		let filtered: string[];
 		if (config.models.length > 0) {
 			filtered = [];
+			const filteredSet = new Set<string>();
 			for (const modelSpec of config.models) {
 				const configuredProfile = modelProfiles[modelSpec];
 				const resolvedSelection = resolveModelSelection(
@@ -177,9 +178,11 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				}
 				if (
 					resolvedSelection !== undefined &&
-					discovered.includes(resolvedSelection.runtimeModelName)
+					discovered.includes(resolvedSelection.runtimeModelName) &&
+					!filteredSet.has(resolvedSelection.runtimeModelName)
 				) {
 					filtered.push(resolvedSelection.runtimeModelName);
+					filteredSet.add(resolvedSelection.runtimeModelName);
 					resolvedModelProfiles.set(
 						`${runtimeName}::${resolvedSelection.runtimeModelName}`,
 						{

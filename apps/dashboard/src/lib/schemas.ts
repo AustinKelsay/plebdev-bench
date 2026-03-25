@@ -1,6 +1,6 @@
 /**
  * Purpose: Zod schemas for dashboard API boundary validation.
- * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema, RunListSchema, DashboardCheckpointSummarySchema, DashboardIndexSchema, DashboardIndexLegacyOrV2Schema, LeaderboardAggregateSchema
+ * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema, RunListSchema, DashboardCheckpointSummarySchema, DashboardIndexSchema, DashboardIndexLegacyOrCurrentSchema, LeaderboardAggregateSchema
  *
  * These schemas validate JSON fetched from the results directory.
  * They mirror the CLI schemas but are kept local to avoid cross-package imports.
@@ -54,6 +54,63 @@ const VerificationStatusSchema = z.enum([
 	"verified",
 	"rejected",
 ]);
+
+/** Signal assessment classification schema. */
+const SignalAssessmentClassificationSchema = z.enum([
+	"trustworthy",
+	"tainted",
+]);
+
+/** Signal assessment reason schema. */
+const SignalAssessmentReasonSchema = z.enum([
+	"output_contract_violation",
+	"mixed_prose_salvaged",
+	"tool_permission_denied",
+	"tool_call_not_executed",
+	"confirmation_without_artifact",
+]);
+
+/** Signal assessment schema. */
+const SignalAssessmentSchema = z.object({
+	classification: SignalAssessmentClassificationSchema,
+	reasons: z.array(SignalAssessmentReasonSchema),
+});
+
+/** Model-profile resolution source schema. */
+const ModelProfileResolutionSourceSchema = z.enum([
+	"configured_profile",
+	"legacy_alias",
+	"runtime_name",
+]);
+
+/** Canonical model-profile schema. */
+const CanonicalModelProfileSchema = z.object({
+	profileKey: z.string().min(1),
+	profileLabel: z.string().min(1),
+	family: z.string().min(1),
+	parametersBillions: z.number().positive().optional(),
+	parameterScaleLabel: z.string().min(1).optional(),
+	provider: z.string().min(1).optional(),
+	tuning: z.string().min(1).optional(),
+});
+
+/** Runtime-specific model variant schema. */
+const ModelVariantSchema = z.object({
+	variantKey: z.string().min(1),
+	variantLabel: z.string().min(1),
+	runtime: z.string().min(1),
+	runtimeModelName: z.string().min(1),
+	format: z.string().min(1).optional(),
+	quantization: z.string().min(1).optional(),
+	sourceId: z.string().min(1).optional(),
+});
+
+/** Resolved model-profile schema. */
+const ModelProfileSchema = z.object({
+	canonical: CanonicalModelProfileSchema,
+	variant: ModelVariantSchema,
+	resolutionSource: ModelProfileResolutionSourceSchema,
+});
 
 /** Generation result schema. */
 const GenerationResultSchema = z.object({
@@ -266,6 +323,7 @@ const MatrixItemResultSchema = z.object({
 	runtime: z.string(),
 	model: z.string(),
 	modelAlias: z.string().optional(),
+	modelProfile: ModelProfileSchema.optional(),
 	harness: z.string(),
 	test: z.string(),
 	passType: PassTypeSchema,
@@ -279,6 +337,7 @@ const MatrixItemResultSchema = z.object({
 	scoringFailure: ScoringFailureSchema.optional(),
 	frontierEval: FrontierEvalSchema.optional(),
 	frontierEvalFailure: FrontierEvalFailureSchema.optional(),
+	signalAssessment: SignalAssessmentSchema.optional(),
 });
 
 /** Run summary schema. */
@@ -309,6 +368,7 @@ const MatrixItemSchema = z.object({
 	runtime: z.string(),
 	model: z.string(),
 	modelAlias: z.string().optional(),
+	modelProfile: ModelProfileSchema.optional(),
 	harness: z.string(),
 	test: z.string(),
 	passType: PassTypeSchema,
@@ -378,20 +438,52 @@ export const DashboardCheckpointSummarySchema = z.object({
 	latestRunAt: z.string(),
 });
 
-/** V2 dashboard index schema. */
+/** Legacy v2 checkpoint summary schema. */
+const DashboardCheckpointSummaryV2Schema = z.object({
+	checkpointId: z.string(),
+	runCount: z.number(),
+	rawItemCount: z.number(),
+	machineCount: z.number(),
+	latestRunAt: z.string(),
+});
+
+/** Current v3 dashboard index schema. */
 export const DashboardIndexSchema = z.object({
-	schemaVersion: z.literal(2),
+	schemaVersion: z.literal(3),
 	generatedAt: z.string(),
 	latestCheckpointId: z.string().nullable(),
 	runs: z.array(RunListItemSchema),
 	checkpoints: z.array(DashboardCheckpointSummarySchema),
 });
 
-/** Index schema with backward compatibility for legacy array format. */
-export const DashboardIndexLegacyOrV2Schema = z.union([
-	RunListSchema,
-	DashboardIndexSchema,
-]);
+/** Legacy v2 dashboard index schema. */
+const DashboardIndexV2Schema = z.object({
+	schemaVersion: z.literal(2),
+	generatedAt: z.string(),
+	latestCheckpointId: z.string().nullable(),
+	runs: z.array(RunListItemSchema),
+	checkpoints: z.array(DashboardCheckpointSummaryV2Schema),
+});
+
+/** Index schema with backward compatibility for legacy array and v2 formats. */
+export const DashboardIndexLegacyOrCurrentSchema = z
+	.union([RunListSchema, DashboardIndexV2Schema, DashboardIndexSchema])
+	.transform((index) => {
+		if (Array.isArray(index) || index.schemaVersion === 3) {
+			return index;
+		}
+
+		return {
+			schemaVersion: 3 as const,
+			generatedAt: index.generatedAt,
+			latestCheckpointId: index.latestCheckpointId,
+			runs: index.runs,
+			checkpoints: index.checkpoints.map((checkpoint) => ({
+				...checkpoint,
+				instanceCount: checkpoint.machineCount,
+			})),
+		};
+	});
 
 /** Aggregated leaderboard item schema. */
 const LeaderboardAggregatedItemSchema = MatrixItemResultSchema.extend({

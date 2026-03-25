@@ -36,9 +36,7 @@ function toSlug(value: string): string {
 
 /** Formats numeric values without insignificant trailing zeroes. */
 function formatCompactNumber(value: number): string {
-	return Number.isInteger(value)
-		? String(value)
-		: value.toFixed(1).replace(/\.0$/, "");
+	return Number.isInteger(value) ? String(value) : value.toString();
 }
 
 /**
@@ -46,6 +44,7 @@ function formatCompactNumber(value: number): string {
  *
  * @param value - Slug or tokenized identifier such as `qwen3-27b-instruct`
  * @returns Space-separated label with simple capitalization applied
+ * @throws none
  */
 export function humanizeSlug(value: string): string {
 	return value
@@ -214,6 +213,7 @@ function buildCanonicalProfileLabel(
  *
  * @param value - Configured variant value from the model-profile registry
  * @returns Normalized object containing runtime model name and optional metadata
+ * @throws none
  */
 export function normalizeConfiguredVariant(
 	value: ConfiguredModelVariantValue,
@@ -292,6 +292,7 @@ export function buildConfiguredModelProfile(args: {
  * @param runtime - Runtime that will execute the model
  * @param runtimeModelName - Raw runtime-specific model identifier
  * @returns Heuristically derived canonical profile and runtime-specific variant metadata
+ * @throws none
  */
 export function buildFallbackModelProfile(
 	runtime: RuntimeName,
@@ -337,6 +338,7 @@ export function buildFallbackModelProfile(
  * @param runtimeModelName - Runtime-specific model identifier
  * @param profileKey - Optional matched configured profile key
  * @param profile - Optional matched configured profile
+ * @param resolutionSource - Optional explicit configured-profile provenance
  * @returns Resolved model profile
  * @throws {Error} When only one of `profileKey` or `profile` is provided
  */
@@ -345,6 +347,7 @@ export function buildResolvedModelProfile(args: {
 	runtimeModelName: string;
 	profileKey?: string;
 	profile?: ConfiguredModelProfile;
+	resolutionSource?: ModelProfile["resolutionSource"];
 }): ModelProfile {
 	if (args.profileKey && args.profile) {
 		return buildConfiguredModelProfile({
@@ -352,7 +355,7 @@ export function buildResolvedModelProfile(args: {
 			profile: args.profile,
 			runtime: args.runtime,
 			runtimeModelName: args.runtimeModelName,
-			resolutionSource: "configured_profile",
+			resolutionSource: args.resolutionSource ?? "configured_profile",
 		});
 	}
 
@@ -372,6 +375,7 @@ export function buildResolvedModelProfile(args: {
  * @param modelProfile - Canonical model profile when available
  * @param modelAlias - Deprecated alias field retained in some artifacts
  * @returns Stable model identity key
+ * @throws none
  */
 export function getModelIdentityKey(
 	model: string,

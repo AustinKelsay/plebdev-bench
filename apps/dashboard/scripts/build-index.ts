@@ -546,7 +546,7 @@ export async function buildDashboardIndexArtifacts(
 	const runs = buildRunListItems(bundles);
 
 	const index: DashboardIndex = {
-		schemaVersion: 2,
+		schemaVersion: 3,
 		generatedAt: new Date().toISOString(),
 		latestCheckpointId,
 		runs,

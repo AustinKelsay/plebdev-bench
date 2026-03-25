@@ -3,12 +3,13 @@
  * Exports: resolveRunMetadata, aggregateRunsForCheckpoint, summarizeCheckpoints
  *
  * Invariants:
- * - Aggregation key is machineProfileKey + runtime + model + harness + test + passType
+ * - Aggregation key is machineProfileKey + runtime + canonical model identity + harness + test + passType
  * - Duplicate keys resolve to the strongest item first, then latest item on exact ties
  * - Outputs are deterministic
  */
 
 import { migrateLegacyMachineProfile } from "../lib/machine-profile/legacy.js";
+import { getModelIdentityKey } from "../lib/model-profiles.js";
 import type {
 	MatrixItemResult,
 	RunPlan,
@@ -101,7 +102,12 @@ function buildAggregateKey(
 	machineProfileKey: string,
 	item: MatrixItemResult,
 ): string {
-	return `${machineProfileKey}|${item.runtime}|${item.model}|${item.harness}|${item.test}|${item.passType}`;
+	const canonicalModel = getModelIdentityKey(
+		item.model,
+		item.modelProfile,
+		item.modelAlias,
+	);
+	return `${machineProfileKey}|${item.runtime}|${canonicalModel}|${item.harness}|${item.test}|${item.passType}`;
 }
 
 /**
