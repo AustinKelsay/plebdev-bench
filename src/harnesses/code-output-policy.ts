@@ -129,13 +129,17 @@ function getAcceptedOutputTaintReasons(
 	extracted: ExtractedCode,
 ): SignalAssessmentReason[] {
 	const trimmed = rawOutput.trim();
-	if (extracted.method === "raw") {
-		return [];
-	}
-
 	const normalizedCode = extracted.code.trim();
 	if (trimmed === normalizedCode) {
 		return [];
+	}
+
+	if (extracted.method === "raw") {
+		const codeBlockMatch = trimmed.match(SINGLE_CODE_BLOCK_REGEX);
+		if (codeBlockMatch?.[1]?.trim() === normalizedCode) {
+			return ["output_contract_violation"];
+		}
+		return ["mixed_prose_salvaged"];
 	}
 
 	if (SINGLE_CODE_BLOCK_REGEX.test(trimmed)) {

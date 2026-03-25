@@ -104,6 +104,34 @@ describe("hardware profile resolution", () => {
 		}
 	});
 
+	it("uses multi-accelerator summaries in the profile label when needed", async () => {
+		const resolved = await collectMachineProfile({
+			machineInstanceId: "machine-inst-mixed",
+			observedHardware: {
+				...TEST_HARDWARE,
+				accelerators: [
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4090",
+						kind: "discrete",
+						backend: "cuda",
+						count: 2,
+					},
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4060",
+						kind: "discrete",
+						backend: "cuda",
+					},
+				],
+			},
+			env: {},
+		});
+
+		expect(resolved.machine.profileLabel).toContain("2x RTX 4090");
+		expect(resolved.machine.profileLabel).toContain("RTX 4060");
+	});
+
 	it("rejects blank persisted instance ID files that remain unreadable", async () => {
 		const instanceIdFilePath = path.join(
 			os.tmpdir(),

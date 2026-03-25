@@ -229,11 +229,11 @@ function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
 
 	// Automated score delta
 	let automatedScore: ScoreDelta | null = null;
-	if (a.automatedScore || b.automatedScore) {
-		const scoreA = a.automatedScore || { passed: 0, failed: 0, total: 0 };
-		const scoreB = b.automatedScore || { passed: 0, failed: 0, total: 0 };
-		const passRateA = calculatePassRate(a.automatedScore) ?? 0;
-		const passRateB = calculatePassRate(b.automatedScore) ?? 0;
+	if (a.automatedScore && b.automatedScore) {
+		const scoreA = a.automatedScore;
+		const scoreB = b.automatedScore;
+		const passRateA = calculatePassRate(scoreA) ?? 0;
+		const passRateB = calculatePassRate(scoreB) ?? 0;
 
 		automatedScore = {
 			passedDelta: scoreB.passed - scoreA.passed,
@@ -245,9 +245,9 @@ function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
 
 	// Frontier eval delta
 	let frontierEval: EvalDelta | null = null;
-	if (a.frontierEval || b.frontierEval) {
-		const scoreA = a.frontierEval?.score ?? 0;
-		const scoreB = b.frontierEval?.score ?? 0;
+	if (a.frontierEval && b.frontierEval) {
+		const scoreA = a.frontierEval.score;
+		const scoreB = b.frontierEval.score;
 		frontierEval = {
 			scoreDelta: scoreB - scoreA,
 		};

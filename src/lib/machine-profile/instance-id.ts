@@ -42,7 +42,10 @@ export function resolveDefaultInstanceIdPath(
 	platform: NodeJS.Platform = process.platform,
 	env: NodeJS.ProcessEnv = process.env,
 ): string {
-	const homeDir = os.homedir();
+	const homeDir =
+		readNonEmpty(env.HOME) ??
+		(platform === "win32" ? readNonEmpty(env.USERPROFILE) : undefined) ??
+		os.homedir();
 	if (platform === "darwin") {
 		return path.join(
 			homeDir,

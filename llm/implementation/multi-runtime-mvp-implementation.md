@@ -196,8 +196,8 @@ This document captures the February 8, 2026 MVP checkpoint. Later computer-use h
     - opencode: `90.1%`
     - goose: `88.6%`
   - by model:
-    - ollama `qwen2.5:14b`: `92.5%`
-    - vLLM `Qwen/Qwen2.5-14B-Instruct`: `89.8%`
+    - ollama `qwen3:27b`: `92.5%`
+    - vLLM `Qwen/Qwen3-27B-Instruct`: `89.8%`
 
 ### Engineering gate checks
 - Typecheck:

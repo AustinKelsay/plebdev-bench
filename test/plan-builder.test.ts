@@ -3,6 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const discoverHarnessesMock = vi.fn();
 const discoverRuntimesMock = vi.fn();
@@ -322,7 +323,7 @@ describe("buildRunPlan", () => {
 
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 		const plan = await buildRunPlan({
-			schemaVersion: "0.4.0",
+			schemaVersion: SCHEMA_VERSION,
 			runtimes: ["ollama"],
 			models: ["qwen3.5:4b"],
 			harnesses: ["direct", "goose", "opencode"],
@@ -418,7 +419,7 @@ describe("buildRunPlan", () => {
 
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 		const plan = await buildRunPlan({
-			schemaVersion: "0.4.0",
+			schemaVersion: SCHEMA_VERSION,
 			runtimes: ["ollama", "vllm"],
 			models: ["qwen3-27b-instruct"],
 			harnesses: ["direct"],
@@ -487,7 +488,7 @@ describe("buildRunPlan", () => {
 
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 		const plan = await buildRunPlan({
-			schemaVersion: "0.4.0",
+			schemaVersion: SCHEMA_VERSION,
 			runtimes: ["ollama"],
 			models: ["qwen3-27b-instruct", "qwen3:27b"],
 			harnesses: ["direct"],
@@ -540,7 +541,7 @@ describe("buildRunPlan", () => {
 
 		await expect(
 			buildRunPlan({
-				schemaVersion: "0.4.0",
+				schemaVersion: SCHEMA_VERSION,
 				runtimes: ["ollama", "vllm"],
 				models: ["qwen3-27b-instruct"],
 				harnesses: ["direct"],

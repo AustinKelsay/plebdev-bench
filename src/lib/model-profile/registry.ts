@@ -92,7 +92,6 @@ function normalizeLegacyAliasMap(aliases: ModelAliasMap): ModelProfileRegistry {
 		registry[profileKey] = withRegistryProfileProvenance(
 			{
 				profileLabel: humanizeSlug(profileKey),
-				family: profileKey,
 				variants: Object.fromEntries(
 					Object.entries(variants).map(([runtime, modelName]) => [runtime, modelName]),
 				),
@@ -241,7 +240,6 @@ export function parseInlineModelProfile(inline: string): ModelProfileRegistry {
 		[profileKey]: withRegistryProfileProvenance(
 			{
 				profileLabel: humanizeSlug(profileKey),
-				family: profileKey,
 				variants,
 			},
 			"configured_profile",

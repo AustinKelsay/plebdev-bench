@@ -18,7 +18,10 @@ import {
 	resolveModelSelection,
 } from "../src/lib/model-profiles.js";
 import { buildFallbackModelProfile } from "../src/lib/model-profile/normalization.js";
-import { ModelProfileFileSchema } from "../src/schemas/model-profile.schema.js";
+import {
+	ConfiguredModelProfileSchema,
+	ModelProfileFileSchema,
+} from "../src/schemas/model-profile.schema.js";
 
 describe("parseInlineModelProfile", () => {
 	it("rejects unknown runtimes in inline mappings", () => {
@@ -93,6 +96,20 @@ describe("model-profile normalization", () => {
 		expect(profile.canonical.profileKey).toBe("qwen3-1.25b-instruct");
 		expect(profile.canonical.parameterScaleLabel).toBe("1.25B");
 	});
+
+	it("derives minimal configured profile family metadata from the profile key", () => {
+		const profile = buildResolvedModelProfile("ollama", "qwen3:1.25b", {
+			"qwen3-1.25b-instruct": {
+				variants: {
+					ollama: "qwen3:1.25b",
+				},
+			},
+		});
+
+		expect(profile.canonical.family).toBe("qwen3");
+		expect(profile.canonical.parametersBillions).toBe(1.25);
+		expect(profile.canonical.tuning).toBe("instruct");
+	});
 });
 
 describe("ModelProfileFileSchema", () => {
@@ -101,6 +118,16 @@ describe("ModelProfileFileSchema", () => {
 			ModelProfileFileSchema.safeParse({
 				schemaVersion: "0.4.0",
 				models: {},
+			}).success,
+		).toBe(false);
+	});
+
+	it("rejects invalid runtime keys in configured variants", () => {
+		expect(
+			ConfiguredModelProfileSchema.safeParse({
+				variants: {
+					mlx: "Qwen/Qwen3-27B-Instruct-MLX",
+				},
 			}).success,
 		).toBe(false);
 	});

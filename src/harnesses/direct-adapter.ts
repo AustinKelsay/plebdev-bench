@@ -101,6 +101,8 @@ export function createDirectAdapter(): Harness {
 				const elapsedMs = Math.round(performance.now() - startTime);
 				const remainingMs = timeoutMs - elapsedMs;
 				if (!isRetryAttempt && remainingMs > 1000) {
+					const initialPromptTokens = promptTokens;
+					const initialCompletionTokens = completionTokens;
 					const retryResult = await createDirectAdapter().generate({
 						...opts,
 						prompt: appendRetryMarker(promptWithoutMarker),
@@ -108,6 +110,21 @@ export function createDirectAdapter(): Harness {
 					});
 					return {
 						...retryResult,
+						...(initialPromptTokens !== undefined || retryResult.promptTokens !== undefined
+							? {
+									promptTokens:
+										(initialPromptTokens ?? 0) +
+										(retryResult.promptTokens ?? 0),
+								}
+							: {}),
+						...(initialCompletionTokens !== undefined ||
+						retryResult.completionTokens !== undefined
+							? {
+									completionTokens:
+										(initialCompletionTokens ?? 0) +
+										(retryResult.completionTokens ?? 0),
+								}
+							: {}),
 						durationMs: Math.round(performance.now() - startTime),
 					};
 				}

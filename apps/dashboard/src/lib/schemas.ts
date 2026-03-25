@@ -494,7 +494,20 @@ const DashboardIndexV2Schema = z.object({
 export const DashboardIndexLegacyOrCurrentSchema = z
 	.union([RunListSchema, DashboardIndexV2Schema, DashboardIndexSchema])
 	.transform((index) => {
-		if (Array.isArray(index) || index.schemaVersion === 3) {
+		if (Array.isArray(index)) {
+			const latestRun = [...index].sort((left, right) =>
+				right.startedAt.localeCompare(left.startedAt),
+			)[0];
+			return {
+				schemaVersion: 3 as const,
+				generatedAt: latestRun?.completedAt ?? latestRun?.startedAt ?? new Date(0).toISOString(),
+				latestCheckpointId: latestRun?.checkpointId ?? null,
+				runs: index,
+				checkpoints: [],
+			};
+		}
+
+		if (index.schemaVersion === 3) {
 			return index;
 		}
 

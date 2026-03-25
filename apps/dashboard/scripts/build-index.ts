@@ -9,6 +9,7 @@
  */
 
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
@@ -174,6 +175,14 @@ function sanitizePublishedValue(value: unknown): unknown {
 function sanitizePublishedRun(run: RunResult): RunResult {
 	return sanitizePublishedValue({
 		...run,
+		...(run.machine
+			? {
+					machine: {
+						...run.machine,
+						instanceId: sanitizeMachineInstanceId(run.machine.instanceId),
+					},
+				}
+			: {}),
 		items: run.items.map((item) => ({
 			...item,
 			...(item.generation
@@ -232,6 +241,39 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 }
 
 /**
+ * Converts a raw machine instance identifier into a deterministic published token.
+ *
+ * @param machineInstanceId - Raw machine instance identifier
+ * @returns Stable scrubbed token
+ */
+function sanitizeMachineInstanceId(machineInstanceId: string): string {
+	if (/^machine-[0-9a-f]{12}$/i.test(machineInstanceId)) {
+		return machineInstanceId;
+	}
+	return `machine-${createHash("sha256").update(machineInstanceId).digest("hex").slice(0, 12)}`;
+}
+
+/**
+ * Removes host-specific machine instance identifiers from aggregate payloads.
+ *
+ * @param aggregate - Aggregate payload to sanitize
+ * @returns Aggregate payload safe for publication
+ */
+function sanitizePublishedAggregate(
+	aggregate: LeaderboardAggregate,
+): LeaderboardAggregate {
+	return {
+		...aggregate,
+		items: aggregate.items.map((item) => ({
+			...item,
+			machineInstanceId: item.machineInstanceId
+				? sanitizeMachineInstanceId(item.machineInstanceId)
+				: undefined,
+		})),
+	};
+}
+
+/**
  * Removes host-specific details from a plan before publishing.
  *
  * @param plan - Parsed plan artifact
@@ -247,6 +289,7 @@ function sanitizePublishedPlan(plan: RunPlan): RunPlan {
 		...sanitizedPlan,
 		machine: {
 			...sanitizedPlan.machine,
+			instanceId: sanitizeMachineInstanceId(sanitizedPlan.machine.instanceId),
 			displayLabel: undefined,
 		},
 	};
@@ -420,7 +463,11 @@ function buildRunListItems(bundles: AggregateRunInput[]): RunListItem[] {
 					}
 				: {}),
 			...(metadata.machineInstanceId
-				? { machineInstanceId: metadata.machineInstanceId }
+				? {
+						machineInstanceId: sanitizeMachineInstanceId(
+							metadata.machineInstanceId,
+						),
+					}
 				: {}),
 			...(metadata.machineDisplayLabel
 				? { machineDisplayLabel: metadata.machineDisplayLabel }
@@ -556,9 +603,11 @@ export async function buildDashboardIndexArtifacts(
 
 	let aggregatesWritten = 0;
 	for (const checkpoint of checkpoints) {
-		const aggregate = aggregateRunsForCheckpoint(
-			bundles,
-			checkpoint.checkpointId,
+		const aggregate = sanitizePublishedAggregate(
+			aggregateRunsForCheckpoint(
+				bundles,
+				checkpoint.checkpointId,
+			) as LeaderboardAggregate,
 		);
 		await writeFile(
 			join(aggregatesDir, `${checkpoint.checkpointId}.json`),
@@ -568,9 +617,11 @@ export async function buildDashboardIndexArtifacts(
 		aggregatesWritten += 1;
 	}
 
-	const latestAggregate = aggregateRunsForCheckpoint(
-		bundles,
-		latestCheckpointId,
+	const latestAggregate = sanitizePublishedAggregate(
+		aggregateRunsForCheckpoint(
+			bundles,
+			latestCheckpointId,
+		) as LeaderboardAggregate,
 	);
 	await writeFile(
 		join(aggregatesDir, `${latestCheckpointId}.json`),

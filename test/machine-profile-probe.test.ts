@@ -15,7 +15,7 @@ import {
 } from "../src/lib/machine-profile/probe-utils.js";
 
 describe("dedupeAccelerators", () => {
-	it("preserves repeated device counts while merging missing fields", () => {
+	it("merges duplicate probe reports without inflating device counts", () => {
 		const deduped = dedupeAccelerators([
 			{
 				vendor: "NVIDIA",
@@ -23,6 +23,7 @@ describe("dedupeAccelerators", () => {
 				kind: "discrete",
 				backend: "cuda",
 				memoryBytes: 25_769_803_776,
+				count: 2,
 			},
 			{
 				vendor: "NVIDIA",

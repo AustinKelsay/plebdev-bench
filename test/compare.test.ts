@@ -280,5 +280,7 @@ describe("compareRuns", () => {
 			comparedRows: 1,
 			trustedComparedRows: 1,
 		});
+		expect(comparison.matched[1]?.deltas.automatedScore).toBeNull();
+		expect(comparison.matched[1]?.deltas.frontierEval).toBeNull();
 	});
 });

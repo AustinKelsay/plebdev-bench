@@ -124,7 +124,15 @@ async function prepareArtifactRewrite(
 		);
 	}
 
-	const normalized = normalize(parsed);
+	let normalized: unknown;
+	try {
+		normalized = normalize(parsed);
+	} catch (error) {
+		throw new Error(
+			`Failed to normalize migrated artifact ${artifactPath}: ${error instanceof Error ? error.message : String(error)}`,
+			{ cause: error },
+		);
+	}
 	try {
 		validate(normalized);
 	} catch (error) {

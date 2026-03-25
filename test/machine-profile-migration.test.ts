@@ -290,7 +290,7 @@ describe("migrate-machine-profiles command", () => {
 		).toBe("run");
 		expect(index.schemaVersion).toBe(3);
 		expect(index.runs[0]?.machineProfileKey).toBe(LEGACY_PROFILE_KEY);
-		expect(index.runs[0]?.machineInstanceId).toBe(LEGACY_INSTANCE_ID);
+		expect(index.runs[0]?.machineInstanceId).toMatch(/^machine-[0-9a-f]{12}$/);
 		expect(latestAggregate.schemaVersion).toBe(2);
 		expect(latestAggregate.summary.machines).toBe(1);
 		expect(latestAggregate.summary.instances).toBe(1);

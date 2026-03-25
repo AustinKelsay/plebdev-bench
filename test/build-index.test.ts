@@ -10,6 +10,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	buildDashboardIndexArtifacts,
@@ -73,6 +74,7 @@ const TEST_PROFILE_LABEL = buildMachineProfileLabel(
 	TEST_HARDWARE,
 	TEST_NORMALIZED_PROFILE,
 );
+const SCRUBBED_MACHINE_A = `machine-${createHash("sha256").update("machine-a").digest("hex").slice(0, 12)}`;
 
 function buildMachine(instanceId: string) {
 	return {
@@ -385,13 +387,15 @@ describe("buildDashboardIndexArtifacts", () => {
 		);
 		expect(latestAggregate.items[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
 		expect(latestAggregate.items[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
-		expect(latestAggregate.items[0]?.machineInstanceId).toBe("machine-a");
-		expect(latestAggregate.items[0]?.machineDisplayLabel).toBe("Machine A");
-		expect(latestAggregate.items[0]?.machineLabel).toBe("Machine A");
+		expect(latestAggregate.items[0]?.machineInstanceId).toBe(
+			SCRUBBED_MACHINE_A,
+		);
 		expect(output.index.runs[0]?.runId).toBe("run-latest");
 		expect(output.index.runs[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
 		expect(output.index.runs[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
-		expect(output.index.runs[0]?.machineInstanceId).toBe("machine-a");
+		expect(output.index.runs[0]?.machineInstanceId).toBe(
+			SCRUBBED_MACHINE_A,
+		);
 		expect(output.index.runs[0]?.machineDisplayLabel).toBe("Machine A");
 		expect(output.index.runs[0]?.machineLabel).toBe("Machine A");
 		const publishedRunPath = path.join(outputResultsDir, "run-latest", "run.json");
@@ -399,6 +403,9 @@ describe("buildDashboardIndexArtifacts", () => {
 		const publishedRun = JSON.parse(
 			fs.readFileSync(publishedRunPath, "utf-8"),
 		) as {
+			machine?: {
+				instanceId?: string;
+			};
 			items: Array<{
 				generation?: {
 					codeFilePath?: string;
@@ -408,6 +415,7 @@ describe("buildDashboardIndexArtifacts", () => {
 				scoringFailure?: { message?: string };
 			}>;
 		};
+		expect(publishedRun.machine?.instanceId).toBe(SCRUBBED_MACHINE_A);
 		expect(publishedRun.items[0]?.generation?.codeFilePath).toBeUndefined();
 		expect(publishedRun.items[0]?.generation?.sourcePathToken).toBe(
 			"[path:solution.ts]",

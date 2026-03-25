@@ -105,7 +105,7 @@ export function dedupeAccelerators(
 		}
 		const merged: ObservedAccelerator = {
 			...current,
-			count: (current.count ?? 1) + (accelerator.count ?? 1),
+			...(current.count !== undefined ? { count: current.count } : {}),
 		};
 		if (!current.vendor && accelerator.vendor) {
 			merged.vendor = accelerator.vendor;

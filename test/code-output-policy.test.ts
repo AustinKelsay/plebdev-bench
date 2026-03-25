@@ -70,6 +70,21 @@ describe("evaluateCodeOnlyOutput", () => {
 		expect(decision.taintReasons).toEqual([]);
 	});
 
+	it("taints raw-code salvage when prose surrounds a raw code candidate", () => {
+		const decision = evaluateCodeOnlyOutput(
+			[
+				"Here is the final answer.",
+				"export function createValue(): number {",
+				"  return 42;",
+				"}",
+			].join("\n"),
+			10,
+		);
+		expect(decision.shouldRetry).toBe(false);
+		expect(decision.reason).toBe("ok");
+		expect(decision.taintReasons).toEqual(["mixed_prose_salvaged"]);
+	});
+
 	it("preserves taint reasons when raw-code signals salvage fenced output", () => {
 		const decision = evaluateCodeOnlyOutput(
 			"```typescript\nexport function createValue(): number { return 42; }\n```",

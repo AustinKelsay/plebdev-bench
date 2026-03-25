@@ -33,14 +33,16 @@ function createResult(
  * @returns Complete RunStats object
  */
 function createRunStats(overrides: Partial<RunStats> = {}): RunStats {
+	const timing = {
+		avgGenerationMs: 1000,
+		avgScoringMs: null,
+		avgFrontierEvalMs: null,
+		minGenerationMs: 1000,
+		maxGenerationMs: 1000,
+		...(overrides.timing ?? {}),
+	};
 	return {
-		timing: {
-			avgGenerationMs: 1000,
-			avgScoringMs: null,
-			avgFrontierEvalMs: null,
-			minGenerationMs: 1000,
-			maxGenerationMs: 1000,
-		},
+		timing,
 		tokens: null,
 		scoring: null,
 		trustedScoring: null,

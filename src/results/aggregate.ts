@@ -91,6 +91,28 @@ export interface CheckpointSummary {
 	latestRunAt: string;
 }
 
+const VERIFICATION_STATUS_RANK: Record<VerificationStatus, number> = {
+	verified: 0,
+	self_reported: 1,
+	rejected: 2,
+};
+
+/**
+ * Combines two verification statuses conservatively.
+ *
+ * @param current - Existing aggregate status
+ * @param next - New status to fold in
+ * @returns Worst-case combined status
+ */
+function mergeVerificationStatus(
+	current: VerificationStatus,
+	next: VerificationStatus,
+): VerificationStatus {
+	return VERIFICATION_STATUS_RANK[next] > VERIFICATION_STATUS_RANK[current]
+		? next
+		: current;
+}
+
 /**
  * Builds the deterministic aggregation key for one matrix item.
  *
@@ -378,7 +400,15 @@ export function aggregateRunsForCheckpoint(
 
 	for (const { input, metadata } of matchedRuns) {
 		const machineProfileKey = metadata.machineProfileKey ?? `legacy-${input.run.runId}`;
-		if (machineSummary.has(machineProfileKey)) {
+		const existing = machineSummary.get(machineProfileKey);
+		if (existing) {
+			existing.verificationStatus = mergeVerificationStatus(
+				existing.verificationStatus,
+				metadata.verificationStatus,
+			);
+			if (!existing.machineProfileLabel && metadata.machineProfileLabel) {
+				existing.machineProfileLabel = metadata.machineProfileLabel;
+			}
 			continue;
 		}
 		machineSummary.set(machineProfileKey, {
@@ -397,6 +427,13 @@ export function aggregateRunsForCheckpoint(
 				itemCount: 1,
 			});
 			continue;
+		}
+		current.verificationStatus = mergeVerificationStatus(
+			current.verificationStatus,
+			item.verificationStatus,
+		);
+		if (!current.machineProfileLabel && item.machineProfileLabel) {
+			current.machineProfileLabel = item.machineProfileLabel;
 		}
 		current.itemCount += 1;
 	}

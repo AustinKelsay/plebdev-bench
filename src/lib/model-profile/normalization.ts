@@ -248,12 +248,16 @@ export function buildConfiguredModelProfile(args: {
 		);
 	}
 	const configuredVariant = normalizeConfiguredVariant(rawConfiguredVariant);
-	const family = args.profile.family ?? args.profileKey;
+	const fallbackFamily = deriveFamily(args.profileKey);
+	const family = args.profile.family ?? fallbackFamily;
 	const parametersBillions =
 		args.profile.parametersBillions ??
+		detectParametersBillions(args.profileKey) ??
 		detectParametersBillions(configuredVariant.modelName);
 	const tuning =
-		args.profile.tuning ?? detectTuning(configuredVariant.modelName);
+		args.profile.tuning ??
+		detectTuning(args.profileKey) ??
+		detectTuning(configuredVariant.modelName);
 
 	return {
 		canonical: {

@@ -243,6 +243,39 @@ describe("aggregateRunsForCheckpoint", () => {
 		expect(aggregate.machines[0]?.instanceCount).toBe(1);
 	});
 
+	it("aggregates machine verification status conservatively across runs", () => {
+		const checkpointId = "chk_sha256v1_verification";
+		const verifiedRun = createRun(
+			"run-verified",
+			checkpointId,
+			TEST_PROFILE_KEY,
+			"instance-a",
+			[createItem("01", "2026-03-04T12:00:00.000Z")],
+		);
+		verifiedRun.provenance = {
+			verificationStatus: "verified",
+			source: "local_cli",
+		};
+		const rejectedRun = createRun(
+			"run-rejected",
+			checkpointId,
+			TEST_PROFILE_KEY,
+			"instance-b",
+			[createItem("02", "2026-03-04T12:10:00.000Z")],
+		);
+		rejectedRun.provenance = {
+			verificationStatus: "rejected",
+			source: "local_cli",
+		};
+
+		const aggregate = aggregateRunsForCheckpoint(
+			[{ run: verifiedRun }, { run: rejectedRun }],
+			checkpointId,
+		);
+
+		expect(aggregate.machines[0]?.verificationStatus).toBe("rejected");
+	});
+
 	it("dedupes alias variants under the canonical model profile key", () => {
 		const checkpointId = "chk_sha256v1_canonical_model";
 		const canonicalProfile = {

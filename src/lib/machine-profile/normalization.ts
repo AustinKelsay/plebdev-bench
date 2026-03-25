@@ -312,8 +312,28 @@ export function buildMachineProfileLabel(
 	normalizedProfile: NormalizedMachineProfile,
 ): string {
 	const accelerator = selectPrimaryAccelerator(observedHardware.accelerators);
+	const acceleratorDisplayCounts = new Map<string, number>();
+	for (const entry of observedHardware.accelerators) {
+		acceleratorDisplayCounts.set(
+			entry.modelRaw,
+			(acceleratorDisplayCounts.get(entry.modelRaw) ?? 0) + (entry.count ?? 1),
+		);
+	}
+	const hasRepeatedAccelerator =
+		observedHardware.accelerators.some((entry) => (entry.count ?? 1) > 1);
+	const acceleratorSummaryLabel =
+		acceleratorDisplayCounts.size > 0
+			? [...acceleratorDisplayCounts.entries()]
+					.sort(([left], [right]) => left.localeCompare(right))
+					.map(([modelRaw, count]) => (count > 1 ? `${count}x ${modelRaw}` : modelRaw))
+					.join(" + ")
+			: undefined;
 	const acceleratorLabel =
-		accelerator?.modelRaw ??
+		((hasRepeatedAccelerator ||
+			(normalizedProfile.acceleratorSummary?.length ?? 0) > 1) &&
+		acceleratorSummaryLabel
+			? acceleratorSummaryLabel
+			: accelerator?.modelRaw) ??
 		(normalizedProfile.acceleratorKey === "none"
 			? "CPU only"
 			: "Accelerator unknown");

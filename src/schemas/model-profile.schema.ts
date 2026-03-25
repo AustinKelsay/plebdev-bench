@@ -102,7 +102,7 @@ export const ConfiguredModelProfileSchema = z.object({
 	parameterScaleLabel: z.string().trim().min(1).optional(),
 	provider: z.string().trim().min(1).optional(),
 	tuning: z.string().trim().min(1).optional(),
-	variants: z.record(z.string().trim().min(1), ConfiguredModelVariantValueSchema),
+	variants: z.record(RuntimeNameSchema, ConfiguredModelVariantValueSchema),
 });
 
 /** Configured canonical model profile type. */

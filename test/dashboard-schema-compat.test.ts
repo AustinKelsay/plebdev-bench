@@ -66,6 +66,28 @@ describe("LeaderboardAggregateSchema", () => {
 });
 
 describe("DashboardIndexLegacyOrCurrentSchema", () => {
+	it("upgrades legacy array dashboard indexes to the v3 object shape", () => {
+		const parsed = DashboardIndexLegacyOrCurrentSchema.parse([
+			{
+				runId: "run-2",
+				startedAt: "2026-03-25T12:00:00.000Z",
+				completedAt: "2026-03-25T12:05:00.000Z",
+				durationMs: 300_000,
+				summary: { total: 1, completed: 1, failed: 0, pending: 0 },
+				checkpointId: "chk_test",
+			},
+		]);
+
+		expect(Array.isArray(parsed)).toBe(false);
+		if (Array.isArray(parsed)) {
+			throw new Error("expected upgraded dashboard index object");
+		}
+		expect(parsed.schemaVersion).toBe(3);
+		expect(parsed.latestCheckpointId).toBe("chk_test");
+		expect(parsed.runs).toHaveLength(1);
+		expect(parsed.checkpoints).toEqual([]);
+	});
+
 	it("upgrades schemaVersion 2 dashboard indexes to the v3 shape", () => {
 		const parsed = DashboardIndexLegacyOrCurrentSchema.parse({
 			schemaVersion: 2,
