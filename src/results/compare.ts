@@ -314,11 +314,16 @@ function computeSummary(
 		};
 	}
 
+	const matchedItemsA = matched.map((item) => item.itemA);
+	const matchedItemsB = matched.map((item) => item.itemB);
+	const matchedMetricsComplete =
+		hasCompleteSignalAssessments(matchedItemsA) &&
+		hasCompleteSignalAssessments(matchedItemsB);
 	const trustedMetricsAvailable =
 		hasCompleteSignalAssessments(runAItems) &&
 		hasCompleteSignalAssessments(runBItems);
 
-	if (trustedMetricsAvailable) {
+	if (matchedMetricsComplete) {
 		const trustedMatched = matched.filter(
 			(match) => !isTaintedItem(match.itemA) && !isTaintedItem(match.itemB),
 		);
@@ -363,7 +368,7 @@ function computeSummary(
 		frontierEvalDelta,
 		trustedFrontierEvalDelta,
 		signal: {
-			trustedMetricsAvailable,
+			trustedMetricsAvailable: matchedMetricsComplete,
 			taintedInA: trustedMetricsAvailable
 				? runAItems.filter((item) => isTaintedItem(item)).length
 				: null,

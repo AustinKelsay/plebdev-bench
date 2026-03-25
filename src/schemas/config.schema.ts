@@ -30,28 +30,6 @@ function readNonEmptyString(value: unknown): string | undefined {
 }
 
 /**
- * Checks whether a machine identity field is present with an invalid type.
- *
- * @param config - Mutable config-like record
- * @param fieldName - Canonical field name to validate
- * @returns True when the field exists with a non-string value
- */
-function validateCanonicalMachineFieldType(
-	config: Record<string, unknown>,
-	fieldName:
-		| "machineInstanceId"
-		| "machineDisplayLabel"
-		| "machineProfileId"
-		| "machineLabel",
-): boolean {
-	return (
-		Object.prototype.hasOwnProperty.call(config, fieldName) &&
-		config[fieldName] !== undefined &&
-		typeof config[fieldName] !== "string"
-	);
-}
-
-/**
  * Converts the deprecated alias-only model map into the canonical model-profile registry.
  *
  * @param value - Raw legacy alias map candidate
@@ -238,22 +216,6 @@ const BenchConfigObjectSchema = z
 				message:
 					"gooseWorkspaceRetryMaxTurns must be greater than or equal to gooseWorkspaceMaxTurns",
 			});
-		}
-
-		const rawConfig = config as unknown as Record<string, unknown>;
-		for (const fieldName of [
-			"machineInstanceId",
-			"machineDisplayLabel",
-			"machineProfileId",
-			"machineLabel",
-		] as const) {
-			if (validateCanonicalMachineFieldType(rawConfig, fieldName)) {
-				context.addIssue({
-					code: z.ZodIssueCode.custom,
-					path: [fieldName],
-					message: `Bench config ${fieldName} must be a string when provided`,
-				});
-			}
 		}
 	});
 

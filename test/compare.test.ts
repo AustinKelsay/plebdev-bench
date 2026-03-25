@@ -192,4 +192,37 @@ describe("compareRuns", () => {
 		expect(comparison.onlyInA).toHaveLength(1);
 		expect(comparison.onlyInB).toHaveLength(1);
 	});
+
+	it("keeps trusted deltas for matched rows even when unmatched rows lack signal assessments", () => {
+		const trustedA = {
+			...buildItem("01", "smoke", "blind", 1000),
+			automatedScore: { passed: 4, failed: 6, total: 10 },
+			signalAssessment: {
+				classification: "trustworthy" as const,
+				reasons: [],
+			},
+		};
+		const trustedB = {
+			...buildItem("01", "smoke", "blind", 900),
+			automatedScore: { passed: 8, failed: 2, total: 10 },
+			signalAssessment: {
+				classification: "trustworthy" as const,
+				reasons: [],
+			},
+		};
+		const unmatchedWithoutSignal = {
+			...buildItem("02", "todo-app", "blind", 1100),
+			automatedScore: { passed: 1, failed: 9, total: 10 },
+		};
+
+		const comparison = compareRuns(
+			buildRun("run-a", [trustedA, unmatchedWithoutSignal]),
+			buildRun("run-b", [trustedB]),
+		);
+
+		expect(comparison.summary.trustedScoringDelta?.passRateDelta).toBe(40);
+		expect(comparison.summary.signal.trustedMetricsAvailable).toBe(true);
+		expect(comparison.summary.signal.taintedInA).toBeNull();
+		expect(comparison.summary.signal.taintedInB).toBeNull();
+	});
 });

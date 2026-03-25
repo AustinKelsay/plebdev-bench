@@ -26,7 +26,11 @@ export function parseMacosAccelerators(rawJson: string): ObservedAccelerator[] {
 			`malformed macOS accelerator probe JSON: ${(error as Error).message}`,
 		);
 	}
-	if (!Array.isArray((parsed as { SPDisplaysDataType?: unknown }).SPDisplaysDataType)) {
+	if (
+		typeof parsed !== "object" ||
+		parsed === null ||
+		!Array.isArray((parsed as { SPDisplaysDataType?: unknown }).SPDisplaysDataType)
+	) {
 		throw new Error("malformed macOS accelerator probe JSON: missing SPDisplaysDataType array");
 	}
 	const displays = (parsed as { SPDisplaysDataType: Array<Record<string, unknown>> })

@@ -414,6 +414,18 @@ export const HardwareProfileSchema = z
 					"accelerators must be empty when acceleratorDetection.status is \"none_detected\"",
 			});
 		}
+
+		if (
+			hardware.acceleratorDetection.status === "unavailable" &&
+			hardware.accelerators.length > 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					"accelerators must be empty when acceleratorDetection.status is \"unavailable\"",
+			});
+		}
 	});
 
 /** Observed machine hardware metadata. */

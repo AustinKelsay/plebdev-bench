@@ -101,10 +101,7 @@ export function dedupeAccelerators(
 		].join("|");
 		const current = deduped.get(key);
 		if (!current) {
-			deduped.set(key, {
-				...accelerator,
-				...(accelerator.count === undefined ? {} : { count: accelerator.count }),
-			});
+			deduped.set(key, { ...accelerator });
 			continue;
 		}
 		deduped.set(key, {

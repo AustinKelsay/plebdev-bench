@@ -395,6 +395,28 @@ describe("HardwareProfileSchema", () => {
 		expect(normalized.acceleratorCount).toBe(0);
 	});
 
+	it("should reject unavailable accelerator detection with a non-empty accelerator list", () => {
+		const result = HardwareProfileSchema.safeParse({
+			...TEST_HARDWARE,
+			acceleratorDetection: {
+				status: "unavailable",
+				detail: "probe failed",
+			},
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected HardwareProfileSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some(
+				(issue) =>
+					issue.path[0] === "accelerators" &&
+					issue.message ===
+						'accelerators must be empty when acceleratorDetection.status is "unavailable"',
+			),
+		).toBe(true);
+	});
+
 	it("should preserve explicit accelerator device counts during normalization", () => {
 		const normalized = normalizeMachineProfile(
 			HardwareProfileSchema.parse({

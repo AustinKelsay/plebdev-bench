@@ -28,9 +28,9 @@ export function parseNvidiaAccelerators(stdout: string): ObservedAccelerator[] {
 		.filter((line) => line.length > 0)
 		.map((line) => {
 			const [modelRaw, memoryMiB] = line.split(",").map((part) => part.trim());
-			const memoryBytes = parsePositiveInt(memoryMiB)
-				? Number.parseInt(memoryMiB, 10) * BYTES_PER_MIB
-				: undefined;
+			const memoryValue = parsePositiveInt(memoryMiB);
+			const memoryBytes =
+				memoryValue !== undefined ? memoryValue * BYTES_PER_MIB : undefined;
 			return {
 				vendor: "NVIDIA",
 				modelRaw,
