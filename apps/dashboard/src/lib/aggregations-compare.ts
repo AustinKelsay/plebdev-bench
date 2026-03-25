@@ -114,6 +114,9 @@ export function compareRuns(
 
 	const passRateA = computePassRate(runA.items);
 	const passRateB = computePassRate(runB.items);
+	const matchedWithScoring = matched.filter(
+		(item) => item.itemA.automatedScore && item.itemB.automatedScore,
+	);
 	const scoringDelta =
 		passRateA.total > 0 || passRateB.total > 0
 			? {
@@ -124,6 +127,9 @@ export function compareRuns(
 
 	const frontierA = computeFrontierStats(runA.items);
 	const frontierB = computeFrontierStats(runB.items);
+	const matchedWithFrontierEval = matched.filter(
+		(item) => item.itemA.frontierEval && item.itemB.frontierEval,
+	);
 	const frontierEvalDelta =
 		frontierA && frontierB
 			? { avgScoreDelta: frontierB.avgScore - frontierA.avgScore }
@@ -139,6 +145,18 @@ export function compareRuns(
 			statusChanges: { improved, regressed },
 			scoringDelta,
 			frontierEvalDelta,
+			metricAvailability: {
+				scoring: {
+					matchedRows: matched.length,
+					comparedRows: matchedWithScoring.length,
+					trustedComparedRows: null,
+				},
+				frontierEval: {
+					matchedRows: matched.length,
+					comparedRows: matchedWithFrontierEval.length,
+					trustedComparedRows: null,
+				},
+			},
 		},
 		matched,
 		onlyInA,

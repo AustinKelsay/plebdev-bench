@@ -65,15 +65,13 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 
 	const config = { ...(raw as Record<string, unknown>) };
-	const machineInstanceId = config.machineInstanceId;
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
-	const machineDisplayLabel = config.machineDisplayLabel;
 	const machineLabel = readNonEmptyString(config.machineLabel);
 
-	if (machineInstanceId === undefined && machineProfileId !== undefined) {
+	if (config.machineInstanceId === undefined && machineProfileId !== undefined) {
 		config.machineInstanceId = machineProfileId;
 	}
-	if (machineDisplayLabel === undefined && machineLabel !== undefined) {
+	if (config.machineDisplayLabel === undefined && machineLabel !== undefined) {
 		config.machineDisplayLabel = machineLabel;
 	}
 
