@@ -21,6 +21,7 @@ export interface FilterState {
 	runtime: string;
 	harness: string;
 	passType: string;
+	testType: string;
 	test: string;
 }
 
@@ -42,6 +43,7 @@ export function createDefaultFilterState(): FilterState {
 		runtime: ALL_FILTER_VALUE,
 		harness: ALL_FILTER_VALUE,
 		passType: ALL_FILTER_VALUE,
+		testType: ALL_FILTER_VALUE,
 		test: ALL_FILTER_VALUE,
 	};
 }
@@ -72,7 +74,10 @@ export function buildMachineFilterOptions(
 	const machineMap = new Map<string, { machineProfileLabel?: string }>();
 	for (const item of items) {
 		const existing = machineMap.get(item.machineProfileKey);
-		if (!existing || (!existing.machineProfileLabel && item.machineProfileLabel)) {
+		if (
+			!existing ||
+			(!existing.machineProfileLabel && item.machineProfileLabel)
+		) {
 			machineMap.set(item.machineProfileKey, {
 				...(item.machineProfileLabel
 					? { machineProfileLabel: item.machineProfileLabel }
@@ -142,6 +147,10 @@ export function filterItems(
 			item.passType !== filters.passType
 		) {
 			return false;
+		}
+		if (filters.testType !== ALL_FILTER_VALUE) {
+			const itemTestType = item.category ?? "uncategorized";
+			if (itemTestType !== filters.testType) return false;
 		}
 		if (filters.test !== ALL_FILTER_VALUE && item.test !== filters.test) {
 			return false;

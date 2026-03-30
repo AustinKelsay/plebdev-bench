@@ -1,6 +1,7 @@
 /**
  * Purpose: Utility functions for the dashboard.
- * Exports: cn (class name merger), formatDuration, formatNumber, formatDate
+ * Exports: cn (class name merger), formatDuration, formatNumber, formatDate,
+ *          formatShortDate, formatTestCategoryLabel
  */
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -73,4 +74,21 @@ export function formatShortDate(isoString: string): string {
 		month: "short",
 		day: "numeric",
 	});
+}
+
+/**
+ * Formats a benchmark test category slug for display.
+ *
+ * @param category - Raw category slug from result items
+ * @returns Human-readable category label
+ */
+export function formatTestCategoryLabel(category: string): string {
+	if (category === "computer-use") return "Computer Use";
+	if (category === "uncategorized") return "Uncategorized";
+	if (category.length === 0) return "Unknown";
+
+	return category
+		.split("-")
+		.map((segment) => `${segment.slice(0, 1).toUpperCase()}${segment.slice(1)}`)
+		.join(" ");
 }

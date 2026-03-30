@@ -1,12 +1,12 @@
-import { Badge } from "@/components/ui/badge";
 /**
- * Purpose: Dialog showing detailed breakdown when clicking on a model/harness/test bar.
+ * Purpose: Dialog showing detailed breakdown when clicking on a model/harness/test/test-type bar.
  * Exports: DimensionDetailDialog, DimensionType
  *
  * Invariants:
  * - `items` is the full run matrix; filtering is done inside the dialog
  * - Tool-smoke is excluded from pass-rate scoring summaries by default
  */
+import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
 	DialogContent,
@@ -24,15 +24,21 @@ import {
 	groupByModel,
 	groupByRuntime,
 	groupByTest,
+	groupByTestType,
 	inferToolHarnesses,
 } from "@/lib/aggregations";
 import { dimensionDetail as dimensionDetailTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import { TOOL_SMOKE_TEST_SLUG } from "@/lib/types";
-import { formatPercent } from "@/lib/utils";
+import { formatPercent, formatTestCategoryLabel } from "@/lib/utils";
 import { StatusBadge } from "./status-badge";
 
-export type DimensionType = "model" | "runtime" | "harness" | "test";
+export type DimensionType =
+	| "model"
+	| "runtime"
+	| "harness"
+	| "test"
+	| "testType";
 
 interface DimensionDetailDialogProps {
 	dimension: DimensionType;
@@ -48,6 +54,7 @@ const DIMENSION_LABELS: Record<DimensionType, string> = {
 	runtime: "Runtime",
 	harness: "Harness",
 	test: "Test",
+	testType: "Test Type",
 };
 
 /** Filters items by the selected dimension */
@@ -65,7 +72,18 @@ function filterByDimension(
 			return items.filter((i) => i.harness === name);
 		case "test":
 			return items.filter((i) => i.test === name);
+		case "testType":
+			return items.filter((i) => (i.category ?? "uncategorized") === name);
 	}
+}
+
+/** Formats dimension values for display when raw keys are internal slugs. */
+function formatDimensionValue(dimension: DimensionType, name: string): string {
+	if (dimension === "testType") {
+		return formatTestCategoryLabel(name);
+	}
+
+	return name;
 }
 
 /** Summary stats card */
@@ -161,10 +179,12 @@ function SubDimensionTable({
 	items,
 	groupFn,
 	label,
+	formatName,
 }: {
 	items: MatrixItemResult[];
 	groupFn: (items: MatrixItemResult[]) => Map<string, MatrixItemResult[]>;
 	label: string;
+	formatName?: (name: string) => string;
 }) {
 	const toolHarnesses = inferToolHarnesses(items);
 	const metrics = computeCompositeMetrics(items, groupFn, toolHarnesses);
@@ -187,33 +207,37 @@ function SubDimensionTable({
 						</tr>
 					</thead>
 					<tbody>
-						{metrics.map((m) => (
-							<tr key={m.name} className="border-b border-border/50">
-								<td
-									className="py-2 pr-4 font-mono text-xs truncate max-w-[150px]"
-									title={m.name}
-								>
-									{m.name}
-								</td>
-								<td className="text-right py-2 px-2 tabular-nums">
-									{m.completedItems}/{m.totalItems}
-								</td>
-								<td
-									className={`text-right py-2 px-2 tabular-nums ${
-										m.passRate >= 0.8
-											? "text-success"
-											: m.passRate >= 0.5
-												? "text-warning"
-												: "text-danger"
-									}`}
-								>
-									{formatPercent(m.passRate)}
-								</td>
-								<td className="text-right py-2 px-2 tabular-nums text-info">
-									{m.toolTotal > 0 ? formatPercent(m.toolSuccessRate) : "—"}
-								</td>
-							</tr>
-						))}
+						{metrics.map((m) => {
+							const displayName = formatName ? formatName(m.name) : m.name;
+
+							return (
+								<tr key={m.name} className="border-b border-border/50">
+									<td
+										className="py-2 pr-4 font-mono text-xs truncate max-w-[150px]"
+										title={displayName}
+									>
+										{displayName}
+									</td>
+									<td className="text-right py-2 px-2 tabular-nums">
+										{m.completedItems}/{m.totalItems}
+									</td>
+									<td
+										className={`text-right py-2 px-2 tabular-nums ${
+											m.passRate >= 0.8
+												? "text-success"
+												: m.passRate >= 0.5
+													? "text-warning"
+													: "text-danger"
+										}`}
+									>
+										{formatPercent(m.passRate)}
+									</td>
+									<td className="text-right py-2 px-2 tabular-nums text-info">
+										{m.toolTotal > 0 ? formatPercent(m.toolSuccessRate) : "—"}
+									</td>
+								</tr>
+							);
+						})}
 					</tbody>
 				</table>
 			</div>
@@ -465,6 +489,12 @@ export function DimensionDetailDialog({
 	if (dimension !== "test") {
 		subDimensions.push({ groupFn: groupByTest, label: "Test" });
 	}
+	if (dimension !== "testType") {
+		subDimensions.push({
+			groupFn: groupByTestType,
+			label: "Test Type",
+		});
+	}
 	if (dimension !== "model") {
 		subDimensions.push({ groupFn: groupByModel, label: "Model" });
 	}
@@ -475,10 +505,13 @@ export function DimensionDetailDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Badge variant="outline">{DIMENSION_LABELS[dimension]}</Badge>
-						<span className="font-mono">{name}</span>
+						<span className="font-mono">
+							{formatDimensionValue(dimension, name)}
+						</span>
 					</DialogTitle>
 					<DialogDescription>
-						Detailed breakdown for this {dimension}
+						Detailed breakdown for this{" "}
+						{DIMENSION_LABELS[dimension].toLowerCase()}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -501,6 +534,9 @@ export function DimensionDetailDialog({
 							items={filteredItems}
 							groupFn={groupFn}
 							label={label}
+							formatName={
+								label === "Test Type" ? formatTestCategoryLabel : undefined
+							}
 						/>
 					))}
 
