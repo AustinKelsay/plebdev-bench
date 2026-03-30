@@ -2,9 +2,8 @@
   "schemaVersion": "0.5.0",
   "runId": "20260317-170728-697a9a",
   "machine": {
-    "instanceId": "legacy_profile:anon_6fe55c56c31d",
+    "instanceId": "machine-7a5b70a8293b",
     "instanceIdSource": "legacy_profile_id",
-    "displayLabel": "Mac Mini M4 Pro 64GB",
     "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
     "profileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
     "normalizedProfile": {
@@ -1107,7 +1106,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n    return a + b;\n}\n```",
-        "durationMs": 282579
+        "durationMs": 282579,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1167,7 +1167,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  if (b === 0) {\n    return Infinity;\n  }\n  return a / b;\n}\n```",
-        "durationMs": 169980
+        "durationMs": 169980,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1200,7 +1201,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return a / b;\n}\n```",
-        "durationMs": 118317
+        "durationMs": 118317,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1233,7 +1235,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface Calculator {\n  add(value: number): Calculator;\n  subtract(value: number): Calculator;\n  multiply(value: number): Calculator;\n  divide(value: number): Calculator;\n  clear(): Calculator;\n  result(): number;\n  memoryStore(): Calculator;\n  memoryAdd(): Calculator;\n  memoryClear(): Calculator;\n  memoryRecall(): number;\n}\n\nexport function createCalculator(): Calculator {\n  let currentValue = 0;\n  let memory = 0;\n  \n  return {\n    add(value: number): Calculator {\n      currentValue += value;\n      return this;\n    },\n    subtract(value: number): Calculator {\n      currentValue -= value;\n      return this;\n    },\n    multiply(value: number): Calculator {\n      currentValue *= value;\n      return this;\n    },\n    divide(value: number): Calculator {\n      currentValue /= value;\n      return this;\n    },\n    clear(): Calculator {\n      currentValue = 0;\n      return this;\n    },\n    result(): number {\n      return currentValue;\n    },\n    memoryStore(): Calculator {\n      memory = currentValue;\n      return this;\n    },\n    memoryAdd(): Calculator {\n      memory += currentValue;\n      return this;\n    },\n    memoryClear(): Calculator {\n      memory = 0;\n      return this;\n    },\n    memoryRecall(): number {\n      return memory;\n    },\n  };\n}\n```",
-        "durationMs": 292927
+        "durationMs": 292927,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1266,7 +1269,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Calculator = {\n  add(n: number): Calculator\n  subtract(n: number): Calculator\n  multiply(n: number): Calculator\n  divide(n: number): Calculator\n  clear(): Calculator\n  result(): number\n  memoryStore(): Calculator\n  memoryRecall(): number\n  memoryClear(): Calculator\n  memoryAdd(): Calculator\n}\n\nexport function createCalculator(): Calculator {\n  let currentValue = 0\n  let memoryValue = 0\n\n  const calculator: Calculator = {\n    add(n: number) {\n      currentValue += n\n      return calculator\n    },\n    subtract(n: number) {\n      currentValue -= n\n      return calculator\n    },\n    multiply(n: number) {\n      currentValue *= n\n      return calculator\n    },\n    divide(n: number) {\n      currentValue /= n\n      return calculator\n    },\n    clear() {\n      currentValue = 0\n      return calculator\n    },\n    result() {\n      return currentValue\n    },\n    memoryStore() {\n      memoryValue = currentValue\n      return calculator\n    },\n    memoryRecall() {\n      return memoryValue\n    },\n    memoryClear() {\n      memoryValue = 0\n      return calculator\n    },\n    memoryAdd() {\n      memoryValue += currentValue\n      return calculator\n    }\n  }\n\n  return calculator\n}\n```",
-        "durationMs": 221676
+        "durationMs": 221676,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1299,7 +1303,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Listener = (...args: any[]) => any;\n\ninterface EventEmitter {\n  on(event: string, listener: Listener): () => void;\n  once(event: string, listener: Listener): () => void;\n  off(event: string, listener: Listener): void;\n  emit(event: string, ...args: any[]): any[];\n}\n\ninterface EventEntry {\n  listener: Listener;\n  once: boolean;\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const eventMap = new Map<string, EventEntry[]>();\n\n  function on(event: string, listener: Listener): () => void {\n    if (!eventMap.has(event)) {\n      eventMap.set(event, []);\n    }\n    const entries = eventMap.get(event)!;\n    entries.push({ listener, once: false });\n    return () => off(event, listener);\n  }\n\n  function once(event: string, listener: Listener): () => void {\n    if (!eventMap.has(event)) {\n      eventMap.set(event, []);\n    }\n    const entries = eventMap.get(event)!;\n    entries.push({ listener, once: true });\n    return () => off(event, listener);\n  }\n\n  function off(event: string, listener: Listener): void {\n    if (!eventMap.has(event)) {\n      return;\n    }\n    const entries = eventMap.get(event)!;\n    const index = entries.findIndex(entry => entry.listener === listener);\n    if (index !== -1) {\n      entries.splice(index, 1);\n      if (entries.length === 0) {\n        eventMap.delete(event);\n      }\n    }\n  }\n\n  function emit(event: string, ...args: any[]): any[] {\n    const results: any[] = [];\n    const entries = eventMap.get(event);\n    if (!entries) {\n      return results;\n    }\n\n    const entriesToExecute = [...entries];\n    const oneTimeIndices: number[] = [];\n\n    for (let i = entriesToExecute.length - 1; i >= 0; i--) {\n      const entry = entriesToExecute[i];\n      if (entry.once) {\n        oneTimeIndices.push(i);\n      }\n      results.push(entry.listener(...args));\n    }\n\n    for (const i of oneTimeIndices) {\n      entries.splice(i, 1);\n    }\n\n    if (entries.length === 0) {\n      eventMap.delete(event);\n    }\n\n    return results;\n  }\n\n  return { on, once, off, emit };\n}\n```",
-        "durationMs": 436994
+        "durationMs": 436994,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1333,7 +1338,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Listener = (payload: unknown) => unknown\n\ninterface EventEmitter {\n  on(event: string, listener: Listener): number\n  once(event: string, listener: Listener): number\n  off(event: string, listener: Listener): boolean\n  emit(event: string, payload: unknown): unknown[]\n  listenerCount(event: string): number\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const listenersMap = new Map<string, Array<{ listener: Listener; once: boolean }>>()\n  \n  function ensureEvent(event: string): Array<{ listener: Listener; once: boolean }> {\n    if (!listenersMap.has(event)) {\n      listenersMap.set(event, [])\n    }\n    return listenersMap.get(event)!\n  }\n  \n  return {\n    on(event, listener) {\n      ensureEvent(event).push({ listener, once: false })\n      return listenersMap.get(event)!.length\n    },\n    \n    once(event, listener) {\n      ensureEvent(event).push({ listener, once: true })\n      return listenersMap.get(event)!.length\n    },\n    \n    off(event, listener) {\n      const list = listenersMap.get(event)\n      if (!list) return false\n      \n      const index = list.findIndex(item => item.listener === listener)\n      if (index === -1) return false\n      \n      list.splice(index, 1)\n      return true\n    },\n    \n    emit(event, payload) {\n      const list = listenersMap.get(event)\n      if (!list) return []\n      \n      const results: unknown[] = []\n      const onceIndices: number[] = []\n      \n      for (let i = 0; i < list.length; i++) {\n        const { listener, once } = list[i]\n        const result = listener(payload)\n        results.push(result)\n        if (once) {\n          onceIndices.push(i)\n        }\n      }\n      \n      for (let j = onceIndices.length - 1; j >= 0; j--) {\n        list.splice(onceIndices[j], 1)\n      }\n      \n      return results\n    },\n    \n    listenerCount(event) {\n      return listenersMap.get(event)?.length ?? 0\n    }\n  }\n}\n```",
-        "durationMs": 957074
+        "durationMs": 957074,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1366,7 +1372,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createRateLimiter() {\n  const MAX_REQUESTS = 3;\n  const WINDOW_MS = 1000;\n  \n  type KeyState = {\n    windowStart: number;\n    count: number;\n  };\n  \n  const state = new Map<string, KeyState>();\n  \n  function allow(key: string, nowMs: number): boolean {\n    const currentState = state.get(key);\n    \n    if (currentState === undefined) {\n      state.set(key, {\n        windowStart: nowMs,\n        count: 1\n      });\n      return true;\n    }\n    \n    if (nowMs >= currentState.windowStart + WINDOW_MS) {\n      currentState.windowStart = nowMs;\n      currentState.count = 1;\n      return true;\n    }\n    \n    if (currentState.count < MAX_REQUESTS) {\n      currentState.count++;\n      return true;\n    }\n    \n    return false;\n  }\n  \n  function reset(key: string): void {\n    state.delete(key);\n  }\n  \n  return {\n    allow,\n    reset\n  };\n}\n```",
-        "durationMs": 364821
+        "durationMs": 364821,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1399,7 +1406,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createRateLimiter(): RateLimiter {\n  const limit = 3;\n  const windowMs = 1000;\n  const state = new Map<string, { windowStart: number; count: number }>();\n\n  interface RateLimiter {\n    allow(key: string, nowMs: number): boolean;\n    remaining(key: string, nowMs: number): number;\n    reset(key: string): void;\n  }\n\n  function getCurrentWindow(key: string, nowMs: number): { windowStart: number; count: number } {\n    const current = state.get(key);\n    if (!current || nowMs - current.windowStart >= windowMs) {\n      return { windowStart: nowMs, count: 0 };\n    }\n    return current;\n  }\n\n  return {\n    allow(key, nowMs) {\n      const current = getCurrentWindow(key, nowMs);\n      const remaining = limit - current.count;\n      if (remaining <= 0) {\n        return false;\n      }\n      current.count++;\n      state.set(key, current);\n      return true;\n    },\n\n    remaining(key, nowMs) {\n      const current = getCurrentWindow(key, nowMs);\n      const val = limit - current.count;\n      return val < 0 ? 0 : val;\n    },\n\n    reset(key) {\n      state.delete(key);\n    }\n  };\n}\n```",
-        "durationMs": 377854
+        "durationMs": 377854,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1432,7 +1440,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
-        "durationMs": 143588
+        "durationMs": 143588,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1465,7 +1474,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
-        "durationMs": 246143
+        "durationMs": 246143,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1552,7 +1562,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTodoApp() {\n  let nextId = 1;\n  const todos = new Map<number, { id: number; text: string; completed: boolean }>();\n\n  return {\n    addTodo(text: string): { id: number; text: string; completed: boolean } {\n      const todo = { id: nextId++, text, completed: false };\n      todos.set(todo.id, todo);\n      return todo;\n    },\n\n    getTodo(id: number): { id: number; text: string; completed: boolean } | undefined {\n      return todos.get(id);\n    },\n\n    toggleTodo(id: number): void {\n      const todo = todos.get(id);\n      if (todo) {\n        todo.completed = !todo.completed;\n      }\n    },\n\n    deleteTodo(id: number): boolean {\n      return todos.delete(id);\n    },\n\n    listTodos(): Array<{ id: number; text: string; completed: boolean }> {\n      return Array.from(todos.values());\n    },\n\n    listCompleted(): Array<{ id: number; text: string; completed: boolean }> {\n      return Array.from(todos.values()).filter((todo) => todo.completed);\n    },\n\n    listPending(): Array<{ id: number; text: string; completed: boolean }> {\n      return Array.from(todos.values()).filter((todo) => !todo.completed);\n    },\n\n    clearCompleted(): void {\n      for (const [id, todo] of todos.entries()) {\n        if (todo.completed) {\n          todos.delete(id);\n        }\n      }\n    },\n  };\n}\n```",
-        "durationMs": 226579
+        "durationMs": 226579,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1585,7 +1596,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface Todo {\n  id: number\n  text: string\n  completed: boolean\n}\n\ninterface TodoApp {\n  addTodo(text: string): Todo\n  getTodo(id: number): Todo | undefined\n  toggleTodo(id: number): void\n  deleteTodo(id: number): boolean\n  listTodos(): Todo[]\n  listCompleted(): Todo[]\n  listPending(): Todo[]\n  clearCompleted(): void\n}\n\nexport function createTodoApp(): TodoApp {\n  const todos: Todo[] = []\n  let nextId = 1\n\n  return {\n    addTodo(text: string): Todo {\n      const todo: Todo = {\n        id: nextId++,\n        text,\n        completed: false\n      }\n      todos.push(todo)\n      return todo\n    },\n\n    getTodo(id: number): Todo | undefined {\n      return todos.find(t => t.id === id)\n    },\n\n    toggleTodo(id: number): void {\n      const todo = todos.find(t => t.id === id)\n      if (todo) {\n        todo.completed = !todo.completed\n      }\n    },\n\n    deleteTodo(id: number): boolean {\n      const index = todos.findIndex(t => t.id === id)\n      if (index !== -1) {\n        todos.splice(index, 1)\n        return true\n      }\n      return false\n    },\n\n    listTodos(): Todo[] {\n      return [...todos]\n    },\n\n    listCompleted(): Todo[] {\n      return todos.filter(t => t.completed)\n    },\n\n    listPending(): Todo[] {\n      return todos.filter(t => !t.completed)\n    },\n\n    clearCompleted(): void {\n      const pending = todos.filter(t => !t.completed)\n      todos.splice(0, todos.length, ...pending)\n    }\n  }\n}\n```",
-        "durationMs": 401253
+        "durationMs": 401253,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1618,7 +1630,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTtlCache(): {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n} {\n  const entries = new Map<string, { value: unknown; expiresAt: number }>();\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs: number = 1000): void {\n      entries.set(key, {\n        value,\n        expiresAt: nowMs + ttlMs\n      });\n    },\n\n    get(key: string, nowMs: number): unknown {\n      const entry = entries.get(key);\n      if (!entry || nowMs >= entry.expiresAt) {\n        return undefined;\n      }\n      return entry.value;\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = entries.get(key);\n      if (!entry) {\n        return false;\n      }\n      return nowMs < entry.expiresAt;\n    },\n\n    delete(key: string): boolean {\n      return entries.delete(key);\n    },\n\n    size(nowMs: number): number {\n      let count = 0;\n      for (const entry of entries.values()) {\n        if (nowMs < entry.expiresAt) {\n          count++;\n        }\n      }\n      return count;\n    },\n\n    clear(): void {\n      entries.clear();\n    }\n  };\n}\n```",
-        "durationMs": 302477
+        "durationMs": 302477,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1651,7 +1664,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTtlCache(): TtlCache {\n  const storage = new Map<string, { value: unknown; expiresAt: number }>();\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs: number = 1000): void {\n      const expiresAt = nowMs + ttlMs;\n      storage.set(key, { value, expiresAt });\n    },\n\n    get(key: string, nowMs: number): unknown {\n      const entry = storage.get(key);\n      if (!entry) return undefined;\n      if (nowMs >= entry.expiresAt) {\n        return undefined;\n      }\n      return entry.value;\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = storage.get(key);\n      if (!entry) return false;\n      return nowMs < entry.expiresAt;\n    },\n\n    delete(key: string): boolean {\n      return storage.delete(key);\n    },\n\n    size(nowMs: number): number {\n      let count = 0;\n      for (const entry of storage.values()) {\n        if (nowMs < entry.expiresAt) {\n          count++;\n        }\n      }\n      return count;\n    },\n\n    clear(): void {\n      storage.clear();\n    }\n  };\n}\n\nexport interface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void;\n  get(key: string, nowMs: number): unknown;\n  has(key: string, nowMs: number): boolean;\n  delete(key: string): boolean;\n  size(nowMs: number): number;\n  clear(): void;\n}\n```",
-        "durationMs": 234417
+        "durationMs": 234417,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1738,7 +1752,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
-        "durationMs": 128921
+        "durationMs": 128921,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1798,7 +1813,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  if (b === 0) {\n    return Infinity;\n  }\n  return a / b;\n}\n```",
-        "durationMs": 58195
+        "durationMs": 58195,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1831,7 +1847,8 @@
       "generation": {
         "success": true,
         "output": "export function add(a: number, b: number): number {\n    return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n    return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n    return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n    return b === 0 ? Infinity : a / b;\n}",
-        "durationMs": 78460
+        "durationMs": 78460,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1864,7 +1881,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Calculator = {\n  add(value: number): Calculator;\n  subtract(value: number): Calculator;\n  multiply(value: number): Calculator;\n  divide(value: number): Calculator;\n  clear(): Calculator;\n  result(): number;\n  memoryStore(): Calculator;\n  memoryAdd(): Calculator;\n  memoryRecall(): number;\n};\n\nfunction createCalculator(): Calculator {\n  let currentValue = 0;\n  let memory = 0;\n\n  const get = () => ({ currentValue, memory });\n  const set = (state: { currentValue: number; memory: number }) => {\n    currentValue = state.currentValue;\n    memory = state.memory;\n  };\n\n  const calculator = {\n    add(value: number) {\n      const s = get();\n      s.currentValue += value;\n      set(s);\n      return calculator;\n    },\n    subtract(value: number) {\n      const s = get();\n      s.currentValue -= value;\n      set(s);\n      return calculator;\n    },\n    multiply(value: number) {\n      const s = get();\n      s.currentValue *= value;\n      set(s);\n      return calculator;\n    },\n    divide(value: number) {\n      const s = get();\n      s.currentValue /= value;\n      set(s);\n      return calculator;\n    },\n    clear() {\n      const s = get();\n      s.currentValue = 0;\n      set(s);\n      return calculator;\n    },\n    result() {\n      return currentValue;\n    },\n    memoryStore() {\n      const s = get();\n      s.memory = s.currentValue;\n      set(s);\n      return calculator;\n    },\n    memoryAdd() {\n      const s = get();\n      s.memory += s.currentValue;\n      set(s);\n      return calculator;\n    },\n    memoryRecall() {\n      return memory;\n    }\n  };\n\n  return calculator;\n}\n\nexport { createCalculator };\n```",
-        "durationMs": 59080
+        "durationMs": 59080,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1897,7 +1915,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface Calculator {\n  add(n: number): Calculator\n  subtract(n: number): Calculator\n  multiply(n: number): Calculator\n  divide(n: number): Calculator\n  clear(): Calculator\n  result(): number\n  memoryStore(): Calculator\n  memoryRecall(): number\n  memoryClear(): Calculator\n  memoryAdd(): Calculator\n}\n\nfunction createCalculator(): Calculator {\n  let currentValue = 0;\n  let memory = 0;\n\n  const calculator: Calculator = {\n    add(n): Calculator {\n      currentValue += n;\n      return this;\n    },\n\n    subtract(n): Calculator {\n      currentValue -= n;\n      return this;\n    },\n\n    multiply(n): Calculator {\n      currentValue *= n;\n      return this;\n    },\n\n    divide(n): Calculator {\n      if (n !== 0) {\n        currentValue /= n;\n      }\n      return this;\n    },\n\n    clear(): Calculator {\n      currentValue = 0;\n      return this;\n    },\n\n    result(): number {\n      return currentValue;\n    },\n\n    memoryStore(): Calculator {\n      memory = currentValue;\n      return this;\n    },\n\n    memoryRecall(): number {\n      return memory;\n    },\n\n    memoryClear(): Calculator {\n      memory = 0;\n      return this;\n    },\n\n    memoryAdd(): Calculator {\n      memory += currentValue;\n      return this;\n    }\n  };\n\n  return calculator;\n}\n\nexport { createCalculator };\n```",
-        "durationMs": 99390
+        "durationMs": 99390,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1931,7 +1950,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype ListenerCallback = (...args: any[]) => any;\n\ninterface IEventEmitter {\n  on(event: string, listener: ListenerCallback): IEventEmitter;\n  once(event: string, listener: ListenerCallback): IEventEmitter;\n  off(event: string, listener: ListenerCallback): IEventEmitter;\n  emit(event: string, ...args: any[]): any[];\n}\n\nfunction createEventEmitter(): IEventEmitter {\n  const eventListeners = new Map<string, ListenerCallback[]>();\n  const onceFlags = new Map<string, Set<ListenerCallback>>();\n\n  function on(event: string, listener: ListenerCallback): IEventEmitter {\n    const list = eventListeners.get(event) ?? [];\n    list.push(listener);\n    eventListeners.set(event, list);\n    return methods;\n  }\n\n  function once(event: string, listener: ListenerCallback): IEventEmitter {\n    const list = eventListeners.get(event) ?? [];\n    list.push(listener);\n    eventListeners.set(event, list);\n    \n    if (!onceFlags.has(event)) {\n      onceFlags.set(event, new Set());\n    }\n    onceFlags.get(event)!.add(listener);\n    return methods;\n  }\n\n  function off(event: string, listener: ListenerCallback): IEventEmitter {\n    const list = eventListeners.get(event);\n    if (list) {\n      const index = list.indexOf(listener);\n      if (index !== -1) {\n        list.splice(index, 1);\n      }\n    }\n    \n    const onceSet = onceFlags.get(event);\n    if (onceSet) {\n      onceSet.delete(listener);\n    }\n    return methods;\n  }\n\n  function emit(event: string, ...args: any[]): any[] {\n    const list = eventListeners.get(event);\n    const results: any[] = [];\n    \n    if (!list || list.length === 0) {\n      return results;\n    }\n\n    const onceSet = onceFlags.get(event);\n\n    for (const listener of list) {\n      try {\n        const result = listener(...args);\n        results.push(result);\n      } catch {\n        // Ignore errors from listeners\n      }\n    }\n\n    // Clean up one-time listeners\n    if (onceSet) {\n      eventListeners.set(event, list.filter(l => onceSet.has(l)));\n      onceSet.clear();\n    }\n\n    return results;\n  }\n\n  const methods = { on, once, off, emit };\n\n  return methods as IEventEmitter;\n}\n\nexport { createEventEmitter };\n```",
-        "durationMs": 182645
+        "durationMs": 182645,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1964,7 +1984,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Listener = (payload: unknown) => unknown\n\ninterface EventEmitter {\n  on(event: string, listener: Listener): number\n  once(event: string, listener: Listener): number\n  off(event: string, listener: Listener): boolean\n  emit(event: string, payload: unknown): unknown[]\n  listenerCount(event: string): number\n}\n\nfunction createEventEmitter(): EventEmitter {\n  const listeners: Record<string, Listener[]> = {}\n\n  function on(event: string, listener: Listener): number {\n    if (!listeners[event]) {\n      listeners[event] = []\n    }\n    listeners[event].push(listener)\n    return listeners[event].length\n  }\n\n  function once(event: string, listener: Listener): number {\n    const wrapped = (payload: unknown) => {\n      listener(payload)\n      off(event, wrapped)\n    }\n    if (!listeners[event]) {\n      listeners[event] = []\n    }\n    listeners[event].push(wrapped)\n    return listeners[event].length\n  }\n\n  function off(event: string, listener: Listener): boolean {\n    if (!listeners[event]) {\n      return false\n    }\n    const index = listeners[event].indexOf(listener)\n    if (index === -1) {\n      return false\n    }\n    listeners[event].splice(index, 1)\n    return true\n  }\n\n  function emit(event: string, payload: unknown): unknown[] {\n    if (!listeners[event]) {\n      return []\n    }\n    const results: unknown[] = []\n    for (const listener of listeners[event]) {\n      results.push(listener(payload))\n    }\n    return results\n  }\n\n  function listenerCount(event: string): number {\n    return listeners[event] ? listeners[event].length : 0\n  }\n\n  return {\n    on,\n    once,\n    off,\n    emit,\n    listenerCount,\n  }\n}\n\nexport { createEventEmitter, type EventEmitter, type Listener }\n```",
-        "durationMs": 147456
+        "durationMs": 147456,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -1997,7 +2018,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface RateLimiter {\n  isAllowed(key: string, nowMs: number): boolean;\n  reset(key: string): void;\n}\n\ninterface RateLimiterFactory {\n  createRateLimiter(): RateLimiter;\n}\n\nconst WINDOW_MS = 1000;\nconst MAX_REQUESTS = 3;\n\nfunction createRateLimiter(): RateLimiter {\n  const windows = new Map<string, { count: number; windowStart: number }>();\n\n  return {\n    isAllowed(key: string, nowMs: number): boolean {\n      const windowInfo = windows.get(key);\n      const windowEnd = Math.floor(nowMs / WINDOW_MS) * WINDOW_MS + WINDOW_MS;\n\n      if (!windowInfo || windowInfo.windowStart < windowEnd - WINDOW_MS + 1) {\n        const currentWindowStart = Math.floor(nowMs / WINDOW_MS) * WINDOW_MS;\n        if (windowInfo && windowInfo.windowStart === currentWindowStart) {\n          windowInfo.count = 1;\n          const result = 1 <= MAX_REQUESTS;\n          if (!result) {\n            windows.delete(key);\n          }\n          return result;\n        }\n        windows.set(key, { count: 1, windowStart: currentWindowStart });\n        return true;\n      }\n\n      if (windowInfo.count < MAX_REQUESTS) {\n        windowInfo.count++;\n        return true;\n      }\n\n      return false;\n    },\n\n    reset(key: string): void {\n      windows.delete(key);\n    },\n  };\n}\n\nexport { createRateLimiter };\n```",
-        "durationMs": 51651
+        "durationMs": 51651,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2030,7 +2052,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface RateLimiter {\n  allow(key: string, nowMs: number): boolean\n  remaining(key: string, nowMs: number): number\n  reset(key: string): void\n}\n\ntype KeyState = {\n  windowStart: number\n  used: number\n}\n\nfunction createRateLimiter(): RateLimiter {\n  const limit = 3\n  const windowMs = 1000\n  const state = new Map<string, KeyState>()\n\n  return {\n    allow(key: string, nowMs: number): boolean {\n      let keyState = state.get(key)\n\n      // Check if we need to start a fresh window\n      if (!keyState || (nowMs - keyState.windowStart) >= windowMs) {\n        keyState = { windowStart: nowMs, used: 0 }\n        state.set(key, keyState)\n      }\n\n      if (keyState.used < limit) {\n        keyState.used++\n        return true\n      }\n      return false\n    },\n\n    remaining(key: string, nowMs: number): number {\n      let keyState = state.get(key)\n\n      // Check if we need to start a fresh window\n      if (!keyState || (nowMs - keyState.windowStart) >= windowMs) {\n        return limit\n      }\n\n      return Math.max(0, limit - keyState.used)\n    },\n\n    reset(key: string): void {\n      state.delete(key)\n    }\n  }\n}\n\nexport { createRateLimiter }\n```",
-        "durationMs": 85284
+        "durationMs": 85284,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2063,7 +2086,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
-        "durationMs": 67261
+        "durationMs": 67261,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2096,7 +2120,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n    return a + b;\n}\n```",
-        "durationMs": 76617
+        "durationMs": 76617,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2187,7 +2212,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTodoApp() {\n  let nextId: number = 1;\n  const todos: Array<{ id: number; text: string; completed: boolean }> = [];\n\n  return {\n    addTodo(text: string) {\n      const todo = { id: nextId, text: text, completed: false };\n      todos.push(todo);\n      ++nextId;\n      return todo;\n    },\n\n    getTodo(id: number) {\n      return todos.find(todo => todo.id === id);\n    },\n\n    toggleTodo(id: number) {\n      const todo = todos.find(todo => todo.id === id);\n      if (todo) {\n        todo.completed = !todo.completed;\n      }\n    },\n\n    deleteTodo(id: number) {\n      const index = todos.findIndex(todo => todo.id === id);\n      if (index !== -1) {\n        todos.splice(index, 1);\n        return true;\n      }\n      return false;\n    },\n\n    listTodos() {\n      return [...todos];\n    },\n\n    listCompleted() {\n      return todos.filter(todo => todo.completed);\n    },\n\n    listPending() {\n      return todos.filter(todo => !todo.completed);\n    },\n\n    clearCompleted() {\n      todos.length = 0;\n      todos.push(...todos.filter(todo => !todo.completed));\n    }\n  };\n}\n```",
-        "durationMs": 110023
+        "durationMs": 110023,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2220,7 +2246,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTodoApp(): TodoApp {\n  let nextId = 1\n  const todos = new Map<number, Todo>()\n\n  return {\n    addTodo(text: string): Todo {\n      const id = nextId++\n      const todo: Todo = { id, text, completed: false }\n      todos.set(id, todo)\n      return todo\n    },\n    getTodo(id: number): Todo | undefined {\n      return todos.get(id)\n    },\n    toggleTodo(id: number): void {\n      const todo = todos.get(id)\n      if (todo) {\n        todos.set(id, { ...todo, completed: !todo.completed })\n      }\n    },\n    deleteTodo(id: number): boolean {\n      const existed = todos.has(id)\n      todos.delete(id)\n      return existed\n    },\n    listTodos(): Todo[] {\n      return Array.from(todos.values())\n    },\n    listCompleted(): Todo[] {\n      const result: Todo[] = []\n      for (const todo of todos.values()) {\n        if (todo.completed) {\n          result.push(todo)\n        }\n      }\n      return result\n    },\n    listPending(): Todo[] {\n      const result: Todo[] = []\n      for (const todo of todos.values()) {\n        if (!todo.completed) {\n          result.push(todo)\n        }\n      }\n      return result\n    },\n    clearCompleted(): void {\n      const completedIds: number[] = []\n      for (const [id, todo] of todos.entries()) {\n        if (todo.completed) {\n          completedIds.push(id)\n        }\n      }\n      for (const id of completedIds) {\n        todos.delete(id)\n      }\n    },\n  }\n}\n\ninterface Todo {\n  id: number\n  text: string\n  completed: boolean\n}\n\ninterface TodoApp {\n  addTodo(text: string): Todo\n  getTodo(id: number): Todo | undefined\n  toggleTodo(id: number): void\n  deleteTodo(id: number): boolean\n  listTodos(): Todo[]\n  listCompleted(): Todo[]\n  listPending(): Todo[]\n  clearCompleted(): void\n}\n```",
-        "durationMs": 188635
+        "durationMs": 188635,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2253,7 +2280,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface CacheEntry {\n  value: unknown\n  expiresAt: number\n}\n\nexport function createTtlCache(): {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n} {\n  const cache = new Map<string, CacheEntry>()\n  const DEFAULT_TTL_MS = 1000\n\n  const set = (key: string, value: unknown, nowMs: number, ttlMs?: number): void => {\n    const expiresAt = nowMs + (ttlMs ?? DEFAULT_TTL_MS)\n    cache.set(key, { value, expiresAt })\n  }\n\n  const get = (key: string, nowMs: number): unknown => {\n    const entry = cache.get(key)\n    if (!entry) return undefined\n    if (nowMs >= entry.expiresAt) return undefined\n    return entry.value\n  }\n\n  const has = (key: string, nowMs: number): boolean => {\n    const entry = cache.get(key)\n    if (!entry) return false\n    if (nowMs >= entry.expiresAt) return false\n    return true\n  }\n\n  const del = (key: string): boolean => {\n    return cache.delete(key)\n  }\n\n  const size = (nowMs: number): number => {\n    let count = 0\n    for (const [key, entry] of cache.entries()) {\n      if (nowMs < entry.expiresAt) {\n        count++\n      }\n    }\n    return count\n  }\n\n  const clear = (): void => {\n    cache.clear()\n  }\n\n  return { set, get, has, delete: del, size, clear }\n}\n```",
-        "durationMs": 155390
+        "durationMs": 155390,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2287,7 +2315,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport interface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n}\n\ninterface Entry {\n  value: unknown\n  expiresAt: number\n}\n\nexport function createTtlCache(): TtlCache {\n  const entries = new Map<string, Entry>()\n  const DEFAULT_TTL = 1000\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs: number = DEFAULT_TTL): void {\n      const expiresAt = ttlMs === 0 ? nowMs : nowMs + ttlMs\n      entries.set(key, { value, expiresAt })\n    },\n\n    get(key: string, nowMs: number): unknown {\n      const entry = entries.get(key)\n      if (!entry) {\n        return undefined\n      }\n      if (nowMs >= entry.expiresAt) {\n        entries.delete(key)\n        return undefined\n      }\n      return entry.value\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = entries.get(key)\n      if (!entry) {\n        return false\n      }\n      if (nowMs >= entry.expiresAt) {\n        return false\n      }\n      return true\n    },\n\n    delete(key: string): boolean {\n      return entries.delete(key)\n    },\n\n    size(nowMs: number): number {\n      let count = 0\n      for (const entry of entries.values()) {\n        if (nowMs < entry.expiresAt) {\n          count++\n        }\n      }\n      return count\n    },\n\n    clear(): void {\n      entries.clear()\n    }\n  }\n}\n```",
-        "durationMs": 180345
+        "durationMs": 180345,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2436,7 +2465,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
-        "durationMs": 135547
+        "durationMs": 135547,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2500,7 +2530,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  if (b === 0) {\n    return Infinity;\n  }\n  return a / b;\n}\n```",
-        "durationMs": 145028
+        "durationMs": 145028,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2533,7 +2564,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return a / b;\n}\n```",
-        "durationMs": 142977
+        "durationMs": 142977,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2566,7 +2598,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Calculator = {\n  add: (value: number) => Calculator;\n  subtract: (value: number) => Calculator;\n  multiply: (value: number) => Calculator;\n  divide: (value: number) => Calculator;\n  clear: () => Calculator;\n  result: () => number;\n  memoryStore: () => Calculator;\n  memoryAdd: () => Calculator;\n  memoryClear: () => Calculator;\n  memoryRecall: () => number;\n};\n\nexport function createCalculator(): Calculator {\n  let currentValue = 0;\n  let memoryValue = 0;\n\n  return {\n    add(value: number) {\n      currentValue += value;\n      return this;\n    },\n    subtract(value: number) {\n      currentValue -= value;\n      return this;\n    },\n    multiply(value: number) {\n      currentValue *= value;\n      return this;\n    },\n    divide(value: number) {\n      currentValue /= value;\n      return this;\n    },\n    clear() {\n      currentValue = 0;\n      return this;\n    },\n    result() {\n      return currentValue;\n    },\n    memoryStore() {\n      memoryValue = currentValue;\n      return this;\n    },\n    memoryAdd() {\n      memoryValue += currentValue;\n      return this;\n    },\n    memoryClear() {\n      memoryValue = 0;\n      return this;\n    },\n    memoryRecall() {\n      return memoryValue;\n    },\n  };\n}\n```",
-        "durationMs": 186820
+        "durationMs": 186820,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2599,7 +2632,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nfunction createCalculator(): Calculator {\n  let currentValue = 0;\n  let memoryValue = 0;\n\n  const calculator: Calculator = {\n    add(n: number): Calculator {\n      currentValue += n;\n      return calculator;\n    },\n\n    subtract(n: number): Calculator {\n      currentValue -= n;\n      return calculator;\n    },\n\n    multiply(n: number): Calculator {\n      currentValue *= n;\n      return calculator;\n    },\n\n    divide(n: number): Calculator {\n      currentValue /= n;\n      return calculator;\n    },\n\n    clear(): Calculator {\n      currentValue = 0;\n      return calculator;\n    },\n\n    result(): number {\n      return currentValue;\n    },\n\n    memoryStore(): Calculator {\n      memoryValue = currentValue;\n      return calculator;\n    },\n\n    memoryRecall(): number {\n      return memoryValue;\n    },\n\n    memoryClear(): Calculator {\n      memoryValue = 0;\n      return calculator;\n    },\n\n    memoryAdd(): Calculator {\n      memoryValue += currentValue;\n      return calculator;\n    }\n  };\n\n  return calculator;\n}\n\nexport { createCalculator };\n```",
-        "durationMs": 177748
+        "durationMs": 177748,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2632,7 +2666,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createEventEmitter() {\n  const listeners = new Map<\n    string,\n    Array<{ fn: Function; once: boolean }>\n  >();\n\n  return {\n    on(event: string, listener: Function): void {\n      if (!listeners.has(event)) {\n        listeners.set(event, []);\n      }\n      listeners.get(event)!.push({ fn: listener, once: false });\n    },\n\n    once(event: string, listener: Function): void {\n      if (!listeners.has(event)) {\n        listeners.set(event, []);\n      }\n      listeners.get(event)!.push({ fn: listener, once: true });\n    },\n\n    off(event: string, listener: Function): void {\n      const list = listeners.get(event);\n      if (list) {\n        const index = list.findIndex((item) => item.fn === listener);\n        if (index !== -1) {\n          list.splice(index, 1);\n        }\n      }\n    },\n\n    emit(event: string, ...args: any[]): any[] {\n      const list = listeners.get(event);\n      const results: any[] = [];\n\n      if (list) {\n        const toRemove: number[] = [];\n\n        for (let i = 0; i < list.length; i++) {\n          const { fn, once } = list[i];\n          const result = fn(...args);\n          results.push(result);\n\n          if (once) {\n            toRemove.push(i);\n          }\n        }\n\n        toRemove.reverse();\n        toRemove.forEach((index) => list.splice(index, 1));\n      }\n\n      return results;\n    },\n  };\n}\n```",
-        "durationMs": 338876
+        "durationMs": 338876,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2665,7 +2700,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Listener = (payload: unknown) => unknown\n\ninterface EventEmitter {\n  on(event: string, listener: Listener): number\n  once(event: string, listener: Listener): number\n  off(event: string, listener: Listener): boolean\n  emit(event: string, payload: unknown): unknown[]\n  listenerCount(event: string): number\n}\n\nexport function createEventEmitter(): EventEmitter {\n  const listeners = new Map<string, Array<{ listener: Listener; once: boolean }>>()\n\n  return {\n    on(event, listener) {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      listeners.get(event)!.push({ listener, once: false })\n      return listeners.get(event)!.length\n    },\n\n    once(event, listener) {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      listeners.get(event)!.push({ listener, once: true })\n      return listeners.get(event)!.length\n    },\n\n    off(event, targetListener) {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        return false\n      }\n      const index = eventListeners.findIndex(item => item.listener === targetListener)\n      if (index === -1) {\n        return false\n      }\n      eventListeners.splice(index, 1)\n      return true\n    },\n\n    emit(event, payload) {\n      const eventListeners = listeners.get(event)\n      if (!eventListeners) {\n        return []\n      }\n      const snapshot = eventListeners.filter(item => item.listener !== null).slice()\n      const results: unknown[] = []\n      const toRemove: number[] = []\n\n      for (let i = 0; i < snapshot.length; i++) {\n        const item = snapshot[i]\n        const originalIndex = eventListeners.findIndex(e => e === item)\n        if (originalIndex === -1) {\n          continue\n        }\n        results.push(item.listener(payload))\n        if (item.once) {\n          toRemove.push(originalIndex)\n        }\n      }\n\n      for (let i = toRemove.length - 1; i >= 0; i--) {\n        eventListeners.splice(toRemove[i], 1)\n      }\n\n      return results\n    },\n\n    listenerCount(event) {\n      const eventListeners = listeners.get(event)\n      return eventListeners ? eventListeners.length : 0\n    }\n  }\n}\n```",
-        "durationMs": 291672
+        "durationMs": 291672,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2756,7 +2792,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nconst MAX_REQUESTS = 3;\nconst WINDOW_MS = 1000;\n\ntype KeyState = {\n  windowStart: number;\n  count: number;\n};\n\nexport function createRateLimiter(): {\n  allow(key: string, nowMs: number): boolean;\n  reset(key: string): void;\n} {\n  const state = new Map<string, KeyState>();\n\n  return {\n    allow(key, nowMs) {\n      const existing = state.get(key);\n\n      if (!existing || nowMs >= existing.windowStart + WINDOW_MS) {\n        state.set(key, { windowStart: nowMs, count: 1 });\n        return true;\n      }\n\n      if (existing.count < MAX_REQUESTS) {\n        existing.count++;\n        return true;\n      }\n\n      return false;\n    },\n\n    reset(key) {\n      state.delete(key);\n    },\n  };\n}\n```",
-        "durationMs": 281251
+        "durationMs": 281251,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2789,7 +2826,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createRateLimiter(): RateLimiter {\n  const limit = 3\n  const windowMs = 1000\n  const state = new Map<string, { windowStart: number; count: number }>()\n\n  function allow(key: string, nowMs: number): boolean {\n    let entry = state.get(key)\n\n    if (!entry || nowMs - entry.windowStart >= windowMs) {\n      entry = { windowStart: nowMs, count: 0 }\n      state.set(key, entry)\n    }\n\n    if (entry.count < limit) {\n      entry.count++\n      return true\n    }\n    return false\n  }\n\n  function remaining(key: string, nowMs: number): number {\n    const entry = state.get(key)\n\n    if (!entry || nowMs - entry.windowStart >= windowMs) {\n      return limit\n    }\n\n    const res = limit - entry.count\n    return res < 0 ? 0 : res\n  }\n\n  function reset(key: string): void {\n    state.delete(key)\n  }\n\n  return { allow, remaining, reset }\n}\n```",
-        "durationMs": 231062
+        "durationMs": 231062,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2876,7 +2914,8 @@
       "generation": {
         "success": true,
         "output": "export function add(a: number, b: number): number {\n  return a + b;\n}",
-        "durationMs": 134211
+        "durationMs": 134211,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -2909,7 +2948,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n    return a + b;\n}\n```",
-        "durationMs": 133019
+        "durationMs": 133019,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3000,7 +3040,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTodoApp() {\n  let todos: Array<{ id: number, text: string, completed: boolean }> = [];\n  let nextId = 1;\n\n  return {\n    addTodo(text: string): { id: number, text: string, completed: boolean } {\n      const todo = { id: nextId++, text, completed: false };\n      todos.push(todo);\n      return todo;\n    },\n\n    getTodo(id: number): { id: number, text: string, completed: boolean } | undefined {\n      return todos.find(t => t.id === id);\n    },\n\n    toggleTodo(id: number): void {\n      const todo = todos.find(t => t.id === id);\n      if (todo) {\n        todo.completed = !todo.completed;\n      }\n    },\n\n    deleteTodo(id: number): boolean {\n      const index = todos.findIndex(t => t.id === id);\n      if (index === -1) {\n        return false;\n      }\n      todos.splice(index, 1);\n      return true;\n    },\n\n    listTodos(): Array<{ id: number, text: string, completed: boolean }> {\n      return todos.map(t => ({ ...t }));\n    },\n\n    listCompleted(): Array<{ id: number, text: string, completed: boolean }> {\n      return todos.filter(t => t.completed).map(t => ({ ...t }));\n    },\n\n    listPending(): Array<{ id: number, text: string, completed: boolean }> {\n      return todos.filter(t => !t.completed).map(t => ({ ...t }));\n    },\n\n    clearCompleted(): void {\n      todos = todos.filter(t => !t.completed);\n    }\n  };\n}\n```",
-        "durationMs": 241357
+        "durationMs": 241357,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3033,7 +3074,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ntype Todo = {\n  id: number\n  text: string\n  completed: boolean\n}\n\ntype TodoApp = {\n  addTodo(text: string): Todo\n  getTodo(id: number): Todo | undefined\n  toggleTodo(id: number): void\n  deleteTodo(id: number): boolean\n  listTodos(): Todo[]\n  listCompleted(): Todo[]\n  listPending(): Todo[]\n  clearCompleted(): void\n}\n\nexport function createTodoApp(): TodoApp {\n  let nextId = 1\n  const todos: Todo[] = []\n\n  return {\n    addTodo(text: string): Todo {\n      const todo: Todo = {\n        id: nextId++,\n        text,\n        completed: false\n      }\n      todos.push(todo)\n      return todo\n    },\n\n    getTodo(id: number): Todo | undefined {\n      return todos.find(t => t.id === id)\n    },\n\n    toggleTodo(id: number): void {\n      const todo = todos.find(t => t.id === id)\n      if (todo !== undefined) {\n        todo.completed = !todo.completed\n      }\n    },\n\n    deleteTodo(id: number): boolean {\n      const index = todos.findIndex(t => t.id === id)\n      if (index === -1) {\n        return false\n      }\n      todos.splice(index, 1)\n      return true\n    },\n\n    listTodos(): Todo[] {\n      return [...todos]\n    },\n\n    listCompleted(): Todo[] {\n      return todos.filter(t => t.completed)\n    },\n\n    listPending(): Todo[] {\n      return todos.filter(t => !t.completed)\n    },\n\n    clearCompleted(): void {\n      const pending = todos.filter(t => !t.completed)\n      todos.length = 0\n      pending.forEach(t => todos.push(t))\n    }\n  }\n}\n```",
-        "durationMs": 214005
+        "durationMs": 214005,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3066,7 +3108,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTtlCache(): {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n} {\n  const entries = new Map<string, { value: unknown; expiresAt: number }>()\n\n  return {\n    set(key, value, nowMs, ttlMs = 1000) {\n      entries.set(key, { value, expiresAt: nowMs + ttlMs })\n    },\n\n    get(key, nowMs) {\n      const entry = entries.get(key)\n      if (!entry || nowMs >= entry.expiresAt) {\n        return undefined\n      }\n      return entry.value\n    },\n\n    has(key, nowMs) {\n      const entry = entries.get(key)\n      if (!entry) {\n        return false\n      }\n      return nowMs < entry.expiresAt\n    },\n\n    delete(key) {\n      return entries.delete(key)\n    },\n\n    size(nowMs) {\n      let count = 0\n      for (const [, entry] of entries) {\n        if (nowMs < entry.expiresAt) {\n          count++\n        }\n      }\n      return count\n    },\n\n    clear() {\n      entries.clear()\n    }\n  }\n}\n```",
-        "durationMs": 195905
+        "durationMs": 195905,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3099,7 +3142,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTtlCache(): TtlCache {\n  const entries = new Map<string, { value: unknown; expiresAt: number }>()\n\n  return {\n    set(key, value, nowMs, ttlMs = 1000) {\n      entries.set(key, { value, expiresAt: nowMs + ttlMs })\n    },\n\n    get(key, nowMs) {\n      const entry = entries.get(key)\n      if (!entry || nowMs >= entry.expiresAt) {\n        return undefined\n      }\n      return entry.value\n    },\n\n    has(key, nowMs) {\n      const entry = entries.get(key)\n      return entry !== undefined && nowMs < entry.expiresAt\n    },\n\n    delete(key) {\n      return entries.delete(key)\n    },\n\n    size(nowMs) {\n      let count = 0\n      for (const entry of entries.values()) {\n        if (nowMs < entry.expiresAt) {\n          count++\n        }\n      }\n      return count\n    },\n\n    clear() {\n      entries.clear()\n    },\n  }\n}\n\ninterface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n}\n```",
-        "durationMs": 252352
+        "durationMs": 252352,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3306,7 +3350,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
-        "durationMs": 32420
+        "durationMs": 32420,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3370,7 +3415,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}\n\nexport function divide(a: number, b: number): number {\n  return b === 0 ? Infinity : a / b;\n}\n```",
-        "durationMs": 35871
+        "durationMs": 35871,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3403,7 +3449,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b\n}\n\nexport function subtract(a: number, b: number): number {\n  return a - b\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b\n}\n\nexport function divide(a: number, b: number): number {\n  return b === 0 ? Infinity : a / b\n}\n```",
-        "durationMs": 35915
+        "durationMs": 35915,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3436,7 +3483,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createCalculator() {\n  let currentValue = 0\n  let memoryValue = 0\n\n  return {\n    add(value: number) {\n      currentValue += value\n      return this\n    },\n    subtract(value: number) {\n      currentValue -= value\n      return this\n    },\n    multiply(value: number) {\n      currentValue *= value\n      return this\n    },\n    divide(value: number) {\n      if (value !== 0) {\n        currentValue /= value\n      }\n      return this\n    },\n    clear() {\n      currentValue = 0\n      return this\n    },\n    result() {\n      return currentValue\n    },\n    memoryStore() {\n      memoryValue = currentValue\n      return this\n    },\n    memoryAdd() {\n      memoryValue += currentValue\n      return this\n    },\n    memoryClear() {\n      memoryValue = 0\n      return this\n    },\n    memoryRecall() {\n      return memoryValue\n    }\n  }\n}\n```",
-        "durationMs": 47151
+        "durationMs": 47151,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3469,7 +3517,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface Calculator {\n  add(n: number): Calculator\n  subtract(n: number): Calculator\n  multiply(n: number): Calculator\n  divide(n: number): Calculator\n  clear(): Calculator\n  result(): number\n  memoryStore(): Calculator\n  memoryRecall(): number\n  memoryClear(): Calculator\n  memoryAdd(): Calculator\n}\n\nfunction createCalculator(): Calculator {\n  let currentValue = 0;\n  let memoryValue = 0;\n\n  return {\n    add(n: number): Calculator {\n      currentValue += n;\n      return this;\n    },\n    subtract(n: number): Calculator {\n      currentValue -= n;\n      return this;\n    },\n    multiply(n: number): Calculator {\n      currentValue *= n;\n      return this;\n    },\n    divide(n: number): Calculator {\n      if (n !== 0) {\n        currentValue /= n;\n      }\n      return this;\n    },\n    clear(): Calculator {\n      currentValue = 0;\n      return this;\n    },\n    result(): number {\n      return currentValue;\n    },\n    memoryStore(): Calculator {\n      memoryValue = currentValue;\n      return this;\n    },\n    memoryRecall(): number {\n      return memoryValue;\n    },\n    memoryClear(): Calculator {\n      memoryValue = 0;\n      return this;\n    },\n    memoryAdd(): Calculator {\n      memoryValue += currentValue;\n      return this;\n    },\n  };\n}\n\nexport { createCalculator };\n```",
-        "durationMs": 44154
+        "durationMs": 44154,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3502,7 +3551,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createEventEmitter() {\n  const listeners: Map<string, Array<{ fn: (...args: unknown[]) => unknown; once: boolean }>> = new Map();\n\n  function on(\n    event: string,\n    listener: (...args: unknown[]) => unknown,\n    options?: { once: boolean }\n  ): typeof on {\n    const once = options?.once ?? false;\n    const eventListeners = listeners.get(event) ?? [];\n    listeners.set(event, eventListeners);\n    eventListeners.push({ fn: listener, once });\n    return on;\n  }\n\n  function off(event: string, listener: (...args: unknown[]) => unknown): typeof off {\n    const eventListeners = listeners.get(event);\n    if (!eventListeners) return off;\n    const idx = eventListeners.findIndex(({ fn }) => fn === listener);\n    if (idx !== -1) {\n      eventListeners.splice(idx, 1);\n      if (eventListeners.length === 0) {\n        listeners.delete(event);\n      }\n    }\n    return off;\n  }\n\n  function once(event: string, listener: (...args: unknown[]) => unknown): typeof once {\n    return on(event, listener, { once: true });\n  }\n\n  function emit(event: string, ...args: unknown[]): unknown[] {\n    const eventListeners = listeners.get(event);\n    if (!eventListeners) return [];\n    const results: unknown[] = [];\n    const remaining: Array<{ fn: (...args: unknown[]) => unknown; once: boolean }> = [];\n    for (const { fn, once } of eventListeners) {\n      try {\n        const result = fn(...args);\n        results.push(result);\n      } catch {\n        results.push(undefined);\n      }\n      if (once) {\n        continue;\n      }\n      remaining.push({ fn, once: false });\n    }\n    if (remaining.length === 0) {\n      listeners.delete(event);\n    } else {\n      listeners.set(event, remaining);\n    }\n    return results;\n  }\n\n  function removeAllListeners(event?: string): typeof removeAllListeners {\n    if (event === undefined) {\n      listeners.clear();\n    } else {\n      listeners.delete(event);\n    }\n    return removeAllListeners;\n  }\n\n  return {\n    on,\n    on: Object.assign(on, { once }),\n    off,\n    once,\n    emit,\n    removeAllListeners,\n  };\n}\n```",
-        "durationMs": 55569
+        "durationMs": 55569,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3535,7 +3585,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport type Listener = (payload: unknown) => unknown\n\ninterface EventEmitter {\n  on(event: string, listener: Listener): number\n  once(event: string, listener: Listener): number\n  off(event: string, listener: Listener): boolean\n  emit(event: string, payload: unknown): unknown[]\n  listenerCount(event: string): number\n}\n\ninterface RegisteredListener {\n  id: number\n  listener: Listener\n  once: boolean\n}\n\nfunction createEventEmitter(): EventEmitter {\n  const listeners = new Map<string, RegisteredListener[]>()\n  let nextId = 0\n\n  return {\n    on(event: string, listener: Listener): number {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      listeners.get(event)!.push({ id: nextId++, listener, once: false })\n      return listeners.get(event)!.length\n    },\n\n    once(event: string, listener: Listener): number {\n      if (!listeners.has(event)) {\n        listeners.set(event, [])\n      }\n      listeners.get(event)!.push({ id: nextId++, listener, once: true })\n      return listeners.get(event)!.length\n    },\n\n    off(event: string, listener: Listener): boolean {\n      if (!listeners.has(event)) {\n        return false\n      }\n      const list = listeners.get(event)!\n      const index = list.findIndex((l) => l.listener === listener)\n      if (index === -1) {\n        return false\n      }\n      list.splice(index, 1)\n      return true\n    },\n\n    emit(event: string, payload: unknown): unknown[] {\n      if (!listeners.has(event)) {\n        return []\n      }\n      const list = listeners.get(event)!\n      const results: unknown[] = []\n      \n      const toRemove: number[] = []\n      list.forEach((l, index) => {\n        try {\n          results.push(listener.call(null, payload))\n        } catch (e) {\n          results.push(e)\n        }\n        if (l.once) {\n          toRemove.push(index)\n        }\n      })\n\n      for (const index of toRemove) {\n        const idx = list.findIndex((l, i) => i === index)\n        if (idx !== -1) {\n          list.splice(idx, 1)\n        }\n      }\n\n      return results\n    },\n\n    listenerCount(event: string): number {\n      return listeners.has(event) ? listeners.get(event)!.length : 0\n    }\n  }\n}\n\nexport { createEventEmitter }\n```",
-        "durationMs": 59024
+        "durationMs": 59024,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3630,7 +3681,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createRateLimiter() {\n  const windows = new Map<string, { windowStart: number; requestCount: number }>();\n  const MAX_REQUESTS_PER_WINDOW = 3;\n  const WINDOW_MS = 1000;\n\n  function checkRateLimit(key: string, nowMs: number): boolean {\n    const state = windows.get(key);\n\n    if (!state || nowMs >= state.windowStart + WINDOW_MS) {\n      windows.set(key, { windowStart: nowMs, requestCount: 1 });\n      return true;\n    }\n\n    if (state.requestCount < MAX_REQUESTS_PER_WINDOW) {\n      state.requestCount++;\n      return true;\n    }\n\n    return false;\n  }\n\n  function reset(key: string): void {\n    windows.delete(key);\n  }\n\n  function getRemaining(key: string, nowMs: number): number {\n    const state = windows.get(key);\n\n    if (!state || nowMs >= state.windowStart + WINDOW_MS) {\n      return MAX_REQUESTS_PER_WINDOW;\n    }\n\n    return MAX_REQUESTS_PER_WINDOW - state.requestCount;\n  }\n\n  return {\n    checkRateLimit,\n    reset,\n    getRemaining,\n  };\n}\n```",
-        "durationMs": 62899
+        "durationMs": 62899,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3663,7 +3715,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createRateLimiter(): RateLimiter {\n  const limit = 3\n  const windowMs = 1000\n\n  const state = new Map<string, { windowStart: number; count: number }>()\n\n  return {\n    allow(key: string, nowMs: number): boolean {\n      const entry = state.get(key)\n\n      if (entry && nowMs - entry.windowStart >= windowMs) {\n        state.delete(key)\n      }\n\n      const currentEntry = state.get(key)\n\n      if (!currentEntry) {\n        state.set(key, { windowStart: nowMs, count: 1 })\n        return true\n      }\n\n      if (currentEntry.count < limit) {\n        currentEntry.count++\n        return true\n      }\n\n      return false\n    },\n\n    remaining(key: string, nowMs: number): number {\n      const entry = state.get(key)\n\n      if (!entry) {\n        return limit\n      }\n\n      if (nowMs - entry.windowStart >= windowMs) {\n        return limit\n      }\n\n      return Math.max(0, limit - entry.count)\n    },\n\n    reset(key: string): void {\n      state.delete(key)\n    }\n  }\n}\n\ninterface RateLimiter {\n  allow(key: string, nowMs: number): boolean\n  remaining(key: string, nowMs: number): number\n  reset(key: string): void\n}\n```",
-        "durationMs": 63253
+        "durationMs": 63253,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3758,7 +3811,8 @@
       "generation": {
         "success": true,
         "output": "export function add(a: number, b: number): number {\n  return a + b;\n}",
-        "durationMs": 31000
+        "durationMs": 31000,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3791,7 +3845,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function add(a: number, b: number): number {\n  return a + b;\n}\n```",
-        "durationMs": 32398
+        "durationMs": 32398,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3886,7 +3941,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTodoApp() {\n  let nextId = 1\n  const todos: { id: number; text: string; completed: boolean }[] = []\n\n  return {\n    addTodo(text: string): { id: number; text: string; completed: boolean } {\n      const newTodo = { id: nextId++, text, completed: false }\n      todos.push(newTodo)\n      return newTodo\n    },\n\n    getTodo(id: number): { id: number; text: string; completed: boolean } | undefined {\n      return todos.find((todo) => todo.id === id)\n    },\n\n    toggleTodo(id: number): void {\n      const todo = todos.find((t) => t.id === id)\n      if (todo) {\n        todo.completed = !todo.completed\n      }\n    },\n\n    deleteTodo(id: number): boolean {\n      const index = todos.findIndex((t) => t.id === id)\n      if (index !== -1) {\n        todos.splice(index, 1)\n        return true\n      }\n      return false\n    },\n\n    listTodos(): { id: number; text: string; completed: boolean }[] {\n      return Array.from(todos)\n    },\n\n    listCompleted(): { id: number; text: string; completed: boolean }[] {\n      const result: { id: number; text: string; completed: boolean }[] = []\n      for (const todo of todos) {\n        if (todo.completed) {\n          result.push(todo)\n        }\n      }\n      return result\n    },\n\n    listPending(): { id: number; text: string; completed: boolean }[] {\n      const result: { id: number; text: string; completed: boolean }[] = []\n      for (const todo of todos) {\n        if (!todo.completed) {\n          result.push(todo)\n        }\n      }\n      return result\n    },\n\n    clearCompleted(): void {\n      const remaining: { id: number; text: string; completed: boolean }[] = []\n      for (const todo of todos) {\n        if (!todo.completed) {\n          remaining.push(todo)\n        }\n      }\n      todos.length = 0\n      todos.push(...remaining)\n    }\n  }\n}\n```",
-        "durationMs": 56381
+        "durationMs": 56381,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3919,7 +3975,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTodoApp(): TodoApp {\n  let nextId = 1\n  const todos: Todo[] = []\n\n  return {\n    addTodo(text: string): Todo {\n      const todo: Todo = { id: nextId++, text, completed: false }\n      todos.push(todo)\n      return todo\n    },\n    getTodo(id: number): Todo | undefined {\n      return todos.find((t) => t.id === id)\n    },\n    toggleTodo(id: number): void {\n      const todo = todos.find((t) => t.id === id)\n      if (todo) {\n        todo.completed = !todo.completed\n      }\n    },\n    deleteTodo(id: number): boolean {\n      const index = todos.findIndex((t) => t.id === id)\n      if (index !== -1) {\n        todos.splice(index, 1)\n        return true\n      }\n      return false\n    },\n    listTodos(): Todo[] {\n      return [...todos]\n    },\n    listCompleted(): Todo[] {\n      return todos.filter((t) => t.completed)\n    },\n    listPending(): Todo[] {\n      return todos.filter((t) => !t.completed)\n    },\n    clearCompleted(): void {\n      const completedIds = todos.filter((t) => t.completed).map((t) => t.id)\n      if (completedIds.length > 0) {\n        for (let i = todos.length - 1; i >= 0; i--) {\n          if (completedIds.includes(todos[i].id)) {\n            todos.splice(i, 1)\n          }\n        }\n      }\n    },\n  }\n}\n\nexport interface Todo {\n  id: number\n  text: string\n  completed: boolean\n}\n\nexport interface TodoApp {\n  addTodo(text: string): Todo\n  getTodo(id: number): Todo | undefined\n  toggleTodo(id: number): void\n  deleteTodo(id: number): boolean\n  listTodos(): Todo[]\n  listCompleted(): Todo[]\n  listPending(): Todo[]\n  clearCompleted(): void\n}\n```",
-        "durationMs": 52221
+        "durationMs": 52221,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3952,7 +4009,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\nexport function createTtlCache(): {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n} {\n  const entries = new Map<string, { value: unknown; expiresAt: number }>()\n  const defaultTtlMs = 1000\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs?: number): void {\n      const expiresAt = nowMs + (ttlMs ?? defaultTtlMs)\n      entries.set(key, { value, expiresAt })\n    },\n\n    get(key: string, nowMs: number): unknown {\n      const entry = entries.get(key)\n      if (!entry) {\n        return undefined\n      }\n      if (nowMs >= entry.expiresAt) {\n        entries.delete(key)\n        return undefined\n      }\n      return entry.value\n    },\n\n    has(key: string, nowMs: number): boolean {\n      const entry = entries.get(key)\n      if (!entry) {\n        return false\n      }\n      if (nowMs >= entry.expiresAt) {\n        entries.delete(key)\n        return false\n      }\n      return true\n    },\n\n    delete(key: string): boolean {\n      return entries.delete(key)\n    },\n\n    size(nowMs: number): number {\n      let count = 0\n      for (const [key, entry] of entries.entries()) {\n        if (nowMs < entry.expiresAt) {\n          count++\n        }\n      }\n      return count\n    },\n\n    clear(): void {\n      entries.clear()\n    },\n  }\n}\n```",
-        "durationMs": 47822
+        "durationMs": 47822,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
@@ -3986,7 +4044,8 @@
       "generation": {
         "success": true,
         "output": "```typescript\ninterface CacheEntry {\n  value: unknown\n  expiresAt: number\n}\n\ninterface TtlCache {\n  set(key: string, value: unknown, nowMs: number, ttlMs?: number): void\n  get(key: string, nowMs: number): unknown\n  has(key: string, nowMs: number): boolean\n  delete(key: string): boolean\n  size(nowMs: number): number\n  clear(): void\n}\n\nfunction isExpired(expiresAt: number, nowMs: number): boolean {\n  return nowMs >= expiresAt\n}\n\nexport function createTtlCache(): TtlCache {\n  const entries = new Map<string, CacheEntry>()\n\n  return {\n    set(key: string, value: unknown, nowMs: number, ttlMs?: number): void {\n      const ttl = ttlMs !== undefined ? ttlMs : 1000\n      const expiresAt = ttl > 0 ? nowMs + ttl : 0\n      entries.set(key, { value, expiresAt })\n    },\n    get(key: string, nowMs: number): unknown {\n      const entry = entries.get(key)\n      if (!entry) return undefined\n      if (isExpired(entry.expiresAt, nowMs)) {\n        entries.delete(key)\n        return undefined\n      }\n      return entry.value\n    },\n    has(key: string, nowMs: number): boolean {\n      const entry = entries.get(key)\n      if (!entry) return false\n      if (isExpired(entry.expiresAt, nowMs)) {\n        entries.delete(key)\n        return false\n      }\n      return true\n    },\n    delete(key: string): boolean {\n      return entries.delete(key)\n    },\n    size(nowMs: number): number {\n      let count = 0\n      for (const entry of entries.values()) {\n        if (!isExpired(entry.expiresAt, nowMs)) {\n          count++\n        }\n      }\n      return count\n    },\n    clear(): void {\n      entries.clear()\n    }\n  }\n}\n```",
-        "durationMs": 113767
+        "durationMs": 113767,
+        "sourcePathToken": "[path:solution.ts]"
       },
       "generationAttempts": 1,
       "automatedScore": {
