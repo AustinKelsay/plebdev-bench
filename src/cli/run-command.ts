@@ -13,16 +13,16 @@
 import { Command } from "commander";
 import { logger } from "../lib/logger.js";
 import {
-	loadModelAliases,
-	mergeAliases,
-	parseInlineAliases,
-} from "../lib/model-aliases.js";
+	loadModelProfiles,
+	mergeModelProfiles,
+	parseInlineModelProfiles,
+} from "../lib/model-profiles.js";
 import { runBenchmark } from "../runner/index.js";
 import {
 	type BenchConfig,
 	BenchConfigSchema,
-	type ModelAliasMap,
 	testCategories,
+	type ModelProfileRegistry,
 } from "../schemas/index.js";
 
 /** Human-readable category list for CLI help text. */
@@ -55,6 +55,28 @@ function parseStrictIntegerOption(
 	return parsed;
 }
 
+/**
+ * Normalizes an optional CLI string flag and rejects explicit blank values.
+ *
+ * @param optionName - CLI flag name for error messages
+ * @param rawValue - Raw commander option value
+ * @returns Trimmed non-empty value or undefined
+ * @throws {Error} When the flag was provided as only whitespace
+ */
+function normalizeOptionalStringOption(
+	optionName: string,
+	rawValue: unknown,
+): string | undefined {
+	if (typeof rawValue !== "string") {
+		return undefined;
+	}
+	const trimmed = rawValue.trim();
+	if (trimmed.length === 0) {
+		throw new Error(`${optionName} must not be empty`);
+	}
+	return trimmed;
+}
+
 /** CLI run command. */
 export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
@@ -64,7 +86,7 @@ export const runCommand = new Command("run")
 	)
 	.option(
 		"-m, --models <models...>",
-		"Limit to specific models or aliases (default: all from runtime)",
+		"Limit to specific runtime models or canonical profile keys (default: all from runtime)",
 	)
 	.option(
 		"-t, --tests <tests...>",
@@ -103,38 +125,97 @@ export const runCommand = new Command("run")
 	)
 	.option("-o, --output <dir>", "Output directory", "results")
 	.option(
-		"--machine-id <id>",
-		"Machine profile ID for cross-run aggregation (default: BENCH_MACHINE_ID env or deterministic anonymous ID)",
+		"--machine-instance-id <id>",
+		"Stable machine instance ID (default: BENCH_MACHINE_INSTANCE_ID env or generated local ID)",
 	)
-	.option("--machine-label <label>", "Optional machine display label")
+	.option(
+		"--machine-display-label <label>",
+		"Optional display label for a specific machine instance",
+	)
+	.option(
+		"--machine-id <id>",
+		"Deprecated alias for --machine-instance-id",
+	)
+	.option(
+		"--machine-label <label>",
+		"Deprecated alias for --machine-display-label",
+	)
 	.option(
 		"--model-config <file>",
-		"JSON file with model aliases for cross-runtime mapping",
+		"JSON file with model profiles for cross-runtime mapping",
 	)
 	.option(
 		"--model-alias <def...>",
-		'Inline model alias: "name=runtime:model,runtime:model" (repeatable)',
+		'Inline model profile shorthand: "name=runtime:model,runtime:model" (repeatable)',
 	)
 	.action(async (options) => {
 		try {
-			// Build model aliases from file and/or inline definitions
-			let modelAliases: ModelAliasMap = {};
+			// Build model profiles from file and/or inline definitions.
+			let modelProfiles: ModelProfileRegistry = {};
 
 			if (options.modelConfig) {
-				const fileAliases = loadModelAliases(options.modelConfig);
-				modelAliases = mergeAliases(modelAliases, fileAliases);
+				const fileProfiles = loadModelProfiles(options.modelConfig);
+				modelProfiles = mergeModelProfiles(modelProfiles, fileProfiles);
 				logger.info(
-					{ file: options.modelConfig, count: Object.keys(fileAliases).length },
-					"Loaded model aliases from file",
+					{ file: options.modelConfig, count: Object.keys(fileProfiles).length },
+					"Loaded model profiles from file",
 				);
 			}
 
 			if (options.modelAlias) {
-				const inlineAliases = parseInlineAliases(options.modelAlias);
-				modelAliases = mergeAliases(modelAliases, inlineAliases);
+				const inlineProfiles = parseInlineModelProfiles(options.modelAlias);
+				modelProfiles = mergeModelProfiles(modelProfiles, inlineProfiles);
 				logger.info(
-					{ count: Object.keys(inlineAliases).length },
-					"Parsed inline model aliases",
+					{ count: Object.keys(inlineProfiles).length },
+					"Parsed inline model profile shorthands",
+				);
+			}
+
+			const legacyMachineId = normalizeOptionalStringOption(
+				"--machine-id",
+				options.machineId,
+			);
+			const legacyMachineLabel = normalizeOptionalStringOption(
+				"--machine-label",
+				options.machineLabel,
+			);
+			const canonicalMachineId = normalizeOptionalStringOption(
+				"--machine-instance-id",
+				options.machineInstanceId,
+			);
+			const canonicalMachineLabel = normalizeOptionalStringOption(
+				"--machine-display-label",
+				options.machineDisplayLabel,
+			);
+			if (
+				legacyMachineId &&
+				canonicalMachineId &&
+				legacyMachineId !== canonicalMachineId
+			) {
+				throw new Error(
+					`Conflicting machine identity flags: --machine-id="${legacyMachineId}" does not match --machine-instance-id="${canonicalMachineId}"`,
+				);
+			}
+			if (
+				legacyMachineLabel &&
+				canonicalMachineLabel &&
+				legacyMachineLabel !== canonicalMachineLabel
+			) {
+				throw new Error(
+					`Conflicting machine label flags: --machine-label="${legacyMachineLabel}" does not match --machine-display-label="${canonicalMachineLabel}"`,
+				);
+			}
+			const resolvedMachineId = canonicalMachineId ?? legacyMachineId;
+			const resolvedMachineLabel =
+				canonicalMachineLabel ?? legacyMachineLabel;
+			if (legacyMachineId) {
+				logger.warn(
+					"Warning: --machine-id is deprecated; use --machine-instance-id",
+				);
+			}
+			if (legacyMachineLabel) {
+				logger.warn(
+					"Warning: --machine-label is deprecated; use --machine-display-label",
 				);
 			}
 
@@ -160,17 +241,9 @@ export const runCommand = new Command("run")
 					options.gooseWorkspaceRetryMaxTurns,
 				),
 				outputDir: options.output,
-				machineProfileId:
-					typeof options.machineId === "string" &&
-					options.machineId.trim().length > 0
-						? options.machineId.trim()
-						: undefined,
-				machineLabel:
-					typeof options.machineLabel === "string" &&
-					options.machineLabel.trim().length > 0
-						? options.machineLabel.trim()
-						: undefined,
-				modelAliases,
+				machineInstanceId: resolvedMachineId,
+				machineDisplayLabel: resolvedMachineLabel,
+				modelProfiles,
 			};
 
 			// Add optional arrays if provided

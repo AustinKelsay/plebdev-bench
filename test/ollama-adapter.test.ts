@@ -228,6 +228,40 @@ describe("DirectAdapter", () => {
 				}),
 			).rejects.toThrow("Ollama generation failed");
 		});
+
+		it("aggregates token usage across retry attempts", async () => {
+			const shortNdjson = [
+				{ response: "ok", done: false },
+				{ response: "", done: true, prompt_eval_count: 10, eval_count: 5 },
+			]
+				.map((obj) => JSON.stringify(obj))
+				.join("\n");
+			const validNdjson = [
+				{ response: "export function add(", done: false },
+				{ response: "a: number, b: number", done: false },
+				{ response: "): number { return a + b; }", done: false },
+				{ response: "", done: true, prompt_eval_count: 40, eval_count: 20 },
+			]
+				.map((obj) => JSON.stringify(obj))
+				.join("\n");
+
+			mockFetch
+				.mockResolvedValueOnce(new Response(shortNdjson, { status: 200 }))
+				.mockResolvedValueOnce(new Response(validNdjson, { status: 200 }));
+
+			const adapter = createDirectAdapter();
+			const result = await adapter.generate({
+				model: "llama3.2:3b",
+				prompt: "Write an add function",
+				timeoutMs,
+				runtime: mockRuntime,
+			});
+
+			expect(result.output).toContain("add");
+			expect(result.promptTokens).toBe(50);
+			expect(result.completionTokens).toBe(25);
+			expect(mockFetch).toHaveBeenCalledTimes(2);
+		});
 	});
 
 	describe("harness interface", () => {

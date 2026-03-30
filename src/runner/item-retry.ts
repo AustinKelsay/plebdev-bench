@@ -15,6 +15,7 @@ import type { Runtime } from "../runtimes/index.js";
 import type {
 	GenerationResult,
 	MatrixItem,
+	MatrixItemResult,
 	ScoringResult,
 } from "../schemas/index.js";
 
@@ -119,6 +120,7 @@ export async function runCompileFeedbackRetry(
 			generation: GenerationResult;
 			scoringResult: ScoringResult;
 			scoringDurationMs: number;
+			signalAssessment?: MatrixItemResult["signalAssessment"];
 	  }
 	| undefined
 > {
@@ -172,6 +174,7 @@ export async function runCompileFeedbackRetry(
 			generation: retryGeneration,
 			scoringResult: retryScoringResult,
 			scoringDurationMs: retryScoringDurationMs,
+			signalAssessment: retryResult.signalAssessment,
 		};
 	} catch (retryError) {
 		const retryMessage =
@@ -203,11 +206,13 @@ export async function runScoringWithCompileRetry(
 	scoringOnlyDurationMs: number;
 	retryGenerationDurationMs: number;
 	compileRetryUsed: boolean;
+	signalAssessment?: MatrixItemResult["signalAssessment"];
 }> {
 	let generation = context.generation;
 	let compileRetryUsed = false;
 	let scoringOnlyDurationMs = 0;
 	let retryGenerationDurationMs = 0;
+	let signalAssessment: MatrixItemResult["signalAssessment"];
 	let scoringResult: ScoringResult;
 	let initialScoringStartTime = 0;
 
@@ -250,6 +255,7 @@ export async function runScoringWithCompileRetry(
 				scoringResult = retryFromException.scoringResult;
 				scoringOnlyDurationMs += retryFromException.scoringDurationMs;
 				retryGenerationDurationMs += retryFromException.generation.durationMs;
+				signalAssessment = retryFromException.signalAssessment;
 			} else {
 				throw scoringError;
 			}
@@ -295,6 +301,7 @@ export async function runScoringWithCompileRetry(
 			if (shouldPromoteRetry) {
 				generation = retryAttempt.generation;
 				scoringResult = retryAttempt.scoringResult;
+				signalAssessment = retryAttempt.signalAssessment;
 				context.log.info(
 					{
 						harness: context.item.harness,
@@ -326,5 +333,6 @@ export async function runScoringWithCompileRetry(
 		scoringOnlyDurationMs,
 		retryGenerationDurationMs,
 		compileRetryUsed,
+		signalAssessment,
 	};
 }

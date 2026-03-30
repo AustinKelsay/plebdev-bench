@@ -3,11 +3,13 @@
  * Exports: resolveRunMetadata, aggregateRunsForCheckpoint, summarizeCheckpoints
  *
  * Invariants:
- * - Aggregation key is machineProfileId + runtime + model + harness + test + passType
+ * - Aggregation key is machineProfileKey + runtime + canonical model identity + harness + test + passType
  * - Duplicate keys resolve to the strongest item first, then latest item on exact ties
- * - Outputs are deterministic (stable sorting for items/machines/checkpoints)
+ * - Outputs are deterministic
  */
 
+import { migrateLegacyMachineProfile } from "../lib/machine-profile/legacy.js";
+import { getModelIdentityKey } from "../lib/model-profiles.js";
 import type {
 	MatrixItemResult,
 	RunPlan,
@@ -21,31 +23,40 @@ export interface AggregateRunInput {
 	plan?: RunPlan;
 }
 
-/** Resolved metadata used for checkpoint and machine-aware aggregation. */
+/** Resolved metadata used for checkpoint and profile-aware aggregation. */
 export interface ResolvedRunMetadata {
 	checkpointId?: string;
-	machineProfileId?: string;
-	machineLabel?: string;
+	machineProfileKey?: string;
+	machineProfileLabel?: string;
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	verificationStatus: VerificationStatus;
 	isLegacy: boolean;
 }
 
 /** Aggregated item with machine/run provenance fields. */
 export type AggregatedMatrixItem = MatrixItemResult & {
-	machineProfileId: string;
+	machineProfileKey: string;
+	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	verificationStatus: VerificationStatus;
 	sourceRunId: string;
 	sourceCompletedAt: string;
 };
 
-/** Per-machine summary for a checkpoint aggregate. */
+/** Per-profile summary for a checkpoint aggregate. */
 export interface MachineAggregateSummary {
-	machineProfileId: string;
+	machineProfileKey: string;
+	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
 	verificationStatus: VerificationStatus;
 	runCount: number;
 	itemCount: number;
+	instanceCount: number;
 }
 
 /** Aggregate summary counters for one checkpoint. */
@@ -55,13 +66,14 @@ export interface CheckpointAggregateSummary {
 	rawItems: number;
 	dedupedItems: number;
 	machines: number;
+	instances: number;
 	automatedScoreItems: number;
 	frontierEvalItems: number;
 }
 
 /** Full aggregate payload for one checkpoint. */
 export interface CheckpointAggregate {
-	schemaVersion: 1;
+	schemaVersion: 2;
 	generatedAt: string;
 	checkpointId: string;
 	summary: CheckpointAggregateSummary;
@@ -75,48 +87,49 @@ export interface CheckpointSummary {
 	runCount: number;
 	rawItemCount: number;
 	machineCount: number;
+	instanceCount: number;
 	latestRunAt: string;
 }
 
-/**
- * Resolves checkpoint/machine/provenance metadata from run/plan artifacts.
- *
- * @param input - Run plus optional plan artifact
- * @returns Normalized run metadata
- */
-export function resolveRunMetadata(input: AggregateRunInput): ResolvedRunMetadata {
-	const { run, plan } = input;
-	const checkpointId =
-		run.benchmarkCheckpoint?.checkpointId ?? plan?.benchmarkCheckpoint?.checkpointId;
-	const machineProfileId = run.machine?.profileId ?? plan?.machine?.profileId;
-	const machineLabel = run.machine?.label ?? plan?.machine?.label;
-	const verificationStatus =
-		run.provenance?.verificationStatus ??
-		plan?.provenance?.verificationStatus ??
-		"self_reported";
-	const isLegacy = !checkpointId || !machineProfileId;
+const VERIFICATION_STATUS_RANK: Record<VerificationStatus, number> = {
+	verified: 0,
+	self_reported: 1,
+	rejected: 2,
+};
 
-	return {
-		checkpointId,
-		machineProfileId,
-		machineLabel,
-		verificationStatus,
-		isLegacy,
-	};
+/**
+ * Combines two verification statuses conservatively.
+ *
+ * @param current - Existing aggregate status
+ * @param next - New status to fold in
+ * @returns Worst-case combined status
+ */
+function mergeVerificationStatus(
+	current: VerificationStatus,
+	next: VerificationStatus,
+): VerificationStatus {
+	return VERIFICATION_STATUS_RANK[next] > VERIFICATION_STATUS_RANK[current]
+		? next
+		: current;
 }
 
 /**
  * Builds the deterministic aggregation key for one matrix item.
  *
- * @param machineProfileId - Machine profile identifier
+ * @param machineProfileKey - Machine profile key
  * @param item - Matrix item
  * @returns Stable aggregation key
  */
 function buildAggregateKey(
-	machineProfileId: string,
+	machineProfileKey: string,
 	item: MatrixItemResult,
 ): string {
-	return `${machineProfileId}|${item.runtime}|${item.model}|${item.harness}|${item.test}|${item.passType}`;
+	const canonicalModel = getModelIdentityKey(
+		item.model,
+		item.modelProfile,
+		item.modelAlias,
+	);
+	return `${machineProfileKey}|${item.runtime}|${canonicalModel}|${item.harness}|${item.test}|${item.passType}`;
 }
 
 /**
@@ -180,13 +193,7 @@ function getAutomatedPassRate(item: MatrixItemResult): number {
 }
 
 /**
- * Compares two aggregate candidates for the same machine+matrix key.
- *
- * Ordering rules:
- * - Prefer stronger execution outcome and higher automated score
- * - Prefer higher frontier score when automated results tie
- * - Prefer successful/faster generations only after score-based comparisons
- * - Fall back to newer source timestamps to keep the result deterministic
+ * Compares two aggregate candidates for the same profile+matrix key.
  *
  * @param candidate - New candidate entry
  * @param incumbent - Existing entry
@@ -199,44 +206,32 @@ function compareAggregateCandidates(
 	const statusDelta =
 		getStatusRank(candidate.aggregated.status) -
 		getStatusRank(incumbent.aggregated.status);
-	if (statusDelta !== 0) {
-		return statusDelta;
-	}
+	if (statusDelta !== 0) return statusDelta;
 
-	const automatedPassRateDelta =
+	const passRateDelta =
 		getAutomatedPassRate(candidate.aggregated) -
 		getAutomatedPassRate(incumbent.aggregated);
-	if (automatedPassRateDelta !== 0) {
-		return automatedPassRateDelta;
-	}
+	if (passRateDelta !== 0) return passRateDelta;
 
-	const automatedPassedDelta =
+	const passedDelta =
 		(candidate.aggregated.automatedScore?.passed ?? -1) -
 		(incumbent.aggregated.automatedScore?.passed ?? -1);
-	if (automatedPassedDelta !== 0) {
-		return automatedPassedDelta;
-	}
+	if (passedDelta !== 0) return passedDelta;
 
-	const automatedTotalDelta =
+	const totalDelta =
 		(candidate.aggregated.automatedScore?.total ?? -1) -
 		(incumbent.aggregated.automatedScore?.total ?? -1);
-	if (automatedTotalDelta !== 0) {
-		return automatedTotalDelta;
-	}
+	if (totalDelta !== 0) return totalDelta;
 
-	const frontierScoreDelta =
+	const frontierDelta =
 		(candidate.aggregated.frontierEval?.score ?? -1) -
 		(incumbent.aggregated.frontierEval?.score ?? -1);
-	if (frontierScoreDelta !== 0) {
-		return frontierScoreDelta;
-	}
+	if (frontierDelta !== 0) return frontierDelta;
 
 	const generationSuccessDelta =
 		Number(candidate.aggregated.generation?.success === true) -
 		Number(incumbent.aggregated.generation?.success === true);
-	if (generationSuccessDelta !== 0) {
-		return generationSuccessDelta;
-	}
+	if (generationSuccessDelta !== 0) return generationSuccessDelta;
 
 	const candidateDuration = candidate.aggregated.generation?.durationMs;
 	const incumbentDuration = incumbent.aggregated.generation?.durationMs;
@@ -251,7 +246,6 @@ function compareAggregateCandidates(
 	if (candidate.timestamp !== incumbent.timestamp) {
 		return candidate.timestamp - incumbent.timestamp;
 	}
-
 	if (
 		candidate.aggregated.sourceCompletedAt !==
 		incumbent.aggregated.sourceCompletedAt
@@ -260,7 +254,6 @@ function compareAggregateCandidates(
 			incumbent.aggregated.sourceCompletedAt,
 		);
 	}
-
 	return candidate.aggregated.sourceRunId.localeCompare(
 		incumbent.aggregated.sourceRunId,
 	);
@@ -269,21 +262,51 @@ function compareAggregateCandidates(
 /**
  * Sorts aggregated items into deterministic order.
  *
- * @param a - First aggregated item
- * @param b - Second aggregated item
+ * @param left - First aggregated item
+ * @param right - Second aggregated item
  * @returns Sort comparator result
  */
 function sortAggregatedItems(
-	a: AggregatedMatrixItem,
-	b: AggregatedMatrixItem,
+	left: AggregatedMatrixItem,
+	right: AggregatedMatrixItem,
 ): number {
-	const keyA = buildAggregateKey(a.machineProfileId, a);
-	const keyB = buildAggregateKey(b.machineProfileId, b);
-	if (keyA !== keyB) return keyA.localeCompare(keyB);
-	if (a.sourceCompletedAt !== b.sourceCompletedAt) {
-		return a.sourceCompletedAt.localeCompare(b.sourceCompletedAt);
+	const leftKey = buildAggregateKey(left.machineProfileKey, left);
+	const rightKey = buildAggregateKey(right.machineProfileKey, right);
+	if (leftKey !== rightKey) return leftKey.localeCompare(rightKey);
+	if (left.sourceCompletedAt !== right.sourceCompletedAt) {
+		return left.sourceCompletedAt.localeCompare(right.sourceCompletedAt);
 	}
-	return a.sourceRunId.localeCompare(b.sourceRunId);
+	return left.sourceRunId.localeCompare(right.sourceRunId);
+}
+
+/**
+ * Resolves checkpoint/machine/provenance metadata from run/plan artifacts.
+ *
+ * @param input - Run plus optional plan artifact
+ * @returns Normalized run metadata
+ */
+export function resolveRunMetadata(input: AggregateRunInput): ResolvedRunMetadata {
+	const { run, plan } = input;
+	const checkpointId =
+		run.benchmarkCheckpoint?.checkpointId ?? plan?.benchmarkCheckpoint?.checkpointId;
+	const machine =
+		migrateLegacyMachineProfile(run.machine) ??
+		migrateLegacyMachineProfile(plan?.machine);
+	const verificationStatus =
+		run.provenance?.verificationStatus ??
+		plan?.provenance?.verificationStatus ??
+		"self_reported";
+	const isLegacy = !checkpointId || !machine?.profileKey;
+
+	return {
+		checkpointId,
+		machineProfileKey: machine?.profileKey,
+		machineProfileLabel: machine?.profileLabel,
+		machineInstanceId: machine?.instanceId,
+		machineDisplayLabel: machine?.displayLabel,
+		verificationStatus,
+		isLegacy,
+	};
 }
 
 /**
@@ -297,52 +320,71 @@ export function aggregateRunsForCheckpoint(
 	runs: AggregateRunInput[],
 	checkpointId: string,
 ): CheckpointAggregate {
+	const resolvedRuns = runs.map((input) => ({
+		input,
+		metadata: resolveRunMetadata(input),
+	}));
 	const deduped = new Map<
 		string,
 		{ timestamp: number; aggregated: AggregatedMatrixItem }
 	>();
-	const matchedRuns = runs.filter((input) => {
-		const metadata = resolveRunMetadata(input);
-		return metadata.checkpointId === checkpointId;
-	});
+	const matchedRuns = resolvedRuns.filter(
+		({ metadata }) => metadata.checkpointId === checkpointId,
+	);
 
 	let rawItems = 0;
+	const profileRunSet = new Map<string, Set<string>>();
+	const profileInstanceSet = new Map<string, Set<string>>();
 
-	for (const input of matchedRuns) {
-		const metadata = resolveRunMetadata(input);
-		const machineProfileId = metadata.machineProfileId ?? `legacy-${input.run.runId}`;
+	for (const { input, metadata } of matchedRuns) {
+		const machineProfileKey = metadata.machineProfileKey ?? `legacy-${input.run.runId}`;
+		const runsForProfile = profileRunSet.get(machineProfileKey) ?? new Set<string>();
+		runsForProfile.add(input.run.runId);
+		profileRunSet.set(machineProfileKey, runsForProfile);
+		if (metadata.machineInstanceId) {
+			const instances = profileInstanceSet.get(machineProfileKey) ?? new Set<string>();
+			instances.add(metadata.machineInstanceId);
+			profileInstanceSet.set(machineProfileKey, instances);
+		}
 
 		for (const item of input.run.items) {
 			rawItems++;
-			const key = buildAggregateKey(machineProfileId, item);
+			const key = buildAggregateKey(machineProfileKey, item);
 			const timestamp = resolveItemTimestamp(input.run, item);
-			const sourceCompletedAt =
-				item.completedAt ??
-				item.startedAt ??
-				input.run.completedAt ??
-				input.run.startedAt;
 			const aggregated: AggregatedMatrixItem = {
 				...item,
-				machineProfileId,
-				...(metadata.machineLabel ? { machineLabel: metadata.machineLabel } : {}),
+				machineProfileKey,
+				machineProfileId: machineProfileKey,
+				...(metadata.machineProfileLabel
+					? { machineProfileLabel: metadata.machineProfileLabel }
+					: {}),
+				...(metadata.machineDisplayLabel ?? metadata.machineProfileLabel
+					? {
+							machineLabel:
+								metadata.machineDisplayLabel ?? metadata.machineProfileLabel,
+						}
+					: {}),
+				...(metadata.machineInstanceId
+					? { machineInstanceId: metadata.machineInstanceId }
+					: {}),
+				...(metadata.machineDisplayLabel
+					? { machineDisplayLabel: metadata.machineDisplayLabel }
+					: {}),
 				verificationStatus: metadata.verificationStatus,
 				sourceRunId: input.run.runId,
-				sourceCompletedAt,
+				sourceCompletedAt:
+					item.completedAt ??
+					item.startedAt ??
+					input.run.completedAt ??
+					input.run.startedAt ??
+					"",
 			};
 
 			const previous = deduped.get(key);
-			if (!previous) {
-				deduped.set(key, { timestamp, aggregated });
-				continue;
-			}
-
-			const shouldReplace =
-				compareAggregateCandidates(
-					{ timestamp, aggregated },
-					previous,
-				) > 0;
-
-			if (shouldReplace) {
+			if (
+				!previous ||
+				compareAggregateCandidates({ timestamp, aggregated }, previous) > 0
+			) {
 				deduped.set(key, { timestamp, aggregated });
 			}
 		}
@@ -351,53 +393,72 @@ export function aggregateRunsForCheckpoint(
 	const items = [...deduped.values()]
 		.map((entry) => entry.aggregated)
 		.sort(sortAggregatedItems);
-
-	const machineRunSet = new Map<string, Set<string>>();
 	const machineSummary = new Map<
 		string,
-		{ machineLabel?: string; verificationStatus: VerificationStatus; itemCount: number }
+		{ machineProfileLabel?: string; verificationStatus: VerificationStatus; itemCount: number }
 	>();
 
-	for (const input of matchedRuns) {
-		const metadata = resolveRunMetadata(input);
-		const machineProfileId = metadata.machineProfileId ?? `legacy-${input.run.runId}`;
-		const runsForMachine = machineRunSet.get(machineProfileId) ?? new Set<string>();
-		runsForMachine.add(input.run.runId);
-		machineRunSet.set(machineProfileId, runsForMachine);
+	for (const { input, metadata } of matchedRuns) {
+		const machineProfileKey = metadata.machineProfileKey ?? `legacy-${input.run.runId}`;
+		const existing = machineSummary.get(machineProfileKey);
+		if (existing) {
+			existing.verificationStatus = mergeVerificationStatus(
+				existing.verificationStatus,
+				metadata.verificationStatus,
+			);
+			if (!existing.machineProfileLabel && metadata.machineProfileLabel) {
+				existing.machineProfileLabel = metadata.machineProfileLabel;
+			}
+			continue;
+		}
+		machineSummary.set(machineProfileKey, {
+			machineProfileLabel: metadata.machineProfileLabel,
+			verificationStatus: metadata.verificationStatus,
+			itemCount: 0,
+		});
 	}
 
 	for (const item of items) {
-		const current = machineSummary.get(item.machineProfileId);
+		const current = machineSummary.get(item.machineProfileKey);
 		if (!current) {
-			machineSummary.set(item.machineProfileId, {
-				machineLabel: item.machineLabel,
+			machineSummary.set(item.machineProfileKey, {
+				machineProfileLabel: item.machineProfileLabel,
 				verificationStatus: item.verificationStatus,
 				itemCount: 1,
 			});
 			continue;
 		}
+		current.verificationStatus = mergeVerificationStatus(
+			current.verificationStatus,
+			item.verificationStatus,
+		);
+		if (!current.machineProfileLabel && item.machineProfileLabel) {
+			current.machineProfileLabel = item.machineProfileLabel;
+		}
 		current.itemCount += 1;
 	}
 
 	const machines: MachineAggregateSummary[] = [...machineSummary.entries()]
-		.map(([machineProfileId, value]) => ({
-			machineProfileId,
-			...(value.machineLabel ? { machineLabel: value.machineLabel } : {}),
+		.map(([machineProfileKey, value]) => ({
+			machineProfileKey,
+			machineProfileId: machineProfileKey,
+			...(value.machineProfileLabel
+				? { machineProfileLabel: value.machineProfileLabel }
+				: {}),
+			...(value.machineProfileLabel
+				? { machineLabel: value.machineProfileLabel }
+				: {}),
 			verificationStatus: value.verificationStatus,
-			runCount: machineRunSet.get(machineProfileId)?.size ?? 0,
+			runCount: profileRunSet.get(machineProfileKey)?.size ?? 0,
 			itemCount: value.itemCount,
+			instanceCount: profileInstanceSet.get(machineProfileKey)?.size ?? 0,
 		}))
-		.sort((a, b) => a.machineProfileId.localeCompare(b.machineProfileId));
-
-	const automatedScoreItems = items.filter(
-		(item) => item.automatedScore !== undefined,
-	).length;
-	const frontierEvalItems = items.filter(
-		(item) => item.frontierEval !== undefined,
-	).length;
+		.sort((left, right) =>
+			left.machineProfileKey.localeCompare(right.machineProfileKey),
+		);
 
 	return {
-		schemaVersion: 1,
+		schemaVersion: 2,
 		generatedAt: new Date().toISOString(),
 		checkpointId,
 		summary: {
@@ -406,8 +467,13 @@ export function aggregateRunsForCheckpoint(
 			rawItems,
 			dedupedItems: items.length,
 			machines: machines.length,
-			automatedScoreItems,
-			frontierEvalItems,
+			instances: new Set(
+				matchedRuns
+					.map(({ metadata }) => metadata.machineInstanceId)
+					.filter((value): value is string => Boolean(value)),
+			).size,
+			automatedScoreItems: items.filter((item) => item.automatedScore).length,
+			frontierEvalItems: items.filter((item) => item.frontierEval).length,
 		},
 		machines,
 		items,
@@ -423,23 +489,32 @@ export function aggregateRunsForCheckpoint(
 export function summarizeCheckpoints(runs: AggregateRunInput[]): CheckpointSummary[] {
 	const grouped = new Map<
 		string,
-		{ runIds: Set<string>; machineIds: Set<string>; rawItemCount: number; latestRunAt: string }
+		{
+			runIds: Set<string>;
+			profileKeys: Set<string>;
+			instanceIds: Set<string>;
+			rawItemCount: number;
+			latestRunAt: string;
+		}
 	>();
 
 	for (const input of runs) {
 		const metadata = resolveRunMetadata(input);
 		if (!metadata.checkpointId) continue;
-
-		const machineProfileId = metadata.machineProfileId ?? `legacy-${input.run.runId}`;
+		const profileKey = metadata.machineProfileKey ?? `legacy-${input.run.runId}`;
 		const group = grouped.get(metadata.checkpointId) ?? {
 			runIds: new Set<string>(),
-			machineIds: new Set<string>(),
+			profileKeys: new Set<string>(),
+			instanceIds: new Set<string>(),
 			rawItemCount: 0,
 			latestRunAt: "",
 		};
 
 		group.runIds.add(input.run.runId);
-		group.machineIds.add(machineProfileId);
+		group.profileKeys.add(profileKey);
+		if (metadata.machineInstanceId) {
+			group.instanceIds.add(metadata.machineInstanceId);
+		}
 		group.rawItemCount += input.run.items.length;
 		const candidateLatest = input.run.completedAt || input.run.startedAt;
 		if (candidateLatest > group.latestRunAt) {
@@ -453,8 +528,9 @@ export function summarizeCheckpoints(runs: AggregateRunInput[]): CheckpointSumma
 			checkpointId,
 			runCount: value.runIds.size,
 			rawItemCount: value.rawItemCount,
-			machineCount: value.machineIds.size,
+			machineCount: value.profileKeys.size,
+			instanceCount: value.instanceIds.size,
 			latestRunAt: value.latestRunAt,
 		}))
-		.sort((a, b) => b.latestRunAt.localeCompare(a.latestRunAt));
+		.sort((left, right) => right.latestRunAt.localeCompare(left.latestRunAt));
 }

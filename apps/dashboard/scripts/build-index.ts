@@ -8,9 +8,15 @@
  *   bun run apps/dashboard/scripts/build-index.ts --source-dir results --output-dir apps/dashboard/public/results
  */
 
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
+import {
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
+} from "../../../src/lib/machine-profile/legacy.js";
 import {
 	type AggregateRunInput,
 	aggregateRunsForCheckpoint,
@@ -18,9 +24,8 @@ import {
 	summarizeCheckpoints,
 } from "../../../src/results/aggregate.js";
 import {
+	type RunPlan,
 	type RunResult,
-	RunPlanSchema,
-	RunResultSchema,
 } from "../../../src/schemas/index.js";
 import type {
 	DashboardIndex,
@@ -28,9 +33,10 @@ import type {
 	RunListItem,
 } from "../src/lib/types.js";
 
-const DEFAULT_SOURCE_RESULTS_DIR = resolve(import.meta.dir, "../../../results");
-const DEFAULT_OUTPUT_RESULTS_DIR = resolve(import.meta.dir, "../public/results");
-const DEFAULT_PROJECT_ROOT = resolve(import.meta.dir, "../../..");
+const SCRIPT_DIR = fileURLToPath(new URL(".", import.meta.url));
+const DEFAULT_SOURCE_RESULTS_DIR = resolve(SCRIPT_DIR, "../../../results");
+const DEFAULT_OUTPUT_RESULTS_DIR = resolve(SCRIPT_DIR, "../public/results");
+const DEFAULT_PROJECT_ROOT = resolve(SCRIPT_DIR, "../../..");
 
 /** Output metadata from dashboard index build. */
 export interface BuildDashboardIndexArtifactsResult {
@@ -47,8 +53,24 @@ export interface BuildDashboardIndexArtifactsOptions {
 	latestCheckpointId?: string;
 }
 
-const PUBLIC_PATH_PREFIX_PATTERN =
-	/(?:\/Users\/|\/private\/var\/|\/var\/|\/tmp\/)[^\s"'`()<>]+/g;
+/**
+ * Returns true when `candidate` is equal to or nested inside `basePath`.
+ *
+ * @param basePath - Base directory
+ * @param candidate - Candidate path to compare
+ * @returns True when the candidate is the same path or a descendant
+ */
+function isSameOrNestedPath(basePath: string, candidate: string): boolean {
+	const resolvedBase = resolve(basePath);
+	const resolvedCandidate = resolve(candidate);
+	const rel = relative(resolvedBase, resolvedCandidate);
+	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+const PUBLIC_PATH_PATTERNS = [
+	/(?:\/Users\/|\/home\/|\/root\/|\/workspace\/|\/workspaces\/|\/Volumes\/|\/mnt\/|\/private\/var\/|\/var\/|\/tmp\/)[^\s"'`()<>]+/g,
+	/(?<![A-Za-z])[A-Za-z]:[\\/][^\s"'`()<>]+/g,
+] as const;
 const STACK_FRAME_PATTERN = /^\s*at\s+(?:.+\s\(|\S+:\d+:\d+)/;
 
 const KNOWN_WORKSPACE_SEGMENTS = [
@@ -69,6 +91,8 @@ const KNOWN_WORKSPACE_SEGMENTS = [
 	"src/",
 	"trash/",
 ] as const;
+const INTERNAL_TRACE_PATTERN =
+	/THOUGHT:|"sessionID"|"type":"tool_use"|"type":"step_start"|"type":"step_finish"/i;
 
 /**
  * Rewrites one absolute host path into a public-safe placeholder or stable workspace-relative path.
@@ -78,15 +102,16 @@ const KNOWN_WORKSPACE_SEGMENTS = [
  */
 function sanitizePublicPath(rawPath: string): string {
 	const withoutLineColumn = rawPath.replace(/:\d+(?::\d+)?$/, "");
+	const normalizedPath = withoutLineColumn.replaceAll("\\", "/");
 	for (const segment of KNOWN_WORKSPACE_SEGMENTS) {
 		const marker = `/${segment}`;
-		const segmentIndex = withoutLineColumn.indexOf(marker);
+		const segmentIndex = normalizedPath.indexOf(marker);
 		if (segmentIndex !== -1) {
-			return withoutLineColumn.slice(segmentIndex + 1);
+			return normalizedPath.slice(segmentIndex + 1);
 		}
 	}
 
-	const fileName = basename(withoutLineColumn);
+	const fileName = basename(normalizedPath);
 	return fileName.length > 0 ? `[path:${fileName}]` : "[path]";
 }
 
@@ -97,15 +122,48 @@ function sanitizePublicPath(rawPath: string): string {
  * @returns Sanitized text safe for dashboard publication
  */
 function sanitizePublishedText(value: string): string {
-	return value
+	const sanitized = value
 		.split("\n")
 		.filter((line) => !STACK_FRAME_PATTERN.test(line))
 		.map((line) =>
-			line.replaceAll(PUBLIC_PATH_PREFIX_PATTERN, (matchedPath) =>
-				sanitizePublicPath(matchedPath),
+			PUBLIC_PATH_PATTERNS.reduce(
+				(nextLine, pattern) =>
+					nextLine.replaceAll(pattern, (matchedPath) =>
+						sanitizePublicPath(matchedPath),
+					),
+				line,
 			),
 		)
 		.join("\n");
+	return sanitized.replace(
+		/(^|[\s"'`(])([A-Za-z0-9._/-]+)\[path:([^\]]+)\]/g,
+		(_match, prefix: string, basePath: string, nestedPath: string) =>
+			`${prefix}[path:${basePath}/${nestedPath}]`,
+	);
+}
+
+/**
+ * Recursively sanitizes strings inside arbitrary JSON-like published payloads.
+ *
+ * @param value - Unknown JSON-like value
+ * @returns Sanitized clone
+ */
+function sanitizePublishedValue(value: unknown): unknown {
+	if (typeof value === "string") {
+		return sanitizePublishedText(value);
+	}
+	if (Array.isArray(value)) {
+		return value.map((entry) => sanitizePublishedValue(entry));
+	}
+	if (typeof value === "object" && value !== null) {
+		return Object.fromEntries(
+			Object.entries(value).map(([key, entry]) => [
+				key,
+				sanitizePublishedValue(entry),
+			]),
+		);
+	}
+	return value;
 }
 
 /**
@@ -115,8 +173,16 @@ function sanitizePublishedText(value: string): string {
  * @returns Sanitized run artifact
  */
 function sanitizePublishedRun(run: RunResult): RunResult {
-	return {
+	return sanitizePublishedValue({
 		...run,
+		...(run.machine
+			? {
+					machine: {
+						...run.machine,
+						instanceId: sanitizeMachineInstanceId(run.machine.instanceId),
+					},
+				}
+			: {}),
 		items: run.items.map((item) => ({
 			...item,
 			...(item.generation
@@ -125,12 +191,23 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 							...item.generation,
 							...(item.generation.output
 								? {
-										output: sanitizePublishedText(item.generation.output),
+										output: INTERNAL_TRACE_PATTERN.test(item.generation.output)
+											? "[redacted internal tool transcript]"
+											: sanitizePublishedText(item.generation.output),
 									}
 								: {}),
 							...(item.generation.error
 								? {
-										error: sanitizePublishedText(item.generation.error),
+										error: INTERNAL_TRACE_PATTERN.test(item.generation.error)
+											? "[redacted internal tool transcript]"
+											: sanitizePublishedText(item.generation.error),
+									}
+								: {}),
+							...(item.generation.codeFilePath
+								? {
+										sourcePathToken: sanitizePublicPath(
+											item.generation.codeFilePath,
+										),
 									}
 								: {}),
 							codeFilePath: undefined,
@@ -141,7 +218,11 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 				? {
 						generationFailure: {
 							...item.generationFailure,
-							message: sanitizePublishedText(item.generationFailure.message),
+							message: INTERNAL_TRACE_PATTERN.test(
+								item.generationFailure.message,
+							)
+								? "[redacted internal tool transcript]"
+								: sanitizePublishedText(item.generationFailure.message),
 						},
 					}
 				: {}),
@@ -149,7 +230,11 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 				? {
 						scoringFailure: {
 							...item.scoringFailure,
-							message: sanitizePublishedText(item.scoringFailure.message),
+							message: INTERNAL_TRACE_PATTERN.test(
+								item.scoringFailure.message,
+							)
+								? "[redacted internal tool transcript]"
+								: sanitizePublishedText(item.scoringFailure.message),
 						},
 					}
 				: {}),
@@ -157,12 +242,75 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 				? {
 						frontierEvalFailure: {
 							...item.frontierEvalFailure,
-							message: sanitizePublishedText(item.frontierEvalFailure.message),
+							message: INTERNAL_TRACE_PATTERN.test(
+								item.frontierEvalFailure.message,
+							)
+								? "[redacted internal tool transcript]"
+								: sanitizePublishedText(item.frontierEvalFailure.message),
 						},
 					}
 				: {}),
 		})),
+	}) as RunResult;
+}
+
+/**
+ * Converts a raw machine instance identifier into a deterministic published token.
+ *
+ * @param machineInstanceId - Raw machine instance identifier
+ * @returns Stable scrubbed token
+ */
+function sanitizeMachineInstanceId(machineInstanceId: string): string {
+	if (/^machine-[0-9a-f]{12}$/i.test(machineInstanceId)) {
+		return machineInstanceId;
+	}
+	return `machine-${createHash("sha256").update(machineInstanceId).digest("hex").slice(0, 12)}`;
+}
+
+/**
+ * Removes host-specific machine instance identifiers from aggregate payloads.
+ *
+ * @param aggregate - Aggregate payload to sanitize
+ * @returns Aggregate payload safe for publication
+ */
+function sanitizePublishedAggregate(
+	aggregate: LeaderboardAggregate,
+): LeaderboardAggregate {
+	return {
+		...aggregate,
+		items: aggregate.items.map((item) => ({
+			...item,
+			machineInstanceId: item.machineInstanceId
+				? sanitizeMachineInstanceId(item.machineInstanceId)
+				: undefined,
+		})),
 	};
+}
+
+/**
+ * Removes host-specific details from a plan before publishing.
+ *
+ * @param plan - Parsed plan artifact
+ * @returns Sanitized plan artifact
+ */
+function sanitizePublishedPlan(plan: RunPlan): RunPlan {
+	const sanitizedPlan = sanitizePublishedValue(plan) as RunPlan;
+	if (!sanitizedPlan.machine) {
+		return sanitizedPlan;
+	}
+
+	return {
+		...sanitizedPlan,
+		machine: {
+			...sanitizedPlan.machine,
+			instanceId: sanitizeMachineInstanceId(sanitizedPlan.machine.instanceId),
+			displayLabel: undefined,
+		},
+	};
+}
+
+interface PublishedRunBundle extends AggregateRunInput {
+	runDirName: string;
 }
 
 /**
@@ -248,36 +396,50 @@ export function resolveResultsDir(argv: string[]): {
  */
 async function readRunBundle(
 	runDir: string,
-): Promise<AggregateRunInput | undefined> {
+): Promise<PublishedRunBundle | undefined> {
 	const runJsonPath = join(runDir, "run.json");
+	const runDirName = basename(runDir);
+	const runContent = await readFile(runJsonPath, "utf-8").catch((error) => {
+		throw new Error(
+			`readRunBundle failed to read run.json for ${runDirName}: ${(error as Error).message}`,
+		);
+	});
+	let run: RunResult;
 	try {
-		const content = await readFile(runJsonPath, "utf-8");
-		const runParsed = RunResultSchema.safeParse(JSON.parse(content) as unknown);
-		if (!runParsed.success) {
-			return undefined;
-		}
-
-		const planJsonPath = join(runDir, "plan.json");
-		let plan: AggregateRunInput["plan"] | undefined;
-		try {
-			const planContent = await readFile(planJsonPath, "utf-8");
-			const planParsed = RunPlanSchema.safeParse(
-				JSON.parse(planContent) as unknown,
-			);
-			if (planParsed.success) {
-				plan = planParsed.data;
-			}
-		} catch {
-			plan = undefined;
-		}
-
-		return {
-			run: sanitizePublishedRun(runParsed.data),
-			...(plan ? { plan } : {}),
-		};
-	} catch {
-		return undefined;
+		run = sanitizePublishedRun(
+			parseKnownRunPayload(JSON.parse(runContent) as unknown),
+		);
+	} catch (error) {
+		throw new Error(
+			`readRunBundle failed to parse run.json for ${runDirName}: ${(error as Error).message}`,
+		);
 	}
+
+	const planJsonPath = join(runDir, "plan.json");
+	let plan: AggregateRunInput["plan"] | undefined;
+	try {
+		const planContent = await readFile(planJsonPath, "utf-8");
+		try {
+			plan = sanitizePublishedPlan(
+				parseKnownPlanPayload(JSON.parse(planContent) as unknown),
+			);
+		} catch (error) {
+			throw new Error(
+				`readRunBundle failed to parse plan.json for ${runDirName}: ${(error as Error).message}`,
+			);
+		}
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			throw error;
+		}
+		plan = undefined;
+	}
+
+	return {
+		runDirName,
+		run,
+		...(plan ? { plan } : {}),
+	};
 }
 
 /**
@@ -296,10 +458,34 @@ function buildRunListItems(bundles: AggregateRunInput[]): RunListItem[] {
 			durationMs: bundle.run.durationMs,
 			summary: bundle.run.summary,
 			...(metadata.checkpointId ? { checkpointId: metadata.checkpointId } : {}),
-			...(metadata.machineProfileId
-				? { machineProfileId: metadata.machineProfileId }
+			...(metadata.machineProfileKey
+				? { machineProfileKey: metadata.machineProfileKey }
 				: {}),
-			...(metadata.machineLabel ? { machineLabel: metadata.machineLabel } : {}),
+			...(metadata.machineProfileKey
+				? {
+						// Backward-compatible alias for older dashboard consumers.
+						machineProfileId: metadata.machineProfileKey,
+					}
+				: {}),
+			...(metadata.machineProfileLabel
+				? { machineProfileLabel: metadata.machineProfileLabel }
+				: {}),
+			...(metadata.machineDisplayLabel ?? metadata.machineProfileLabel
+				? {
+						machineLabel:
+							metadata.machineDisplayLabel ?? metadata.machineProfileLabel,
+					}
+				: {}),
+			...(metadata.machineInstanceId
+				? {
+						machineInstanceId: sanitizeMachineInstanceId(
+							metadata.machineInstanceId,
+						),
+					}
+				: {}),
+			...(metadata.machineDisplayLabel
+				? { machineDisplayLabel: metadata.machineDisplayLabel }
+				: {}),
 			...(metadata.verificationStatus
 				? { verificationStatus: metadata.verificationStatus }
 				: {}),
@@ -311,6 +497,36 @@ function buildRunListItems(bundles: AggregateRunInput[]): RunListItem[] {
 		(a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
 	);
 	return runs;
+}
+
+/**
+ * Writes sanitized run/plan artifacts into the published results tree.
+ *
+ * @param bundles - Parsed sanitized bundles
+ * @param outputResultsDir - Published results directory
+ */
+async function writePublishedRunBundles(
+	bundles: PublishedRunBundle[],
+	outputResultsDir: string,
+): Promise<void> {
+	await rm(outputResultsDir, { recursive: true, force: true });
+	await mkdir(outputResultsDir, { recursive: true });
+	for (const bundle of bundles) {
+		const outputRunDir = join(outputResultsDir, bundle.runDirName);
+		await mkdir(outputRunDir, { recursive: true });
+		await writeFile(
+			join(outputRunDir, "run.json"),
+			`${JSON.stringify(bundle.run, null, 2)}\n`,
+			"utf-8",
+		);
+		if (bundle.plan) {
+			await writeFile(
+				join(outputRunDir, "plan.json"),
+				`${JSON.stringify(bundle.plan, null, 2)}\n`,
+				"utf-8",
+			);
+		}
+	}
 }
 
 /**
@@ -352,11 +568,22 @@ export async function buildDashboardIndexArtifacts(
 	const indexPath = join(outputResultsDir, "index.json");
 	const aggregatesDir = join(outputResultsDir, "aggregates");
 
-	await mkdir(outputResultsDir, { recursive: true });
-	await mkdir(aggregatesDir, { recursive: true });
+	if (
+		isSameOrNestedPath(sourceResultsDir, outputResultsDir) ||
+		isSameOrNestedPath(outputResultsDir, sourceResultsDir)
+	) {
+		throw new Error(
+			`Dashboard source and output directories must not overlap: source="${sourceResultsDir}" output="${outputResultsDir}"`,
+		);
+	}
+	if (isSameOrNestedPath(sourceResultsDir, aggregatesDir)) {
+		throw new Error(
+			`Dashboard aggregates directory must not be inside the source results tree: source="${sourceResultsDir}" aggregates="${aggregatesDir}"`,
+		);
+	}
 
 	const entries = await readdir(sourceResultsDir, { withFileTypes: true });
-	const bundles: AggregateRunInput[] = [];
+	const bundles: PublishedRunBundle[] = [];
 	for (const entry of entries) {
 		if (!entry.isDirectory() || entry.name === "aggregates") continue;
 		const runDir = join(sourceResultsDir, entry.name);
@@ -365,6 +592,8 @@ export async function buildDashboardIndexArtifacts(
 			bundles.push(bundle);
 		}
 	}
+	await writePublishedRunBundles(bundles, outputResultsDir);
+	await mkdir(aggregatesDir, { recursive: true });
 
 	const checkpoints = summarizeCheckpoints(bundles);
 	const preferredLatestCheckpointId =
@@ -377,7 +606,7 @@ export async function buildDashboardIndexArtifacts(
 	const runs = buildRunListItems(bundles);
 
 	const index: DashboardIndex = {
-		schemaVersion: 2,
+		schemaVersion: 3,
 		generatedAt: new Date().toISOString(),
 		latestCheckpointId,
 		runs,
@@ -388,9 +617,11 @@ export async function buildDashboardIndexArtifacts(
 
 	let aggregatesWritten = 0;
 	for (const checkpoint of checkpoints) {
-		const aggregate = aggregateRunsForCheckpoint(
-			bundles,
-			checkpoint.checkpointId,
+		const aggregate = sanitizePublishedAggregate(
+			aggregateRunsForCheckpoint(
+				bundles,
+				checkpoint.checkpointId,
+			) as LeaderboardAggregate,
 		);
 		await writeFile(
 			join(aggregatesDir, `${checkpoint.checkpointId}.json`),
@@ -400,9 +631,11 @@ export async function buildDashboardIndexArtifacts(
 		aggregatesWritten += 1;
 	}
 
-	const latestAggregate = aggregateRunsForCheckpoint(
-		bundles,
-		latestCheckpointId,
+	const latestAggregate = sanitizePublishedAggregate(
+		aggregateRunsForCheckpoint(
+			bundles,
+			latestCheckpointId,
+		) as LeaderboardAggregate,
 	);
 	await writeFile(
 		join(aggregatesDir, `${latestCheckpointId}.json`),

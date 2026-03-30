@@ -6,11 +6,13 @@
  * All fetched JSON is validated with Zod schemas at this boundary.
  */
 import {
-	DashboardIndexLegacyOrV2Schema,
+	DashboardIndexLegacyOrCurrentSchema,
 	LeaderboardAggregateSchema,
-	RunPlanSchema,
-	RunResultSchema,
 } from "./schemas";
+import {
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
+} from "../../../../src/lib/machine-profile/legacy.js";
 import type {
 	DashboardIndex,
 	LeaderboardAggregate,
@@ -33,17 +35,17 @@ interface FetchRequestOptions {
 }
 
 /**
- * Normalizes legacy and v2 index payloads to a stable v2 shape.
+ * Normalizes legacy and v2 index payloads to a stable v3 shape.
  *
  * @param raw - Parsed and validated index payload
  * @returns Normalized dashboard index object
  */
 function normalizeDashboardIndex(
-	raw: ReturnType<typeof DashboardIndexLegacyOrV2Schema.parse>,
+	raw: ReturnType<typeof DashboardIndexLegacyOrCurrentSchema.parse>,
 ): DashboardIndex {
 	if (Array.isArray(raw)) {
 		return {
-			schemaVersion: 2,
+			schemaVersion: 3,
 			generatedAt: new Date(0).toISOString(),
 			latestCheckpointId: null,
 			runs: raw,
@@ -63,7 +65,7 @@ function createEmptyAggregate(
 	checkpointId: string | null,
 ): LeaderboardAggregate {
 	return {
-		schemaVersion: 1,
+		schemaVersion: 2,
 		generatedAt: new Date(0).toISOString(),
 		checkpointId: checkpointId ?? "unknown",
 		summary: {
@@ -72,6 +74,7 @@ function createEmptyAggregate(
 			rawItems: 0,
 			dedupedItems: 0,
 			machines: 0,
+			instances: 0,
 			automatedScoreItems: 0,
 			frontierEvalItems: 0,
 		},
@@ -101,14 +104,14 @@ export async function fetchDashboardIndex(
 				"No runs index found. Run `bun dashboard:index` to generate apps/dashboard/public/results/index.json.",
 			);
 			const fallbackIndex = {
-				schemaVersion: 2,
+				schemaVersion: 3,
 				generatedAt: new Date(0).toISOString(),
 				latestCheckpointId: null,
 				runs: [],
 				checkpoints: [],
 			};
 			const fallbackParse =
-				DashboardIndexLegacyOrV2Schema.safeParse(fallbackIndex);
+				DashboardIndexLegacyOrCurrentSchema.safeParse(fallbackIndex);
 			if (!fallbackParse.success) {
 				throw new Error(
 					`Invalid dashboard index fallback payload: ${fallbackParse.error.message}`,
@@ -119,7 +122,7 @@ export async function fetchDashboardIndex(
 		throw new Error(`Failed to fetch runs index: ${response.status}`);
 	}
 	const data = await response.json();
-	const parsed = DashboardIndexLegacyOrV2Schema.parse(data);
+	const parsed = DashboardIndexLegacyOrCurrentSchema.parse(data);
 	return normalizeDashboardIndex(parsed);
 }
 
@@ -157,7 +160,7 @@ export async function fetchRun(
 		throw new Error(`Failed to fetch run ${runId}: ${response.status}`);
 	}
 	const data = await response.json();
-	return RunResultSchema.parse(data);
+	return parseKnownRunPayload(data);
 }
 
 /**
@@ -180,7 +183,7 @@ export async function fetchPlan(
 		throw new Error(`Failed to fetch plan ${runId}: ${response.status}`);
 	}
 	const data = await response.json();
-	return RunPlanSchema.parse(data);
+	return parseKnownPlanPayload(data);
 }
 
 /**

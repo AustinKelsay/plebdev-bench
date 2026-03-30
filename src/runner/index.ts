@@ -248,6 +248,8 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 					id: item.id,
 					runtime: item.runtime,
 					model: item.model,
+					...(item.modelAlias ? { modelAlias: item.modelAlias } : {}),
+					...(item.modelProfile ? { modelProfile: item.modelProfile } : {}),
 					harness: item.harness,
 					test: item.test,
 					passType: item.passType,

@@ -3,7 +3,7 @@
  * Exports: compareRuns, CompareResult, MatchedItem
  *
  * Performs an outer join on matrix items by composite key:
- * model|harness|test|passType
+ * canonicalModel|runtime|harness|test|passType
  *
  * Outputs:
  * - Matched items with deltas
@@ -11,16 +11,35 @@
  * - Items only in run B
  */
 
-import type { RunResult, MatrixItemResult, AutomatedScore, FrontierEval } from "../schemas/index.js";
+import type {
+	AutomatedScore,
+	FrontierEval,
+	MatrixItemResult,
+	RunResult,
+} from "../schemas/index.js";
+import { getModelIdentityKey } from "../lib/model-profiles.js";
+import {
+	hasCompleteSignalAssessments,
+	isTaintedItem,
+} from "../lib/signal-assessment.js";
 
 /** Composite key for matching items between runs. */
 function buildCompareKey(item: {
 	model: string;
+	runtime: string;
+	modelAlias?: string;
+	modelProfile?: MatrixItemResult["modelProfile"];
 	harness: string;
 	test: string;
 	passType: string;
 }): string {
-	return `${item.model}|${item.harness}|${item.test}|${item.passType}`;
+	const modelKey = getModelIdentityKey(
+		item.model,
+		item.modelProfile,
+		item.modelAlias,
+	);
+	const runtimeVariantKey = item.modelProfile?.variant.variantKey ?? item.model;
+	return `${modelKey}|${item.runtime}|${runtimeVariantKey}|${item.harness}|${item.test}|${item.passType}`;
 }
 
 /** Delta for automated score. */
@@ -76,9 +95,33 @@ export interface CompareSummary {
 		passRateDelta: number; // Overall pass rate change
 		totalTestsDelta: number;
 	} | null;
+	trustedScoringDelta: {
+		passRateDelta: number;
+		totalTestsDelta: number;
+	} | null;
 	frontierEvalDelta: {
 		avgScoreDelta: number;
 	} | null;
+	trustedFrontierEvalDelta: {
+		avgScoreDelta: number;
+	} | null;
+	metricAvailability: {
+		scoring: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+		frontierEval: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+	};
+	signal: {
+		trustedMetricsAvailable: boolean;
+		taintedInA: number | null;
+		taintedInB: number | null;
+	};
 }
 
 /** Complete comparison result. */
@@ -97,12 +140,84 @@ export interface CompareResult {
 	onlyInB: MatrixItemResult[];
 }
 
+/** Aggregate scoring totals across matched items. */
+interface AggregateScoring {
+	passedTests: number;
+	totalTests: number;
+	passRate: number;
+}
+
+/** Aggregate frontier totals across matched items. */
+interface AggregateFrontier {
+	avgScore: number;
+	itemCount: number;
+}
+
 /**
  * Calculates pass rate as a percentage.
  */
 function calculatePassRate(score: AutomatedScore | undefined): number | null {
 	if (!score || score.total === 0) return null;
 	return (score.passed / score.total) * 100;
+}
+
+/**
+ * Computes aggregate scoring totals for one side of a matched comparison.
+ *
+ * @param matched - Matched rows to aggregate
+ * @param accessor - Reads one side's automated score
+ * @returns Aggregate scoring totals
+ */
+function computeAggregateScoring(
+	matched: readonly MatchedItem[],
+	accessor: (item: MatchedItem) => AutomatedScore | undefined,
+): AggregateScoring {
+	let passedTests = 0;
+	let totalTests = 0;
+
+	for (const item of matched) {
+		const score = accessor(item);
+		if (!score) {
+			continue;
+		}
+		passedTests += score.passed;
+		totalTests += score.total;
+	}
+
+	return {
+		passedTests,
+		totalTests,
+		passRate: totalTests > 0 ? (passedTests / totalTests) * 100 : 0,
+	};
+}
+
+/**
+ * Computes aggregate frontier evaluation stats for one side of a comparison.
+ *
+ * @param matched - Matched rows to aggregate
+ * @param accessor - Reads one side's frontier eval
+ * @returns Aggregate frontier stats
+ */
+function computeAggregateFrontier(
+	matched: readonly MatchedItem[],
+	accessor: (item: MatchedItem) => FrontierEval | undefined,
+): AggregateFrontier {
+	let totalScore = 0;
+	let itemCount = 0;
+
+	for (const item of matched) {
+		const frontierEval = accessor(item);
+		if (!frontierEval) {
+			continue;
+		}
+		totalScore += frontierEval.score;
+		itemCount += 1;
+	}
+
+	return {
+		avgScore: itemCount > 0 ? totalScore / itemCount : 0,
+		itemCount,
+	};
 }
 
 /**
@@ -115,11 +230,11 @@ function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
 
 	// Automated score delta
 	let automatedScore: ScoreDelta | null = null;
-	if (a.automatedScore || b.automatedScore) {
-		const scoreA = a.automatedScore || { passed: 0, failed: 0, total: 0 };
-		const scoreB = b.automatedScore || { passed: 0, failed: 0, total: 0 };
-		const passRateA = calculatePassRate(a.automatedScore) ?? 0;
-		const passRateB = calculatePassRate(b.automatedScore) ?? 0;
+	if (a.automatedScore && b.automatedScore) {
+		const scoreA = a.automatedScore;
+		const scoreB = b.automatedScore;
+		const passRateA = calculatePassRate(scoreA) ?? 0;
+		const passRateB = calculatePassRate(scoreB) ?? 0;
 
 		automatedScore = {
 			passedDelta: scoreB.passed - scoreA.passed,
@@ -131,9 +246,9 @@ function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
 
 	// Frontier eval delta
 	let frontierEval: EvalDelta | null = null;
-	if (a.frontierEval || b.frontierEval) {
-		const scoreA = a.frontierEval?.score ?? 0;
-		const scoreB = b.frontierEval?.score ?? 0;
+	if (a.frontierEval && b.frontierEval) {
+		const scoreA = a.frontierEval.score;
+		const scoreB = b.frontierEval.score;
 		frontierEval = {
 			scoreDelta: scoreB - scoreA,
 		};
@@ -157,6 +272,8 @@ function computeSummary(
 	matched: MatchedItem[],
 	onlyInA: MatrixItemResult[],
 	onlyInB: MatrixItemResult[],
+	runAItems: MatrixItemResult[],
+	runBItems: MatrixItemResult[],
 ): CompareSummary {
 	// Count status changes
 	let improved = 0;
@@ -173,40 +290,95 @@ function computeSummary(
 
 	// Overall scoring delta
 	let scoringDelta: CompareSummary["scoringDelta"] = null;
-	const itemsWithScoreA = matched.filter((m) => m.itemA.automatedScore);
-	const itemsWithScoreB = matched.filter((m) => m.itemB.automatedScore);
+	let trustedScoringDelta: CompareSummary["trustedScoringDelta"] = null;
+	const matchedWithScoring = matched.filter(
+		(item) => item.itemA.automatedScore && item.itemB.automatedScore,
+	);
+	const rawScoringA = computeAggregateScoring(
+		matchedWithScoring,
+		(item) => item.itemA.automatedScore,
+	);
+	const rawScoringB = computeAggregateScoring(
+		matchedWithScoring,
+		(item) => item.itemB.automatedScore,
+	);
 
-	if (itemsWithScoreA.length > 0 || itemsWithScoreB.length > 0) {
-		const totalTestsA = itemsWithScoreA.reduce((acc, m) => acc + (m.itemA.automatedScore?.total ?? 0), 0);
-		const passedTestsA = itemsWithScoreA.reduce((acc, m) => acc + (m.itemA.automatedScore?.passed ?? 0), 0);
-		const totalTestsB = itemsWithScoreB.reduce((acc, m) => acc + (m.itemB.automatedScore?.total ?? 0), 0);
-		const passedTestsB = itemsWithScoreB.reduce((acc, m) => acc + (m.itemB.automatedScore?.passed ?? 0), 0);
-
-		const passRateA = totalTestsA > 0 ? (passedTestsA / totalTestsA) * 100 : 0;
-		const passRateB = totalTestsB > 0 ? (passedTestsB / totalTestsB) * 100 : 0;
-
+	if (matchedWithScoring.length > 0) {
 		scoringDelta = {
-			passRateDelta: passRateB - passRateA,
-			totalTestsDelta: totalTestsB - totalTestsA,
+			passRateDelta: rawScoringB.passRate - rawScoringA.passRate,
+			totalTestsDelta: rawScoringB.totalTests - rawScoringA.totalTests,
 		};
 	}
 
 	// Overall frontier eval delta
 	let frontierEvalDelta: CompareSummary["frontierEvalDelta"] = null;
-	const itemsWithEvalA = matched.filter((m) => m.itemA.frontierEval);
-	const itemsWithEvalB = matched.filter((m) => m.itemB.frontierEval);
+	let trustedFrontierEvalDelta: CompareSummary["trustedFrontierEvalDelta"] = null;
+	const matchedWithFrontierEval = matched.filter(
+		(item) => item.itemA.frontierEval && item.itemB.frontierEval,
+	);
+	const rawFrontierA = computeAggregateFrontier(
+		matchedWithFrontierEval,
+		(item) => item.itemA.frontierEval,
+	);
+	const rawFrontierB = computeAggregateFrontier(
+		matchedWithFrontierEval,
+		(item) => item.itemB.frontierEval,
+	);
 
-	if (itemsWithEvalA.length > 0 || itemsWithEvalB.length > 0) {
-		const avgScoreA = itemsWithEvalA.length > 0
-			? itemsWithEvalA.reduce((acc, m) => acc + (m.itemA.frontierEval?.score ?? 0), 0) / itemsWithEvalA.length
-			: 0;
-		const avgScoreB = itemsWithEvalB.length > 0
-			? itemsWithEvalB.reduce((acc, m) => acc + (m.itemB.frontierEval?.score ?? 0), 0) / itemsWithEvalB.length
-			: 0;
-
+	if (matchedWithFrontierEval.length > 0) {
 		frontierEvalDelta = {
-			avgScoreDelta: avgScoreB - avgScoreA,
+			avgScoreDelta: rawFrontierB.avgScore - rawFrontierA.avgScore,
 		};
+	}
+
+	const matchedItemsA = matched.map((item) => item.itemA);
+	const matchedItemsB = matched.map((item) => item.itemB);
+	const matchedMetricsComplete =
+		hasCompleteSignalAssessments(matchedItemsA) &&
+		hasCompleteSignalAssessments(matchedItemsB);
+	const trustedMetricsAvailable =
+		hasCompleteSignalAssessments(runAItems) &&
+		hasCompleteSignalAssessments(runBItems);
+
+	if (matchedMetricsComplete) {
+		const trustedMatched = matched.filter(
+			(match) => !isTaintedItem(match.itemA) && !isTaintedItem(match.itemB),
+		);
+		const trustedMatchedWithScoring = trustedMatched.filter(
+			(item) => item.itemA.automatedScore && item.itemB.automatedScore,
+		);
+		const trustedScoringA = computeAggregateScoring(
+			trustedMatchedWithScoring,
+			(item) => item.itemA.automatedScore,
+		);
+		const trustedScoringB = computeAggregateScoring(
+			trustedMatchedWithScoring,
+			(item) => item.itemB.automatedScore,
+		);
+		if (trustedMatchedWithScoring.length > 0) {
+			trustedScoringDelta = {
+				passRateDelta: trustedScoringB.passRate - trustedScoringA.passRate,
+				totalTestsDelta:
+					trustedScoringB.totalTests - trustedScoringA.totalTests,
+			};
+		}
+
+		const trustedMatchedWithFrontierEval = trustedMatched.filter(
+			(item) => item.itemA.frontierEval && item.itemB.frontierEval,
+		);
+		const trustedFrontierA = computeAggregateFrontier(
+			trustedMatchedWithFrontierEval,
+			(item) => item.itemA.frontierEval,
+		);
+		const trustedFrontierB = computeAggregateFrontier(
+			trustedMatchedWithFrontierEval,
+			(item) => item.itemB.frontierEval,
+		);
+		if (trustedMatchedWithFrontierEval.length > 0) {
+			trustedFrontierEvalDelta = {
+				avgScoreDelta: trustedFrontierB.avgScore - trustedFrontierA.avgScore,
+			};
+		}
 	}
 
 	return {
@@ -215,7 +387,46 @@ function computeSummary(
 		totalOnlyInB: onlyInB.length,
 		statusChanges: { improved, regressed },
 		scoringDelta,
+		trustedScoringDelta,
 		frontierEvalDelta,
+		trustedFrontierEvalDelta,
+		metricAvailability: {
+			scoring: {
+				matchedRows: matched.length,
+				comparedRows: matchedWithScoring.length,
+				trustedComparedRows: matchedMetricsComplete
+					? matched.filter(
+							(item) =>
+								!isTaintedItem(item.itemA) &&
+								!isTaintedItem(item.itemB) &&
+								item.itemA.automatedScore &&
+								item.itemB.automatedScore,
+						).length
+					: null,
+			},
+			frontierEval: {
+				matchedRows: matched.length,
+				comparedRows: matchedWithFrontierEval.length,
+				trustedComparedRows: matchedMetricsComplete
+					? matched.filter(
+							(item) =>
+								!isTaintedItem(item.itemA) &&
+								!isTaintedItem(item.itemB) &&
+								item.itemA.frontierEval &&
+								item.itemB.frontierEval,
+						).length
+					: null,
+			},
+		},
+		signal: {
+			trustedMetricsAvailable: matchedMetricsComplete,
+			taintedInA: trustedMetricsAvailable
+				? runAItems.filter((item) => isTaintedItem(item)).length
+				: null,
+			taintedInB: trustedMetricsAvailable
+				? runBItems.filter((item) => isTaintedItem(item)).length
+				: null,
+		},
 	};
 }
 
@@ -239,11 +450,19 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 	const mapB = new Map<string, MatrixItemResult>();
 
 	for (const item of resultA.items) {
-		mapA.set(buildCompareKey(item), item);
+		const key = buildCompareKey(item);
+		if (mapA.has(key)) {
+			throw new Error(`Duplicate compare key in run A: ${key}`);
+		}
+		mapA.set(key, item);
 	}
 
 	for (const item of resultB.items) {
-		mapB.set(buildCompareKey(item), item);
+		const key = buildCompareKey(item);
+		if (mapB.has(key)) {
+			throw new Error(`Duplicate compare key in run B: ${key}`);
+		}
+		mapB.set(key, item);
 	}
 
 	// Find matched items
@@ -257,7 +476,10 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 		if (itemB) {
 			matched.push({
 				key,
-				model: itemA.model,
+				model:
+					itemA.modelProfile?.canonical.profileLabel ??
+					itemA.modelAlias ??
+					itemA.model,
 				harness: itemA.harness,
 				test: itemA.test,
 				passType: itemA.passType,
@@ -283,7 +505,13 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 	onlyInB.sort((a, b) => buildCompareKey(a).localeCompare(buildCompareKey(b)));
 
 	// Compute summary
-	const summary = computeSummary(matched, onlyInA, onlyInB);
+	const summary = computeSummary(
+		matched,
+		onlyInA,
+		onlyInB,
+		resultA.items,
+		resultB.items,
+	);
 
 	return {
 		runA: {

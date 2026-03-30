@@ -25,12 +25,17 @@ Outputs (per run):
 - `results/<run-id>/run.partial.json` — periodic crash-safe snapshot during execution (removed on success)
 - each artifact now includes:
   - benchmark checkpoint metadata (`checkpointId`, manifest hash, asset count)
-  - machine profile + sanitized hardware metadata
+  - machine instance identity + canonical machine profile metadata
   - run provenance metadata (`verificationStatus`, source)
 
 Built-ins:
 - **compare**: diff two runs and print deltas (pass rate, frontier eval, duration, status changes, etc.)
 - **checkpointed aggregation**: `dashboard:index` builds latest-checkpoint leaderboard artifacts with machine-aware best-result selection
+
+Model identity:
+- `model` in each matrix row remains the exact runtime-specific identifier that executed.
+- `modelProfile.canonical` groups equivalent variants under one logical benchmark model.
+- `modelProfile.variant` preserves format, quantization, runtime, and source-specific details for drill-down.
 
 Current benchmark tests:
 - `smoke` — basic add function sanity check
@@ -146,8 +151,8 @@ bun pb
 # Run with specific options
 bun pb --models llama3.2:3b --tests smoke --pass-types blind
 
-# Run with explicit machine identity metadata (recommended for shared aggregation)
-bun pb --machine-id mac-mini-m4-pro --machine-label "Austin Mac Mini"
+# Run with explicit machine instance metadata (recommended for shared aggregation)
+bun pb --machine-instance-id inst-abc123 --machine-display-label "Austin Mac Mini"
 
 # Run only coding category tests
 bun pb --categories coding
@@ -157,6 +162,12 @@ bun pb --categories computer-use --harnesses goose opencode
 
 # Run with specific runtime and harness
 bun pb --runtimes ollama --harnesses direct
+
+# Run one canonical model across multiple runtimes via a model profile file
+bun pb \
+  --runtimes ollama vllm \
+  --models qwen3-27b-instruct \
+  --model-config models.example.json
 ```
 
 ## Dashboard: publish runs for hosting
@@ -193,6 +204,39 @@ bun pb \
 
 Run `vllm` however you prefer outside the bench, then point the CLI at that endpoint.
 
+### Model Profiles
+
+Use `--model-config <file>` to define one canonical benchmark model with multiple runtime-specific variants. The canonical profile gives you one stable model identity in plans, run artifacts, compare output, and future dashboard grouping, while each variant preserves runtime-specific details like format and quantization.
+
+Example file:
+
+```json
+{
+  "schemaVersion": "0.5.0",
+  "models": {
+    "qwen3-27b-instruct": {
+      "profileLabel": "Qwen 3 27B Instruct",
+      "family": "qwen3",
+      "parametersBillions": 27,
+      "tuning": "instruct",
+      "variants": {
+        "ollama": {
+          "modelName": "qwen3:27b",
+          "variantLabel": "Qwen 3 27B Ollama"
+        },
+        "vllm": {
+          "modelName": "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+          "format": "MLX",
+          "quantization": "4-bit"
+        }
+      }
+    }
+  }
+}
+```
+
+Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work. They are normalized into the new model-profile shape automatically, but new configs should prefer `models` (legacy `modelProfiles` are accepted and normalized too).
+
 ### Long-Run Stability
 
 - Scoring is process-isolated by default to avoid Bun memory growth from repeated dynamic imports during long runs.
@@ -218,6 +262,9 @@ bun run src/index.ts compare <run-a> <run-b>
 # Force compare across checkpoint mismatches (normally blocked)
 bun run src/index.ts compare <run-a> <run-b> --allow-cross-checkpoint
 
+# Rewrite legacy artifacts to the standardized machine-profile schema
+bun run src/index.ts migrate-machine-profiles --dir apps/dashboard/public/results --rebuild-dashboard-index --dashboard-output-dir apps/dashboard/public/results
+
 # Run tests
 bun test
 
@@ -231,6 +278,16 @@ Each run creates:
 - `results/<run-id>/plan.json` — expanded matrix plan
 - `results/<run-id>/run.json` — execution results
 - `results/<run-id>/run.partial.json` — periodic in-flight checkpoint (deleted after successful completion)
+
+Machine metadata now splits:
+- `machine.instanceId` — stable per-machine identity, never derived from hardware
+- `machine.profileKey` — canonical normalized hardware class used for aggregation
+- `machine.observedHardware` — exact sanitized hardware facts retained for audit/debug
+
+Model metadata now splits:
+- `item.model` — exact runtime-specific model identifier used for generation
+- `item.modelProfile.canonical.profileKey` — stable logical model identity used for cross-runtime matching
+- `item.modelProfile.variant` — runtime-specific artifact metadata such as format and quantization
 
 ## Interpreting Results Fairly
 
@@ -267,6 +324,7 @@ High level:
 - Bench runs produce `plan.json` + `run.json` in an output directory.
 - Published runs live in `apps/dashboard/public/results/<runId>/`.
 - An index (`apps/dashboard/public/results/index.json`) is generated from the published runs.
+  - `machineProfileKey` is the canonical machine-profile identifier; `machineProfileId` is still emitted as a deprecated compatibility alias and will be removed in a future release.
 - Checkpoint aggregate artifacts are generated in `apps/dashboard/public/results/aggregates/`:
   - `<checkpointId>.json` for each discovered checkpoint
   - `latest.json` for the checkpoint computed from current benchmark source

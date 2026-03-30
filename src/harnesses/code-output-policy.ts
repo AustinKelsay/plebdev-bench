@@ -9,6 +9,7 @@
  */
 
 import { type ExtractedCode, extractCode } from "../lib/code-extractor.js";
+import type { SignalAssessmentReason } from "../schemas/index.js";
 
 /** Internal marker used to prevent infinite retry loops across recursive adapter calls. */
 const RETRY_MARKER = "[PLEBDEV_BENCH_CODE_ONLY_RETRY_ONCE]";
@@ -55,6 +56,8 @@ export interface CodeOnlyOutputDecision {
 	code: string;
 	/** Extraction method used by code extractor. */
 	method: ExtractedCode["method"];
+	/** Taint reasons when the accepted output violated the strict code-only contract. */
+	taintReasons: SignalAssessmentReason[];
 }
 
 /**
@@ -110,6 +113,42 @@ function getTestSpecificContract(prompt: string): string[] {
 	return lines;
 }
 
+/** Regex for a single markdown code block with no surrounding prose. */
+const SINGLE_CODE_BLOCK_REGEX =
+	/^```(?:typescript|ts|javascript|js)?\n([\s\S]*?)\n?```$/;
+
+/**
+ * Determines taint reasons for accepted code-only output.
+ *
+ * @param rawOutput - Raw harness text output
+ * @param extracted - Extracted code candidate
+ * @returns Stable taint reasons
+ */
+function getAcceptedOutputTaintReasons(
+	rawOutput: string,
+	extracted: ExtractedCode,
+): SignalAssessmentReason[] {
+	const trimmed = rawOutput.trim();
+	const normalizedCode = extracted.code.trim();
+	if (trimmed === normalizedCode) {
+		return [];
+	}
+
+	if (extracted.method === "raw") {
+		const codeBlockMatch = trimmed.match(SINGLE_CODE_BLOCK_REGEX);
+		if (codeBlockMatch?.[1]?.trim() === normalizedCode) {
+			return ["output_contract_violation"];
+		}
+		return ["mixed_prose_salvaged"];
+	}
+
+	if (SINGLE_CODE_BLOCK_REGEX.test(trimmed)) {
+		return ["output_contract_violation"];
+	}
+
+	return ["mixed_prose_salvaged"];
+}
+
 /**
  * Evaluates whether an output is usable code or should trigger a retry.
  *
@@ -128,6 +167,7 @@ export function evaluateCodeOnlyOutput(
 			reason: "too_short",
 			code: trimmed,
 			method: "raw",
+			taintReasons: [],
 		};
 	}
 
@@ -143,6 +183,7 @@ export function evaluateCodeOnlyOutput(
 			reason: "suspicious_code_pattern",
 			code: candidateCode,
 			method: extracted.method,
+			taintReasons: [],
 		};
 	}
 
@@ -152,6 +193,7 @@ export function evaluateCodeOnlyOutput(
 			reason: "ok",
 			code,
 			method: extracted.method,
+			taintReasons: getAcceptedOutputTaintReasons(trimmed, extracted),
 		};
 	}
 
@@ -164,6 +206,7 @@ export function evaluateCodeOnlyOutput(
 			reason: "turn_limit",
 			code,
 			method: extracted.method,
+			taintReasons: [],
 		};
 	}
 
@@ -174,6 +217,7 @@ export function evaluateCodeOnlyOutput(
 			reason: "off_task",
 			code,
 			method: extracted.method,
+			taintReasons: [],
 		};
 	}
 
@@ -184,8 +228,9 @@ export function evaluateCodeOnlyOutput(
 		return {
 			shouldRetry: false,
 			reason: "ok",
-			code: trimmed,
+			code: candidateCode,
 			method: extracted.method,
+			taintReasons: getAcceptedOutputTaintReasons(trimmed, extracted),
 		};
 	}
 
@@ -194,6 +239,7 @@ export function evaluateCodeOnlyOutput(
 		reason: "no_code_detected",
 		code,
 		method: extracted.method,
+		taintReasons: [],
 	};
 }
 

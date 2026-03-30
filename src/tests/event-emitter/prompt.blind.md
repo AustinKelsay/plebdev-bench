@@ -12,6 +12,10 @@ Output contract:
 Export a factory `createEventEmitter` for a minimal event system with listener registration/removal.
 
 Requirements:
+- Return an object with `on(event, listener)`, `once(event, listener)`, `off(event, listener)`, `emit(event, payload)`, and `listenerCount(event)`.
+- `on` and `once` return the current listener count for that event.
+- `off` returns `true` when one matching listener is removed, otherwise `false`.
+- `listenerCount` returns the current listener count for that event.
 - Support normal listeners and one-time listeners.
 - Listeners should fire in registration order.
 - Duplicate listener registration should be supported.

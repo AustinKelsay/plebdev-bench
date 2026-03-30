@@ -1,6 +1,15 @@
 {
-	"qwen3-8b": {
-		"ollama": "qwen3:8b",
-		"vllm": "Qwen/Qwen3-8B-Instruct"
+	"schemaVersion": "0.5.0",
+	"models": {
+		"qwen3-8b-instruct": {
+			"profileLabel": "Qwen 3 8B Instruct",
+			"family": "qwen3",
+			"parametersBillions": 8,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "qwen3:8b",
+				"vllm": "Qwen/Qwen3-8B-Instruct"
+			}
+		}
 	}
 }

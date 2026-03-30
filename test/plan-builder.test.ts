@@ -2,8 +2,8 @@
  * Purpose: Regression tests for capability-aware run plan expansion.
  */
 
-import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const discoverHarnessesMock = vi.fn();
 const discoverRuntimesMock = vi.fn();
@@ -15,6 +15,8 @@ const collectMachineProfileMock = vi.fn();
 const generateRunIdMock = vi.fn();
 
 function fallbackCollectMachineProfile(options: {
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	machineProfileId?: string;
 	machineLabel?: string;
 	env?: NodeJS.ProcessEnv;
@@ -22,9 +24,18 @@ function fallbackCollectMachineProfile(options: {
 		platform: string;
 		arch: string;
 		osRelease: string;
-		cpuModel: string;
+		cpuModelRaw: string;
 		logicalCores: number;
 		totalMemoryBytes: number;
+		accelerators: Array<{
+			modelRaw: string;
+			kind: "integrated" | "discrete" | "unknown";
+			vendor?: string;
+			backend?: string;
+		}>;
+		acceleratorDetection: {
+			status: "detected" | "none_detected" | "unavailable";
+		};
 	};
 } = {}) {
 	const env = options.env ?? process.env;
@@ -33,48 +44,59 @@ function fallbackCollectMachineProfile(options: {
 			platform: "darwin",
 			arch: "arm64",
 			osRelease: "unknown",
-			cpuModel: "unknown",
+			cpuModelRaw: "unknown",
 			logicalCores: 1,
 			totalMemoryBytes: 1,
+			accelerators: [],
+			acceleratorDetection: {
+				status: "unavailable" as const,
+			},
 		};
 	const readNonEmpty = (value: string | undefined) => {
 		if (typeof value !== "string") return undefined;
 		const trimmed = value.trim();
 		return trimmed.length > 0 ? trimmed : undefined;
 	};
-	const profileId =
+	const instanceId =
+		readNonEmpty(options.machineInstanceId) ??
 		readNonEmpty(options.machineProfileId) ??
+		readNonEmpty(env.BENCH_MACHINE_INSTANCE_ID) ??
 		readNonEmpty(env.BENCH_MACHINE_ID) ??
-		`anon_${createHash("sha256")
-			.update(
-				[
-					hardware.platform,
-					hardware.arch,
-					hardware.osRelease,
-					hardware.cpuModel,
-					String(hardware.logicalCores),
-					String(hardware.totalMemoryBytes),
-				].join("|"),
-			)
-			.digest("hex")
-			.slice(0, 12)}`;
-	const label =
+		"inst_0123456789abcdef0123456789abcdef";
+	const displayLabel =
+		readNonEmpty(options.machineDisplayLabel) ??
 		readNonEmpty(options.machineLabel) ??
+		readNonEmpty(env.BENCH_MACHINE_DISPLAY_LABEL) ??
 		readNonEmpty(env.BENCH_MACHINE_LABEL);
 	const identitySource =
+		readNonEmpty(options.machineInstanceId) !== undefined ||
 		readNonEmpty(options.machineProfileId) !== undefined
 			? "config"
-			: readNonEmpty(env.BENCH_MACHINE_ID) !== undefined
-				? "env"
-				: "anonymous";
+		: readNonEmpty(env.BENCH_MACHINE_ID) !== undefined
+				|| readNonEmpty(env.BENCH_MACHINE_INSTANCE_ID) !== undefined
+			? "env"
+		: "generated";
 
 	return {
 		machine: {
-			profileId,
-			...(label ? { label } : {}),
-			hardware,
+			instanceId,
+			instanceIdSource: identitySource,
+			...(displayLabel ? { displayLabel } : {}),
+			profileKey: "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro-gpu_na_x1",
+			profileLabel: "Apple M4 Pro / 64GB / Apple M4 Pro GPU",
+			normalizedProfile: {
+				platformFamily: "macos" as const,
+				arch: hardware.arch,
+				cpuVendor: "apple",
+				cpuModelKey: "m4-pro",
+				logicalCores: hardware.logicalCores,
+				memoryGiB: 64,
+				acceleratorKey: "apple/m4-pro-gpu",
+				acceleratorCount: 1,
+			},
+			observedHardware: hardware,
 		},
-		isAnonymous: identitySource === "anonymous",
+		isAnonymous: identitySource === "generated",
 		identitySource,
 	};
 }
@@ -132,6 +154,8 @@ vi.mock("../src/lib/benchmark-checkpoint.js", () => ({
 vi.mock("../src/lib/hardware-profile.js", () => ({
 	MACHINE_ID_ENV_VAR: "BENCH_MACHINE_ID",
 	MACHINE_LABEL_ENV_VAR: "BENCH_MACHINE_LABEL",
+	MACHINE_INSTANCE_ID_ENV_VAR: "BENCH_MACHINE_INSTANCE_ID",
+	MACHINE_DISPLAY_LABEL_ENV_VAR: "BENCH_MACHINE_DISPLAY_LABEL",
 	collectMachineProfile: collectMachineProfileMock,
 }));
 
@@ -172,14 +196,38 @@ describe("buildRunPlan", () => {
 			isAnonymous: false,
 			identitySource: "config",
 			machine: {
-				profileId: "machine-a",
-				hardware: {
+				instanceId: "machine-a",
+				instanceIdSource: "config",
+				profileKey: "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro-gpu_na_x1",
+				profileLabel: "Apple M4 Pro / 64GB / Apple M4 Pro GPU",
+				normalizedProfile: {
+					platformFamily: "macos",
+					arch: "arm64",
+					cpuVendor: "apple",
+					cpuModelKey: "m4-pro",
+					logicalCores: 12,
+					memoryGiB: 64,
+					acceleratorKey: "apple/m4-pro-gpu",
+					acceleratorCount: 1,
+				},
+				observedHardware: {
 					platform: "darwin",
 					arch: "arm64",
 					osRelease: "25.0.0",
-					cpuModel: "Apple M4 Pro",
+					cpuModelRaw: "Apple M4 Pro",
 					logicalCores: 12,
 					totalMemoryBytes: 68_719_476_736,
+					accelerators: [
+						{
+							vendor: "Apple",
+							modelRaw: "Apple M4 Pro GPU",
+							kind: "integrated",
+							backend: "metal",
+						},
+					],
+					acceleratorDetection: {
+						status: "detected",
+					},
 				},
 			},
 		});
@@ -275,7 +323,7 @@ describe("buildRunPlan", () => {
 
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 		const plan = await buildRunPlan({
-			schemaVersion: "0.4.0",
+			schemaVersion: SCHEMA_VERSION,
 			runtimes: ["ollama"],
 			models: ["qwen3.5:4b"],
 			harnesses: ["direct", "goose", "opencode"],
@@ -290,7 +338,7 @@ describe("buildRunPlan", () => {
 			gooseWorkspaceMaxTurns: 8,
 			gooseWorkspaceRetryMaxTurns: 12,
 			outputDir: "results",
-			modelAliases: {},
+			modelProfiles: {},
 		});
 
 		const rows = plan.items.map((item) => ({
@@ -343,4 +391,230 @@ describe("buildRunPlan", () => {
 				)?.timeoutMultiplier,
 			).toBe(1.2);
 		});
+
+	it("groups runtime-specific variants under one canonical model profile", async () => {
+		createRuntimeMock.mockImplementation((runtimeName: string) => ({
+			ping: async () => true,
+			listModels: async () =>
+				runtimeName === "ollama"
+					? ["qwen3:27b"]
+					: ["Qwen/Qwen3-27B-Instruct-MLX-4bit"],
+		}));
+
+		const catalog = [
+			{
+				slug: "smoke",
+				category: "coding",
+				description: "basic smoke test",
+				tags: [],
+				scoringMode: "code-module",
+				requiresTools: false,
+				requiredHarnessCapabilities: [],
+				timeoutMultiplier: 1,
+				schemaVersion: 1,
+			},
+		];
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+		const plan = await buildRunPlan({
+			schemaVersion: SCHEMA_VERSION,
+			runtimes: ["ollama", "vllm"],
+			models: ["qwen3-27b-instruct"],
+			harnesses: ["direct"],
+			tests: [],
+			categories: [],
+			passTypes: ["blind"],
+			ollamaBaseUrl: "http://localhost:11434",
+			vllmBaseUrl: "http://localhost:8000",
+			generateTimeoutMs: 300_000,
+			gooseMaxTurns: 1,
+			gooseRetryMaxTurns: 3,
+			gooseWorkspaceMaxTurns: 8,
+			gooseWorkspaceRetryMaxTurns: 12,
+			outputDir: "results",
+			modelProfiles: {
+				"qwen3-27b-instruct": {
+					profileLabel: "Qwen 3 27B Instruct",
+					family: "qwen3",
+					parametersBillions: 27,
+					tuning: "instruct",
+					variants: {
+						ollama: "qwen3:27b",
+						vllm: {
+							modelName: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
+							format: "MLX",
+							quantization: "4-bit",
+						},
+					},
+				},
+			},
+		});
+
+		expect(plan.summary.models).toBe(1);
+		expect(plan.items).toHaveLength(2);
+		expect(plan.items.map((item) => item.model)).toEqual([
+			"qwen3:27b",
+			"Qwen/Qwen3-27B-Instruct-MLX-4bit",
+		]);
+		expect(
+			plan.items.map((item) => item.modelProfile?.canonical.profileKey),
+		).toEqual(["qwen3-27b-instruct", "qwen3-27b-instruct"]);
+		expect(plan.items[1].modelProfile?.variant.format).toBe("MLX");
+		expect(plan.items[1].modelProfile?.variant.quantization).toBe("4-bit");
+	});
+
+	it("dedupes overlapping model selectors that resolve to the same runtime model", async () => {
+		createRuntimeMock.mockReturnValue({
+			ping: async () => true,
+			listModels: async () => ["qwen3:27b"],
+		});
+		const catalog = [
+			{
+				slug: "smoke",
+				category: "coding",
+				description: "basic smoke test",
+				tags: [],
+				scoringMode: "code-module",
+				requiresTools: false,
+				requiredHarnessCapabilities: [],
+				timeoutMultiplier: 1,
+				schemaVersion: 1,
+			},
+		];
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+		const plan = await buildRunPlan({
+			schemaVersion: SCHEMA_VERSION,
+			runtimes: ["ollama"],
+			models: ["qwen3-27b-instruct", "qwen3:27b"],
+			harnesses: ["direct"],
+			tests: [],
+			categories: [],
+			passTypes: ["blind"],
+			ollamaBaseUrl: "http://localhost:11434",
+			vllmBaseUrl: "http://localhost:8000",
+			generateTimeoutMs: 300_000,
+			gooseMaxTurns: 1,
+			gooseRetryMaxTurns: 3,
+			gooseWorkspaceMaxTurns: 8,
+			gooseWorkspaceRetryMaxTurns: 12,
+			outputDir: "results",
+			modelProfiles: {
+				"qwen3-27b-instruct": {
+					profileLabel: "Qwen 3 27B Instruct",
+					family: "qwen3",
+					parametersBillions: 27,
+					tuning: "instruct",
+					variants: {
+						ollama: "qwen3:27b",
+					},
+				},
+			},
+		});
+
+		expect(plan.items).toHaveLength(1);
+		expect(plan.items[0]?.model).toBe("qwen3:27b");
+	});
+
+	it("fails fast when an explicit model profile lacks a runtime variant", async () => {
+		const catalog = [
+			{
+				slug: "smoke",
+				category: "coding",
+				description: "basic smoke test",
+				tags: [],
+				scoringMode: "code-module",
+				requiresTools: false,
+				requiredHarnessCapabilities: [],
+				timeoutMultiplier: 1,
+				schemaVersion: 1,
+			},
+		];
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+
+		await expect(
+			buildRunPlan({
+				schemaVersion: SCHEMA_VERSION,
+				runtimes: ["ollama", "vllm"],
+				models: ["qwen3-27b-instruct"],
+				harnesses: ["direct"],
+				tests: [],
+				categories: [],
+				passTypes: ["blind"],
+				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
+				generateTimeoutMs: 300_000,
+				gooseMaxTurns: 1,
+				gooseRetryMaxTurns: 3,
+				gooseWorkspaceMaxTurns: 8,
+				gooseWorkspaceRetryMaxTurns: 12,
+				outputDir: "results",
+				modelProfiles: {
+					"qwen3-27b-instruct": {
+						profileLabel: "Qwen 3 27B Instruct",
+						family: "qwen3",
+						parametersBillions: 27,
+						tuning: "instruct",
+						variants: {
+							ollama: "qwen3:27b",
+						},
+					},
+				},
+			}),
+		).rejects.toThrow(
+			'Configured model profile "qwen3-27b-instruct" does not define a variant for runtime "vllm"',
+		);
+	});
+
+	it("fails when requested model selectors are not found on any reachable runtime", async () => {
+		createRuntimeMock.mockReturnValue({
+			ping: async () => true,
+			listModels: async () => ["qwen3:27b"],
+		});
+		const catalog = [
+			{
+				slug: "smoke",
+				category: "coding",
+				description: "basic smoke test",
+				tags: [],
+				scoringMode: "code-module",
+				requiresTools: false,
+				requiredHarnessCapabilities: [],
+				timeoutMultiplier: 1,
+				schemaVersion: 1,
+			},
+		];
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+
+		await expect(
+			buildRunPlan({
+				schemaVersion: SCHEMA_VERSION,
+				runtimes: ["ollama"],
+				models: ["missing-model"],
+				harnesses: ["direct"],
+				tests: [],
+				categories: [],
+				passTypes: ["blind"],
+				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
+				generateTimeoutMs: 300_000,
+				gooseMaxTurns: 1,
+				gooseRetryMaxTurns: 3,
+				gooseWorkspaceMaxTurns: 8,
+				gooseWorkspaceRetryMaxTurns: 12,
+				outputDir: "results",
+				modelProfiles: {},
+			}),
+		).rejects.toThrow('Requested model selectors not found: missing-model');
+	});
 	});

@@ -3,13 +3,21 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { getModelIdentityKey } from "../src/lib/model-profiles.js";
+import {
+	buildMachineProfileKey,
+	buildMachineProfileLabel,
+	normalizeMachineProfile,
+} from "../src/lib/machine-profile/normalization.js";
 import {
 	BenchConfigSchema,
 	FrontierEvalFailureTypeSchema,
+	HardwareProfileSchema,
 	HarnessCapabilitySchema,
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
+	AcceleratorDetectionSchema,
 	RunPlanSchema,
 	RunResultSchema,
 	RuntimeNameSchema,
@@ -20,6 +28,32 @@ import {
 	defaultConfig,
 } from "../src/schemas/index.js";
 
+const TEST_HARDWARE = {
+	platform: "darwin",
+	arch: "arm64",
+	osRelease: "24.3.0",
+	cpuModelRaw: "Apple M4 Pro",
+	logicalCores: 14,
+	totalMemoryBytes: 68_719_476_736,
+	accelerators: [
+		{
+			vendor: "Apple",
+			modelRaw: "Apple M4 Pro GPU",
+			kind: "integrated" as const,
+			backend: "metal",
+		},
+	],
+	acceleratorDetection: {
+		status: "detected" as const,
+	},
+};
+const TEST_NORMALIZED_PROFILE = normalizeMachineProfile(TEST_HARDWARE);
+const TEST_PROFILE_KEY = buildMachineProfileKey(TEST_NORMALIZED_PROFILE);
+const TEST_PROFILE_LABEL = buildMachineProfileLabel(
+	TEST_HARDWARE,
+	TEST_NORMALIZED_PROFILE,
+);
+
 describe("common schemas", () => {
 	it("should validate pass types", () => {
 		expect(PassTypeSchema.parse("blind")).toBe("blind");
@@ -28,7 +62,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.4.0");
+		expect(SCHEMA_VERSION).toBe("0.5.0");
 	});
 
 	it("should validate runtime names", () => {
@@ -132,6 +166,143 @@ describe("BenchConfigSchema", () => {
 		).toThrow(/gooseWorkspaceRetryMaxTurns/);
 	});
 
+	it("should normalize deprecated machine config aliases", () => {
+		const config = BenchConfigSchema.parse({
+			machineProfileId: "legacy-machine",
+			machineLabel: "Legacy Label",
+		});
+		expect(config.machineInstanceId).toBe("legacy-machine");
+		expect(config.machineDisplayLabel).toBe("Legacy Label");
+		expect("machineProfileId" in config).toBe(false);
+		expect("machineLabel" in config).toBe(false);
+	});
+
+	it("should treat explicit undefined canonical machine fields as absent during alias backfill", () => {
+		const config = BenchConfigSchema.parse({
+			machineInstanceId: undefined,
+			machineProfileId: "legacy-machine",
+			machineDisplayLabel: undefined,
+			machineLabel: "Legacy Label",
+			modelProfiles: undefined,
+			modelAliases: {
+				"qwen3-8b-instruct": {
+					ollama: "qwen3:8b",
+				},
+			},
+		});
+		expect(config.machineInstanceId).toBe("legacy-machine");
+		expect(config.machineDisplayLabel).toBe("Legacy Label");
+		expect(config.modelProfiles["qwen3-8b-instruct"]?.variants.ollama).toBe(
+			"qwen3:8b",
+		);
+	});
+
+	it("should normalize deprecated modelAliases into modelProfiles", () => {
+		const config = BenchConfigSchema.parse({
+			modelAliases: {
+				"qwen3-8b-instruct": {
+					ollama: "qwen3:8b",
+					vllm: "Qwen/Qwen3-8B-Instruct",
+				},
+			},
+		});
+		expect(config.modelProfiles["qwen3-8b-instruct"]?.variants.ollama).toBe(
+			"qwen3:8b",
+		);
+		expect("modelAliases" in config).toBe(false);
+	});
+
+	it("should reject simultaneous modelProfiles and modelAliases", () => {
+		const result = BenchConfigSchema.safeParse({
+			modelProfiles: {
+				"qwen3-8b-instruct": {
+					variants: {
+						ollama: "qwen3:8b",
+					},
+				},
+			},
+			modelAliases: {
+				"qwen3-8b-instruct": {
+					ollama: "qwen3:8b",
+				},
+			},
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some((issue) =>
+				issue.message.includes(
+					'Bench config must not specify both "modelProfiles" and deprecated "modelAliases"',
+				),
+			),
+		).toBe(true);
+	});
+
+	it("should reject conflicting canonical and deprecated machine config aliases", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				machineInstanceId: "machine-a",
+				machineProfileId: "machine-b",
+			}),
+		).toThrow(/Conflicting bench config machine IDs/);
+		expect(() =>
+			BenchConfigSchema.parse({
+				machineDisplayLabel: "Label A",
+				machineLabel: "Label B",
+			}),
+		).toThrow(/Conflicting bench config machine labels/);
+	});
+
+	it("should reject blank machine config strings before alias backfill", () => {
+		const result = BenchConfigSchema.safeParse({
+			machineInstanceId: "   ",
+			machineProfileId: "legacy-machine",
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(result.error.issues.some((issue) => issue.path[0] === "machineInstanceId")).toBe(
+			true,
+		);
+	});
+
+	it("should reject non-string canonical machine fields before alias backfill", () => {
+		const idResult = BenchConfigSchema.safeParse({
+			machineInstanceId: 123,
+			machineProfileId: "legacy-machine",
+		});
+		expect(idResult.success).toBe(false);
+		if (idResult.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(
+			idResult.error.issues.some(
+				(issue) =>
+					issue.path[0] === "machineInstanceId" &&
+					issue.code === "invalid_type",
+			),
+		).toBe(true);
+
+		const labelResult = BenchConfigSchema.safeParse({
+			machineDisplayLabel: 123,
+			machineLabel: "Legacy Label",
+		});
+		expect(labelResult.success).toBe(false);
+		if (labelResult.success) {
+			throw new Error("Expected BenchConfigSchema.safeParse to fail");
+		}
+		expect(
+			labelResult.error.issues.some(
+				(issue) =>
+					issue.path[0] === "machineDisplayLabel" &&
+					issue.code === "invalid_type",
+			),
+		).toBe(true);
+	});
+
 	it("should provide default config", () => {
 		expect(defaultConfig.harnesses).toEqual([]); // Auto-discover all available
 	});
@@ -143,6 +314,23 @@ describe("MatrixItemSchema", () => {
 			id: "01",
 			runtime: "ollama",
 			model: "llama3.2:3b",
+			modelProfile: {
+				canonical: {
+					profileKey: "llama3.2-3b-instruct",
+					profileLabel: "Llama 3.2 3B Instruct",
+					family: "llama3.2",
+					parametersBillions: 3,
+					parameterScaleLabel: "3B",
+					tuning: "instruct",
+				},
+				variant: {
+					variantKey: "ollama-llama3-2-3b",
+					variantLabel: "llama3.2:3b",
+					runtime: "ollama",
+					runtimeModelName: "llama3.2:3b",
+				},
+				resolutionSource: "configured_profile",
+			},
 			harness: "direct",
 			test: "smoke",
 			category: "coding",
@@ -155,7 +343,161 @@ describe("MatrixItemSchema", () => {
 		expect(item.id).toBe("01");
 		expect(item.runtime).toBe("ollama");
 		expect(item.model).toBe("llama3.2:3b");
+		expect(item.modelProfile?.canonical.profileKey).toBe(
+			"llama3.2-3b-instruct",
+		);
 		expect(item.scoringMode).toBe("code-module");
+	});
+});
+
+describe("HardwareProfileSchema", () => {
+	it("requires detail when accelerator detection is unavailable", () => {
+		const result = AcceleratorDetectionSchema.safeParse({
+			status: "unavailable",
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected AcceleratorDetectionSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some(
+				(issue) =>
+					issue.path[0] === "detail" &&
+					issue.message.includes('requires detail when status is "unavailable"'),
+			),
+		).toBe(true);
+	});
+
+	it("should reject detected accelerators with an empty accelerator list", () => {
+		expect(() =>
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [],
+				acceleratorDetection: {
+					status: "detected",
+				},
+			}),
+		).toThrow(/must contain at least one accelerator/);
+	});
+
+	it("should reject none_detected accelerators with a non-empty accelerator list", () => {
+		const result = HardwareProfileSchema.safeParse({
+			...TEST_HARDWARE,
+			acceleratorDetection: {
+				status: "none_detected",
+			},
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected HardwareProfileSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some(
+				(issue) =>
+					issue.path[0] === "accelerators" &&
+					issue.message ===
+						'accelerators must be empty when acceleratorDetection.status is "none_detected"',
+			),
+		).toBe(true);
+	});
+
+	it("should classify a confirmed accelerator-free machine as none", () => {
+		const normalized = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [],
+				acceleratorDetection: {
+					status: "none_detected",
+				},
+			}),
+		);
+		expect(normalized.acceleratorKey).toBe("none");
+		expect(normalized.acceleratorCount).toBe(0);
+	});
+
+	it("should reject unavailable accelerator detection with a non-empty accelerator list", () => {
+		const result = HardwareProfileSchema.safeParse({
+			...TEST_HARDWARE,
+			acceleratorDetection: {
+				status: "unavailable",
+				detail: "probe failed",
+			},
+		});
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("Expected HardwareProfileSchema.safeParse to fail");
+		}
+		expect(
+			result.error.issues.some(
+				(issue) =>
+					issue.path[0] === "accelerators" &&
+					issue.message ===
+						'accelerators must be empty when acceleratorDetection.status is "unavailable"',
+			),
+		).toBe(true);
+	});
+
+	it("should preserve explicit accelerator device counts during normalization", () => {
+		const normalized = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [
+					{
+						...TEST_HARDWARE.accelerators[0],
+						count: 2,
+					},
+				],
+				acceleratorDetection: {
+					status: "detected",
+				},
+			}),
+		);
+		expect(normalized.acceleratorCount).toBe(2);
+		expect(buildMachineProfileKey(normalized)).toContain("_x2");
+	});
+
+	it("should distinguish mixed accelerator summaries in profile keys", () => {
+		const dual4090 = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4090",
+						count: 2,
+						kind: "discrete",
+					},
+				],
+				acceleratorDetection: { status: "detected" },
+			}),
+		);
+		const mixed = normalizeMachineProfile(
+			HardwareProfileSchema.parse({
+				...TEST_HARDWARE,
+				accelerators: [
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4090",
+						count: 1,
+						kind: "discrete",
+					},
+					{
+						vendor: "NVIDIA",
+						modelRaw: "RTX 4060",
+						count: 1,
+						kind: "discrete",
+					},
+				],
+				acceleratorDetection: { status: "detected" },
+			}),
+		);
+
+		expect(dual4090.acceleratorSummary).toEqual(["nvidia/rtx-4090:x2"]);
+		expect(mixed.acceleratorSummary).toEqual([
+			"nvidia/rtx-4060:x1",
+			"nvidia/rtx-4090:x1",
+		]);
+		expect(buildMachineProfileKey(dual4090)).not.toBe(buildMachineProfileKey(mixed));
 	});
 });
 
@@ -169,16 +511,13 @@ describe("RunPlanSchema", () => {
 				bunVersion: "1.0.0",
 			},
 			machine: {
-				profileId: "mac-mini-m4-pro",
-				label: "Mac Mini M4 Pro",
-				hardware: {
-					platform: "darwin",
-					arch: "arm64",
-					osRelease: "24.3.0",
-					cpuModel: "Apple M4 Pro",
-					logicalCores: 14,
-					totalMemoryBytes: 68_719_476_736,
-				},
+				instanceId: "machine-a",
+				instanceIdSource: "config",
+				displayLabel: "Mac Mini M4 Pro",
+				profileKey: TEST_PROFILE_KEY,
+				profileLabel: TEST_PROFILE_LABEL,
+				normalizedProfile: TEST_NORMALIZED_PROFILE,
+				observedHardware: TEST_HARDWARE,
 			},
 			benchmarkCheckpoint: {
 				checkpointId: "chk_sha256v1_abc123def456",
@@ -296,6 +635,24 @@ describe("MatrixItemResultSchema", () => {
 			id: "01",
 			runtime: "ollama",
 			model: "llama3.2:3b",
+			modelAlias: "llama3.2-3b-instruct",
+			modelProfile: {
+				canonical: {
+					profileKey: "llama3.2-3b-instruct",
+					profileLabel: "Llama 3.2 3B Instruct",
+					family: "llama3.2",
+					parametersBillions: 3,
+					parameterScaleLabel: "3B",
+					tuning: "instruct",
+				},
+				variant: {
+					variantKey: "ollama-llama3-2-3b",
+					variantLabel: "llama3.2:3b",
+					runtime: "ollama",
+					runtimeModelName: "llama3.2:3b",
+				},
+				resolutionSource: "configured_profile",
+			},
 			harness: "direct",
 			test: "smoke",
 			category: "coding",
@@ -313,6 +670,13 @@ describe("MatrixItemResultSchema", () => {
 		});
 		expect(result.status).toBe("completed");
 		expect(result.generation?.success).toBe(true);
+		expect(
+			getModelIdentityKey(
+				result.model,
+				result.modelProfile,
+				result.modelAlias,
+			),
+		).toBe("llama3.2-3b-instruct");
 	});
 
 	it("should validate a failed result", () => {
@@ -373,15 +737,12 @@ describe("RunResultSchema", () => {
 		const result = RunResultSchema.parse({
 			runId: "20260114-143052-abc123",
 			machine: {
-				profileId: "mac-mini-m4-pro",
-				hardware: {
-					platform: "darwin",
-					arch: "arm64",
-					osRelease: "24.3.0",
-					cpuModel: "Apple M4 Pro",
-					logicalCores: 14,
-					totalMemoryBytes: 68_719_476_736,
-				},
+				instanceId: "machine-a",
+				instanceIdSource: "config",
+				profileKey: TEST_PROFILE_KEY,
+				profileLabel: TEST_PROFILE_LABEL,
+				normalizedProfile: TEST_NORMALIZED_PROFILE,
+				observedHardware: TEST_HARDWARE,
 			},
 			benchmarkCheckpoint: {
 				checkpointId: "chk_sha256v1_abc123def456",

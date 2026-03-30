@@ -5,13 +5,34 @@
  *          runtimeNames, RuntimeNameSchema, RuntimeName,
  *          testCategories, TestCategorySchema, TestCategory,
  *          testScoringModes, TestScoringModeSchema, TestScoringMode,
- *          benchmark/machine/provenance metadata schemas
+ *          harnessCapabilities, HarnessCapabilitySchema, HarnessCapability,
+ *          generationFailureTypes, GenerationFailureTypeSchema, GenerationFailureType,
+ *          scoringFailureTypes, ScoringFailureTypeSchema, ScoringFailureType,
+ *          frontierEvalFailureTypes, FrontierEvalFailureTypeSchema, FrontierEvalFailureType,
+ *          signalAssessmentClassifications, SignalAssessmentClassificationSchema, SignalAssessmentClassification,
+ *          signalAssessmentReasonTypes, SignalAssessmentReasonSchema, SignalAssessmentReason,
+ *          SignalAssessmentSchema, SignalAssessment,
+ *          verificationStatusTypes, VerificationStatusSchema, VerificationStatus,
+ *          BenchmarkCheckpointSchema, BenchmarkCheckpoint,
+ *          RuntimeEnvironmentSchema, RuntimeEnvironment,
+ *          machinePlatformFamilies, MachinePlatformFamilySchema, MachinePlatformFamily,
+ *          machineInstanceIdSources, MachineInstanceIdSourceSchema, MachineInstanceIdSource,
+ *          acceleratorDetectionStatuses, AcceleratorDetectionStatusSchema, AcceleratorDetectionStatus,
+ *          observedAcceleratorKinds, ObservedAcceleratorKindSchema, ObservedAcceleratorKind,
+ *          LegacyHardwareProfileSchema, LegacyHardwareProfile,
+ *          ObservedAcceleratorSchema, ObservedAccelerator,
+ *          AcceleratorDetectionSchema, AcceleratorDetection,
+ *          HardwareProfileSchema, HardwareProfile,
+ *          NormalizedMachineProfileSchema, NormalizedMachineProfile,
+ *          LegacyMachineProfileSchema, LegacyMachineProfile,
+ *          MachineProfileSchema, MachineProfile,
+ *          RunProvenanceSchema, RunProvenance
  */
 
 import { z } from "zod";
 
 /** Current schema version for all result/plan files. */
-export const SCHEMA_VERSION = "0.4.0";
+export const SCHEMA_VERSION = "0.5.0";
 
 /** Valid runtime names (inference backends). */
 export const runtimeNames = ["ollama", "vllm"] as const;
@@ -133,6 +154,69 @@ export type FrontierEvalFailureType = z.infer<
 	typeof FrontierEvalFailureTypeSchema
 >;
 
+/** Valid signal assessment classifications. */
+export const signalAssessmentClassifications = [
+	"trustworthy",
+	"tainted",
+] as const;
+
+/** Zod schema for signal assessment classification. */
+export const SignalAssessmentClassificationSchema = z.enum(
+	signalAssessmentClassifications,
+);
+
+/** Signal assessment classification type. */
+export type SignalAssessmentClassification = z.infer<
+	typeof SignalAssessmentClassificationSchema
+>;
+
+/** Stable reason codes for tainted benchmark rows. */
+export const signalAssessmentReasonTypes = [
+	"output_contract_violation",
+	"mixed_prose_salvaged",
+	"tool_permission_denied",
+	"tool_call_not_executed",
+	"confirmation_without_artifact",
+] as const;
+
+/** Zod schema for signal assessment reasons. */
+export const SignalAssessmentReasonSchema = z.enum(signalAssessmentReasonTypes);
+
+/** Signal assessment reason type. */
+export type SignalAssessmentReason = z.infer<
+	typeof SignalAssessmentReasonSchema
+>;
+
+/** Zod schema for per-item benchmark signal assessment. */
+export const SignalAssessmentSchema = z
+	.object({
+		/** High-level signal quality classification for the row. */
+		classification: SignalAssessmentClassificationSchema,
+
+		/** Stable reason codes explaining why the row is tainted. */
+		reasons: z.array(SignalAssessmentReasonSchema).default([]),
+	})
+	.superRefine((value, ctx) => {
+		if (value.classification === "tainted" && value.reasons.length === 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["reasons"],
+				message: 'tainted signal assessments must include at least one reason',
+			});
+		}
+		if (value.classification === "trustworthy" && value.reasons.length > 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["reasons"],
+				message:
+					'trustworthy signal assessments must not include taint reasons',
+			});
+		}
+	});
+
+/** Per-item benchmark signal assessment. */
+export type SignalAssessment = z.infer<typeof SignalAssessmentSchema>;
+
 /** Valid verification status values for externally shared runs. */
 export const verificationStatusTypes = [
 	"self_reported",
@@ -179,43 +263,216 @@ export const RuntimeEnvironmentSchema = z.object({
 /** Runtime environment metadata. */
 export type RuntimeEnvironment = z.infer<typeof RuntimeEnvironmentSchema>;
 
-/** Zod schema for sanitized machine hardware profile metadata. */
-export const HardwareProfileSchema = z.object({
-	/** Host platform name (e.g., darwin, linux). */
+/** Host platform families for standardized machine profiles. */
+export const machinePlatformFamilies = [
+	"macos",
+	"linux",
+	"windows",
+	"unknown",
+] as const;
+
+/** Zod schema for machine platform families. */
+export const MachinePlatformFamilySchema = z.enum(machinePlatformFamilies);
+
+/** Machine platform family type. */
+export type MachinePlatformFamily = z.infer<
+	typeof MachinePlatformFamilySchema
+>;
+
+/** Valid sources for machine instance identity resolution. */
+export const machineInstanceIdSources = [
+	"config",
+	"env",
+	"generated",
+	"legacy_profile_id",
+] as const;
+
+/** Zod schema for machine instance identity resolution sources. */
+export const MachineInstanceIdSourceSchema = z.enum(machineInstanceIdSources);
+
+/** Machine instance identity resolution source type. */
+export type MachineInstanceIdSource = z.infer<
+	typeof MachineInstanceIdSourceSchema
+>;
+
+/** Valid accelerator detection outcomes for observed hardware. */
+export const acceleratorDetectionStatuses = [
+	"detected",
+	"none_detected",
+	"unavailable",
+] as const;
+
+/** Zod schema for accelerator detection outcomes. */
+export const AcceleratorDetectionStatusSchema = z.enum(
+	acceleratorDetectionStatuses,
+);
+
+/** Accelerator detection status type. */
+export type AcceleratorDetectionStatus = z.infer<
+	typeof AcceleratorDetectionStatusSchema
+>;
+
+/** Valid observed accelerator kinds. */
+export const observedAcceleratorKinds = [
+	"integrated",
+	"discrete",
+	"unknown",
+] as const;
+
+/** Zod schema for observed accelerator kinds. */
+export const ObservedAcceleratorKindSchema = z.enum(observedAcceleratorKinds);
+
+/** Observed accelerator kind type. */
+export type ObservedAcceleratorKind = z.infer<
+	typeof ObservedAcceleratorKindSchema
+>;
+
+/** Legacy hardware schema retained for artifact migration. */
+export const LegacyHardwareProfileSchema = z.object({
 	platform: z.string().min(1),
-
-	/** CPU architecture (e.g., arm64, x64). */
 	arch: z.string().min(1),
-
-	/** OS release value from runtime host. */
 	osRelease: z.string().min(1),
-
-	/** Primary CPU model string. */
 	cpuModel: z.string().min(1),
-
-	/** Number of logical CPU cores. */
 	logicalCores: z.number().int().positive(),
-
-	/** Total machine memory in bytes. */
 	totalMemoryBytes: z.number().int().positive(),
 });
 
-/** Sanitized machine hardware profile metadata. */
-export type HardwareProfile = z.infer<typeof HardwareProfileSchema>;
+/** Legacy hardware profile type. */
+export type LegacyHardwareProfile = z.infer<typeof LegacyHardwareProfileSchema>;
 
-/** Zod schema for machine profile metadata. */
-export const MachineProfileSchema = z.object({
-	/** Stable machine profile identifier. */
-	profileId: z.string().min(1),
-
-	/** Optional human-readable machine label. */
-	label: z.string().min(1).optional(),
-
-	/** Sanitized hardware profile details. */
-	hardware: HardwareProfileSchema,
+/** Observed accelerator details captured from a host probe. */
+export const ObservedAcceleratorSchema = z.object({
+	vendor: z.string().min(1).optional(),
+	modelRaw: z.string().min(1),
+	memoryBytes: z.number().int().positive().optional(),
+	backend: z.string().min(1).optional(),
+	count: z.number().int().positive().optional(),
+	kind: ObservedAcceleratorKindSchema.default("unknown"),
 });
 
-/** Machine profile metadata used for aggregation and filtering. */
+/** Observed accelerator metadata. */
+export type ObservedAccelerator = z.infer<typeof ObservedAcceleratorSchema>;
+
+/** Accelerator probe status with explicit non-silent detection semantics. */
+export const AcceleratorDetectionSchema = z
+	.object({
+		status: AcceleratorDetectionStatusSchema,
+		detail: z.string().min(1).optional(),
+	})
+	.superRefine((value, context) => {
+		if (
+			value.status === "unavailable" &&
+			(value.detail === undefined || value.detail.trim().length === 0)
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["detail"],
+				message:
+					'AcceleratorDetectionSchema requires detail when status is "unavailable"',
+			});
+		}
+	});
+
+/** Accelerator probe status type. */
+export type AcceleratorDetection = z.infer<typeof AcceleratorDetectionSchema>;
+
+/** Zod schema for observed machine hardware metadata. */
+export const HardwareProfileSchema = z
+	.object({
+		platform: z.string().min(1),
+		arch: z.string().min(1),
+		osRelease: z.string().min(1),
+		cpuModelRaw: z.string().min(1),
+		cpuVendor: z.string().min(1).optional(),
+		physicalCores: z.number().int().positive().optional(),
+		logicalCores: z.number().int().positive(),
+		totalMemoryBytes: z.number().int().positive(),
+		accelerators: z.array(ObservedAcceleratorSchema).default([]),
+		acceleratorDetection: AcceleratorDetectionSchema,
+	})
+	.superRefine((hardware, context) => {
+		if (
+			hardware.acceleratorDetection.status === "detected" &&
+			hardware.accelerators.length === 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					"accelerators must contain at least one accelerator when acceleratorDetection.status is \"detected\"",
+			});
+		}
+
+		if (
+			hardware.acceleratorDetection.status === "none_detected" &&
+			hardware.accelerators.length > 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					"accelerators must be empty when acceleratorDetection.status is \"none_detected\"",
+			});
+		}
+
+		if (
+			hardware.acceleratorDetection.status === "unavailable" &&
+			hardware.accelerators.length > 0
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["accelerators"],
+				message:
+					"accelerators must be empty when acceleratorDetection.status is \"unavailable\"",
+			});
+		}
+	});
+
+/** Observed machine hardware metadata. */
+export type HardwareProfile = z.infer<typeof HardwareProfileSchema>;
+
+/** Canonical normalized machine profile used for aggregation. */
+export const NormalizedMachineProfileSchema = z.object({
+	platformFamily: MachinePlatformFamilySchema,
+	arch: z.string().min(1),
+	cpuVendor: z.string().min(1),
+	cpuModelKey: z.string().min(1),
+	physicalCores: z.number().int().positive().optional(),
+	logicalCores: z.number().int().positive(),
+	memoryGiB: z.number().int().positive(),
+	acceleratorKey: z.string().min(1),
+	acceleratorSummary: z.array(z.string().min(1)).optional(),
+	acceleratorMemoryGiB: z.number().int().positive().optional(),
+	acceleratorCount: z.number().int().nonnegative().optional(),
+});
+
+/** Canonical normalized machine profile type. */
+export type NormalizedMachineProfile = z.infer<
+	typeof NormalizedMachineProfileSchema
+>;
+
+/** Legacy machine profile schema retained for migration. */
+export const LegacyMachineProfileSchema = z.object({
+	profileId: z.string().min(1),
+	label: z.string().min(1).optional(),
+	hardware: LegacyHardwareProfileSchema,
+});
+
+/** Legacy machine profile type. */
+export type LegacyMachineProfile = z.infer<typeof LegacyMachineProfileSchema>;
+
+/** Zod schema for standardized machine profile metadata. */
+export const MachineProfileSchema = z.object({
+	instanceId: z.string().min(1),
+	instanceIdSource: MachineInstanceIdSourceSchema,
+	displayLabel: z.string().min(1).optional(),
+	profileKey: z.string().min(1),
+	profileLabel: z.string().min(1),
+	normalizedProfile: NormalizedMachineProfileSchema,
+	observedHardware: HardwareProfileSchema,
+});
+
+/** Standardized machine profile metadata used for aggregation and filtering. */
 export type MachineProfile = z.infer<typeof MachineProfileSchema>;
 
 /** Zod schema for run provenance metadata. */

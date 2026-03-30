@@ -1,6 +1,6 @@
 /**
  * Purpose: BenchConfig schema for CLI input and config file parsing.
- * Exports: BenchConfigSchema, BenchConfig, defaultConfig
+ * Exports: BenchConfigSchema, BenchConfig, defaultConfig, migrateBenchConfigAliases
  *
  * Invariants:
  * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes/categories
@@ -15,9 +15,81 @@ import {
 	TestCategorySchema,
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
+import { ModelProfileRegistrySchema } from "./model-profile.schema.js";
 
-/** Zod schema for benchmark configuration. */
-export const BenchConfigSchema = z
+/**
+ * Trims a candidate string and returns undefined when absent.
+ *
+ * @param value - Candidate config field
+ * @returns Trimmed non-empty string or undefined
+ */
+function readNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * Converts the deprecated alias-only model map into the canonical model-profile registry.
+ *
+ * @param value - Raw legacy alias map candidate
+ * @returns Model-profile registry preserving runtime mappings under `variants`, or undefined when malformed
+ */
+function migrateLegacyModelAliases(value: unknown): unknown {
+	const parsed = ModelAliasMapSchema.safeParse(value);
+	if (!parsed.success) {
+		return undefined;
+	}
+
+	return Object.fromEntries(
+		Object.entries(parsed.data).map(([profileKey, runtimeMap]) => [
+			profileKey,
+			{
+				profileLabel: profileKey,
+				family: profileKey,
+				variants: runtimeMap,
+			},
+		]),
+	);
+}
+
+/**
+ * Normalizes deprecated machine config aliases into the canonical machine fields.
+ *
+ * @param raw - Arbitrary config-like input
+ * @returns Normalized config input preserving unknown fields for the next parse step
+ */
+export function migrateBenchConfigAliases(raw: unknown): unknown {
+	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+		return raw;
+	}
+
+	const config = { ...(raw as Record<string, unknown>) };
+	const machineProfileId = readNonEmptyString(config.machineProfileId);
+	const machineLabel = readNonEmptyString(config.machineLabel);
+
+	if (config.machineInstanceId === undefined && machineProfileId !== undefined) {
+		config.machineInstanceId = machineProfileId;
+	}
+	if (config.machineDisplayLabel === undefined && machineLabel !== undefined) {
+		config.machineDisplayLabel = machineLabel;
+	}
+
+	if (
+		config.modelProfiles === undefined &&
+		Object.prototype.hasOwnProperty.call(config, "modelAliases")
+	) {
+		const migratedModelAliases = migrateLegacyModelAliases(config.modelAliases);
+		if (migratedModelAliases !== undefined) {
+			config.modelProfiles = migratedModelAliases;
+			delete config.modelAliases;
+		}
+	}
+
+	return config;
+}
+
+const BenchConfigObjectSchema = z
 	.object({
 		/** Schema version for config evolution. */
 		schemaVersion: z.string().default(SCHEMA_VERSION),
@@ -64,16 +136,60 @@ export const BenchConfigSchema = z
 		/** Output directory for results. */
 		outputDir: z.string().default("results"),
 
-		/** Optional machine profile identifier used for cross-run aggregation. */
-		machineProfileId: z.string().min(1).optional(),
+		/** Optional explicit machine instance identifier. */
+		machineInstanceId: z.string().trim().min(1).optional(),
 
-		/** Optional human-readable machine label for dashboard display. */
-		machineLabel: z.string().min(1).optional(),
+		/** Optional human-readable display label for a specific machine instance. */
+		machineDisplayLabel: z.string().trim().min(1).optional(),
 
-		/** Model aliases for cross-runtime mapping. */
-		modelAliases: ModelAliasMapSchema.default({}),
+		/** Deprecated alias for machine instance identity. */
+		machineProfileId: z.string().trim().min(1).optional(),
+
+		/** Deprecated alias for machine display label. */
+		machineLabel: z.string().trim().min(1).optional(),
+
+		/** Canonical model profiles with runtime-specific variant mappings. */
+		modelProfiles: ModelProfileRegistrySchema.default({}),
+
+		/** Deprecated alias-only model mapping format retained for migration. */
+		modelAliases: ModelAliasMapSchema.optional(),
 	})
 	.superRefine((config, context) => {
+		if (
+			config.machineInstanceId !== undefined &&
+			config.machineProfileId !== undefined &&
+			config.machineInstanceId !== config.machineProfileId
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["machineProfileId"],
+				message:
+					`Conflicting bench config machine IDs: machineInstanceId="${config.machineInstanceId}" does not match deprecated machineProfileId="${config.machineProfileId}"`,
+			});
+		}
+
+		if (
+			config.machineDisplayLabel !== undefined &&
+			config.machineLabel !== undefined &&
+			config.machineDisplayLabel !== config.machineLabel
+		) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["machineLabel"],
+				message:
+					`Conflicting bench config machine labels: machineDisplayLabel="${config.machineDisplayLabel}" does not match deprecated machineLabel="${config.machineLabel}"`,
+			});
+		}
+
+		if (config.modelProfiles && config.modelAliases) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["modelAliases"],
+				message:
+					'Bench config must not specify both "modelProfiles" and deprecated "modelAliases"',
+			});
+		}
+
 		if (config.gooseRetryMaxTurns < config.gooseMaxTurns) {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
@@ -92,6 +208,17 @@ export const BenchConfigSchema = z
 			});
 		}
 	});
+
+const BenchConfigOutputSchema = BenchConfigObjectSchema.transform(
+	({ machineProfileId: _machineProfileId, machineLabel: _machineLabel, modelAliases: _modelAliases, ...config }) =>
+		config,
+);
+
+/** Zod schema for benchmark configuration. */
+export const BenchConfigSchema = z.preprocess(
+	migrateBenchConfigAliases,
+	BenchConfigOutputSchema,
+);
 
 /** Benchmark configuration type. */
 export type BenchConfig = z.infer<typeof BenchConfigSchema>;

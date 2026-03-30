@@ -239,8 +239,38 @@ function printSummary(result: CompareResult): void {
 		console.log("Scoring Delta");
 		console.log("-".repeat(40));
 		console.log(
-			`  Pass rate:  ${formatDelta(summary.scoringDelta.passRateDelta, "%")}`,
+			`  Raw pass rate:      ${formatDelta(summary.scoringDelta.passRateDelta, "%")}`,
 		);
+		if (
+			summary.metricAvailability.scoring.comparedRows <
+			summary.metricAvailability.scoring.matchedRows
+		) {
+			console.log(
+				`  Compared rows:      ${summary.metricAvailability.scoring.comparedRows}/${summary.metricAvailability.scoring.matchedRows}`,
+			);
+		}
+		if (summary.signal.trustedMetricsAvailable) {
+			if (summary.trustedScoringDelta) {
+				console.log(
+					`  Trusted pass rate:  ${formatDelta(summary.trustedScoringDelta.passRateDelta, "%")}`,
+				);
+				if (
+					summary.metricAvailability.scoring.trustedComparedRows !== null &&
+					summary.metricAvailability.scoring.trustedComparedRows <
+						summary.metricAvailability.scoring.comparedRows
+				) {
+					console.log(
+						`  Trusted rows:       ${summary.metricAvailability.scoring.trustedComparedRows}/${summary.metricAvailability.scoring.comparedRows}`,
+					);
+				}
+			} else {
+				console.log("  Trusted pass rate:  unavailable (no trusted scored rows)");
+			}
+		} else {
+			console.log(
+				"  Trusted pass rate:  unavailable (signalAssessment missing)",
+			);
+		}
 		console.log("");
 	}
 
@@ -248,8 +278,47 @@ function printSummary(result: CompareResult): void {
 		console.log("Frontier Eval Delta");
 		console.log("-".repeat(40));
 		console.log(
-			`  Avg score:  ${formatDelta(summary.frontierEvalDelta.avgScoreDelta, "/10")}`,
+			`  Raw avg score:      ${formatDelta(summary.frontierEvalDelta.avgScoreDelta, "/10")}`,
 		);
+		if (
+			summary.metricAvailability.frontierEval.comparedRows <
+			summary.metricAvailability.frontierEval.matchedRows
+		) {
+			console.log(
+				`  Compared rows:      ${summary.metricAvailability.frontierEval.comparedRows}/${summary.metricAvailability.frontierEval.matchedRows}`,
+			);
+		}
+		if (summary.signal.trustedMetricsAvailable) {
+			if (summary.trustedFrontierEvalDelta) {
+				console.log(
+					`  Trusted avg score:  ${formatDelta(summary.trustedFrontierEvalDelta.avgScoreDelta, "/10")}`,
+				);
+				if (
+					summary.metricAvailability.frontierEval.trustedComparedRows !==
+						null &&
+					summary.metricAvailability.frontierEval.trustedComparedRows <
+						summary.metricAvailability.frontierEval.comparedRows
+				) {
+					console.log(
+						`  Trusted rows:       ${summary.metricAvailability.frontierEval.trustedComparedRows}/${summary.metricAvailability.frontierEval.comparedRows}`,
+					);
+				}
+			} else {
+				console.log("  Trusted avg score:  unavailable (no trusted eval rows)");
+			}
+		} else {
+			console.log(
+				"  Trusted avg score:  unavailable (signalAssessment missing)",
+			);
+		}
+		console.log("");
+	}
+
+	if (summary.signal.trustedMetricsAvailable) {
+		console.log("Signal");
+		console.log("-".repeat(40));
+		console.log(`  Tainted in A:  ${summary.signal.taintedInA}`);
+		console.log(`  Tainted in B:  ${summary.signal.taintedInB}`);
 		console.log("");
 	}
 }

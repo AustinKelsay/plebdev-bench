@@ -15,6 +15,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execa } from "execa";
 import { logger } from "../lib/logger.js";
+import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -43,6 +44,19 @@ const SOLUTION_FILENAME = "solution.ts";
 
 /** Interval for checking stale output (ms). */
 const STALE_CHECK_INTERVAL_MS = 30_000;
+
+/**
+ * Detects permission-denied stderr emitted by OpenCode.
+ *
+ * @param stderr - Raw stderr text
+ * @returns True when permission auto-rejection is present
+ */
+function hasPermissionDeniedStderr(stderr: string): boolean {
+	return (
+		/permission requested:/i.test(stderr) &&
+		/(auto-rejecting|external_directory)/i.test(stderr)
+	);
+}
 
 /** Creates an OpenCode harness adapter. */
 export function createOpenCodeAdapter(): Harness {
@@ -319,13 +333,21 @@ export function createOpenCodeAdapter(): Harness {
 
 				const stdout = stdoutChunks.join("");
 				const stderr = stderrChunks.join("");
+				const signalAssessment = hasPermissionDeniedStderr(stderr)
+					? appendSignalAssessmentReasons(undefined, [
+							"tool_permission_denied",
+						])
+					: undefined;
 
 				if (result.exitCode !== 0 && result.exitCode !== null) {
 					const stdoutPreview = stdout.trim().slice(0, 800);
 					const stderrPreview = stderr.trim().slice(0, 800);
-					throw new Error(
+					throw Object.assign(
+						new Error(
 						`OpenCode exited with code ${result.exitCode}: ` +
 							`${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
+						),
+						{ signalAssessment },
 					);
 				}
 
@@ -378,6 +400,7 @@ export function createOpenCodeAdapter(): Harness {
 					return {
 						output,
 						durationMs,
+						signalAssessment,
 					};
 				}
 
@@ -423,6 +446,20 @@ export function createOpenCodeAdapter(): Harness {
 							},
 							"Persisted extracted code to solution.ts (tool output absent)",
 						);
+						return {
+							output,
+							durationMs,
+							codeFilePath,
+							signalAssessment: appendSignalAssessmentReasons(
+								signalAssessment,
+								[
+									...decision.taintReasons,
+									...(toolCallDetected
+										? (["tool_call_not_executed"] as const)
+										: []),
+								],
+							),
+						};
 					} else if (decision.shouldRetry) {
 						const elapsedMs = Math.round(performance.now() - startTime);
 						const remainingMs = timeoutMs - elapsedMs;
@@ -462,6 +499,7 @@ export function createOpenCodeAdapter(): Harness {
 					output,
 					durationMs,
 					codeFilePath,
+					signalAssessment,
 				};
 			} catch (error) {
 				if (timeoutId) clearTimeout(timeoutId);
@@ -489,8 +527,17 @@ export function createOpenCodeAdapter(): Harness {
 
 				if (error && typeof error === "object" && "stderr" in error) {
 					const execaError = error as { stderr: string; message: string };
-					throw new Error(
-						`OpenCode failed: ${execaError.stderr || execaError.message}`,
+					throw Object.assign(
+						new Error(
+							`OpenCode failed: ${execaError.stderr || execaError.message}`,
+						),
+						{
+							signalAssessment: hasPermissionDeniedStderr(execaError.stderr)
+								? appendSignalAssessmentReasons(undefined, [
+										"tool_permission_denied",
+									])
+								: undefined,
+						},
 					);
 				}
 

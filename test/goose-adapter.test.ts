@@ -74,4 +74,54 @@ describe("createGooseAdapter", () => {
 			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
 		}
 	});
+
+	it("marks salvaged tool-call payloads as unexecuted when code was extracted instead of executed", async () => {
+		const { createGooseAdapter } = await import(
+			"../src/harnesses/goose-adapter.js"
+		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-goose-tool-call-"),
+		);
+		const runtime: Runtime = {
+			name: "ollama",
+			baseUrl: "http://localhost:11434",
+			apiFormat: "ollama",
+			ping: async () => true,
+			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async () => ({
+				name: "qwen3.5:4b",
+				sizeBytes: 0,
+				parametersBillions: 4,
+			}),
+		};
+		execaMock.mockResolvedValue({
+			exitCode: 0,
+			stdout: JSON.stringify({
+				name: "text_editor",
+				arguments: {
+					file_text: "export function createValue(): number { return 42; }",
+				},
+			}),
+			stderr: "",
+		});
+
+		try {
+			const adapter = createGooseAdapter();
+			const result = await adapter.generate({
+				model: "qwen3.5:4b",
+				prompt: "Return TypeScript source only.",
+				timeoutMs: 5_000,
+				runtime,
+				workingDirectory: workspaceDir,
+			});
+
+			expect(result.codeFilePath).toBeDefined();
+			expect(result.signalAssessment).toEqual({
+				classification: "tainted",
+				reasons: ["tool_call_not_executed"],
+			});
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
+	});
 });

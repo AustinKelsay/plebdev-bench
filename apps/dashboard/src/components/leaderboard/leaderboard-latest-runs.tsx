@@ -20,6 +20,23 @@ interface LeaderboardLatestRunsProps {
 	latestCheckpointId: string | null;
 }
 
+/**
+ * Resolves the best machine badge label for a latest-run card.
+ *
+ * @param run - Published run summary item
+ * @returns Best available human-friendly machine label
+ */
+function getRunMachineBadgeLabel(run: RunListItem): string | undefined {
+	return (
+		run.machineDisplayLabel?.trim() ||
+		run.machineLabel?.trim() ||
+		run.machineProfileLabel?.trim() ||
+		run.machineProfileKey?.trim() ||
+		run.machineProfileId?.trim() ||
+		undefined
+	);
+}
+
 function getRunAggregateBadge(
 	run: RunListItem,
 	latestCheckpointId: string | null,
@@ -71,6 +88,7 @@ export function LeaderboardLatestRuns({
 					{latestRuns.map((run) => {
 						const aggregateBadge = getRunAggregateBadge(run, latestCheckpointId);
 						const hasFailures = run.summary.failed > 0;
+						const machineBadgeLabel = getRunMachineBadgeLabel(run);
 
 						return (
 							<Link key={run.runId} to={`/runs/${run.runId}`}>
@@ -93,9 +111,9 @@ export function LeaderboardLatestRuns({
 											) : (
 												<Badge variant="warning">no-checkpoint</Badge>
 											)}
-											{run.machineLabel || run.machineProfileId ? (
+											{machineBadgeLabel ? (
 												<Badge variant="outline">
-													{run.machineLabel ?? run.machineProfileId}
+													{machineBadgeLabel}
 												</Badge>
 											) : null}
 										</div>

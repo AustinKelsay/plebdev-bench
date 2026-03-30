@@ -4,7 +4,10 @@
  * Source of truth: src/schemas/result.schema.ts, plan.schema.ts, common.schema.ts
  */
 
-import type { TestCategory } from "../../../../src/schemas/common.schema.js";
+import type {
+	RuntimeName,
+	TestCategory,
+} from "../../../../src/schemas/common.schema.js";
 
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
@@ -46,6 +49,58 @@ export type FrontierEvalFailureType =
 
 /** Verification status for run provenance */
 export type VerificationStatus = "self_reported" | "verified" | "rejected";
+
+/** Item-level signal quality classification */
+export type SignalAssessmentClassification = "trustworthy" | "tainted";
+
+/** Stable reason codes for tainted benchmark rows */
+export type SignalAssessmentReason =
+	| "output_contract_violation"
+	| "mixed_prose_salvaged"
+	| "tool_permission_denied"
+	| "tool_call_not_executed"
+	| "confirmation_without_artifact";
+
+/** Item-level benchmark signal assessment */
+export interface SignalAssessment {
+	classification: SignalAssessmentClassification;
+	reasons: SignalAssessmentReason[];
+}
+
+/** Resolution source for canonical model-profile metadata */
+export type ModelProfileResolutionSource =
+	| "configured_profile"
+	| "legacy_alias"
+	| "runtime_name";
+
+/** Runtime-agnostic canonical model identity */
+export interface CanonicalModelProfile {
+	profileKey: string;
+	profileLabel: string;
+	family: string;
+	parametersBillions?: number;
+	parameterScaleLabel?: string;
+	provider?: string;
+	tuning?: string;
+}
+
+/** Runtime-specific model artifact metadata */
+export interface ModelVariant {
+	variantKey: string;
+	variantLabel: string;
+	runtime: RuntimeName;
+	runtimeModelName: string;
+	format?: string;
+	quantization?: string;
+	sourceId?: string;
+}
+
+/** Canonical model-profile snapshot attached to plan/result items */
+export interface ModelProfile {
+	canonical: CanonicalModelProfile;
+	variant: ModelVariant;
+	resolutionSource: ModelProfileResolutionSource;
+}
 
 /** Generation failure record */
 export interface GenerationFailure {
@@ -94,6 +149,7 @@ export interface GenerationResult {
 	promptTokens?: number;
 	completionTokens?: number;
 	codeFilePath?: string;
+	sourcePathToken?: string;
 }
 
 /** Scoring execution metrics */
@@ -116,21 +172,76 @@ export interface RuntimeEnvironment {
 	bunVersion: string;
 }
 
-/** Sanitized machine hardware metadata */
+/** Accelerator detection status for observed hardware */
+export type AcceleratorDetectionStatus =
+	| "detected"
+	| "none_detected"
+	| "unavailable";
+
+/** Observed accelerator kind */
+export type ObservedAcceleratorKind = "integrated" | "discrete" | "unknown";
+
+/** Observed accelerator metadata */
+export interface ObservedAccelerator {
+	vendor?: string;
+	modelRaw: string;
+	memoryBytes?: number;
+	backend?: string;
+	count?: number;
+	kind: ObservedAcceleratorKind;
+}
+
+/** Accelerator probe status */
+export interface AcceleratorDetection {
+	status: AcceleratorDetectionStatus;
+	detail?: string;
+}
+
+/** Sanitized observed machine hardware metadata */
 export interface HardwareProfile {
 	platform: string;
 	arch: string;
 	osRelease: string;
-	cpuModel: string;
+	cpuModelRaw: string;
+	cpuVendor?: string;
+	physicalCores?: number;
 	logicalCores: number;
 	totalMemoryBytes: number;
+	accelerators: ObservedAccelerator[];
+	acceleratorDetection: AcceleratorDetection;
 }
+
+/** Canonical normalized machine profile used for aggregation */
+export interface NormalizedMachineProfile {
+	platformFamily: "macos" | "linux" | "windows" | "unknown";
+	arch: string;
+	cpuVendor: string;
+	cpuModelKey: string;
+	physicalCores?: number;
+	logicalCores: number;
+	memoryGiB: number;
+	acceleratorKey: string;
+	acceleratorSummary?: string[];
+	acceleratorMemoryGiB?: number;
+	acceleratorCount?: number;
+}
+
+/** Source used to resolve a machine instance identifier. */
+export type InstanceIdSource =
+	| "config"
+	| "env"
+	| "generated"
+	| "legacy_profile_id";
 
 /** Machine profile metadata for aggregation */
 export interface MachineProfile {
-	profileId: string;
-	label?: string;
-	hardware: HardwareProfile;
+	instanceId: string;
+	instanceIdSource: InstanceIdSource;
+	displayLabel?: string;
+	profileKey: string;
+	profileLabel: string;
+	normalizedProfile: NormalizedMachineProfile;
+	observedHardware: HardwareProfile;
 }
 
 /** Provenance metadata attached to plans/runs */
@@ -148,6 +259,7 @@ export interface MatrixItem {
 	runtime: string;
 	model: string;
 	modelAlias?: string;
+	modelProfile?: ModelProfile;
 	harness: string;
 	test: string;
 	category?: TestCategory;
@@ -166,6 +278,7 @@ export interface MatrixItemResult extends MatrixItem {
 	scoringFailure?: ScoringFailure;
 	frontierEval?: FrontierEval;
 	frontierEvalFailure?: FrontierEvalFailure;
+	signalAssessment?: SignalAssessment;
 }
 
 /** Legacy run plan environment info (pre-0.3.0 artifacts) */
@@ -236,8 +349,13 @@ export interface RunListItem {
 	durationMs: number;
 	summary: RunSummary;
 	checkpointId?: string;
+	machineProfileKey?: string;
+	/** Deprecated compatibility alias for machineProfileKey. */
 	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	verificationStatus?: VerificationStatus;
 	isLegacy?: boolean;
 }
@@ -248,12 +366,13 @@ export interface DashboardCheckpointSummary {
 	runCount: number;
 	rawItemCount: number;
 	machineCount: number;
+	instanceCount: number;
 	latestRunAt: string;
 }
 
-/** Dashboard index format v2 */
+/** Dashboard index format v3 */
 export interface DashboardIndex {
-	schemaVersion: 2;
+	schemaVersion: 3;
 	generatedAt: string;
 	latestCheckpointId: string | null;
 	runs: RunListItem[];
@@ -262,8 +381,13 @@ export interface DashboardIndex {
 
 /** Aggregated leaderboard item from checkpoint aggregate payloads */
 export interface LeaderboardAggregatedItem extends MatrixItemResult {
-	machineProfileId: string;
+	machineProfileKey: string;
+	/** Deprecated compatibility alias for machineProfileKey. */
+	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
+	machineInstanceId?: string;
+	machineDisplayLabel?: string;
 	verificationStatus: VerificationStatus;
 	sourceRunId: string;
 	sourceCompletedAt: string;
@@ -271,11 +395,15 @@ export interface LeaderboardAggregatedItem extends MatrixItemResult {
 
 /** Per-machine summary in checkpoint aggregate payload */
 export interface LeaderboardMachineSummary {
-	machineProfileId: string;
+	machineProfileKey: string;
+	/** Deprecated compatibility alias for machineProfileKey. */
+	machineProfileId?: string;
+	machineProfileLabel?: string;
 	machineLabel?: string;
 	verificationStatus: VerificationStatus;
 	runCount: number;
 	itemCount: number;
+	instanceCount: number;
 }
 
 /** Aggregate summary counters for leaderboard payload */
@@ -285,13 +413,14 @@ export interface LeaderboardAggregateSummary {
 	rawItems: number;
 	dedupedItems: number;
 	machines: number;
+	instances: number;
 	automatedScoreItems: number;
 	frontierEvalItems: number;
 }
 
 /** Checkpoint aggregate payload rendered by leaderboard page */
 export interface LeaderboardAggregate {
-	schemaVersion: 1;
+	schemaVersion: 2;
 	generatedAt: string;
 	checkpointId: string;
 	summary: LeaderboardAggregateSummary;
@@ -353,6 +482,18 @@ export interface CompareSummary {
 	frontierEvalDelta: {
 		avgScoreDelta: number;
 	} | null;
+	metricAvailability: {
+		scoring: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+		frontierEval: {
+			matchedRows: number;
+			comparedRows: number;
+			trustedComparedRows: number | null;
+		};
+	};
 }
 
 /** Full compare result */

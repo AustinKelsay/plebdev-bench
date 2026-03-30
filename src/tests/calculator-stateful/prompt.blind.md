@@ -10,9 +10,9 @@ Output contract:
 - Before finishing, verify export names and signatures match exactly.
 
 Export a factory `createCalculator()` that returns an object with:
-- `add`, `subtract`, `multiply`, `divide`, `clear` (each returns the calculator for chaining)
+- `add(n: number)`, `subtract(n: number)`, `multiply(n: number)`, `divide(n: number)`, `clear()` (each returns the calculator for chaining)
 - `result()` returns the current value
-- `memoryStore`, `memoryAdd`, `memoryClear` (each returns the calculator for chaining)
+- `memoryStore()`, `memoryAdd()`, `memoryClear()` (each returns the calculator for chaining)
 - `memoryRecall()` returns the current memory value (a number) and does NOT change current value
 
 Behavior:
@@ -21,4 +21,5 @@ Behavior:
 - `memoryStore()` copies current value into memory
 - `memoryAdd()` adds the current value to memory (no arguments) and does NOT change current value
 - Memory is independent from the current value (clear does not change memory)
+- `result()` and `memoryRecall()` return numbers; the other methods remain chainable
 - Must export `createCalculator` as a function (do not export a class as the primary API)

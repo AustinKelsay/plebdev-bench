@@ -42,6 +42,7 @@ export interface GenerationWithRetryResult {
 	generation: GenerationResult;
 	generationAttempts: number;
 	generationFailure?: MatrixItemResult["generationFailure"];
+	signalAssessment?: MatrixItemResult["signalAssessment"];
 	workspace?: PreparedTestWorkspace;
 }
 
@@ -103,6 +104,7 @@ export async function runGenerationWithInfraRetry(
 					codeFilePath: result.codeFilePath,
 				},
 				generationAttempts,
+				signalAssessment: result.signalAssessment,
 				workspace,
 			};
 		} catch (error) {
@@ -111,6 +113,7 @@ export async function runGenerationWithInfraRetry(
 			const errorDetails = error as {
 				output?: string;
 				durationMs?: number;
+				signalAssessment?: MatrixItemResult["signalAssessment"];
 			};
 			const failureType = classifyGenerationError(errorMessage);
 			const fallbackDurationMs = Math.round(
@@ -163,6 +166,7 @@ export async function runGenerationWithInfraRetry(
 								output,
 							},
 							generationAttempts,
+							signalAssessment: errorDetails.signalAssessment,
 							generationFailure: {
 								type: "harness_error",
 								message: `Failed to prepare fresh workspace for retry: ${workspaceErrorMessage}`,
@@ -193,6 +197,7 @@ export async function runGenerationWithInfraRetry(
 					output,
 				},
 				generationAttempts,
+				signalAssessment: errorDetails.signalAssessment,
 				generationFailure: {
 					type: failureType,
 					message: errorMessage,

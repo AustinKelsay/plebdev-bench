@@ -147,6 +147,27 @@ export function formatRunStats(
 		lines.push(
 			`  Scored rows:        ${stats.scoring.scoredItemRate.toFixed(1)}% (${stats.scoring.scoredItems}/${stats.scoring.totalItems} items)`,
 		);
+		if (stats.signal) {
+			if (stats.trustedScoring) {
+				lines.push(
+					`  Trusted semantic:   ${stats.trustedScoring.passRate.toFixed(1)}% (${stats.trustedScoring.totalPassed}/${stats.trustedScoring.totalTests} scored checks)`,
+				);
+				lines.push(
+					`  Trusted items:      ${stats.trustedScoring.itemSuccessRate.toFixed(1)}% (${stats.trustedScoring.completedItems}/${stats.trustedScoring.totalItems} items)`,
+				);
+				lines.push(
+					`  Trusted rows:       ${stats.trustedScoring.scoredItemRate.toFixed(1)}% (${stats.trustedScoring.scoredItems}/${stats.trustedScoring.totalItems} items)`,
+				);
+			} else {
+				lines.push(
+					"  Trusted semantic:   unavailable (no trustworthy scored rows)",
+				);
+			}
+		} else {
+			lines.push(
+				"  Trusted semantic:   unavailable (signalAssessment missing)",
+			);
+		}
 
 		if (stats.scoring.byTest.length > 1) {
 			lines.push("  By test:");
@@ -195,6 +216,19 @@ export function formatRunStats(
 		lines.push(
 			`  Range: ${stats.frontier.minScore}/10 - ${stats.frontier.maxScore}/10`,
 		);
+		if (stats.signal) {
+			if (stats.trustedFrontier) {
+				lines.push(
+					`  Trusted avg: ${stats.trustedFrontier.avgScore.toFixed(1)}/10 (${stats.trustedFrontier.itemCount} items)`,
+				);
+			} else {
+				lines.push("  Trusted avg: unavailable (no trustworthy eval rows)");
+			}
+		} else {
+			lines.push(
+				"  Trusted avg: unavailable (signalAssessment missing)",
+			);
+		}
 
 		if (stats.frontier.byHarness.length > 1) {
 			lines.push("  By harness:");
@@ -219,6 +253,28 @@ export function formatRunStats(
 					m.name.length > 25 ? `${m.name.slice(0, 24)}…` : m.name;
 				lines.push(
 					`    ${pad(displayName, maxNameLen)}  ${m.avgScore.toFixed(1)}/10 (${m.count})`,
+				);
+			}
+		}
+	}
+
+	if (stats.signal) {
+		lines.push("");
+		lines.push("Signal");
+		lines.push(
+			`  Tainted rows: ${stats.signal.taintedItems}/${stats.signal.totalItems}`,
+		);
+		lines.push(
+			`  Trusted rows: ${stats.signal.trustedItems}/${stats.signal.totalItems}`,
+		);
+		if (stats.signal.byHarness.length > 0) {
+			lines.push("  Tainted by harness:");
+			const maxNameLen = Math.max(
+				...stats.signal.byHarness.map((entry) => entry.name.length),
+			);
+			for (const entry of stats.signal.byHarness) {
+				lines.push(
+					`    ${pad(entry.name, maxNameLen)}  ${entry.count}`,
 				);
 			}
 		}

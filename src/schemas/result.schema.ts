@@ -19,8 +19,10 @@ import {
 	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
+	SignalAssessmentSchema,
 	TestCategorySchema,
 } from "./common.schema.js";
+import { ModelProfileSchema } from "./model-profile.schema.js";
 
 /** Zod schema for generation output from a harness. */
 export const GenerationResultSchema = z.object({
@@ -47,6 +49,9 @@ export const GenerationResultSchema = z.object({
 
 	/** Path to code file written by tool-calling harness (e.g., Goose developer extension). */
 	codeFilePath: z.string().optional(),
+
+	/** Redacted path token preserved in published artifacts for source traceability. */
+	sourcePathToken: z.string().optional(),
 });
 
 /** Generation result from a harness call. */
@@ -159,6 +164,12 @@ export const MatrixItemResultSchema = z.object({
 	/** Model name. */
 	model: z.string(),
 
+	/** Deprecated compatibility alias for canonical model grouping. */
+	modelAlias: z.string().optional(),
+
+	/** Canonical model profile snapshot plus runtime-specific variant metadata. */
+	modelProfile: ModelProfileSchema.optional(),
+
 	/** Harness adapter name. */
 	harness: z.string(),
 
@@ -203,6 +214,9 @@ export const MatrixItemResultSchema = z.object({
 
 	/** Structured frontier eval failure record (when eval fails). */
 	frontierEvalFailure: FrontierEvalFailureSchema.optional(),
+
+	/** Benchmark signal assessment for this row. */
+	signalAssessment: SignalAssessmentSchema.optional(),
 });
 
 /** Result for a single matrix item execution. */

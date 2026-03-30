@@ -1,18 +1,51 @@
 {
-	"qwen3-8b": {
-		"ollama": "qwen3:8b",
-		"vllm": "Qwen/Qwen3-8B-Instruct"
-	},
-	"qwen3-4b": {
-		"ollama": "qwen3:4b",
-		"vllm": "Qwen/Qwen3-4B-Instruct"
-	},
-	"llama3-8b": {
-		"ollama": "llama3.1:8b",
-		"vllm": "meta-llama/Llama-3.1-8B-Instruct"
-	},
-	"qwen2.5-coder-7b": {
-		"ollama": "qwen2.5-coder:7b",
-		"vllm": "Qwen/Qwen2.5-Coder-7B-Instruct"
+	"schemaVersion": "0.5.0",
+	"models": {
+		"qwen3-27b-instruct": {
+			"profileLabel": "Qwen 3 27B Instruct",
+			"family": "qwen3",
+			"parametersBillions": 27,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": {
+					"modelName": "qwen3:27b",
+					"variantLabel": "Qwen 3 27B Ollama"
+				},
+				"vllm": {
+					"modelName": "Qwen/Qwen3-27B-Instruct",
+					"format": "safetensors"
+				}
+			}
+		},
+		"qwen3-8b-instruct": {
+			"profileLabel": "Qwen 3 8B Instruct",
+			"family": "qwen3",
+			"parametersBillions": 8,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "qwen3:8b",
+				"vllm": "Qwen/Qwen3-8B-Instruct"
+			}
+		},
+		"llama3.1-8b-instruct": {
+			"profileLabel": "Llama 3.1 8B Instruct",
+			"family": "llama3.1",
+			"parametersBillions": 8,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "llama3.1:8b",
+				"vllm": "meta-llama/Llama-3.1-8B-Instruct"
+			}
+		},
+		"qwen2.5-coder-7b-instruct": {
+			"profileLabel": "Qwen 2.5 Coder 7B Instruct",
+			"family": "qwen2.5-coder",
+			"parametersBillions": 7,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "qwen2.5-coder:7b",
+				"vllm": "Qwen/Qwen2.5-Coder-7B-Instruct"
+			}
+		}
 	}
 }
