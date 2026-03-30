@@ -224,29 +224,6 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 				</TabsList>
 
 				<TabsContent value="overview" className="mt-4 space-y-6">
-					<CoverageDiagnostics run={run} plan={plan} />
-
-					{/* Matrix Table */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">Results Matrix</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<MatrixTable items={run.items} onRowClick={setSelectedItem} />
-						</CardContent>
-					</Card>
-
-					{/* Breakdowns */}
-					<div className="grid gap-4 md:grid-cols-2">
-						<ScoringBreakdown items={run.items} />
-						<ToolingBreakdown items={run.items} />
-					</div>
-
-					<div className="grid gap-4 md:grid-cols-2">
-						<TimingStats items={run.items} />
-						<FailureBreakdown items={run.items} />
-					</div>
-
 					{/* Primary Chart - Composite Scores */}
 					<CompositeScoreChart
 						items={run.items}
@@ -261,7 +238,30 @@ export function RunDetailPage({ run, plan }: RunDetailPageProps) {
 						<TimingDistribution items={run.items} />
 					</div>
 
+					{/* Breakdowns */}
+					<div className="grid gap-4 md:grid-cols-2">
+						<ScoringBreakdown items={run.items} />
+						<ToolingBreakdown items={run.items} />
+					</div>
+
+					<div className="grid gap-4 md:grid-cols-2">
+						<TimingStats items={run.items} />
+						<FailureBreakdown items={run.items} />
+					</div>
+
 					<FrontierEvalScatter items={run.items} />
+
+					<CoverageDiagnostics run={run} plan={plan} />
+
+					{/* Matrix Table */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Results Matrix</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<MatrixTable items={run.items} onRowClick={setSelectedItem} />
+						</CardContent>
+					</Card>
 				</TabsContent>
 
 				<TabsContent value="model" className="mt-4">

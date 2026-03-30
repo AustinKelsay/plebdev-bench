@@ -5,7 +5,7 @@
  * Invariants:
  * - Renders aggregate charts before filter/table sections
  * - Uses filtered aggregate items so charts stay aligned with visible leaderboard scope
- * - Hierarchy: heatmap → composite → pass+blind → radar+token → failure+difficulty → timing+frontier → head-to-head
+ * - Hierarchy: composite → heatmap → pass+blind → radar+token → failure+difficulty → timing+frontier → head-to-head
  */
 
 import { BlindVsInformedChart } from "@/components/charts/blind-vs-informed-chart";
@@ -44,9 +44,8 @@ export function LeaderboardChartGallery({
 						Aggregate Charts
 					</h2>
 					<p className="mt-1 text-sm text-foreground-muted">
-						The leaderboard now opens on the aggregate signal: rank, prompt
-						delta, timing, frontier alignment, and pass-rate breakdowns across
-						the latest checkpoint.
+						Aggregate signals for the latest checkpoint: model rankings, prompt
+						delta, timing, frontier alignment, and pass-rate breakdowns.
 					</p>
 				</div>
 				<Badge variant="secondary" className="w-fit">
@@ -54,11 +53,11 @@ export function LeaderboardChartGallery({
 				</Badge>
 			</div>
 
-			{/* 1. Hero: Model x Test Heatmap — full overview at a glance */}
-			<ModelTestHeatmap items={items} />
-
-			{/* 2. Composite Score — primary analytical ranking */}
+			{/* 1. Composite Score — primary ranking: which model is best */}
 			<CompositeScoreChart items={items} />
+
+			{/* 2. Model x Test Heatmap — per-test breakdown after rank context */}
+			<ModelTestHeatmap items={items} />
 
 			{/* 3. Core metrics: Pass Rate + Blind vs Informed */}
 			<div className="grid gap-4 xl:grid-cols-2">

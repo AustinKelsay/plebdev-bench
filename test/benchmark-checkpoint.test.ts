@@ -21,8 +21,13 @@ const REQUIRED_LIB_ASSETS = [
 	"benchmark-checkpoint.ts",
 	"scorer.ts",
 	"scorer-core.ts",
+	"code-module-scorer.ts",
 	"scorer-worker.ts",
 	"scoring-spec.ts",
+	"workspace-scorer.ts",
+	"workspace-manifest.ts",
+	"test-workspace.ts",
+	"signal-assessment.ts",
 	"code-extractor.ts",
 	"stdout-suppressor.ts",
 	"test-catalog.ts",
@@ -141,12 +146,33 @@ describe("benchmark checkpoint", () => {
 		expect(after.checkpointId).not.toBe(before.checkpointId);
 	});
 
+	it("changes manifest hash when signal assessment changes", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		const signalAssessmentPath = path.join(
+			root,
+			"src",
+			"lib",
+			"signal-assessment.ts",
+		);
+		fs.writeFileSync(
+			signalAssessmentPath,
+			'export const signal_assessment_ts = "updated";\n',
+		);
+
+		const after = computeBenchmarkCheckpoint(root);
+		expect(after.manifestHash).not.toBe(before.manifestHash);
+		expect(after.checkpointId).not.toBe(before.checkpointId);
+	});
+
 	it("collects a deterministic sorted asset list", () => {
 		const root = createBenchmarkRoot();
 		const assets = collectBenchmarkAssetPaths(root);
 		expect(assets).toEqual([...assets].sort((a, b) => a.localeCompare(b)));
 		expect(assets).toContain("src/harnesses/direct-adapter.ts");
 		expect(assets).toContain("src/lib/scorer.ts");
+		expect(assets).toContain("src/lib/signal-assessment.ts");
 		expect(assets).toContain("src/tests/smoke/prompt.blind.md");
 	});
 });
