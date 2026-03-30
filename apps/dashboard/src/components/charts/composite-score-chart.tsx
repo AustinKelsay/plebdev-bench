@@ -12,15 +12,14 @@ import {
 	groupByModel,
 	groupByRuntime,
 	groupByTest,
+	groupByTestType,
 	inferToolHarnesses,
 } from "@/lib/aggregations";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { composite as compositeTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
-import {
-	ClickableYAxisTick,
-	createRowBackground,
-} from "./chart-primitives";
+import { formatTestCategoryLabel } from "@/lib/utils";
+import { ClickableYAxisTick, createRowBackground } from "./chart-primitives";
 import {
 	Bar,
 	BarChart,
@@ -36,7 +35,7 @@ import {
 interface CompositeScoreChartProps {
 	items: MatrixItemResult[];
 	onDimensionClick?: (
-		dimension: "model" | "runtime" | "harness" | "test",
+		dimension: "model" | "runtime" | "harness" | "test" | "testType",
 		name: string,
 	) => void;
 }
@@ -105,9 +104,15 @@ interface ChartData {
 	raw: CompositeMetrics;
 }
 
-function prepareChartData(metrics: CompositeMetrics[]): ChartData[] {
+function prepareChartData(
+	metrics: CompositeMetrics[],
+	formatName: (name: string) => string = (name) => name,
+): ChartData[] {
 	return metrics.map((m) => ({
-		name: m.name.length > 20 ? `${m.name.slice(0, 18)}...` : m.name,
+		name:
+			formatName(m.name).length > 20
+				? `${formatName(m.name).slice(0, 18)}...`
+				: formatName(m.name),
 		effectiveScore: m.effectiveScore * 100,
 		passRate: m.passRate * 100,
 		toolSuccess: m.toolTotal > 0 ? m.toolSuccessRate * 100 : null,
@@ -269,6 +274,12 @@ function CompositeBarChart({
 	);
 }
 
+/**
+ * Renders a composite-score chart grouped by benchmark dimension.
+ *
+ * @param props - Component props
+ * @returns Chart card with dimension tabs
+ */
 export function CompositeScoreChart({
 	items,
 	onDimensionClick,
@@ -287,11 +298,17 @@ export function CompositeScoreChart({
 		toolHarnesses,
 	);
 	const byTest = computeCompositeMetrics(items, groupByTest, toolHarnesses);
+	const byTestType = computeCompositeMetrics(
+		items,
+		groupByTestType,
+		toolHarnesses,
+	);
 
 	const modelData = prepareChartData(byModel);
 	const runtimeData = prepareChartData(byRuntime);
 	const harnessData = prepareChartData(byHarness);
 	const testData = prepareChartData(byTest);
+	const testTypeData = prepareChartData(byTestType, formatTestCategoryLabel);
 
 	return (
 		<Card>
@@ -312,11 +329,12 @@ export function CompositeScoreChart({
 			</CardHeader>
 			<CardContent>
 				<Tabs defaultValue="model">
-					<TabsList>
+					<TabsList className="h-auto flex-wrap justify-start">
 						<TabsTrigger value="model">By Model</TabsTrigger>
 						<TabsTrigger value="runtime">By Runtime</TabsTrigger>
 						<TabsTrigger value="harness">By Harness</TabsTrigger>
 						<TabsTrigger value="test">By Test</TabsTrigger>
+						<TabsTrigger value="testType">By Test Type</TabsTrigger>
 					</TabsList>
 					<TabsContent value="model" className="mt-4">
 						<CompositeBarChart
@@ -354,6 +372,16 @@ export function CompositeScoreChart({
 							onBarClick={
 								onDimensionClick
 									? (name) => onDimensionClick("test", name)
+									: undefined
+							}
+						/>
+					</TabsContent>
+					<TabsContent value="testType" className="mt-4">
+						<CompositeBarChart
+							data={testTypeData}
+							onBarClick={
+								onDimensionClick
+									? (name) => onDimensionClick("testType", name)
 									: undefined
 							}
 						/>

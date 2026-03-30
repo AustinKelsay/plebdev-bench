@@ -1,3 +1,7 @@
+/**
+ * Purpose: Pass rate bar chart component using Recharts.
+ * Shows pass rate by model, harness, test, or test-type dimension.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -5,12 +9,10 @@ import {
 	groupByHarness,
 	groupByModel,
 	groupByTest,
+	groupByTestType,
 } from "@/lib/aggregations";
 import type { MatrixItemResult } from "@/lib/types";
-/**
- * Purpose: Pass rate bar chart component using Recharts.
- * Shows pass rate by model, harness, or test dimension.
- */
+import { formatTestCategoryLabel } from "@/lib/utils";
 import {
 	Bar,
 	BarChart,
@@ -26,6 +28,13 @@ interface PassRateChartProps {
 	items: MatrixItemResult[];
 }
 
+interface PassRateBarRow {
+	name: string;
+	passRate: number;
+	passed: number;
+	total: number;
+}
+
 // Custom tooltip component
 function CustomTooltip({
 	active,
@@ -33,7 +42,7 @@ function CustomTooltip({
 }: {
 	active?: boolean;
 	payload?: Array<{
-		payload: { name: string; passRate: number; passed: number; total: number };
+		payload: PassRateBarRow;
 	}>;
 }) {
 	if (active && payload && payload.length) {
@@ -53,19 +62,14 @@ function CustomTooltip({
 // Get bar color based on pass rate — uses chart-colors for consistency
 function getBarColor(passRate: number): string {
 	if (passRate >= 0.8) return "hsl(142, 60%, 49%)"; // brand green
-	if (passRate >= 0.5) return "hsl(38, 80%, 58%)";  // warm amber
-	return "hsl(0, 70%, 60%)";                         // soft red
+	if (passRate >= 0.5) return "hsl(38, 80%, 58%)"; // warm amber
+	return "hsl(0, 70%, 60%)"; // soft red
 }
 
 function PassRateBarChart({
 	data,
 }: {
-	data: Array<{
-		name: string;
-		passRate: number;
-		passed: number;
-		total: number;
-	}>;
+	data: PassRateBarRow[];
 }) {
 	if (data.length === 0) {
 		return (
@@ -108,10 +112,30 @@ function PassRateBarChart({
 	);
 }
 
+function preparePassRateData(
+	data: PassRateBarRow[],
+	formatName: (name: string) => string = (name) => name,
+): PassRateBarRow[] {
+	return data.map((row) => ({
+		...row,
+		name: formatName(row.name),
+	}));
+}
+
+/**
+ * Renders the aggregate pass-rate chart across multiple grouping dimensions.
+ *
+ * @param props - Component props
+ * @returns Chart card with pass-rate tabs
+ */
 export function PassRateChart({ items }: PassRateChartProps) {
 	const byModel = computeBreakdown(items, groupByModel);
 	const byHarness = computeBreakdown(items, groupByHarness);
 	const byTest = computeBreakdown(items, groupByTest);
+	const byTestType = preparePassRateData(
+		computeBreakdown(items, groupByTestType),
+		formatTestCategoryLabel,
+	);
 
 	return (
 		<Card>
@@ -120,10 +144,11 @@ export function PassRateChart({ items }: PassRateChartProps) {
 			</CardHeader>
 			<CardContent>
 				<Tabs defaultValue="model">
-					<TabsList>
+					<TabsList className="h-auto flex-wrap justify-start">
 						<TabsTrigger value="model">By Model</TabsTrigger>
 						<TabsTrigger value="harness">By Harness</TabsTrigger>
 						<TabsTrigger value="test">By Test</TabsTrigger>
+						<TabsTrigger value="testType">By Test Type</TabsTrigger>
 					</TabsList>
 					<TabsContent value="model" className="mt-4">
 						<PassRateBarChart data={byModel} />
@@ -133,6 +158,9 @@ export function PassRateChart({ items }: PassRateChartProps) {
 					</TabsContent>
 					<TabsContent value="test" className="mt-4">
 						<PassRateBarChart data={byTest} />
+					</TabsContent>
+					<TabsContent value="testType" className="mt-4">
+						<PassRateBarChart data={byTestType} />
 					</TabsContent>
 				</Tabs>
 			</CardContent>

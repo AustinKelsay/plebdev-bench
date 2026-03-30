@@ -98,7 +98,8 @@ export const failures = {
 
 /** Composite score chart explanations */
 export const composite = {
-	title: "Multi-metric bar chart ranking models, harnesses, and tests.",
+	title:
+		"Multi-metric bar chart ranking models, runtimes, harnesses, tests, and test types.",
 	description:
 		"Effective score ranks overall performance. Formula: 40% pass rate + 30% completion + 30% tool success.",
 	effectiveScore:
@@ -173,8 +174,7 @@ export const heatmap = {
 
 /** Model radar chart explanations */
 export const radar = {
-	title:
-		"Multi-axis comparison of model capabilities across 5 dimensions.",
+	title: "Multi-axis comparison of model capabilities across 5 dimensions.",
 	description:
 		"Select 2-5 models to overlay. Axes: Pass Rate, Completion, Tool Success, Frontier, Speed.",
 } as const;

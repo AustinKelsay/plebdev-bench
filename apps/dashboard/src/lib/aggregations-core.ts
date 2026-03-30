@@ -125,6 +125,24 @@ export function groupByTest(
 }
 
 /**
+ * Groups items by benchmark test type/category.
+ *
+ * @param items - Matrix items
+ * @returns Map keyed by test category string
+ */
+export function groupByTestType(
+	items: MatrixItemResult[],
+): Map<string, MatrixItemResult[]> {
+	return items.reduce((map, item) => {
+		const testType = item.category ?? "uncategorized";
+		const group = map.get(testType) || [];
+		group.push(item);
+		map.set(testType, group);
+		return map;
+	}, new Map<string, MatrixItemResult[]>());
+}
+
+/**
  * Groups items by combined runtime + model + harness name.
  *
  * @param items - Matrix items

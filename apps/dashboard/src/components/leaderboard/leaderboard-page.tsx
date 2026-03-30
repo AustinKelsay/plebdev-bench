@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { computePassRate } from "@/lib/aggregations";
 import { fetchDashboardIndex, fetchLatestAggregate } from "@/lib/api";
 import type { DashboardIndex, LeaderboardAggregate } from "@/lib/types";
+import { formatTestCategoryLabel } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -122,6 +123,10 @@ export function LeaderboardPage() {
 		() => uniqueValues(items, (item) => item.passType),
 		[items],
 	);
+	const testTypeOptions = useMemo(
+		() => uniqueValues(items, (item) => item.category ?? "uncategorized"),
+		[items],
+	);
 	const testOptions = useMemo(
 		() => uniqueValues(items, (item) => item.test),
 		[items],
@@ -182,7 +187,7 @@ export function LeaderboardPage() {
 					<CardTitle className="text-base">Filters</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid gap-3 md:grid-cols-6">
+					<div className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
 						<Select
 							value={filters.machine}
 							onValueChange={(value) =>
@@ -262,6 +267,25 @@ export function LeaderboardPage() {
 								{passTypeOptions.map((option) => (
 									<SelectItem key={option} value={option}>
 										{option}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+
+						<Select
+							value={filters.testType}
+							onValueChange={(value) =>
+								setFilters((prev) => ({ ...prev, testType: value }))
+							}
+						>
+							<SelectTrigger aria-label="Test type filter">
+								<SelectValue placeholder="Test Type" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={ALL_FILTER_VALUE}>All test types</SelectItem>
+								{testTypeOptions.map((option) => (
+									<SelectItem key={option} value={option}>
+										{formatTestCategoryLabel(option)}
 									</SelectItem>
 								))}
 							</SelectContent>
