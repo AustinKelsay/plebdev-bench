@@ -27,7 +27,7 @@ const CARD_ACCENT_COLORS = [
 	"hsl(212, 100%, 67%)", // info blue — deduped items
 	"hsl(156, 67%, 55%)",  // success green — pass rate
 	"hsl(270, 60%, 60%)",  // purple — frontier coverage
-	"hsl(210, 85%, 60%)",  // blue — avg duration
+	"hsl(210, 85%, 60%)",  // blue — median duration
 ];
 
 /**
@@ -97,7 +97,7 @@ export function LeaderboardSummaryCards({
 			sub: `${frontierCount} of ${filteredItemCount} items`,
 		},
 		{
-			title: "Avg Duration",
+			title: "Median Duration",
 			value: medianDuration !== null ? formatDuration(medianDuration) : "—",
 			sub: durations.length > 0 ? `${durations.length} items` : "no data",
 		},
