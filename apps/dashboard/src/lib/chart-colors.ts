@@ -1,6 +1,7 @@
 /**
  * Purpose: Centralized chart color constants for all dashboard visualizations.
- * Exports: CHART_COLORS, MODEL_PALETTE, FAILURE_COLORS, heatmapColor
+ * Exports: CHART_COLORS, MODEL_PALETTE, FAILURE_COLORS, TEST_TYPE_COLORS,
+ *          getTestTypeColor, heatmapColor
  *
  * Invariants:
  * - All charts import colors from this file for consistency
@@ -13,13 +14,13 @@
 export const CHART_COLORS = {
 	brand: "hsl(142, 60%, 49%)",
 	effectiveScore: "hsl(142, 60%, 49%)",
-	passRate: "hsl(152, 55%, 52%)",        // teal-green (distinct from brand)
-	toolSuccess: "hsl(215, 70%, 60%)",     // steel blue
-	frontier: "hsl(265, 50%, 62%)",        // soft purple
-	completion: "hsl(185, 55%, 50%)",      // muted cyan
-	info: "hsl(215, 80%, 62%)",            // blue
-	warning: "hsl(38, 80%, 58%)",          // warm amber
-	danger: "hsl(0, 70%, 60%)",            // soft red
+	passRate: "hsl(152, 55%, 52%)", // teal-green (distinct from brand)
+	toolSuccess: "hsl(215, 70%, 60%)", // steel blue
+	frontier: "hsl(265, 50%, 62%)", // soft purple
+	completion: "hsl(185, 55%, 50%)", // muted cyan
+	info: "hsl(215, 80%, 62%)", // blue
+	warning: "hsl(38, 80%, 58%)", // warm amber
+	danger: "hsl(0, 70%, 60%)", // soft red
 	muted: "hsl(210, 12%, 63%)",
 	grid: "hsl(213, 23%, 15%)",
 	text: "hsl(210, 12%, 63%)",
@@ -28,14 +29,14 @@ export const CHART_COLORS = {
 
 /** 8-color palette for distinguishing models in multi-series charts. */
 export const MODEL_PALETTE = [
-	"hsl(142, 60%, 49%)",  // brand green
-	"hsl(215, 70%, 62%)",  // steel blue
-	"hsl(265, 50%, 62%)",  // soft purple
-	"hsl(38, 80%, 58%)",   // warm amber
-	"hsl(185, 55%, 50%)",  // muted cyan
-	"hsl(335, 55%, 58%)",  // muted rose
-	"hsl(25, 70%, 55%)",   // warm coral
-	"hsl(170, 45%, 48%)",  // sage
+	"hsl(142, 60%, 49%)", // brand green
+	"hsl(215, 70%, 62%)", // steel blue
+	"hsl(265, 50%, 62%)", // soft purple
+	"hsl(38, 80%, 58%)", // warm amber
+	"hsl(185, 55%, 50%)", // muted cyan
+	"hsl(335, 55%, 58%)", // muted rose
+	"hsl(25, 70%, 55%)", // warm coral
+	"hsl(170, 45%, 48%)", // sage
 ] as const;
 
 /** Failure type colors for stacked bar breakdowns. */
@@ -50,6 +51,13 @@ export const FAILURE_COLORS: Record<string, string> = {
 	other: "hsl(210, 12%, 45%)",
 };
 
+/** Preferred colors for benchmark test-type series. */
+export const TEST_TYPE_COLORS: Record<string, string> = {
+	coding: "hsl(38, 80%, 58%)",
+	"computer-use": "hsl(215, 80%, 62%)",
+	uncategorized: "hsl(210, 12%, 45%)",
+};
+
 /** Model size bucket colors for test difficulty chart. */
 export const SIZE_BUCKET_COLORS: Record<string, string> = {
 	small: "hsl(215, 70%, 62%)",
@@ -58,16 +66,29 @@ export const SIZE_BUCKET_COLORS: Record<string, string> = {
 };
 
 /**
+ * Resolves a chart color for a benchmark test type.
+ *
+ * @param testType - Category slug
+ * @param index - Fallback palette index for future categories
+ * @returns HSL color string
+ */
+export function getTestTypeColor(testType: string, index: number): string {
+	return (
+		TEST_TYPE_COLORS[testType] ?? MODEL_PALETTE[index % MODEL_PALETTE.length]
+	);
+}
+
+/**
  * Curated heatmap stops — avoids ugly yellow-green interpolation.
  * Each stop: [position, hue, saturation, lightness]
  */
 const HEATMAP_STOPS: Array<[number, number, number, number]> = [
-	[0.0, 0, 70, 58],     // soft red
-	[0.25, 20, 70, 55],   // warm coral
-	[0.45, 38, 72, 54],   // warm amber
-	[0.65, 55, 55, 48],   // olive gold
-	[0.8, 110, 40, 46],   // muted sage
-	[1.0, 142, 60, 49],   // brand green
+	[0.0, 0, 70, 58], // soft red
+	[0.25, 20, 70, 55], // warm coral
+	[0.45, 38, 72, 54], // warm amber
+	[0.65, 55, 55, 48], // olive gold
+	[0.8, 110, 40, 46], // muted sage
+	[1.0, 142, 60, 49], // brand green
 ];
 
 /**

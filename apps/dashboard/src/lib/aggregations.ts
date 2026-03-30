@@ -12,3 +12,4 @@ export * from "./aggregations-tooling";
 export * from "./aggregations-compare";
 export * from "./aggregations-diagnostics";
 export * from "./aggregations-charts";
+export * from "./aggregations-test-types";

@@ -5,7 +5,7 @@
  * Invariants:
  * - Renders aggregate charts before filter/table sections
  * - Uses filtered aggregate items so charts stay aligned with visible leaderboard scope
- * - Hierarchy: composite → heatmap → pass+blind → radar+token → failure+difficulty → timing+frontier → head-to-head
+ * - Hierarchy: composite → test-type split → heatmap → pass+blind → radar+token → failure+difficulty → timing+frontier → head-to-head
  */
 
 import { BlindVsInformedChart } from "@/components/charts/blind-vs-informed-chart";
@@ -17,6 +17,7 @@ import { ModelRadarChart } from "@/components/charts/model-radar-chart";
 import { ModelTestHeatmap } from "@/components/charts/model-test-heatmap";
 import { PassRateChart } from "@/components/charts/pass-rate-chart";
 import { TestDifficultyChart } from "@/components/charts/test-difficulty-chart";
+import { TestTypeSplitChart } from "@/components/charts/test-type-split-chart";
 import { TimingDistribution } from "@/components/charts/timing-distribution";
 import { TokenEfficiencyChart } from "@/components/charts/token-efficiency-chart";
 import { Badge } from "@/components/ui/badge";
@@ -56,34 +57,37 @@ export function LeaderboardChartGallery({
 			{/* 1. Composite Score — primary ranking: which model is best */}
 			<CompositeScoreChart items={items} />
 
-			{/* 2. Model x Test Heatmap — per-test breakdown after rank context */}
+			{/* 2. Test Type Split — category specialization view */}
+			<TestTypeSplitChart items={items} />
+
+			{/* 3. Model x Test Heatmap — per-test breakdown after rank context */}
 			<ModelTestHeatmap items={items} />
 
-			{/* 3. Core metrics: Pass Rate + Blind vs Informed */}
+			{/* 4. Core metrics: Pass Rate + Blind vs Informed */}
 			<div className="grid gap-4 xl:grid-cols-2">
 				<PassRateChart items={items} />
 				<BlindVsInformedChart items={items} />
 			</div>
 
-			{/* 4. Comparison: Radar + Token Efficiency */}
+			{/* 5. Comparison: Radar + Token Efficiency */}
 			<div className="grid gap-4 xl:grid-cols-2">
 				<ModelRadarChart items={items} />
 				<TokenEfficiencyChart items={items} />
 			</div>
 
-			{/* 5. Diagnostics: Failure Breakdown + Test Difficulty */}
+			{/* 6. Diagnostics: Failure Breakdown + Test Difficulty */}
 			<div className="grid gap-4 xl:grid-cols-2">
 				<FailureBreakdownChart items={items} />
 				<TestDifficultyChart items={items} />
 			</div>
 
-			{/* 6. Supplementary: Timing + Frontier Scatter */}
+			{/* 7. Supplementary: Timing + Frontier Scatter */}
 			<div className="grid gap-4 xl:grid-cols-2">
 				<TimingDistribution items={items} />
 				<FrontierEvalScatter items={items} />
 			</div>
 
-			{/* 7. Interactive exploration: Head-to-Head Comparison */}
+			{/* 8. Interactive exploration: Head-to-Head Comparison */}
 			<ModelComparisonChart items={items} />
 		</section>
 	);
