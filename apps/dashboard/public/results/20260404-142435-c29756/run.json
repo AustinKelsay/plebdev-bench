@@ -42,11 +42,11 @@
     }
   },
   "benchmarkCheckpoint": {
-    "checkpointId": "chk_sha256v1_f42a32cc34c1",
+    "checkpointId": "chk_sha256v1_432187a085f7",
     "algorithm": "sha256v1",
-    "manifestHash": "f42a32cc34c13bb7d1e04b505e7ec8ff1dddeecbff899b5a14ca92ddeacf987e",
-    "assetCount": 124,
-    "computedAt": "2026-04-04T21:24:35.671Z"
+    "manifestHash": "432187a085f7cc4c4609db7bb7fc0205e09b1322e15069adea0a3e0fdf802fd0",
+    "assetCount": 119,
+    "computedAt": "2026-03-28T17:40:58.233Z"
   },
   "provenance": {
     "verificationStatus": "self_reported",

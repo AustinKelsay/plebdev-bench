@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-04-05T17:29:17.075Z",
-  "latestCheckpointId": "chk_sha256v1_f42a32cc34c1",
+  "generatedAt": "2026-04-05T17:56:58.984Z",
+  "latestCheckpointId": "chk_sha256v1_432187a085f7",
   "runs": [
     {
       "runId": "20260404-142435-c29756",
@@ -14,7 +14,7 @@
         "failed": 101,
         "pending": 0
       },
-      "checkpointId": "chk_sha256v1_f42a32cc34c1",
+      "checkpointId": "chk_sha256v1_432187a085f7",
       "machineProfileKey": "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro:x1_na_x1",
       "machineProfileId": "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro:x1_na_x1",
       "machineProfileLabel": "Apple M4 Pro / 64GB / Apple M4 Pro",
@@ -268,20 +268,12 @@
   ],
   "checkpoints": [
     {
-      "checkpointId": "chk_sha256v1_f42a32cc34c1",
-      "runCount": 1,
-      "rawItemCount": 504,
+      "checkpointId": "chk_sha256v1_432187a085f7",
+      "runCount": 4,
+      "rawItemCount": 2016,
       "machineCount": 1,
       "instanceCount": 1,
       "latestRunAt": "2026-04-05T16:51:44.930Z"
-    },
-    {
-      "checkpointId": "chk_sha256v1_432187a085f7",
-      "runCount": 3,
-      "rawItemCount": 1512,
-      "machineCount": 1,
-      "instanceCount": 1,
-      "latestRunAt": "2026-03-28T23:45:32.886Z"
     },
     {
       "checkpointId": "chk_sha256v1_2c13ad3e58b3",
