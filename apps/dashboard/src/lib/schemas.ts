@@ -71,6 +71,8 @@ const SignalAssessmentReasonSchema = z.enum([
 	"tool_permission_denied",
 	"tool_call_not_executed",
 	"confirmation_without_artifact",
+	"internal_tool_transcript",
+	"agent_requested_input",
 ]);
 
 /** Signal assessment schema. */

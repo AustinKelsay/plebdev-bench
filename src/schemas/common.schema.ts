@@ -177,6 +177,8 @@ export const signalAssessmentReasonTypes = [
 	"tool_permission_denied",
 	"tool_call_not_executed",
 	"confirmation_without_artifact",
+	"internal_tool_transcript",
+	"agent_requested_input",
 ] as const;
 
 /** Zod schema for signal assessment reasons. */

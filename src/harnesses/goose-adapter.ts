@@ -19,7 +19,10 @@ import * as path from "node:path";
 import { execa } from "execa";
 import { z } from "zod";
 import { logger } from "../lib/logger.js";
-import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
+import {
+	appendSignalAssessmentReasons,
+	getTranscriptOrInputTaintReasons,
+} from "../lib/signal-assessment.js";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -336,6 +339,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					}
 				}
 
+				const rawOutput = output;
 				const normalized = normalizeGooseOutput(output);
 				const toolCallDetected =
 					normalized.method === "tool_call" ||
@@ -351,6 +355,16 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					);
 					output = normalized.output;
 				}
+				const transcriptOrInputReasons = Array.from(
+					new Set([
+						...getTranscriptOrInputTaintReasons(rawOutput),
+						...getTranscriptOrInputTaintReasons(output),
+					]),
+				);
+				const signalAssessment =
+					transcriptOrInputReasons.length > 0
+						? appendSignalAssessmentReasons(undefined, transcriptOrInputReasons)
+						: undefined;
 
 				log.debug(
 					{
@@ -365,6 +379,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					return {
 						output,
 						durationMs,
+						signalAssessment,
 					};
 				}
 
@@ -390,7 +405,8 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				if (!codeFilePath) {
 					if (
 						durationMs < 2000 &&
-						(!output || output.trim().length < MIN_OUTPUT_LENGTH)
+						(!output || output.trim().length < MIN_OUTPUT_LENGTH) &&
+						transcriptOrInputReasons.length === 0
 					) {
 						throw new Error(
 							`Goose returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized`,
@@ -418,7 +434,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 							durationMs,
 							codeFilePath,
 							signalAssessment: appendSignalAssessmentReasons(
-								undefined,
+								signalAssessment,
 								[
 									...decision.taintReasons,
 									...(toolCallDetected
@@ -480,7 +496,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					durationMs,
 					codeFilePath,
 					signalAssessment: appendSignalAssessmentReasons(
-						undefined,
+						signalAssessment,
 						toolCallDetected && !codeFilePath
 							? ["tool_call_not_executed"]
 							: [],
@@ -498,8 +514,18 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				// Check for execa error with stderr
 				if (error && typeof error === "object" && "stderr" in error) {
 					const execaError = error as { stderr: string; message: string };
-					throw new Error(
-						`Goose failed: ${execaError.stderr || execaError.message}`,
+					const errorReasons = getTranscriptOrInputTaintReasons(
+						execaError.stderr,
+					);
+					throw Object.assign(
+						new Error(`Goose failed: ${execaError.stderr || execaError.message}`),
+						{
+							signalAssessment:
+								errorReasons.length > 0
+									? appendSignalAssessmentReasons(undefined, errorReasons)
+									: undefined,
+							output: execaError.stderr,
+						},
 					);
 				}
 

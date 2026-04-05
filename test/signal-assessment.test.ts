@@ -47,7 +47,6 @@ describe("finalizeItemSignalAssessment", () => {
 	it("marks confirmation-only workspace failures as tainted", () => {
 		const assessment = finalizeItemSignalAssessment({
 			existing: undefined,
-			scoringMode: "workspace",
 			automatedScore: { passed: 1, failed: 2, total: 3 },
 			output: "DONE",
 		});
@@ -61,7 +60,6 @@ describe("finalizeItemSignalAssessment", () => {
 	it("marks raw tool-call payload workspace failures as tainted", () => {
 		const assessment = finalizeItemSignalAssessment({
 			existing: undefined,
-			scoringMode: "workspace",
 			automatedScore: { passed: 0, failed: 5, total: 5 },
 			output: JSON.stringify({
 				tool: "bash",
@@ -78,9 +76,51 @@ describe("finalizeItemSignalAssessment", () => {
 	it("preserves trustworthy output for successful workspace rows", () => {
 		const assessment = finalizeItemSignalAssessment({
 			existing: undefined,
-			scoringMode: "workspace",
 			automatedScore: { passed: 5, failed: 0, total: 5 },
 			output: "DONE",
+		});
+
+		expect(assessment).toEqual({
+			classification: "trustworthy",
+			reasons: [],
+		});
+	});
+
+	it("marks transcript-only failed rows as tainted", () => {
+		const assessment = finalizeItemSignalAssessment({
+			existing: undefined,
+			automatedScore: undefined,
+			rowFailed: true,
+			output:
+				'{"type":"step_start","sessionID":"abc"}\n{"type":"step_finish","sessionID":"abc"}',
+		});
+
+		expect(assessment).toEqual({
+			classification: "tainted",
+			reasons: ["internal_tool_transcript"],
+		});
+	});
+
+	it("marks continuation prompts as tainted", () => {
+		const assessment = finalizeItemSignalAssessment({
+			existing: undefined,
+			automatedScore: { passed: 0, failed: 5, total: 5 },
+			output:
+				"Would you like me to continue? I reached the maximum number of actions without user input.",
+		});
+
+		expect(assessment).toEqual({
+			classification: "tainted",
+			reasons: ["agent_requested_input"],
+		});
+	});
+
+	it("preserves trustworthy classification for ordinary semantic failures", () => {
+		const assessment = finalizeItemSignalAssessment({
+			existing: undefined,
+			automatedScore: { passed: 3, failed: 2, total: 5 },
+			output:
+				"export function add(a: number, b: number): number { return a - b; }",
 		});
 
 		expect(assessment).toEqual({

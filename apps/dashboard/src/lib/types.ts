@@ -59,7 +59,9 @@ export type SignalAssessmentReason =
 	| "mixed_prose_salvaged"
 	| "tool_permission_denied"
 	| "tool_call_not_executed"
-	| "confirmation_without_artifact";
+	| "confirmation_without_artifact"
+	| "internal_tool_transcript"
+	| "agent_requested_input";
 
 /** Item-level benchmark signal assessment */
 export interface SignalAssessment {

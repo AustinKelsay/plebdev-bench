@@ -250,7 +250,7 @@ export function normalizeGooseOutput(raw: string): GooseNormalizedOutput {
 		}
 
 		if (assistantParts.length === 0) {
-			return { output: raw, method: "raw" };
+			return { output: "", method: "json" };
 		}
 
 		const assistantText = assistantParts.join("");
