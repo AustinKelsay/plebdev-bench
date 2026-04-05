@@ -418,6 +418,10 @@ export function createOpenCodeAdapter(): Harness {
 					normalizedReasons.length > 0
 						? appendSignalAssessmentReasons(signalAssessment, normalizedReasons)
 						: signalAssessment;
+				const hasBoundaryTaint =
+					signalAssessment?.classification === "tainted";
+				const hasNormalizedTaint =
+					normalizedSignalAssessment?.classification === "tainted";
 
 				if (promptMode === "workspace") {
 					return {
@@ -447,7 +451,8 @@ export function createOpenCodeAdapter(): Harness {
 					if (
 						durationMs < 2000 &&
 						(!output || output.trim().length < MIN_OUTPUT_LENGTH) &&
-						normalizedReasons.length === 0
+						!hasBoundaryTaint &&
+						!hasNormalizedTaint
 					) {
 						throw new Error(
 							`OpenCode returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized by OpenCode`,

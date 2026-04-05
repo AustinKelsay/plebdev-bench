@@ -28,7 +28,7 @@ const INTERNAL_TOOL_TRANSCRIPT_PATTERNS = [
 	/(?:^|\n)\s*(?:read|write)\s+(?:\/|~|\.)/im,
 	/<function=(?:bash|edit|glob|grep|read|write)>/i,
 	/<parameter=filePath>/i,
-	/,\s*filePath\s*:/i,
+	/(?:^|\n)\s*(?:read|write)\s*\{[\s\S]*?\bfilePath\s*:/im,
 ] as const;
 
 const AGENT_REQUESTED_INPUT_PATTERNS = [
@@ -37,7 +37,7 @@ const AGENT_REQUESTED_INPUT_PATTERNS = [
 	/\bwithout user input\b/i,
 	/\bawaiting user input\b/i,
 	/\bneed(?:ing)? user input\b/i,
-	/\bplease confirm(?: how)?\b/i,
+	/\bplease confirm(?:\s+to\s+continue|\s+that\s+you\s+want\s+to\s+continue|\s+how\s+you(?:'d| would)\s+like\s+to\s+proceed)\b/i,
 	/\bneed your confirmation\b/i,
 ] as const;
 

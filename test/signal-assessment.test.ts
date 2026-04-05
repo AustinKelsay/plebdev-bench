@@ -115,6 +115,32 @@ describe("finalizeItemSignalAssessment", () => {
 		});
 	});
 
+	it("does not taint failed rows for benign filePath object literals", () => {
+		const assessment = finalizeItemSignalAssessment({
+			existing: undefined,
+			automatedScore: { passed: 0, failed: 1, total: 1 },
+			output: 'const options = { filePath: "src/index.ts" };',
+		});
+
+		expect(assessment).toEqual({
+			classification: "trustworthy",
+			reasons: [],
+		});
+	});
+
+	it("does not taint failed rows for ordinary confirmation copy", () => {
+		const assessment = finalizeItemSignalAssessment({
+			existing: undefined,
+			automatedScore: { passed: 0, failed: 1, total: 1 },
+			output: "Please confirm your email address to continue.",
+		});
+
+		expect(assessment).toEqual({
+			classification: "trustworthy",
+			reasons: [],
+		});
+	});
+
 	it("preserves trustworthy classification for ordinary semantic failures", () => {
 		const assessment = finalizeItemSignalAssessment({
 			existing: undefined,
