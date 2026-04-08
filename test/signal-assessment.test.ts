@@ -128,11 +128,37 @@ describe("finalizeItemSignalAssessment", () => {
 		});
 	});
 
+	it("does not taint failed rows for benign write function calls", () => {
+		const assessment = finalizeItemSignalAssessment({
+			existing: undefined,
+			automatedScore: { passed: 0, failed: 1, total: 1 },
+			output: 'write("hello");',
+		});
+
+		expect(assessment).toEqual({
+			classification: "trustworthy",
+			reasons: [],
+		});
+	});
+
 	it("does not taint failed rows for ordinary confirmation copy", () => {
 		const assessment = finalizeItemSignalAssessment({
 			existing: undefined,
 			automatedScore: { passed: 0, failed: 1, total: 1 },
 			output: "Please confirm your email address to continue.",
+		});
+
+		expect(assessment).toEqual({
+			classification: "trustworthy",
+			reasons: [],
+		});
+	});
+
+	it("does not taint failed rows for generic autonomy prose", () => {
+		const assessment = finalizeItemSignalAssessment({
+			existing: undefined,
+			automatedScore: { passed: 0, failed: 1, total: 1 },
+			output: "The agent can operate without user input once scheduled.",
 		});
 
 		expect(assessment).toEqual({
@@ -153,5 +179,17 @@ describe("finalizeItemSignalAssessment", () => {
 			classification: "trustworthy",
 			reasons: [],
 		});
+	});
+
+	it("throws when neither rowFailed nor automatedScore is provided", () => {
+		expect(() =>
+			finalizeItemSignalAssessment({
+				existing: undefined,
+				automatedScore: undefined,
+				output: undefined,
+			}),
+		).toThrow(
+			"finalizeItemSignalAssessment requires rowFailed or automatedScore",
+		);
 	});
 });

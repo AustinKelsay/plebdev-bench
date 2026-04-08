@@ -24,7 +24,6 @@ const INTERNAL_TOOL_TRANSCRIPT_PATTERNS = [
 	/"type"\s*:\s*"step_(?:start|finish)"/i,
 	/"type"\s*:\s*"tool_(?:call|result|use)"/i,
 	/(?:^|\n)\s*\[Function\s+(?:bash|edit|glob|grep|read|write)\b/im,
-	/(?:^|\n)\s*(?:bash|edit|glob|grep|read|write)\s*(?:\{|\()/im,
 	/(?:^|\n)\s*(?:read|write)\s+(?:\/|~|\.)/im,
 	/<function=(?:bash|edit|glob|grep|read|write)>/i,
 	/<parameter=filePath>/i,
@@ -33,8 +32,8 @@ const INTERNAL_TOOL_TRANSCRIPT_PATTERNS = [
 
 const AGENT_REQUESTED_INPUT_PATTERNS = [
 	/\bwould you like me to continue\b/i,
-	/\breached the maximum number of actions\b/i,
-	/\bwithout user input\b/i,
+	/\breached the maximum number of actions(?:[\s\S]*?)\bwithout user input\b/i,
+	/\b(?:assistant|agent)\s+(?:is\s+)?operating\s+without\s+user\s+input\b/i,
 	/\bawaiting user input\b/i,
 	/\bneed(?:ing)? user input\b/i,
 	/\bplease confirm(?:\s+to\s+continue|\s+that\s+you\s+want\s+to\s+continue|\s+how\s+you(?:'d| would)\s+like\s+to\s+proceed)\b/i,
@@ -210,6 +209,7 @@ export function getTranscriptOrInputTaintReasons(
  *
  * @param input - Row context used for post-scoring taint adjustments
  * @returns Finalized signal assessment
+ * @throws {Error} When neither `rowFailed` nor `automatedScore` is provided
  */
 export function finalizeItemSignalAssessment(input: {
 	existing: SignalAssessment | undefined;
@@ -218,6 +218,11 @@ export function finalizeItemSignalAssessment(input: {
 	output: string | undefined;
 }): SignalAssessment {
 	let assessment = input.existing ?? createTrustworthySignalAssessment();
+	if (input.rowFailed === undefined && input.automatedScore === undefined) {
+		throw new Error(
+			"finalizeItemSignalAssessment requires rowFailed or automatedScore",
+		);
+	}
 	const rowFailed =
 		input.rowFailed ?? Boolean(input.automatedScore && input.automatedScore.failed > 0);
 	if (
