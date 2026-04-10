@@ -257,6 +257,9 @@ export function normalizeOpenCodeOutput(raw: string): OpenCodeNormalizedOutput {
 		}
 		return { output: combined, method: "json" };
 	}
+	if (parsedLines > 0) {
+		return { output: "", method: "json" };
+	}
 
 	// Fallback: single JSON object
 	try {
@@ -283,6 +286,7 @@ export function normalizeOpenCodeOutput(raw: string): OpenCodeNormalizedOutput {
 				}
 				return { output: text, method: "json" };
 			}
+			return { output: "", method: "json" };
 		}
 	} catch {
 		// ignore

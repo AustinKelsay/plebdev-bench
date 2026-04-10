@@ -151,8 +151,8 @@ export async function executeItem(
 			};
 			signalAssessment = finalizeItemSignalAssessment({
 				existing: undefined,
-				scoringMode: item.scoringMode,
 				automatedScore: undefined,
+				rowFailed: true,
 				output: generation.output,
 			});
 			log.warn(
@@ -168,9 +168,7 @@ export async function executeItem(
 			try {
 				log.debug("Running automated scoring...");
 				const scoringStartTime = performance.now();
-				const supportsCompileRetry =
-					item.scoringMode === "code-module" &&
-					(item.harness === "goose" || item.harness === "opencode");
+				const supportsCompileRetry = item.scoringMode === "code-module";
 				const scoringOutcome = await runScoringWithCompileRetry({
 					item,
 					generation,
@@ -301,8 +299,9 @@ export async function executeItem(
 		const completedAt = new Date().toISOString();
 		signalAssessment = finalizeItemSignalAssessment({
 			existing: signalAssessment,
-			scoringMode: item.scoringMode,
 			automatedScore,
+			rowFailed:
+				(automatedScore?.failed ?? 0) > 0 || scoringFailure !== undefined,
 			output: generation.output,
 		});
 
@@ -363,8 +362,8 @@ export async function executeItem(
 			},
 			signalAssessment: finalizeItemSignalAssessment({
 				existing: undefined,
-				scoringMode: item.scoringMode,
 				automatedScore: undefined,
+				rowFailed: true,
 				output: undefined,
 			}),
 		};

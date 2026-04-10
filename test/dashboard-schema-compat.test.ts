@@ -202,4 +202,40 @@ describe("RunResultSchema", () => {
 			}),
 		).toThrow("trustworthy signal assessments must not include taint reasons");
 	});
+
+	it("accepts newly added transcript/input taint reasons", () => {
+		const parsed = RunResultSchema.parse({
+			schemaVersion: "0.5.0",
+			runId: "run-test",
+			startedAt: "2026-03-25T12:00:00.000Z",
+			completedAt: "2026-03-25T12:01:00.000Z",
+			durationMs: 60_000,
+			summary: {
+				total: 1,
+				completed: 1,
+				failed: 0,
+				pending: 0,
+			},
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "qwen3:27b",
+					harness: "goose",
+					test: "workspace-smoke",
+					passType: "blind",
+					status: "completed",
+					signalAssessment: {
+						classification: "tainted",
+						reasons: ["internal_tool_transcript", "agent_requested_input"],
+					},
+				},
+			],
+		});
+
+		expect(parsed.items[0]?.signalAssessment?.reasons).toEqual([
+			"internal_tool_transcript",
+			"agent_requested_input",
+		]);
+	});
 });

@@ -211,4 +211,110 @@ describe("createOpenCodeAdapter", () => {
 			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
 		}
 	});
+
+	it("marks protocol-only workspace transcripts as tainted and normalizes output to empty", async () => {
+		const { createOpenCodeAdapter } = await import(
+			"../src/harnesses/opencode-adapter.js"
+		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-opencode-transcript-"),
+		);
+		execaMock.mockImplementation((command: string) => {
+			if (command === "git") {
+				return Promise.resolve({ stdout: "", stderr: "", exitCode: 0 });
+			}
+			if (command === "opencode") {
+				return createSuccessfulProcess(
+					[
+						JSON.stringify({ type: "step_start", sessionID: "abc" }),
+						JSON.stringify({ type: "step_finish", sessionID: "abc" }),
+					].join("\n"),
+				);
+			}
+			throw new Error(`Unexpected command: ${command}`);
+		});
+
+		const runtime: Runtime = {
+			name: "ollama",
+			baseUrl: "http://localhost:11434",
+			apiFormat: "ollama",
+			ping: async () => true,
+			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async () => ({
+				name: "qwen3.5:4b",
+				sizeBytes: 0,
+				parametersBillions: 4,
+			}),
+		};
+
+		try {
+			const adapter = createOpenCodeAdapter();
+			const result = await adapter.generate({
+				model: "qwen3.5:4b",
+				prompt: "Touch one file and reply DONE.",
+				timeoutMs: 5_000,
+				runtime,
+				promptMode: "workspace",
+				workingDirectory: workspaceDir,
+			});
+
+			expect(result.output).toBe("");
+			expect(result.signalAssessment).toEqual({
+				classification: "tainted",
+				reasons: ["internal_tool_transcript"],
+			});
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
+	});
+
+	it("preserves tainted transcript output through the fast-empty retry path", async () => {
+		const { createOpenCodeAdapter } = await import(
+			"../src/harnesses/opencode-adapter.js"
+		);
+		execaMock.mockImplementation((command: string) => {
+			if (command === "git") {
+				return Promise.resolve({ stdout: "", stderr: "", exitCode: 0 });
+			}
+			if (command === "opencode") {
+				return createSuccessfulProcess(
+					[
+						JSON.stringify({ type: "step_start", sessionID: "abc" }),
+						JSON.stringify({ type: "step_finish", sessionID: "abc" }),
+					].join("\n"),
+				);
+			}
+			throw new Error(`Unexpected command: ${command}`);
+		});
+
+		const runtime: Runtime = {
+			name: "ollama",
+			baseUrl: "http://localhost:11434",
+			apiFormat: "ollama",
+			ping: async () => true,
+			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async () => ({
+				name: "qwen3.5:4b",
+				sizeBytes: 0,
+				parametersBillions: 4,
+			}),
+		};
+
+		const adapter = createOpenCodeAdapter();
+		const result = await adapter.generate({
+			model: "qwen3.5:4b",
+			prompt: "Return only final TypeScript source.",
+			timeoutMs: 5_000,
+			runtime,
+		});
+
+		expect(result.output).toBe("");
+		expect(result.signalAssessment).toEqual({
+			classification: "tainted",
+			reasons: ["internal_tool_transcript"],
+		});
+		expect(
+			execaMock.mock.calls.filter(([command]) => command === "opencode"),
+		).toHaveLength(2);
+	});
 });

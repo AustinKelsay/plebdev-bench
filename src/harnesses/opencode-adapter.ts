@@ -15,7 +15,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execa } from "execa";
 import { logger } from "../lib/logger.js";
-import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
+import {
+	appendSignalAssessmentReasons,
+	getTranscriptOrInputTaintReasons,
+} from "../lib/signal-assessment.js";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -333,11 +336,20 @@ export function createOpenCodeAdapter(): Harness {
 
 				const stdout = stdoutChunks.join("");
 				const stderr = stderrChunks.join("");
-				const signalAssessment = hasPermissionDeniedStderr(stderr)
-					? appendSignalAssessmentReasons(undefined, [
-							"tool_permission_denied",
-						])
-					: undefined;
+				const boundaryReasons = Array.from(
+					new Set([
+						...(hasPermissionDeniedStderr(stderr)
+							? (["tool_permission_denied"] as const)
+							: []),
+						...getTranscriptOrInputTaintReasons(stdout),
+						...getTranscriptOrInputTaintReasons(stderr),
+					]),
+				);
+				const signalAssessment =
+					boundaryReasons.length > 0
+						? appendSignalAssessmentReasons(undefined, boundaryReasons)
+						: undefined;
+				const durationMs = Math.round(performance.now() - startTime);
 
 				if (result.exitCode !== 0 && result.exitCode !== null) {
 					const stdoutPreview = stdout.trim().slice(0, 800);
@@ -347,11 +359,13 @@ export function createOpenCodeAdapter(): Harness {
 						`OpenCode exited with code ${result.exitCode}: ` +
 							`${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
 						),
-						{ signalAssessment },
+						{
+							signalAssessment,
+							durationMs,
+							output: stdout.trim().length > 0 ? stdout : stderr,
+						},
 					);
 				}
-
-				const durationMs = Math.round(performance.now() - startTime);
 
 				if (stderr?.trim()) {
 					log.warn(
@@ -395,12 +409,25 @@ export function createOpenCodeAdapter(): Harness {
 					);
 					output = normalized.output;
 				}
+				const normalizedReasons = Array.from(
+					new Set([
+						...getTranscriptOrInputTaintReasons(output),
+					]),
+				);
+				const normalizedSignalAssessment =
+					normalizedReasons.length > 0
+						? appendSignalAssessmentReasons(signalAssessment, normalizedReasons)
+						: signalAssessment;
+				const hasBoundaryTaint =
+					signalAssessment?.classification === "tainted";
+				const hasNormalizedTaint =
+					normalizedSignalAssessment?.classification === "tainted";
 
 				if (promptMode === "workspace") {
 					return {
 						output,
 						durationMs,
-						signalAssessment,
+						signalAssessment: normalizedSignalAssessment,
 					};
 				}
 
@@ -423,7 +450,9 @@ export function createOpenCodeAdapter(): Harness {
 				if (!codeFilePath) {
 					if (
 						durationMs < 2000 &&
-						(!output || output.trim().length < MIN_OUTPUT_LENGTH)
+						(!output || output.trim().length < MIN_OUTPUT_LENGTH) &&
+						!hasBoundaryTaint &&
+						!hasNormalizedTaint
 					) {
 						throw new Error(
 							`OpenCode returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized by OpenCode`,
@@ -451,7 +480,7 @@ export function createOpenCodeAdapter(): Harness {
 							durationMs,
 							codeFilePath,
 							signalAssessment: appendSignalAssessmentReasons(
-								signalAssessment,
+								normalizedSignalAssessment,
 								[
 									...decision.taintReasons,
 									...(toolCallDetected
@@ -499,7 +528,7 @@ export function createOpenCodeAdapter(): Harness {
 					output,
 					durationMs,
 					codeFilePath,
-					signalAssessment,
+					signalAssessment: normalizedSignalAssessment,
 				};
 			} catch (error) {
 				if (timeoutId) clearTimeout(timeoutId);
@@ -527,16 +556,21 @@ export function createOpenCodeAdapter(): Harness {
 
 				if (error && typeof error === "object" && "stderr" in error) {
 					const execaError = error as { stderr: string; message: string };
+					const errorReasons = [
+						...(hasPermissionDeniedStderr(execaError.stderr)
+							? (["tool_permission_denied"] as const)
+							: []),
+						...getTranscriptOrInputTaintReasons(execaError.stderr),
+					];
 					throw Object.assign(
 						new Error(
 							`OpenCode failed: ${execaError.stderr || execaError.message}`,
 						),
 						{
-							signalAssessment: hasPermissionDeniedStderr(execaError.stderr)
-								? appendSignalAssessmentReasons(undefined, [
-										"tool_permission_denied",
-									])
-								: undefined,
+							signalAssessment:
+								errorReasons.length > 0
+									? appendSignalAssessmentReasons(undefined, errorReasons)
+									: undefined,
 						},
 					);
 				}

@@ -1,9 +1,10 @@
 /**
  * Purpose: Helpers for per-item benchmark signal assessment and trusted-metric filtering.
  * Exports: createTrustworthySignalAssessment, createTaintedSignalAssessment,
- *          appendSignalAssessmentReasons, hasCompleteSignalAssessments,
- *          isTaintedItem, isConfirmationOnlyOutput, isLikelyToolCallPayload,
- *          finalizeItemSignalAssessment
+ *          appendSignalAssessmentReasons, hasCompleteSignalAssessments, isTaintedItem,
+ *          isConfirmationOnlyOutput, isLikelyToolCallPayload,
+ *          isInternalToolTranscriptOutput, isAgentRequestedInputOutput,
+ *          getTranscriptOrInputTaintReasons, finalizeItemSignalAssessment
  *
  * Invariants:
  * - New runs should emit a signal assessment for every row.
@@ -16,8 +17,28 @@ import type {
 	MatrixItemResult,
 	SignalAssessment,
 	SignalAssessmentReason,
-	TestScoringMode,
 } from "../schemas/index.js";
+
+const INTERNAL_TOOL_TRANSCRIPT_PATTERNS = [
+	/"sessionID"\s*:/i,
+	/"type"\s*:\s*"step_(?:start|finish)"/i,
+	/"type"\s*:\s*"tool_(?:call|result|use)"/i,
+	/(?:^|\n)\s*\[Function\s+(?:bash|edit|glob|grep|read|write)\b/im,
+	/(?:^|\n)\s*(?:read|write)\s+(?:\/|~|\.)/im,
+	/<function=(?:bash|edit|glob|grep|read|write)>/i,
+	/<parameter=filePath>/i,
+	/(?:^|\n)\s*(?:read|write)\s*\{[\s\S]*?\bfilePath\s*:/im,
+] as const;
+
+const AGENT_REQUESTED_INPUT_PATTERNS = [
+	/\bwould you like me to continue\b/i,
+	/\breached the maximum number of actions(?:[\s\S]*?)\bwithout user input\b/i,
+	/\b(?:assistant|agent)\s+(?:is\s+)?operating\s+without\s+user\s+input\b/i,
+	/\bawaiting user input\b/i,
+	/\bneed(?:ing)? user input\b/i,
+	/\bplease confirm(?:\s+to\s+continue|\s+that\s+you\s+want\s+to\s+continue|\s+how\s+you(?:'d| would)\s+like\s+to\s+proceed)\b/i,
+	/\bneed your confirmation\b/i,
+] as const;
 
 /**
  * Builds a trustworthy signal assessment.
@@ -135,23 +156,78 @@ export function isLikelyToolCallPayload(output: string): boolean {
 }
 
 /**
+ * Detects raw harness protocol transcripts or internal tool chatter leaked to output.
+ *
+ * @param output - Raw generation output
+ * @returns True when output resembles internal transport/tool transcript text
+ */
+export function isInternalToolTranscriptOutput(output: string): boolean {
+	const trimmed = output.trim();
+	if (trimmed.length === 0) {
+		return false;
+	}
+	return INTERNAL_TOOL_TRANSCRIPT_PATTERNS.some((pattern) =>
+		pattern.test(trimmed),
+	);
+}
+
+/**
+ * Detects outputs where the agent is asking for user confirmation/input.
+ *
+ * @param output - Raw generation output
+ * @returns True when output asks the user to continue or confirm
+ */
+export function isAgentRequestedInputOutput(output: string): boolean {
+	const trimmed = output.trim();
+	if (trimmed.length === 0) {
+		return false;
+	}
+	return AGENT_REQUESTED_INPUT_PATTERNS.some((pattern) => pattern.test(trimmed));
+}
+
+/**
+ * Collects transcript/input-specific taint reasons for harness boundary output.
+ *
+ * @param output - Raw or normalized output text
+ * @returns Stable taint reasons for non-semantic transcript/input leakage
+ */
+export function getTranscriptOrInputTaintReasons(
+	output: string,
+): SignalAssessmentReason[] {
+	const reasons: SignalAssessmentReason[] = [];
+	if (isInternalToolTranscriptOutput(output)) {
+		reasons.push("internal_tool_transcript");
+	}
+	if (isAgentRequestedInputOutput(output)) {
+		reasons.push("agent_requested_input");
+	}
+	return reasons;
+}
+
+/**
  * Finalizes per-item signal assessment after scoring.
  *
  * @param input - Row context used for post-scoring taint adjustments
  * @returns Finalized signal assessment
+ * @throws {Error} When neither `rowFailed` nor `automatedScore` is provided
  */
 export function finalizeItemSignalAssessment(input: {
 	existing: SignalAssessment | undefined;
-	scoringMode: TestScoringMode;
 	automatedScore: AutomatedScore | undefined;
+	rowFailed?: boolean;
 	output: string | undefined;
 }): SignalAssessment {
 	let assessment = input.existing ?? createTrustworthySignalAssessment();
+	if (input.rowFailed === undefined && input.automatedScore === undefined) {
+		throw new Error(
+			"finalizeItemSignalAssessment requires rowFailed or automatedScore",
+		);
+	}
+	const rowFailed =
+		input.rowFailed ?? Boolean(input.automatedScore && input.automatedScore.failed > 0);
 	if (
-		input.scoringMode !== "workspace" ||
-		!input.output ||
-		!input.automatedScore ||
-		input.automatedScore.failed === 0
+		!rowFailed ||
+		!input.output
 	) {
 		return assessment;
 	}
@@ -163,6 +239,7 @@ export function finalizeItemSignalAssessment(input: {
 	if (isLikelyToolCallPayload(input.output)) {
 		reasons.push("tool_call_not_executed");
 	}
+	reasons.push(...getTranscriptOrInputTaintReasons(input.output));
 
 	assessment = appendSignalAssessmentReasons(assessment, reasons);
 	return assessment;
