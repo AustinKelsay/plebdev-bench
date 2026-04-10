@@ -153,9 +153,26 @@ describe("legacy machine-profile migration", () => {
 				tests: 0,
 			},
 		});
+		const parsedRun = parseKnownRunPayload({
+			schemaVersion: "0.5.0",
+			runId: "run-current-minus-one",
+			machine: LEGACY_MACHINE,
+			startedAt: "2026-03-05T21:51:18.583Z",
+			completedAt: "2026-03-05T21:52:18.583Z",
+			durationMs: 60_000,
+			summary: {
+				total: 0,
+				completed: 0,
+				failed: 0,
+				pending: 0,
+			},
+			items: [],
+		});
 
 		expect(parsedPlan.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(parsedPlan.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
+		expect(parsedRun.schemaVersion).toBe(SCHEMA_VERSION);
+		expect(parsedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 	});
 });
 

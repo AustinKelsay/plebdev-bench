@@ -182,6 +182,51 @@ describe("createGooseAdapter", () => {
 		}
 	});
 
+	it("detects taint that appears only on stderr when stdout also exists", async () => {
+		const { createGooseAdapter } = await import(
+			"../src/harnesses/goose-adapter.js"
+		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-goose-stderr-taint-"),
+		);
+		const runtime: Runtime = {
+			name: "ollama",
+			baseUrl: "http://localhost:11434",
+			apiFormat: "ollama",
+			ping: async () => true,
+			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async () => ({
+				name: "qwen3.5:4b",
+				sizeBytes: 0,
+				parametersBillions: 4,
+			}),
+		};
+		execaMock.mockResolvedValue({
+			exitCode: 0,
+			stdout: "export function add(a: number, b: number) { return a + b; }",
+			stderr:
+				"Would you like me to continue? I reached the maximum number of actions without user input.",
+		});
+
+		try {
+			const adapter = createGooseAdapter();
+			const result = await adapter.generate({
+				model: "qwen3.5:4b",
+				prompt: "Return TypeScript source only.",
+				timeoutMs: 5_000,
+				runtime,
+				workingDirectory: workspaceDir,
+			});
+
+			expect(result.signalAssessment).toEqual({
+				classification: "tainted",
+				reasons: ["agent_requested_input"],
+			});
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
+	});
+
 	it("preserves stdout and stderr when Goose exits with an error", async () => {
 		const { createGooseAdapter } = await import(
 			"../src/harnesses/goose-adapter.js"
@@ -232,6 +277,52 @@ describe("createGooseAdapter", () => {
 						"agent_requested_input",
 					],
 				},
+			});
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
+	});
+
+	it("falls back to the execa message when stdout and stderr are empty", async () => {
+		const { createGooseAdapter } = await import(
+			"../src/harnesses/goose-adapter.js"
+		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-goose-empty-error-"),
+		);
+		const runtime: Runtime = {
+			name: "ollama",
+			baseUrl: "http://localhost:11434",
+			apiFormat: "ollama",
+			ping: async () => true,
+			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async () => ({
+				name: "qwen3.5:4b",
+				sizeBytes: 0,
+				parametersBillions: 4,
+			}),
+		};
+		execaMock.mockRejectedValueOnce(
+			Object.assign(new Error("goose failed without streams"), {
+				stdout: "",
+				stderr: "",
+			}),
+		);
+
+		try {
+			const adapter = createGooseAdapter();
+			await expect(
+				adapter.generate({
+					model: "qwen3.5:4b",
+					prompt: "Touch one file and reply DONE.",
+					timeoutMs: 5_000,
+					runtime,
+					promptMode: "workspace",
+					workingDirectory: workspaceDir,
+				}),
+			).rejects.toMatchObject({
+				message: "Goose failed: goose failed without streams",
+				output: "goose failed without streams",
 			});
 		} finally {
 			await fs.promises.rm(workspaceDir, { recursive: true, force: true });

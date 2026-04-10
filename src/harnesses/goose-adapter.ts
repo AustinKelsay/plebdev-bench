@@ -322,6 +322,9 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				const durationMs = Math.round(performance.now() - startTime);
 				let output = result.stdout;
 				const stderr = result.stderr?.trim() || "";
+				const rawOutputParts = [result.stdout, result.stderr].filter(
+					(part): part is string => typeof part === "string" && part.length > 0,
+				);
 
 				// Log stderr if present (may contain warnings)
 				if (stderr) {
@@ -357,6 +360,9 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				}
 				const transcriptOrInputReasons = Array.from(
 					new Set([
+						...rawOutputParts.flatMap((part) =>
+							getTranscriptOrInputTaintReasons(part),
+						),
 						...getTranscriptOrInputTaintReasons(rawOutput),
 						...getTranscriptOrInputTaintReasons(output),
 					]),
@@ -518,16 +524,24 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 						stderr?: string;
 						message: string;
 					};
-					const combined = `${execaError.stdout ?? ""}\n${execaError.stderr ?? ""}`;
-					const errorReasons = getTranscriptOrInputTaintReasons(combined);
+					const trimmedCombined = [execaError.stdout, execaError.stderr]
+						.filter(
+							(part): part is string =>
+								typeof part === "string" && part.trim().length > 0,
+						)
+						.join("\n")
+						.trim();
+					const effectiveOutput = trimmedCombined || execaError.message;
+					const errorReasons =
+						getTranscriptOrInputTaintReasons(effectiveOutput);
 					throw Object.assign(
-						new Error(`Goose failed: ${combined || execaError.message}`),
+						new Error(`Goose failed: ${effectiveOutput}`),
 						{
 							signalAssessment:
 								errorReasons.length > 0
 									? appendSignalAssessmentReasons(undefined, errorReasons)
 									: undefined,
-							output: combined,
+							output: effectiveOutput,
 						},
 					);
 				}
