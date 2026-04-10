@@ -30,10 +30,13 @@ import type {
 	AutomatedScore,
 	FrontierEval,
 	GenerationResult,
+	GenerationFailureType,
 	MatrixItem,
 	MatrixItemResult,
 	ScoringMetrics,
+	SignalAssessment,
 } from "../schemas/index.js";
+import { generationFailureTypes } from "../schemas/index.js";
 import { runGenerationWithInfraRetry } from "./generation-retry.js";
 import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
 
@@ -45,6 +48,82 @@ interface RuntimeUrls {
 	gooseRetryMaxTurns: number;
 	gooseWorkspaceMaxTurns: number;
 	gooseWorkspaceRetryMaxTurns: number;
+}
+
+const GENERATION_FAILURE_TYPE_SET = new Set(generationFailureTypes);
+
+/**
+ * Returns whether an unknown value is a valid generation failure type.
+ *
+ * @param value - Unknown candidate
+ * @returns True when the value is a supported generation failure literal
+ */
+function isGenerationFailureType(value: unknown): value is GenerationFailureType {
+	return (
+		typeof value === "string" &&
+		GENERATION_FAILURE_TYPE_SET.has(value as GenerationFailureType)
+	);
+}
+
+/**
+ * Returns whether an unknown value matches the signal-assessment shape.
+ *
+ * @param value - Unknown candidate
+ * @returns True when the value is a signal assessment object
+ */
+function isSignalAssessment(value: unknown): value is SignalAssessment {
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
+	const record = value as Record<string, unknown>;
+	return (
+		(record.classification === "trustworthy" ||
+			record.classification === "tainted") &&
+		Array.isArray(record.reasons) &&
+		record.reasons.every((reason) => typeof reason === "string")
+	);
+}
+
+/**
+ * Extracts structured generation failure details from an unknown thrown value.
+ *
+ * @param error - Thrown value from harness/runtime execution
+ * @returns Normalized generation failure details
+ */
+function extractGenerationFailureDetails(error: unknown): {
+	errorMessage: string;
+	failureType: GenerationFailureType;
+	durationMs: number;
+	output: string | undefined;
+	signalAssessment: SignalAssessment | undefined;
+} {
+	const errorRecord =
+		typeof error === "object" && error !== null
+			? (error as Record<string, unknown>)
+			: undefined;
+	const errorMessage =
+		error instanceof Error
+			? error.message
+			: typeof errorRecord?.message === "string"
+				? errorRecord.message
+				: String(error);
+	const failureType = isGenerationFailureType(errorRecord?.failureType)
+		? errorRecord.failureType
+		: classifyGenerationError(errorMessage);
+	return {
+		errorMessage,
+		failureType,
+		durationMs:
+			typeof errorRecord?.durationMs === "number" &&
+			Number.isFinite(errorRecord.durationMs)
+				? errorRecord.durationMs
+				: 0,
+		output:
+			typeof errorRecord?.output === "string" ? errorRecord.output : undefined,
+		signalAssessment: isSignalAssessment(errorRecord?.signalAssessment)
+			? errorRecord.signalAssessment
+			: undefined,
+	};
 }
 
 /**
@@ -136,21 +215,26 @@ export async function executeItem(
 			signalAssessment = generationOutcome.signalAssessment;
 			workspace = generationOutcome.workspace;
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			const failureType = classifyGenerationError(errorMessage);
+			const {
+				errorMessage,
+				failureType,
+				durationMs,
+				output,
+				signalAssessment: existingSignalAssessment,
+			} = extractGenerationFailureDetails(error);
 			generation = {
 				success: false,
 				error: errorMessage,
 				failureType,
-				durationMs: 0,
+				durationMs,
+				...(output !== undefined ? { output } : {}),
 			};
 			generationFailure = {
 				type: failureType,
 				message: errorMessage,
 			};
 			signalAssessment = finalizeItemSignalAssessment({
-				existing: undefined,
+				existing: existingSignalAssessment,
 				automatedScore: undefined,
 				rowFailed: true,
 				output: generation.output,
@@ -332,9 +416,14 @@ export async function executeItem(
 			signalAssessment,
 		};
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const {
+			errorMessage,
+			failureType,
+			durationMs,
+			output,
+			signalAssessment: existingSignalAssessment,
+		} = extractGenerationFailureDetails(error);
 		const completedAt = new Date().toISOString();
-		const failureType = classifyGenerationError(errorMessage);
 		log.warn({ error: errorMessage, failureType }, "Item execution failed");
 		return {
 			id: item.id,
@@ -353,7 +442,8 @@ export async function executeItem(
 				success: false,
 				error: errorMessage,
 				failureType,
-				durationMs: 0,
+				durationMs,
+				...(output !== undefined ? { output } : {}),
 			},
 			...(generationAttempts > 0 ? { generationAttempts } : {}),
 			generationFailure: {
@@ -361,10 +451,10 @@ export async function executeItem(
 				message: errorMessage,
 			},
 			signalAssessment: finalizeItemSignalAssessment({
-				existing: undefined,
+				existing: existingSignalAssessment,
 				automatedScore: undefined,
 				rowFailed: true,
-				output: undefined,
+				output,
 			}),
 		};
 	} finally {

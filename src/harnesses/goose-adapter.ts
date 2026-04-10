@@ -511,20 +511,23 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					);
 				}
 
-				// Check for execa error with stderr
+				// Check for execa error with stdout/stderr
 				if (error && typeof error === "object" && "stderr" in error) {
-					const execaError = error as { stderr: string; message: string };
-					const errorReasons = getTranscriptOrInputTaintReasons(
-						execaError.stderr,
-					);
+					const execaError = error as {
+						stdout?: string;
+						stderr?: string;
+						message: string;
+					};
+					const combined = `${execaError.stdout ?? ""}\n${execaError.stderr ?? ""}`;
+					const errorReasons = getTranscriptOrInputTaintReasons(combined);
 					throw Object.assign(
-						new Error(`Goose failed: ${execaError.stderr || execaError.message}`),
+						new Error(`Goose failed: ${combined || execaError.message}`),
 						{
 							signalAssessment:
 								errorReasons.length > 0
 									? appendSignalAssessmentReasons(undefined, errorReasons)
 									: undefined,
-							output: execaError.stderr,
+							output: combined,
 						},
 					);
 				}

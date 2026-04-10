@@ -19,16 +19,15 @@ import type {
 	SignalAssessmentReason,
 } from "../schemas/index.js";
 
-const INTERNAL_TOOL_TRANSCRIPT_PATTERNS = [
-	/"sessionID"\s*:/i,
-	/"type"\s*:\s*"step_(?:start|finish)"/i,
-	/"type"\s*:\s*"tool_(?:call|result|use)"/i,
-	/(?:^|\n)\s*\[Function\s+(?:bash|edit|glob|grep|read|write)\b/im,
-	/(?:^|\n)\s*(?:read|write)\s+(?:\/|~|\.)/im,
-	/<function=(?:bash|edit|glob|grep|read|write)>/i,
-	/<parameter=filePath>/i,
-	/(?:^|\n)\s*(?:read|write)\s*\{[\s\S]*?\bfilePath\s*:/im,
-] as const;
+const INTERNAL_TOOL_TRANSCRIPT_WINDOW_CHARS = 200;
+
+const INTERNAL_TOOL_SESSION_ID_PATTERN = /"sessionID"\s*:/i;
+const INTERNAL_TOOL_EVENT_TYPE_PATTERN =
+	/"type"\s*:\s*"(?:step_(?:start|finish)|tool_(?:call|result|use))"/i;
+const INTERNAL_TOOL_FUNCTION_MARKER_PATTERN =
+	/(?:\[Function\s+(?:bash|edit|glob|grep|read|write)\b|<function=(?:bash|edit|glob|grep|read|write)>)/i;
+const INTERNAL_TOOL_FILE_PATH_MARKER_PATTERN =
+	/(?:<parameter=filePath>|\bfilePath\s*:)/i;
 
 const AGENT_REQUESTED_INPUT_PATTERNS = [
 	/\bwould you like me to continue\b/i,
@@ -156,6 +155,93 @@ export function isLikelyToolCallPayload(output: string): boolean {
 }
 
 /**
+ * Returns a global regex copy so `matchAll` can scan every occurrence.
+ *
+ * @param pattern - Source regex
+ * @returns Global regex preserving existing flags
+ */
+function toGlobalRegex(pattern: RegExp): RegExp {
+	return new RegExp(
+		pattern.source,
+		pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`,
+	);
+}
+
+/**
+ * Returns true when `secondaryPattern` appears near any `primaryPattern` match.
+ *
+ * @param output - Candidate output text
+ * @param primaryPattern - First required marker
+ * @param secondaryPattern - Second required marker
+ * @returns True when both markers occur in the same local window
+ */
+function hasNearbyPatternPair(
+	output: string,
+	primaryPattern: RegExp,
+	secondaryPattern: RegExp,
+): boolean {
+	const secondaryMatcher = new RegExp(
+		secondaryPattern.source,
+		secondaryPattern.flags.replaceAll("g", ""),
+	);
+	for (const match of output.matchAll(toGlobalRegex(primaryPattern))) {
+		const start = match.index ?? 0;
+		const end = start + match[0].length;
+		const windowStart = Math.max(
+			0,
+			start - INTERNAL_TOOL_TRANSCRIPT_WINDOW_CHARS,
+		);
+		const windowEnd = Math.min(
+			output.length,
+			end + INTERNAL_TOOL_TRANSCRIPT_WINDOW_CHARS,
+		);
+		if (secondaryMatcher.test(output.slice(windowStart, windowEnd))) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Detects structured JSON transcript markers rather than isolated token mentions.
+ *
+ * @param output - Candidate output text
+ * @returns True when session and step/tool event markers appear together nearby
+ */
+function hasStructuredJsonTranscriptMarkers(output: string): boolean {
+	return (
+		hasNearbyPatternPair(
+			output,
+			INTERNAL_TOOL_SESSION_ID_PATTERN,
+			INTERNAL_TOOL_EVENT_TYPE_PATTERN,
+		) ||
+		hasNearbyPatternPair(
+			output,
+			INTERNAL_TOOL_EVENT_TYPE_PATTERN,
+			INTERNAL_TOOL_SESSION_ID_PATTERN,
+		)
+	);
+}
+
+/**
+ * Detects tool transcript blocks that include both a tool marker and file-path marker.
+ *
+ * @param output - Candidate output text
+ * @returns True when both markers co-occur in the same transcript block
+ */
+function hasToolInvocationTranscriptBlock(output: string): boolean {
+	const blocks = output.split(/\n\s*\n/);
+	return blocks.some((block) => {
+		const trimmedBlock = block.trim();
+		return (
+			trimmedBlock.length > 0 &&
+			INTERNAL_TOOL_FUNCTION_MARKER_PATTERN.test(trimmedBlock) &&
+			INTERNAL_TOOL_FILE_PATH_MARKER_PATTERN.test(trimmedBlock)
+		);
+	});
+}
+
+/**
  * Detects raw harness protocol transcripts or internal tool chatter leaked to output.
  *
  * @param output - Raw generation output
@@ -166,8 +252,9 @@ export function isInternalToolTranscriptOutput(output: string): boolean {
 	if (trimmed.length === 0) {
 		return false;
 	}
-	return INTERNAL_TOOL_TRANSCRIPT_PATTERNS.some((pattern) =>
-		pattern.test(trimmed),
+	return (
+		hasStructuredJsonTranscriptMarkers(trimmed) ||
+		hasToolInvocationTranscriptBlock(trimmed)
 	);
 }
 

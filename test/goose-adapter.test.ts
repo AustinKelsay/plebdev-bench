@@ -181,4 +181,60 @@ describe("createGooseAdapter", () => {
 			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
 		}
 	});
+
+	it("preserves stdout and stderr when Goose exits with an error", async () => {
+		const { createGooseAdapter } = await import(
+			"../src/harnesses/goose-adapter.js"
+		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-goose-error-"),
+		);
+		const runtime: Runtime = {
+			name: "ollama",
+			baseUrl: "http://localhost:11434",
+			apiFormat: "ollama",
+			ping: async () => true,
+			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async () => ({
+				name: "qwen3.5:4b",
+				sizeBytes: 0,
+				parametersBillions: 4,
+			}),
+		};
+		execaMock.mockRejectedValueOnce(
+			Object.assign(new Error("goose failed"), {
+				stdout: '{"sessionID":"abc","type":"step_start"}',
+				stderr:
+					"Would you like me to continue? I reached the maximum number of actions without user input.",
+			}),
+		);
+
+		try {
+			const adapter = createGooseAdapter();
+			await expect(
+				adapter.generate({
+					model: "qwen3.5:4b",
+					prompt: "Touch one file and reply DONE.",
+					timeoutMs: 5_000,
+					runtime,
+					promptMode: "workspace",
+					workingDirectory: workspaceDir,
+				}),
+			).rejects.toMatchObject({
+				message: expect.stringContaining('"sessionID":"abc"'),
+				output: expect.stringContaining(
+					"Would you like me to continue?",
+				),
+				signalAssessment: {
+					classification: "tainted",
+					reasons: [
+						"internal_tool_transcript",
+						"agent_requested_input",
+					],
+				},
+			});
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
+	});
 });

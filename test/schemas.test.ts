@@ -62,7 +62,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.5.0");
+		expect(SCHEMA_VERSION).toBe("0.5.1");
 	});
 
 	it("should validate runtime names", () => {

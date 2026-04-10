@@ -73,7 +73,7 @@ describe("legacy machine-profile migration", () => {
 		);
 	});
 
-	it("upgrades legacy plan/run payloads to schema version 0.5.0", () => {
+	it("upgrades legacy plan/run payloads to the current schema version", () => {
 		const plan = migrateLegacyPlanPayload({
 			schemaVersion: "0.3.0",
 			runId: "run-legacy",
@@ -126,6 +126,36 @@ describe("legacy machine-profile migration", () => {
 		expect(parsedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 		expect(knownPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
 		expect(knownRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
+	});
+
+	it("accepts prior current-version artifacts after a schema bump", () => {
+		const parsedPlan = parseKnownPlanPayload({
+			schemaVersion: "0.5.0",
+			runId: "run-current-minus-one",
+			createdAt: "2026-03-05T21:51:18.583Z",
+			runtimeEnvironment: {
+				platform: "darwin",
+				bunVersion: "1.3.3",
+			},
+			machine: LEGACY_MACHINE,
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
+				generateTimeoutMs: 120_000,
+				passTypes: ["blind"],
+			},
+			items: [],
+			summary: {
+				totalItems: 0,
+				runtimes: 0,
+				models: 0,
+				harnesses: 0,
+				tests: 0,
+			},
+		});
+
+		expect(parsedPlan.schemaVersion).toBe(SCHEMA_VERSION);
+		expect(parsedPlan.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 	});
 });
 

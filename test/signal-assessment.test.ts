@@ -12,6 +12,8 @@ import {
 	appendSignalAssessmentReasons,
 	createTaintedSignalAssessment,
 	finalizeItemSignalAssessment,
+	getTranscriptOrInputTaintReasons,
+	isInternalToolTranscriptOutput,
 } from "../src/lib/signal-assessment.js";
 
 describe("appendSignalAssessmentReasons", () => {
@@ -99,6 +101,30 @@ describe("finalizeItemSignalAssessment", () => {
 			classification: "tainted",
 			reasons: ["internal_tool_transcript"],
 		});
+	});
+
+	it("does not classify isolated transcript tokens as internal tool transcripts", () => {
+		const sessionOnly = 'artifact metadata: {"sessionID":"abc"}';
+		const tokenOnly = 'labels = ["step_start", "tool_call"]';
+
+		expect(isInternalToolTranscriptOutput(sessionOnly)).toBe(false);
+		expect(getTranscriptOrInputTaintReasons(sessionOnly)).toEqual([]);
+		expect(isInternalToolTranscriptOutput(tokenOnly)).toBe(false);
+		expect(getTranscriptOrInputTaintReasons(tokenOnly)).toEqual([]);
+	});
+
+	it("classifies structured multi-token transcripts as internal tool transcripts", () => {
+		const transcript = [
+			'{"sessionID":"abc","type":"tool_call"}',
+			"",
+			"<function=bash>",
+			"<parameter=filePath>src/index.ts</parameter>",
+		].join("\n");
+
+		expect(isInternalToolTranscriptOutput(transcript)).toBe(true);
+		expect(getTranscriptOrInputTaintReasons(transcript)).toEqual([
+			"internal_tool_transcript",
+		]);
 	});
 
 	it("marks continuation prompts as tainted", () => {

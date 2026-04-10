@@ -13,6 +13,7 @@ import {
 	LeaderboardAggregateSchema,
 	RunResultSchema,
 } from "../apps/dashboard/src/lib/schemas.js";
+import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 describe("LeaderboardAggregateSchema", () => {
 	it("upgrades legacy schemaVersion 1 aggregates to the v2 shape", () => {
@@ -117,7 +118,7 @@ describe("DashboardIndexLegacyOrCurrentSchema", () => {
 describe("RunResultSchema", () => {
 	it("accepts optional model profile and signal assessment metadata on items", () => {
 		const parsed = RunResultSchema.parse({
-			schemaVersion: "0.5.0",
+			schemaVersion: SCHEMA_VERSION,
 			runId: "run-test",
 			startedAt: "2026-03-25T12:00:00.000Z",
 			completedAt: "2026-03-25T12:01:00.000Z",
@@ -173,7 +174,7 @@ describe("RunResultSchema", () => {
 	it("rejects trustworthy signal assessments that include taint reasons", () => {
 		expect(() =>
 			RunResultSchema.parse({
-				schemaVersion: "0.5.0",
+				schemaVersion: SCHEMA_VERSION,
 				runId: "run-test",
 				startedAt: "2026-03-25T12:00:00.000Z",
 				completedAt: "2026-03-25T12:01:00.000Z",
@@ -205,7 +206,7 @@ describe("RunResultSchema", () => {
 
 	it("accepts newly added transcript/input taint reasons", () => {
 		const parsed = RunResultSchema.parse({
-			schemaVersion: "0.5.0",
+			schemaVersion: SCHEMA_VERSION,
 			runId: "run-test",
 			startedAt: "2026-03-25T12:00:00.000Z",
 			completedAt: "2026-03-25T12:01:00.000Z",
