@@ -10,6 +10,9 @@ import { z } from "zod";
 /** Pass type schema. */
 const PassTypeSchema = z.enum(["blind", "informed"]);
 
+/** Test category schema. */
+const TestCategorySchema = z.enum(["coding", "computer-use"]);
+
 /** Runtime name schema. */
 const RuntimeNameSchema = z.enum(["ollama", "vllm"]);
 
@@ -419,8 +422,12 @@ export const RunPlanSchema = z.object({
 		.optional(),
 	config: z.object({
 		ollamaBaseUrl: z.string(),
-		vllmBaseUrl: z.string(),
 		generateTimeoutMs: z.number(),
+		gooseMaxTurns: z.number().optional(),
+		gooseRetryMaxTurns: z.number().optional(),
+		gooseWorkspaceMaxTurns: z.number().optional(),
+		gooseWorkspaceRetryMaxTurns: z.number().optional(),
+		categories: z.array(TestCategorySchema).optional(),
 		passTypes: z.array(PassTypeSchema),
 	}),
 	items: z.array(MatrixItemSchema),

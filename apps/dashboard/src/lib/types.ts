@@ -292,8 +292,11 @@ export interface LegacyEnvironment {
 /** Run plan configuration */
 export interface PlanConfig {
 	ollamaBaseUrl: string;
-	vllmBaseUrl: string;
 	generateTimeoutMs: number;
+	gooseMaxTurns?: number;
+	gooseRetryMaxTurns?: number;
+	gooseWorkspaceMaxTurns?: number;
+	gooseWorkspaceRetryMaxTurns?: number;
 	categories?: TestCategory[];
 	passTypes: PassType[];
 }
