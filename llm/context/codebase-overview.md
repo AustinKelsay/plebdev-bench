@@ -2,7 +2,7 @@ Purpose: Quick reference for the current codebase structure and key commands.
 
 # Codebase Overview
 
-Local-first CLI benchmark runner for local LLMs. Runs matrix of `runtimes × harnesses × models × tests × passTypes` and writes reproducible artifacts.
+Local-first CLI benchmark runner for local LLMs. Runs matrix of `runtime × harness × model × test × passType` and writes reproducible artifacts.
 
 Test categories:
 - `coding`
@@ -13,7 +13,7 @@ Computer-use tests use seeded fixture workspaces plus exact filesystem assertion
 ## Key Commands
 
 ```bash
-bun pb                              # Run all (auto-discovers runtimes/harnesses/models/tests)
+bun pb                              # Run all (Ollama runtime; auto-discovers harnesses/models/tests)
 bun pb --models llama3.2:3b         # Limit to specific model
 bun pb --tests smoke                # Limit to specific test
 bun pb --categories coding          # Limit to specific category
@@ -46,13 +46,13 @@ src/
 │   └── compare-command.ts # Compare command
 ├── schemas/              # Zod schemas (source of truth)
 │   ├── common.schema.ts  # SCHEMA_VERSION, PassType, RuntimeName
+│   │                     # Supported runtime = ollama; artifact runtime also accepts legacy vllm
 │   ├── config.schema.ts  # BenchConfig
 │   ├── plan.schema.ts    # RunPlan, MatrixItem
 │   └── result.schema.ts  # RunResult, MatrixItemResult
 ├── runtimes/             # Runtime adapters (inference backends)
 │   ├── runtime.ts        # Runtime interface + types
 │   ├── ollama-runtime.ts # Ollama HTTP implementation
-│   ├── discovery.ts      # Detect available runtimes
 │   └── index.ts          # Factory + exports
 ├── harnesses/            # Harness adapters (interface layer)
 │   ├── harness.ts        # Common interface
@@ -120,9 +120,6 @@ The architecture separates **runtimes** (inference backends) from **harnesses** 
 | Runtime | Method | Description |
 |---------|--------|-------------|
 | `ollama` | HTTP | Local Ollama server at configured URL |
-| `vllm` | HTTP | External OpenAI-compatible server at configured URL |
-
-Discovery: `discoverRuntimes()` checks whether each configured runtime endpoint is reachable.
 
 ### Harnesses
 
@@ -170,11 +167,12 @@ Each run creates `results/<run-id>/`:
 
 ## Schemas
 
-Schema version: `0.4.0`
+Schema version: `0.5.1`
 
 | Schema | File | Purpose |
 |--------|------|---------|
-| `RuntimeNameSchema` | common.schema.ts | Valid runtime names ("ollama", "vllm") |
+| `SupportedRuntimeNameSchema` | common.schema.ts | Live config/runtime names (`"ollama"`) |
+| `ArtifactRuntimeNameSchema` | common.schema.ts | Artifact runtime names (`"ollama"`, legacy `"vllm"`) |
 | `TestCategorySchema` | common.schema.ts | Test categories ("coding", "computer-use") |
 | `HarnessCapabilitySchema` | common.schema.ts | Workspace capability requirements (`workspace-read`, `workspace-write`, `workspace-mkdir`, `workspace-search`, `workspace-delete`) |
 | `TestScoringModeSchema` | common.schema.ts | Test scoring modes ("code-module", "workspace") |
@@ -192,8 +190,9 @@ Schema version: `0.4.0`
 
 ## Key Behaviors
 
-- **Auto-discovery**: By default, discovers all runtimes available, all models from runtimes, all harnesses available, and all tests in `src/tests/` (with categories and scoring modes from `test.meta.json`)
-- **Limiting flags**: Use `--models`, `--harnesses`, `--tests`, `--categories` to limit which items to run
+- **Runtime selection**: By default, runs only the Ollama runtime; no port or secondary-runtime auto-discovery occurs
+- **Auto-discovery**: By default, discovers all models from Ollama, all harnesses available, and all tests in `src/tests/` (with categories and scoring modes from `test.meta.json`)
+- **Limiting flags**: Use `--models`, `--harnesses`, `--tests`, `--categories`, and `--runtimes ollama` to limit which items to run
 - **Capability-aware scheduling**: Tests with `requiredHarnessCapabilities` only run on harnesses that advertise every required capability
 - **Test-aware timeouts**: Tests can declare `timeoutMultiplier` in `test.meta.json`, and the resolved multiplier is copied into each matrix row
 - **Workspace-root anchoring**: Tool-harness workspace prompts include the concrete seeded root path so models are explicitly told where the allowed workspace begins and ends
@@ -222,8 +221,8 @@ Schema version: `0.4.0`
 
 ```typescript
 {
-  runtimes: []                // Auto-discover all available
-  models: []                  // Auto-discover all from runtimes
+  runtimes: ["ollama"]        // Fixed active runtime
+  models: []                  // Auto-discover all from Ollama
   harnesses: []               // Auto-discover all available
   tests: []                   // Auto-discover all from src/tests/
   categories: []              // Auto-discover all categories

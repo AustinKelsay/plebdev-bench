@@ -82,7 +82,7 @@ export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
 	.option(
 		"-r, --runtimes <runtimes...>",
-		"Limit to specific runtimes: ollama, vllm (default: all available)",
+		"Limit to specific runtimes: ollama (default: ollama)",
 	)
 	.option(
 		"-m, --models <models...>",
@@ -105,7 +105,6 @@ export const runCommand = new Command("run")
 		"Limit to specific harnesses: direct, goose, opencode (default: all available). 'ollama' is accepted as alias for 'direct'.",
 	)
 	.option("--ollama-url <url>", "Ollama API base URL", "http://localhost:11434")
-	.option("--vllm-url <url>", "vLLM API base URL", "http://localhost:8000")
 	.option("--timeout <ms>", "Generation timeout in milliseconds", "300000")
 	.option("--goose-max-turns <n>", "Goose max turns for initial attempt", "1")
 	.option(
@@ -222,7 +221,6 @@ export const runCommand = new Command("run")
 			// Build config from CLI options
 			const configInput: Partial<BenchConfig> = {
 				ollamaBaseUrl: options.ollamaUrl,
-				vllmBaseUrl: options.vllmUrl,
 				generateTimeoutMs: Number.parseInt(options.timeout, 10),
 				gooseMaxTurns: parseStrictIntegerOption(
 					"--goose-max-turns",

@@ -7,12 +7,12 @@
 
 import { z } from "zod";
 import {
+	ArtifactRuntimeNameSchema,
 	BenchmarkCheckpointSchema,
 	MachineProfileSchema,
 	PassTypeSchema,
 	RunProvenanceSchema,
 	RuntimeEnvironmentSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	HarnessCapabilitySchema,
 	TestCategorySchema,
@@ -26,7 +26,7 @@ export const MatrixItemSchema = z.object({
 	id: z.string(),
 
 	/** Runtime name (e.g., 'ollama'). */
-	runtime: RuntimeNameSchema,
+	runtime: ArtifactRuntimeNameSchema,
 
 	/** Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),
@@ -94,7 +94,6 @@ export const RunPlanSchema = z.object({
 	/** Resolved configuration snapshot (subset relevant to reproducibility). */
 	config: z.object({
 		ollamaBaseUrl: z.string().url(),
-		vllmBaseUrl: z.string().url(),
 		generateTimeoutMs: z.number(),
 		gooseMaxTurns: z.number().int().positive().optional(),
 		gooseRetryMaxTurns: z.number().int().positive().optional(),

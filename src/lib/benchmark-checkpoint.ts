@@ -45,7 +45,6 @@ const CORE_BENCHMARK_LIB_ASSETS = [
 	"src/lib/failure-classifier.ts",
 	"src/lib/model-aliases.ts",
 	"src/lib/ollama-client.ts",
-	"src/lib/openai-compat-client.ts",
 	"src/lib/openrouter-client.ts",
 ] as const;
 

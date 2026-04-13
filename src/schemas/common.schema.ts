@@ -2,7 +2,8 @@
  * Purpose: Shared primitives and constants for the benchmark domain.
  * Exports: SCHEMA_VERSION, passTypes, PassTypeSchema, PassType,
  *          itemStatusTypes, ItemStatusSchema, ItemStatus,
- *          runtimeNames, RuntimeNameSchema, RuntimeName,
+ *          supportedRuntimeNames, SupportedRuntimeNameSchema, SupportedRuntimeName,
+ *          artifactRuntimeNames, ArtifactRuntimeNameSchema, ArtifactRuntimeName,
  *          testCategories, TestCategorySchema, TestCategory,
  *          testScoringModes, TestScoringModeSchema, TestScoringMode,
  *          harnessCapabilities, HarnessCapabilitySchema, HarnessCapability,
@@ -34,14 +35,23 @@ import { z } from "zod";
 /** Current schema version for all result/plan files. */
 export const SCHEMA_VERSION = "0.5.1";
 
-/** Valid runtime names (inference backends). */
-export const runtimeNames = ["ollama", "vllm"] as const;
+/** Valid runtime names for active benchmark execution. */
+export const supportedRuntimeNames = ["ollama"] as const;
 
-/** Zod schema for runtime names. */
-export const RuntimeNameSchema = z.enum(runtimeNames);
+/** Zod schema for runtimes accepted by current config and execution flows. */
+export const SupportedRuntimeNameSchema = z.literal("ollama");
 
-/** Runtime name type. */
-export type RuntimeName = z.infer<typeof RuntimeNameSchema>;
+/** Runtime name type accepted by current config and execution flows. */
+export type SupportedRuntimeName = z.infer<typeof SupportedRuntimeNameSchema>;
+
+/** Valid runtime names allowed when reading historical plan/result artifacts. */
+export const artifactRuntimeNames = ["ollama", "vllm"] as const;
+
+/** Zod schema for runtimes allowed in stored artifacts. */
+export const ArtifactRuntimeNameSchema = z.enum(artifactRuntimeNames);
+
+/** Runtime name type allowed in stored artifacts. */
+export type ArtifactRuntimeName = z.infer<typeof ArtifactRuntimeNameSchema>;
 
 /** Valid pass types for benchmark runs. */
 export const passTypes = ["blind", "informed"] as const;

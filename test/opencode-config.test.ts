@@ -9,7 +9,6 @@ describe("buildOpenCodeConfig", () => {
 	it("enables workspace tools and bash permissions for benchmark runs", () => {
 		const { config } = buildOpenCodeConfig({
 			runtimeName: "ollama",
-			runtimeApiFormat: "ollama",
 			runtimeBaseUrl: "http://localhost:11434",
 			model: "qwen3.5:4b",
 		});

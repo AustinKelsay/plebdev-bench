@@ -2,10 +2,7 @@
  * Purpose: Direct HTTP adapter implementing the Harness interface.
  * Exports: createDirectAdapter
  *
- * This adapter communicates directly with the runtime's HTTP API.
- * Dispatches to appropriate client based on runtime.apiFormat:
- * - "ollama": Uses POST /api/generate with NDJSON streaming
- * - "openai-compat": Uses POST /v1/chat/completions with SSE streaming
+ * This adapter communicates directly with Ollama's HTTP API.
  *
  * The "direct" harness is the simplest - it sends prompts directly
  * to the runtime without any CLI wrapper.
@@ -15,7 +12,6 @@
  * - Streaming mode keeps connection alive during model loading (critical for bf16)
  */
 
-import { z } from "zod";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -25,10 +21,7 @@ import {
 } from "./code-output-policy.js";
 import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
 import { generateOllama } from "../lib/ollama-client.js";
-import { generateOpenAiCompat } from "../lib/openai-compat-client.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
-const VllmApiKeySchema = z.string().min(1).optional();
-const vllmApiKey = VllmApiKeySchema.parse(process.env.VLLM_API_KEY);
 const MIN_OUTPUT_LENGTH = 10;
 
 /**
@@ -56,45 +49,16 @@ export function createDirectAdapter(): Harness {
 
 			const fullPrompt = buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
 
-			// Dispatch to appropriate client based on runtime API format
-			let output: string;
-			let promptTokens: number | undefined;
-			let completionTokens: number | undefined;
-
-			switch (runtime.apiFormat) {
-				case "ollama": {
-					const response = await generateOllama({
-						baseUrl: runtime.baseUrl,
-						model,
-						prompt: fullPrompt,
-						timeoutMs,
-						keepAlive: unloadAfter ? 0 : "5m",
-					});
-					output = response.output;
-					promptTokens = response.promptTokens;
-					completionTokens = response.completionTokens;
-					break;
-				}
-
-				case "openai-compat": {
-					const response = await generateOpenAiCompat({
-						baseUrl: runtime.baseUrl,
-						model,
-						prompt: fullPrompt,
-						timeoutMs,
-						apiKey: vllmApiKey,
-					});
-					output = response.output;
-					promptTokens = response.promptTokens;
-					completionTokens = response.completionTokens;
-					break;
-				}
-
-				default: {
-					const _exhaustive: never = runtime.apiFormat;
-					throw new Error(`Unsupported API format: ${_exhaustive}`);
-				}
-			}
+			const response = await generateOllama({
+				baseUrl: runtime.baseUrl,
+				model,
+				prompt: fullPrompt,
+				timeoutMs,
+				keepAlive: unloadAfter ? 0 : "5m",
+			});
+			const output = response.output;
+			const promptTokens = response.promptTokens;
+			const completionTokens = response.completionTokens;
 
 			const decision = evaluateCodeOnlyOutput(output, MIN_OUTPUT_LENGTH);
 			if (decision.shouldRetry) {

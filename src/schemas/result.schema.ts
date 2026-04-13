@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import {
+	ArtifactRuntimeNameSchema,
 	BenchmarkCheckpointSchema,
 	FrontierEvalFailureTypeSchema,
 	GenerationFailureTypeSchema,
@@ -16,7 +17,6 @@ import {
 	MachineProfileSchema,
 	PassTypeSchema,
 	RunProvenanceSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
 	SignalAssessmentSchema,
@@ -159,7 +159,7 @@ export const MatrixItemResultSchema = z.object({
 	id: z.string(),
 
 	/** Runtime name. */
-	runtime: RuntimeNameSchema,
+	runtime: ArtifactRuntimeNameSchema,
 
 	/** Model name. */
 	model: z.string(),

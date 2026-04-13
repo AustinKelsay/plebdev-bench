@@ -5,7 +5,7 @@
  */
 
 import type {
-	RuntimeName,
+	ArtifactRuntimeName,
 	TestCategory,
 } from "../../../../src/schemas/common.schema.js";
 
@@ -90,7 +90,7 @@ export interface CanonicalModelProfile {
 export interface ModelVariant {
 	variantKey: string;
 	variantLabel: string;
-	runtime: RuntimeName;
+	runtime: ArtifactRuntimeName;
 	runtimeModelName: string;
 	format?: string;
 	quantization?: string;

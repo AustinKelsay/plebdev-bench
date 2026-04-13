@@ -11,6 +11,7 @@ import {
 } from "../src/lib/machine-profile/normalization.js";
 import {
 	BenchConfigSchema,
+	ArtifactRuntimeNameSchema,
 	FrontierEvalFailureTypeSchema,
 	HardwareProfileSchema,
 	HarnessCapabilitySchema,
@@ -20,9 +21,9 @@ import {
 	AcceleratorDetectionSchema,
 	RunPlanSchema,
 	RunResultSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringSpecSchema,
+	SupportedRuntimeNameSchema,
 	TestCategorySchema,
 	TestScoringModeSchema,
 	defaultConfig,
@@ -65,10 +66,12 @@ describe("common schemas", () => {
 		expect(SCHEMA_VERSION).toBe("0.5.1");
 	});
 
-	it("should validate runtime names", () => {
-		expect(RuntimeNameSchema.parse("ollama")).toBe("ollama");
-		expect(RuntimeNameSchema.parse("vllm")).toBe("vllm");
-		expect(() => RuntimeNameSchema.parse("unknown")).toThrow();
+	it("should validate supported and artifact runtime names separately", () => {
+		expect(SupportedRuntimeNameSchema.parse("ollama")).toBe("ollama");
+		expect(() => SupportedRuntimeNameSchema.parse("vllm")).toThrow();
+		expect(ArtifactRuntimeNameSchema.parse("ollama")).toBe("ollama");
+		expect(ArtifactRuntimeNameSchema.parse("vllm")).toBe("vllm");
+		expect(() => ArtifactRuntimeNameSchema.parse("unknown")).toThrow();
 	});
 
 	it("should validate frontier eval failure types", () => {
@@ -102,9 +105,9 @@ describe("common schemas", () => {
 describe("BenchConfigSchema", () => {
 	it("should parse empty object with defaults", () => {
 		const config = BenchConfigSchema.parse({});
-		expect(config.runtimes).toEqual([]);
+		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual([]);
-		expect(config.harnesses).toEqual([]); // Auto-discover all available
+		expect(config.harnesses).toEqual([]);
 		expect(config.tests).toEqual([]);
 		expect(config.categories).toEqual([]);
 		expect(config.passTypes).toEqual(["blind", "informed"]);
@@ -202,7 +205,6 @@ describe("BenchConfigSchema", () => {
 			modelAliases: {
 				"qwen3-8b-instruct": {
 					ollama: "qwen3:8b",
-					vllm: "Qwen/Qwen3-8B-Instruct",
 				},
 			},
 		});
@@ -210,6 +212,31 @@ describe("BenchConfigSchema", () => {
 			"qwen3:8b",
 		);
 		expect("modelAliases" in config).toBe(false);
+	});
+
+	it("should reject removed vllm config fields and runtime values", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				vllmBaseUrl: "http://localhost:8000",
+			}),
+		).toThrow(/vllmBaseUrl/);
+		expect(() =>
+			BenchConfigSchema.parse({
+				runtimes: ["vllm"],
+			}),
+		).toThrow();
+		expect(() =>
+			BenchConfigSchema.parse({
+				modelProfiles: {
+					"qwen3-8b-instruct": {
+						variants: {
+							ollama: "qwen3:8b",
+							vllm: "Qwen/Qwen3-8B-Instruct",
+						},
+					},
+				},
+			}),
+		).toThrow();
 	});
 
 	it("should reject simultaneous modelProfiles and modelAliases", () => {
@@ -304,7 +331,8 @@ describe("BenchConfigSchema", () => {
 	});
 
 	it("should provide default config", () => {
-		expect(defaultConfig.harnesses).toEqual([]); // Auto-discover all available
+		expect(defaultConfig.runtimes).toEqual(["ollama"]);
+		expect(defaultConfig.harnesses).toEqual([]);
 	});
 });
 
@@ -532,7 +560,6 @@ describe("RunPlanSchema", () => {
 			},
 			config: {
 				ollamaBaseUrl: "http://localhost:11434",
-				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 120_000,
 				gooseMaxTurns: 1,
 				gooseRetryMaxTurns: 3,

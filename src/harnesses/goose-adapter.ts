@@ -30,7 +30,6 @@ import {
 	hasRetryMarker,
 	stripRetryMarker,
 } from "./code-output-policy.js";
-import { normalizeOpenAiBasePath } from "./goose-openai.js";
 import { normalizeGooseOutput } from "./goose-output.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
@@ -214,63 +213,13 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			await fs.promises.mkdir(workDir, { recursive: true });
 			log.debug({ workDir, executionCwd }, "Prepared Goose output directory");
 
-			// Determine Goose provider and extra env based on runtime API format
-			let provider: string;
-			let extraEnv: Record<string, string> = {};
-
-			switch (runtime.apiFormat) {
-				case "ollama":
-					provider = "ollama";
-					break;
-				case "openai-compat": {
-					provider = "openai";
-
-					const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
-					if (!apiKey) {
-						log.warn(
-							"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
-						);
-					}
-
-					const parsedBaseUrl = new URL(runtime.baseUrl);
-					const host = `${parsedBaseUrl.protocol}//${parsedBaseUrl.host}`;
-					let basePath = normalizeOpenAiBasePath(parsedBaseUrl.pathname);
-					// Goose's OpenAI provider sometimes hits /v1/completions by default.
-					// vLLM only supports chat completions, so force the chat endpoint path.
-					if (runtime.name === "vllm" && basePath === "v1") {
-						basePath = "v1/chat/completions";
-					}
-					const baseUrl = `${host}/${basePath}`;
-
-					extraEnv = {
-						OPENAI_API_KEY: apiKey ?? "dummy",
-						OPENAI_HOST: host,
-						OPENAI_BASE_PATH: basePath,
-						OPENAI_BASE_URL: baseUrl,
-						OPENAI_API_BASE: baseUrl,
-						OPENAI_MODEL: model,
-						OPENAI_DEFAULT_MODEL: model,
-					};
-					break;
-				}
-				default: {
-					const _exhaustive: never = runtime.apiFormat;
-					log.warn(
-						{ apiFormat: _exhaustive },
-						"Unsupported runtime apiFormat for Goose",
-					);
-					throw new Error(
-						`Unsupported runtime apiFormat for Goose: ${String(_exhaustive)}`,
-					);
-				}
-			}
+			const provider = "ollama";
 
 			// Set up environment for Goose (headless mode)
 			const env = {
 				...process.env,
 				GOOSE_PROVIDER: provider,
 				GOOSE_MODEL: model,
-				...extraEnv,
 			};
 
 			const fullPrompt =

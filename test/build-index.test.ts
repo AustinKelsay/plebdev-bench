@@ -44,7 +44,6 @@ const REQUIRED_LIB_ASSETS = [
 	"failure-classifier.ts",
 	"model-aliases.ts",
 	"ollama-client.ts",
-	"openai-compat-client.ts",
 	"openrouter-client.ts",
 ] as const;
 

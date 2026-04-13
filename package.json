@@ -10,8 +10,6 @@
 	"scripts": {
 		"pb": "bun run src/index.ts run",
 		"pb:ollama": "bun run src/index.ts run --runtimes ollama",
-		"pb:vllm": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run --runtimes vllm",
-		"pb:all": "VLLM_API_KEY=${VLLM_API_KEY:-dummy} bun run src/index.ts run",
 		"bench": "bun run src/index.ts",
 		"compare": "bun run src/index.ts compare",
 		"dashboard": "bun run --cwd apps/dashboard dev",

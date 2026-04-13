@@ -55,19 +55,14 @@ export type HarnessPromptMode = (typeof HARNESS_PROMPT_MODES)[number];
 /**
  * Runtime compatibility for each harness.
  * Maps harness name to array of compatible runtime names.
- *
- * All harnesses now support multiple runtimes via API format abstraction:
- * - direct: dispatches to ollama-client or openai-compat-client based on runtime.apiFormat
- * - goose: maps runtime.apiFormat to --provider (ollama or openai)
- * - opencode: dynamically configures provider in opencode.json based on runtime
  */
 export const HARNESS_RUNTIME_COMPATIBILITY: Record<
 	HarnessName,
 	readonly string[]
 > = {
-	direct: ["ollama", "vllm"],
-	goose: ["ollama", "vllm"],
-	opencode: ["ollama", "vllm"],
+	direct: ["ollama"],
+	goose: ["ollama"],
+	opencode: ["ollama"],
 } as const;
 
 /**

@@ -5,9 +5,12 @@
 
 export {
 	SCHEMA_VERSION,
-	runtimeNames,
-	RuntimeNameSchema,
-	type RuntimeName,
+	supportedRuntimeNames,
+	SupportedRuntimeNameSchema,
+	type SupportedRuntimeName,
+	artifactRuntimeNames,
+	ArtifactRuntimeNameSchema,
+	type ArtifactRuntimeName,
 	passTypes,
 	PassTypeSchema,
 	type PassType,

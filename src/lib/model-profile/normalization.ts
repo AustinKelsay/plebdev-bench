@@ -10,7 +10,7 @@
  * - Heuristic fallback preserves raw names when no configured profile exists
  */
 
-import type { RuntimeName } from "../../schemas/common.schema.js";
+import type { SupportedRuntimeName } from "../../schemas/common.schema.js";
 import type {
 	ConfiguredModelProfile,
 	ConfiguredModelVariantValue,
@@ -237,7 +237,7 @@ export function normalizeConfiguredVariant(
 export function buildConfiguredModelProfile(args: {
 	profileKey: string;
 	profile: ConfiguredModelProfile;
-	runtime: RuntimeName;
+	runtime: SupportedRuntimeName;
 	runtimeModelName: string;
 	resolutionSource: ModelProfile["resolutionSource"];
 }): ModelProfile {
@@ -299,7 +299,7 @@ export function buildConfiguredModelProfile(args: {
  * @throws none
  */
 export function buildFallbackModelProfile(
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	runtimeModelName: string,
 ): ModelProfile {
 	const family = deriveFamily(runtimeModelName);
@@ -347,7 +347,7 @@ export function buildFallbackModelProfile(
  * @throws {Error} When only one of `profileKey` or `profile` is provided
  */
 export function buildResolvedModelProfile(args: {
-	runtime: RuntimeName;
+	runtime: SupportedRuntimeName;
 	runtimeModelName: string;
 	profileKey?: string;
 	profile?: ConfiguredModelProfile;

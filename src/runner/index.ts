@@ -146,7 +146,6 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	for (const [runtimeName, models] of runtimeModelSet) {
 		const runtime = createRuntime(runtimeName, {
 			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
 			defaultTimeoutMs: config.generateTimeoutMs,
 		});
 
@@ -306,7 +305,6 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			item,
 			{
 				ollamaBaseUrl: config.ollamaBaseUrl,
-				vllmBaseUrl: config.vllmBaseUrl,
 				gooseMaxTurns: config.gooseMaxTurns,
 				gooseRetryMaxTurns: config.gooseRetryMaxTurns,
 				gooseWorkspaceMaxTurns: config.gooseWorkspaceMaxTurns,

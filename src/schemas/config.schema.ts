@@ -3,15 +3,16 @@
  * Exports: BenchConfigSchema, BenchConfig, defaultConfig, migrateBenchConfigAliases
  *
  * Invariants:
- * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes/categories
- * - Use flags to limit which models/tests/harnesses/runtimes/categories to run
+ * - Runtime selection is Ollama-only for active benchmark execution
+ * - Empty arrays mean "select all available" for models/tests/harnesses/categories
+ * - Use flags to limit which models/tests/harnesses/categories to run
  */
 
 import { z } from "zod";
 import {
 	PassTypeSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	SupportedRuntimeNameSchema,
 	TestCategorySchema,
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
@@ -94,8 +95,8 @@ const BenchConfigObjectSchema = z
 		/** Schema version for config evolution. */
 		schemaVersion: z.string().default(SCHEMA_VERSION),
 
-		/** Runtimes to use. Empty array triggers auto-discovery. */
-		runtimes: z.array(RuntimeNameSchema).default([]),
+		/** Runtimes to use. Ollama is the only supported runtime. */
+		runtimes: z.array(SupportedRuntimeNameSchema).default(["ollama"]),
 
 		/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
 		models: z.array(z.string()).default([]),
@@ -115,8 +116,8 @@ const BenchConfigObjectSchema = z
 		/** Ollama API base URL. */
 		ollamaBaseUrl: z.string().url().default("http://localhost:11434"),
 
-		/** vLLM API base URL. */
-		vllmBaseUrl: z.string().url().default("http://localhost:8000"),
+		/** Removed runtime configuration retained only to emit a targeted validation error. */
+		vllmBaseUrl: z.string().trim().min(1).optional(),
 
 		/** Generation timeout in milliseconds (5 min default for large models). */
 		generateTimeoutMs: z.number().positive().default(300_000),
@@ -190,6 +191,15 @@ const BenchConfigObjectSchema = z
 			});
 		}
 
+		if (config.vllmBaseUrl !== undefined) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["vllmBaseUrl"],
+				message:
+					'Bench config no longer supports "vllmBaseUrl". Remove it and run with Ollama only.',
+			});
+		}
+
 		if (config.gooseRetryMaxTurns < config.gooseMaxTurns) {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
@@ -210,7 +220,13 @@ const BenchConfigObjectSchema = z
 	});
 
 const BenchConfigOutputSchema = BenchConfigObjectSchema.transform(
-	({ machineProfileId: _machineProfileId, machineLabel: _machineLabel, modelAliases: _modelAliases, ...config }) =>
+	({
+		machineProfileId: _machineProfileId,
+		machineLabel: _machineLabel,
+		modelAliases: _modelAliases,
+		vllmBaseUrl: _vllmBaseUrl,
+		...config
+	}) =>
 		config,
 );
 

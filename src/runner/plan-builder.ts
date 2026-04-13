@@ -37,7 +37,6 @@ import {
 	RUNTIME_NAMES,
 	type RuntimeName,
 	createRuntime,
-	discoverRuntimes,
 } from "../runtimes/index.js";
 import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
@@ -56,7 +55,7 @@ function getBunVersion(): string {
  * @param config - Benchmark configuration
  * @returns The complete run plan ready for execution
  *
- * @throws {Error} If no runtimes available or no models/tests found
+ * @throws {Error} If Ollama is unavailable or no models/tests found
  */
 export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const runId = generateRunId();
@@ -95,34 +94,11 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		"Computed benchmark checkpoint",
 	);
 
-	// Discover runtimes if not specified
-	let runtimes: RuntimeName[];
-	if (config.runtimes.length === 0) {
-		log.info("Auto-discovering runtimes...");
-		runtimes = await discoverRuntimes({
-			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
-			timeoutMs: config.generateTimeoutMs,
-		});
-		if (runtimes.length === 0) {
-			throw new Error(
-				`No runtimes available. Is Ollama running at ${config.ollamaBaseUrl}? Try: ollama serve`,
-			);
-		}
-		log.info({ runtimes }, `Found ${runtimes.length} runtime(s)`);
-	} else {
-		// Validate requested runtimes
-		const invalid = config.runtimes.filter(
-			(r) => !RUNTIME_NAMES.includes(r as RuntimeName),
-		);
-		if (invalid.length > 0) {
-			throw new Error(
-				`Unknown runtimes: ${invalid.join(", ")}. Available: ${RUNTIME_NAMES.join(", ")}`,
-			);
-		}
-		runtimes = config.runtimes as RuntimeName[];
-		log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
-	}
+	const runtimes =
+		config.runtimes.length > 0
+			? (config.runtimes as RuntimeName[])
+			: [...RUNTIME_NAMES];
+	log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 
 	// Discover models per runtime
 	const runtimeModels = new Map<RuntimeName, string[]>();
@@ -136,8 +112,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const modelProfiles = config.modelProfiles;
 	const hasModelProfiles = Object.keys(modelProfiles).length > 0;
 	const matchedModelSelectors = new Set<string>();
-	let reachableRuntimeCount = 0;
-
 	if (hasModelProfiles) {
 		log.info(
 			{ profiles: Object.keys(modelProfiles) },
@@ -148,17 +122,15 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	for (const runtimeName of runtimes) {
 		const runtime = createRuntime(runtimeName, {
 			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
 			defaultTimeoutMs: config.generateTimeoutMs,
 		});
 
 		const available = await runtime.ping();
 		if (!available) {
-			log.warn({ runtime: runtimeName }, "Runtime not reachable, skipping");
-			runtimeModels.set(runtimeName, []);
-			continue;
+			throw new Error(
+				`Ollama is not reachable at ${config.ollamaBaseUrl}. Try: ollama serve`,
+			);
 		}
-		reachableRuntimeCount += 1;
 
 		const discovered = await runtime.listModels();
 
@@ -254,7 +226,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		);
 	}
 
-	if (config.models.length > 0 && reachableRuntimeCount > 0) {
+	if (config.models.length > 0) {
 		const unresolvedSelectors = config.models.filter(
 			(modelSpec) => !matchedModelSelectors.has(modelSpec),
 		);
@@ -275,7 +247,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			for (const runtimeName of runtimes) {
 				const runtime = createRuntime(runtimeName, {
 					ollamaBaseUrl: config.ollamaBaseUrl,
-					vllmBaseUrl: config.vllmBaseUrl,
 					defaultTimeoutMs: config.generateTimeoutMs,
 				});
 				const available = await runtime.listModels();
@@ -477,7 +448,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		},
 		config: {
 			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
 			generateTimeoutMs: config.generateTimeoutMs,
 			gooseMaxTurns: config.gooseMaxTurns,
 			gooseRetryMaxTurns: config.gooseRetryMaxTurns,

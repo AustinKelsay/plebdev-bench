@@ -51,7 +51,6 @@ function createMocks(): TestMocks {
 
 const RUNTIME_CONFIG = {
 	ollamaBaseUrl: "http://localhost:11434",
-	vllmBaseUrl: "http://localhost:8000",
 	gooseMaxTurns: 1,
 	gooseRetryMaxTurns: 3,
 	gooseWorkspaceMaxTurns: 8,

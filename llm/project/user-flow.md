@@ -45,13 +45,13 @@ progress output, and generated artifacts on disk.
 - **Decision points**:
   - Should OpenRouter frontier-eval be enabled (auto-enabled when API key is present)?
 
-### State S2 — Catalog Browse (Tests / Runtimes / Harnesses / Models)
-- **User sees**: Lists of available tests, runtimes, harness adapters, and discoverable local models.
+### State S2 — Catalog Browse (Tests / Runtime / Harnesses / Models)
+- **User sees**: Lists of available tests, the active runtime (`ollama`), harness adapters, and discoverable local models.
 - **Artifacts**: Optional cached discovery output.
 - **Decision points**:
   - Which test(s) to run?
   - Which category/categories to run (`coding`, `computer-use`)?
-  - Which runtime(s) to use?
+  - Which runtime to use? (`ollama` for now)
   - Which harness(es) to run through?
   - Which model(s) to benchmark?
 
@@ -206,7 +206,7 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 
 - **Command model**: single primary command (no multi-step interactive wizard).
 - **Interactivity**: non-interactive by default; no “confirm plan” prompt in MVP.
-- **Discovery**: models/harnesses are auto-discovered by default.
+- **Discovery**: models/harnesses are auto-discovered by default; runtime is fixed to `ollama` unless explicitly passed as `--runtimes ollama`.
 - **Run plan persistence**: save an explicit plan artifact per run for reproducibility.
 - **Results format**: one JSON per run (structured for easy aggregation/analysis).
 - **Exit codes**: non-zero only on crashes (failed tests/items are recorded but do not fail the process).

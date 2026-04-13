@@ -11,8 +11,8 @@
 
 import * as fs from "node:fs";
 import {
-	RuntimeNameSchema,
-	type RuntimeName,
+	SupportedRuntimeNameSchema,
+	type SupportedRuntimeName,
 } from "../../schemas/common.schema.js";
 import {
 	ModelAliasFileSchema,
@@ -221,7 +221,7 @@ export function parseInlineModelProfile(inline: string): ModelProfileRegistry {
 				`Invalid runtime mapping in profile "${profileKey}": "${entry}"`,
 			);
 		}
-		const runtimeResult = RuntimeNameSchema.safeParse(runtimeInput);
+		const runtimeResult = SupportedRuntimeNameSchema.safeParse(runtimeInput);
 		if (!runtimeResult.success) {
 			throw new Error(
 				`Invalid runtime mapping in profile "${profileKey}": unknown runtime "${runtimeInput}"`,
@@ -293,7 +293,7 @@ export function mergeModelProfiles(
 
 /** Searches for a configured profile by runtime-specific model name. */
 function findConfiguredVariantByRuntimeModel(
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	runtimeModelName: string,
 	registry: ModelProfileRegistry,
 ): { profileKey: string; profile: ModelProfileRegistry[string] } | undefined {
@@ -330,7 +330,7 @@ function findConfiguredVariantByRuntimeModel(
  * @returns Resolved model profile
  */
 export function buildResolvedModelProfile(
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	runtimeModelName: string,
 	registry: ModelProfileRegistry,
 ): ModelProfile {
@@ -366,7 +366,7 @@ export function buildResolvedModelProfile(
  */
 export function resolveModelSelection(
 	modelSpec: string,
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	registry: ModelProfileRegistry,
 ): ResolvedModelSelection | undefined {
 	const configuredProfile = registry[modelSpec];

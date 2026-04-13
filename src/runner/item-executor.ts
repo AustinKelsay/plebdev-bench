@@ -43,7 +43,6 @@ import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
 /** Runtime and harness configuration for item execution. */
 interface RuntimeUrls {
 	ollamaBaseUrl: string;
-	vllmBaseUrl: string;
 	gooseMaxTurns: number;
 	gooseRetryMaxTurns: number;
 	gooseWorkspaceMaxTurns: number;
@@ -51,6 +50,27 @@ interface RuntimeUrls {
 }
 
 const GENERATION_FAILURE_TYPE_SET = new Set(generationFailureTypes);
+
+/**
+ * Narrows artifact runtime values to the runtime set supported by live execution.
+ *
+ * Historical artifacts may contain additional runtime labels, but the runner only
+ * executes Ollama-backed plans.
+ *
+ * @param runtime - Runtime value from the plan item
+ * @returns Executable runtime name accepted by createRuntime
+ * @throws {Error} When an unsupported runtime appears in a live execution path
+ */
+function getExecutableRuntimeName(
+	runtime: MatrixItem["runtime"],
+): Parameters<typeof createRuntime>[0] {
+	if (runtime !== "ollama") {
+		throw new Error(
+			`Unsupported runtime "${runtime}" in live execution. Only "ollama" is supported.`,
+		);
+	}
+	return runtime;
+}
 
 /**
  * Returns whether an unknown value is a valid generation failure type.
@@ -175,9 +195,8 @@ export async function executeItem(
 			const prompt = await loadPrompt(item.test, item.passType);
 			promptForRetry = prompt;
 
-			const runtime = createRuntime(item.runtime, {
+			const runtime = createRuntime(getExecutableRuntimeName(item.runtime), {
 				ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
-				vllmBaseUrl: runtimeConfig.vllmBaseUrl,
 				defaultTimeoutMs: timeoutMs,
 			});
 			runtimeForRetry = runtime;

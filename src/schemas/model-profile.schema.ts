@@ -10,7 +10,11 @@
  */
 
 import { z } from "zod";
-import { SCHEMA_VERSION, RuntimeNameSchema } from "./common.schema.js";
+import {
+	ArtifactRuntimeNameSchema,
+	SCHEMA_VERSION,
+	SupportedRuntimeNameSchema,
+} from "./common.schema.js";
 
 /** Valid sources used to resolve a model profile for a run item. */
 export const modelProfileResolutionSources = [
@@ -49,7 +53,7 @@ export type CanonicalModelProfile = z.infer<
 export const ModelVariantSchema = z.object({
 	variantKey: z.string().trim().min(1),
 	variantLabel: z.string().trim().min(1),
-	runtime: RuntimeNameSchema,
+	runtime: ArtifactRuntimeNameSchema,
 	runtimeModelName: z.string().trim().min(1),
 	format: z.string().trim().min(1).optional(),
 	quantization: z.string().trim().min(1).optional(),
@@ -102,7 +106,10 @@ export const ConfiguredModelProfileSchema = z.object({
 	parameterScaleLabel: z.string().trim().min(1).optional(),
 	provider: z.string().trim().min(1).optional(),
 	tuning: z.string().trim().min(1).optional(),
-	variants: z.record(RuntimeNameSchema, ConfiguredModelVariantValueSchema),
+	variants: z.record(
+		SupportedRuntimeNameSchema,
+		ConfiguredModelVariantValueSchema,
+	),
 });
 
 /** Configured canonical model profile type. */

@@ -147,19 +147,10 @@ export function createOpenCodeAdapter(): Harness {
 			const configPath = path.join(configDir, "opencode.json");
 
 			const providerName = runtime.name;
-			if (runtime.apiFormat === "openai-compat") {
-				const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
-				if (!apiKey) {
-					log.warn(
-						"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
-					);
-				}
-			}
 
 			const { config: openCodeConfig, configJson: openCodeConfigJson } =
 				buildOpenCodeConfig({
 					runtimeName: providerName,
-					runtimeApiFormat: runtime.apiFormat,
 					runtimeBaseUrl: runtime.baseUrl,
 					model,
 				});

@@ -7,7 +7,7 @@
  *
  * Invariants:
  * - Tool output root is always a stable XDG data home path (non-interactive)
- * - OpenAI-compatible runtimes must provide some API key value (dummy allowed)
+ * - OpenCode always targets Ollama through its OpenAI-compatible `/v1` surface
  */
 
 import * as os from "node:os";
@@ -18,15 +18,10 @@ import { toOpenAiCompatBaseUrl, toOpenCodeModelKey } from "./opencode-model.js";
 /** OpenCode tool-output root subpath within XDG data home. */
 const OPENCODE_TOOL_OUTPUT_SUBPATH = path.join("opencode", "tool-output");
 
-const RuntimeNameSchema = z.union([z.literal("ollama"), z.literal("vllm")]);
-const RuntimeApiFormatSchema = z.union([
-	z.literal("ollama"),
-	z.literal("openai-compat"),
-]);
+const RuntimeNameSchema = z.literal("ollama");
 
 const BuildOpenCodeConfigOptsSchema = z.object({
 	runtimeName: RuntimeNameSchema,
-	runtimeApiFormat: RuntimeApiFormatSchema,
 	runtimeBaseUrl: z.string().min(1),
 	model: z.string().min(1),
 });
@@ -72,16 +67,11 @@ export function resolveOpenCodeToolOutputRoot(): string {
 export function buildOpenCodeConfig(
 	opts: BuildOpenCodeConfigOpts,
 ): OpenCodeConfigBuildResult {
-	const { runtimeName, runtimeApiFormat, runtimeBaseUrl, model } =
+	const { runtimeName, runtimeBaseUrl, model } =
 		BuildOpenCodeConfigOptsSchema.parse(opts);
 
 	const baseURL = toOpenAiCompatBaseUrl(runtimeBaseUrl);
 	const providerOptions: Record<string, string> = { baseURL };
-
-	if (runtimeApiFormat === "openai-compat") {
-		const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
-		providerOptions.apiKey = apiKey ?? "dummy";
-	}
 
 	const modelKey = toOpenCodeModelKey(model);
 
@@ -90,7 +80,7 @@ export function buildOpenCodeConfig(
 		provider: {
 			[runtimeName]: {
 				npm: "@ai-sdk/openai-compatible",
-				name: runtimeName === "ollama" ? "Ollama (local)" : "vLLM",
+				name: "Ollama (local)",
 				options: providerOptions,
 				models: {
 					[model]: { name: model, tools: true },
@@ -138,7 +128,7 @@ export function buildOpenCodeConfig(
 export function buildOpenCodeEnv(opts: {
 	configPath: string;
 	configJson: string;
-	runtimeName: "ollama" | "vllm";
+	runtimeName: "ollama";
 }): Record<string, string> {
 	const { configPath, configJson, runtimeName } = z
 		.object({
@@ -169,8 +159,5 @@ export function buildOpenCodeEnv(opts: {
 		OPENCODE_DISABLE_CLAUDE_CODE: "true",
 		OPENCODE_DISABLE_CLAUDE_CODE_PROMPT: "true",
 		OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: "true",
-		...(runtimeName === "vllm" && {
-			OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX: "1024",
-		}),
 	};
 }
