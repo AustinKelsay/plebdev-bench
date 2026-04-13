@@ -36,7 +36,7 @@ import type {
 	ScoringMetrics,
 	SignalAssessment,
 } from "../schemas/index.js";
-import { generationFailureTypes } from "../schemas/index.js";
+import { SignalAssessmentSchema, generationFailureTypes } from "../schemas/index.js";
 import { runGenerationWithInfraRetry } from "./generation-retry.js";
 import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
 
@@ -86,25 +86,6 @@ function isGenerationFailureType(value: unknown): value is GenerationFailureType
 }
 
 /**
- * Returns whether an unknown value matches the signal-assessment shape.
- *
- * @param value - Unknown candidate
- * @returns True when the value is a signal assessment object
- */
-function isSignalAssessment(value: unknown): value is SignalAssessment {
-	if (typeof value !== "object" || value === null) {
-		return false;
-	}
-	const record = value as Record<string, unknown>;
-	return (
-		(record.classification === "trustworthy" ||
-			record.classification === "tainted") &&
-		Array.isArray(record.reasons) &&
-		record.reasons.every((reason) => typeof reason === "string")
-	);
-}
-
-/**
  * Extracts structured generation failure details from an unknown thrown value.
  *
  * @param error - Thrown value from harness/runtime execution
@@ -130,6 +111,9 @@ function extractGenerationFailureDetails(error: unknown): {
 	const failureType = isGenerationFailureType(errorRecord?.failureType)
 		? errorRecord.failureType
 		: classifyGenerationError(errorMessage);
+	const signalAssessmentParse = SignalAssessmentSchema.safeParse(
+		errorRecord?.signalAssessment,
+	);
 	return {
 		errorMessage,
 		failureType,
@@ -140,8 +124,8 @@ function extractGenerationFailureDetails(error: unknown): {
 				: 0,
 		output:
 			typeof errorRecord?.output === "string" ? errorRecord.output : undefined,
-		signalAssessment: isSignalAssessment(errorRecord?.signalAssessment)
-			? errorRecord.signalAssessment
+		signalAssessment: signalAssessmentParse.success
+			? signalAssessmentParse.data
 			: undefined,
 	};
 }

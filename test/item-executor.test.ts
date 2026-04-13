@@ -173,6 +173,28 @@ describe("executeItem", () => {
 		});
 	});
 
+	it("drops malformed signal assessments from harness errors", async () => {
+		mocks.runGenerationWithInfraRetry.mockRejectedValueOnce(
+			Object.assign(new Error("Harness surfaced malformed taint payload"), {
+				output: '{"sessionID":"abc","type":"step_start"}',
+				durationMs: 321,
+				failureType: "harness_error",
+				signalAssessment: {
+					classification: "tainted",
+					reasons: [],
+				},
+			}),
+		);
+
+		const result = await executeItem(CODE_OUTPUT_ITEM, RUNTIME_CONFIG, 5_000);
+
+		expect(result.status).toBe("failed");
+		expect(result.signalAssessment).toEqual({
+			classification: "tainted",
+			reasons: ["internal_tool_transcript"],
+		});
+	});
+
 	it("preserves harness metadata from failures handled in the outer catch", async () => {
 		mocks.prepareTestWorkspace.mockRejectedValueOnce(
 			Object.assign(new Error("workspace bootstrap failed"), {

@@ -10,7 +10,9 @@
  */
 
 import * as fs from "node:fs";
+import { z } from "zod";
 import {
+	supportedRuntimeNames,
 	SupportedRuntimeNameSchema,
 	type SupportedRuntimeName,
 } from "../../schemas/common.schema.js";
@@ -20,6 +22,8 @@ import {
 	ModelAliasMapSchema,
 } from "../../schemas/model-alias.schema.js";
 import {
+	ConfiguredModelProfileSchema,
+	ConfiguredModelVariantValueSchema,
 	ModelProfileFileSchema,
 	type ModelProfile,
 	type ModelProfileRegistry,
@@ -34,6 +38,25 @@ import {
 } from "./normalization.js";
 
 const REGISTRY_PROVENANCE = Symbol("modelProfileRegistryProvenance");
+const SUPPORTED_RUNTIME_NAME_SET = new Set<string>(supportedRuntimeNames);
+
+const LegacyCompatibleConfiguredModelProfileSchema =
+	ConfiguredModelProfileSchema.extend({
+		variants: z.record(
+			z.string().trim().min(1),
+			ConfiguredModelVariantValueSchema,
+		),
+	});
+
+const LegacyCompatibleModelProfileRegistrySchema = z.record(
+	z.string().trim().min(1),
+	LegacyCompatibleConfiguredModelProfileSchema,
+);
+
+const LegacyCompatibleModelProfileFileSchema = z.object({
+	schemaVersion: ModelProfileFileSchema.shape.schemaVersion,
+	models: LegacyCompatibleModelProfileRegistrySchema,
+});
 
 type RegistryResolutionSource = Extract<
 	ModelProfile["resolutionSource"],
@@ -104,6 +127,51 @@ function normalizeLegacyAliasMap(aliases: ModelAliasMap): ModelProfileRegistry {
 }
 
 /**
+ * Filters unsupported runtime variants from a legacy-compatible loaded registry.
+ *
+ * Old persisted model-profile files may still include non-Ollama runtime keys
+ * such as `vllm`. The live benchmark only executes Ollama, so those variants are
+ * ignored at load time instead of causing the file to be rejected.
+ *
+ * @param registry - Legacy-compatible loaded registry
+ * @param log - Loader logger for compatibility diagnostics
+ * @returns Registry normalized to the current supported runtime set
+ * @throws {Error} If the normalized payload still fails current schema validation
+ */
+function normalizeLoadedModelProfileRegistry(
+	registry: z.infer<typeof LegacyCompatibleModelProfileRegistrySchema>,
+	log: ReturnType<typeof logger.child>,
+): ModelProfileRegistry {
+	const droppedRuntimeNames = new Set<string>();
+	const normalized = Object.fromEntries(
+		Object.entries(registry).map(([profileKey, profile]) => [
+			profileKey,
+			{
+				...profile,
+				variants: Object.fromEntries(
+					Object.entries(profile.variants).filter(([runtime]) => {
+						const isSupported = SUPPORTED_RUNTIME_NAME_SET.has(runtime);
+						if (!isSupported) {
+							droppedRuntimeNames.add(runtime);
+						}
+						return isSupported;
+					}),
+				),
+			},
+		]),
+	);
+
+	if (droppedRuntimeNames.size > 0) {
+		log.warn(
+			{ droppedRuntimeNames: [...droppedRuntimeNames].sort() },
+			"Ignoring unsupported runtime variants from loaded model profile file",
+		);
+	}
+
+	return ModelProfileRegistrySchema.parse(normalized);
+}
+
+/**
  * Loads model profiles from JSON.
  *
  * Accepts:
@@ -149,6 +217,20 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 		return withRegistryProvenance(profileWrapper.data.models, "configured_profile");
 	}
 
+	const legacyCompatibleProfileWrapper =
+		LegacyCompatibleModelProfileFileSchema.safeParse(parsed);
+	if (legacyCompatibleProfileWrapper.success) {
+		const normalized = normalizeLoadedModelProfileRegistry(
+			legacyCompatibleProfileWrapper.data.models,
+			log,
+		);
+		log.debug(
+			{ profileCount: Object.keys(normalized).length },
+			"Loaded legacy-compatible model profile file",
+		);
+		return withRegistryProvenance(normalized, "configured_profile");
+	}
+
 	const rawProfiles = ModelProfileRegistrySchema.safeParse(parsed);
 	if (rawProfiles.success) {
 		log.debug(
@@ -156,6 +238,20 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 			"Loaded raw model profiles",
 		);
 		return withRegistryProvenance(rawProfiles.data, "configured_profile");
+	}
+
+	const legacyCompatibleRawProfiles =
+		LegacyCompatibleModelProfileRegistrySchema.safeParse(parsed);
+	if (legacyCompatibleRawProfiles.success) {
+		const normalized = normalizeLoadedModelProfileRegistry(
+			legacyCompatibleRawProfiles.data,
+			log,
+		);
+		log.debug(
+			{ profileCount: Object.keys(normalized).length },
+			"Loaded legacy-compatible raw model profiles",
+		);
+		return withRegistryProvenance(normalized, "configured_profile");
 	}
 
 	const aliasWrapper = ModelAliasFileSchema.safeParse(parsed);

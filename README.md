@@ -185,7 +185,7 @@ Example file:
 
 ```json
 {
-  "schemaVersion": "0.5.0",
+  "schemaVersion": "0.5.1",
   "models": {
     "qwen3-27b-instruct": {
       "profileLabel": "Qwen 3 27B Instruct",

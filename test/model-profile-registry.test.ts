@@ -84,6 +84,46 @@ describe("model-profile registry provenance", () => {
 
 		expect(selection.resolutionSource).toBe("configured_profile");
 	});
+
+	it("loads legacy profile files with unsupported runtime keys by ignoring them", () => {
+		const tempDir = fs.mkdtempSync(
+			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
+		);
+		try {
+			const profilePath = path.join(tempDir, "models.json");
+			fs.writeFileSync(
+				profilePath,
+				JSON.stringify(
+					{
+						schemaVersion: "0.5.1",
+						models: {
+							"qwen3-27b-instruct": {
+								profileLabel: "Qwen 3 27B Instruct",
+								family: "qwen3",
+								variants: {
+									ollama: "qwen3:27b",
+									vllm: "Qwen/Qwen3-27B-Instruct",
+								},
+							},
+						},
+					},
+					null,
+					2,
+				),
+			);
+
+			const registry = loadModelProfiles(profilePath);
+			expect(registry["qwen3-27b-instruct"]?.variants.ollama).toBe("qwen3:27b");
+			expect(
+				Object.prototype.hasOwnProperty.call(
+					registry["qwen3-27b-instruct"]?.variants ?? {},
+					"vllm",
+				),
+			).toBe(false);
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
 });
 
 describe("model-profile normalization", () => {
