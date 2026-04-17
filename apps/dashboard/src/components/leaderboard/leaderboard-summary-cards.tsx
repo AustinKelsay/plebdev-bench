@@ -22,12 +22,12 @@ interface LeaderboardSummaryCardsProps {
 
 /** Border accent colors — brand green for primary, semantic colors for specific KPIs. */
 const CARD_ACCENT_COLORS = [
-	"#34c759",             // brand green — matched runs
-	"#34c759",             // brand green — profiles
+	"#34c759", // brand green — matched runs
+	"#34c759", // brand green — profiles
 	"hsl(212, 100%, 67%)", // info blue — deduped items
-	"hsl(156, 67%, 55%)",  // success green — pass rate
-	"hsl(270, 60%, 60%)",  // purple — frontier coverage
-	"hsl(210, 85%, 60%)",  // blue — median duration
+	"hsl(156, 67%, 55%)", // success green — pass rate
+	"hsl(270, 60%, 60%)", // purple — frontier coverage
+	"hsl(210, 85%, 60%)", // blue — median duration
 ];
 
 /**

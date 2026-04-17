@@ -57,17 +57,11 @@ export function resolveDefaultInstanceIdPath(
 	}
 	if (platform === "win32") {
 		const localAppData =
-			readNonEmpty(env.LOCALAPPDATA) ??
-			path.join(homeDir, "AppData", "Local");
-		return path.join(
-			localAppData,
-			"plebdev-bench",
-			"machine-instance-id",
-		);
+			readNonEmpty(env.LOCALAPPDATA) ?? path.join(homeDir, "AppData", "Local");
+		return path.join(localAppData, "plebdev-bench", "machine-instance-id");
 	}
 	const stateHome =
-		readNonEmpty(env.XDG_STATE_HOME) ??
-		path.join(homeDir, ".local", "state");
+		readNonEmpty(env.XDG_STATE_HOME) ?? path.join(homeDir, ".local", "state");
 	return path.join(stateHome, "plebdev-bench", "machine-instance-id");
 }
 
@@ -230,7 +224,8 @@ export function resolveMachineInstanceId(
 	}
 
 	const instanceIdFilePath =
-		options.instanceIdFilePath ?? resolveDefaultInstanceIdPath(process.platform, env);
+		options.instanceIdFilePath ??
+		resolveDefaultInstanceIdPath(process.platform, env);
 	const persisted = readPersistedInstanceId(instanceIdFilePath);
 	if (persisted) {
 		return {

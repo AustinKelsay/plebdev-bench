@@ -347,8 +347,8 @@ export function createOpenCodeAdapter(): Harness {
 					const stderrPreview = stderr.trim().slice(0, 800);
 					throw Object.assign(
 						new Error(
-						`OpenCode exited with code ${result.exitCode}: ` +
-							`${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
+							`OpenCode exited with code ${result.exitCode}: ` +
+								`${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
 						),
 						{
 							signalAssessment,
@@ -401,16 +401,13 @@ export function createOpenCodeAdapter(): Harness {
 					output = normalized.output;
 				}
 				const normalizedReasons = Array.from(
-					new Set([
-						...getTranscriptOrInputTaintReasons(output),
-					]),
+					new Set([...getTranscriptOrInputTaintReasons(output)]),
 				);
 				const normalizedSignalAssessment =
 					normalizedReasons.length > 0
 						? appendSignalAssessmentReasons(signalAssessment, normalizedReasons)
 						: signalAssessment;
-				const hasBoundaryTaint =
-					signalAssessment?.classification === "tainted";
+				const hasBoundaryTaint = signalAssessment?.classification === "tainted";
 				const hasNormalizedTaint =
 					normalizedSignalAssessment?.classification === "tainted";
 
@@ -480,7 +477,8 @@ export function createOpenCodeAdapter(): Harness {
 								],
 							),
 						};
-					} else if (decision.shouldRetry) {
+					}
+					if (decision.shouldRetry) {
 						const elapsedMs = Math.round(performance.now() - startTime);
 						const remainingMs = timeoutMs - elapsedMs;
 						if (!isRetryAttempt && remainingMs > 1000) {

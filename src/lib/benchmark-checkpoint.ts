@@ -108,7 +108,9 @@ function normalizeRelativePath(relPath: string): string {
 function collectFilesUnderDirectory(rootDir: string, relDir: string): string[] {
 	const absoluteDir = path.join(rootDir, relDir);
 	if (!fs.existsSync(absoluteDir)) {
-		throw new Error(`Required benchmark source directory missing: ${absoluteDir}`);
+		throw new Error(
+			`Required benchmark source directory missing: ${absoluteDir}`,
+		);
 	}
 
 	const collected: string[] = [];

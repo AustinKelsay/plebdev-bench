@@ -7,9 +7,9 @@
  * - Score pass rates typically exclude tool-smoke unless explicitly analyzing it
  */
 
-import { computePassRate } from "./aggregations-core";
-import type { MatrixItemResult } from "./types";
-import { TOOL_SMOKE_TEST_SLUG } from "./types";
+import { computePassRate } from "./aggregations-core.js";
+import type { MatrixItemResult } from "./types.js";
+import { TOOL_SMOKE_TEST_SLUG } from "./types.js";
 
 /** Tool usage statistics. */
 export interface ToolUseStats {

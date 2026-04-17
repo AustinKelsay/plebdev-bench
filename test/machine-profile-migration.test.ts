@@ -7,10 +7,10 @@
  * - Executes deterministic fixture migrations under Vitest
  */
 
+import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	migrateLegacyMachineProfile,
@@ -324,16 +324,22 @@ describe("migrate-machine-profiles command", () => {
 		expect(migratedPlan.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(migratedPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
 		expect(
-			(JSON.parse(fs.readFileSync(path.join(runDir, "plan.json"), "utf-8")) as {
-				extraMetadata?: { keep?: string };
-			}).extraMetadata?.keep,
+			(
+				JSON.parse(
+					fs.readFileSync(path.join(runDir, "plan.json"), "utf-8"),
+				) as {
+					extraMetadata?: { keep?: string };
+				}
+			).extraMetadata?.keep,
 		).toBe("plan");
 		expect(migratedRun.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(migratedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 		expect(
-			(JSON.parse(fs.readFileSync(path.join(runDir, "run.json"), "utf-8")) as {
-				extraMetadata?: { keep?: string };
-			}).extraMetadata?.keep,
+			(
+				JSON.parse(fs.readFileSync(path.join(runDir, "run.json"), "utf-8")) as {
+					extraMetadata?: { keep?: string };
+				}
+			).extraMetadata?.keep,
 		).toBe("run");
 		expect(index.schemaVersion).toBe(3);
 		expect(index.runs[0]?.machineProfileKey).toBe(LEGACY_PROFILE_KEY);

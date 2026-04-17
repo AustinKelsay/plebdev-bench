@@ -11,13 +11,13 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
+import { buildFallbackModelProfile } from "../src/lib/model-profile/normalization.js";
 import {
 	buildResolvedModelProfile,
 	loadModelProfiles,
 	parseInlineModelProfile,
 	resolveModelSelection,
 } from "../src/lib/model-profiles.js";
-import { buildFallbackModelProfile } from "../src/lib/model-profile/normalization.js";
 import {
 	ConfiguredModelProfileSchema,
 	ModelProfileFileSchema,
@@ -32,9 +32,7 @@ describe("parseInlineModelProfile", () => {
 
 	it("rejects duplicate runtimes in inline mappings", () => {
 		expect(() =>
-			parseInlineModelProfile(
-				"qwen3-27b=ollama:qwen3:27b,ollama:qwen3:27b-q4",
-			),
+			parseInlineModelProfile("qwen3-27b=ollama:qwen3:27b,ollama:qwen3:27b-q4"),
 		).toThrow('duplicate runtime "ollama"');
 	});
 });

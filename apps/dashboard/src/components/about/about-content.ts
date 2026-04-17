@@ -59,7 +59,8 @@ export const aboutFacts: AboutFact[] = [
 	{
 		label: "Artifacts",
 		value: "plan.json + run.json per run",
-		detail: "Resolved plan + fact-only results. Crash-safe partial snapshots in flight.",
+		detail:
+			"Resolved plan + fact-only results. Crash-safe partial snapshots in flight.",
 	},
 	{
 		label: "Score",
@@ -69,50 +70,77 @@ export const aboutFacts: AboutFact[] = [
 	{
 		label: "Failures",
 		value: "Recorded, never fatal",
-		detail: "Generation, scoring, and frontier failures are saved per item. CLI exits 0.",
+		detail:
+			"Generation, scoring, and frontier failures are saved per item. CLI exits 0.",
 	},
 ];
 
 /** Benchmark matrix dimensions. */
 export const benchmarkDimensions: BenchmarkDimension[] = [
 	{ name: "runtime", description: "Inference backend (Ollama, vLLM)." },
-	{ name: "harness", description: "Adapter that calls the model (direct HTTP, Goose, OpenCode)." },
-	{ name: "model", description: "Concrete model name. Aliases map logical names to runtime-specific IDs." },
-	{ name: "test", description: "Task under `src/tests/<slug>` with prompts, scoring spec, and optional rubric." },
-	{ name: "passType", description: "`blind` (task contract only) or `informed` (includes benchmark framing)." },
+	{
+		name: "harness",
+		description: "Adapter that calls the model (direct HTTP, Goose, OpenCode).",
+	},
+	{
+		name: "model",
+		description:
+			"Concrete model name. Aliases map logical names to runtime-specific IDs.",
+	},
+	{
+		name: "test",
+		description:
+			"Task under `src/tests/<slug>` with prompts, scoring spec, and optional rubric.",
+	},
+	{
+		name: "passType",
+		description:
+			"`blind` (task contract only) or `informed` (includes benchmark framing).",
+	},
 ];
 
 /** Run pipeline stages. */
 export const workflowSteps: WorkflowStep[] = [
 	{
 		step: "Plan",
-		description: "Discover runtimes/models/tests, compute checkpoint hash, expand matrix.",
-		detail: "Writes `plan.json` with config, machine metadata, and every matrix item.",
+		description:
+			"Discover runtimes/models/tests, compute checkpoint hash, expand matrix.",
+		detail:
+			"Writes `plan.json` with config, machine metadata, and every matrix item.",
 	},
 	{
 		step: "Generate",
-		description: "Each harness loads the prompt, calls the model, records output + timing.",
-		detail: "Failures classified as timeout, api_error, tool_missing, or harness_error.",
+		description:
+			"Each harness loads the prompt, calls the model, records output + timing.",
+		detail:
+			"Failures classified as timeout, api_error, tool_missing, or harness_error.",
 	},
 	{
 		step: "Score",
-		description: "Extract code, import it, validate exports, run `scoring.spec.ts` tests.",
-		detail: "Score = export checks + test assertions. Import/export failures reduce score.",
+		description:
+			"Extract code, import it, validate exports, run `scoring.spec.ts` tests.",
+		detail:
+			"Score = export checks + test assertions. Import/export failures reduce score.",
 	},
 	{
 		step: "Retry",
-		description: "Goose/OpenCode: one retry with compiler feedback on import failures.",
-		detail: "Only promoted if it improves score or fixes imports without regression.",
+		description:
+			"Goose/OpenCode: one retry with compiler feedback on import failures.",
+		detail:
+			"Only promoted if it improves score or fixes imports without regression.",
 	},
 	{
 		step: "Frontier eval",
 		description: "Optional rubric grading via OpenRouter if API key is set.",
-		detail: "Best-effort: auth/timeout/rate-limit failures recorded without crashing.",
+		detail:
+			"Best-effort: auth/timeout/rate-limit failures recorded without crashing.",
 	},
 	{
 		step: "Persist",
-		description: "Write `run.json` with all item results, scores, and failures.",
-		detail: "Append-only evidence. Dashboard reads artifacts; never mutates past runs.",
+		description:
+			"Write `run.json` with all item results, scores, and failures.",
+		detail:
+			"Append-only evidence. Dashboard reads artifacts; never mutates past runs.",
 	},
 ];
 
@@ -131,22 +159,39 @@ export const scoringSystems: ScoringSystem[] = [
 	{
 		name: "Frontier eval",
 		scale: "1-10",
-		description: "Optional rubric grading via OpenRouter. Separate from automated score.",
+		description:
+			"Optional rubric grading via OpenRouter. Separate from automated score.",
 	},
 	{
 		name: "Effective score",
 		scale: "0-100%",
-		description: "Ranking metric: 40% pass rate + 30% completion + 30% tool success.",
+		description:
+			"Ranking metric: 40% pass rate + 30% completion + 30% tool success.",
 	},
 ];
 
 /** Key artifacts on disk. */
 export const artifactRows: ArtifactRow[] = [
-	{ path: "results/<run-id>/plan.json", purpose: "Resolved matrix, checkpoint, machine metadata, config." },
-	{ path: "results/<run-id>/run.json", purpose: "Per-item results, scores, failures, summary counters." },
-	{ path: "results/<run-id>/run.partial.json", purpose: "In-flight checkpoint. Removed after final write." },
-	{ path: "public/results/index.json", purpose: "Dashboard run index built by `bun dashboard:index`." },
-	{ path: "public/results/aggregates/<checkpoint>.json", purpose: "Leaderboard aggregate for cross-run comparison." },
+	{
+		path: "results/<run-id>/plan.json",
+		purpose: "Resolved matrix, checkpoint, machine metadata, config.",
+	},
+	{
+		path: "results/<run-id>/run.json",
+		purpose: "Per-item results, scores, failures, summary counters.",
+	},
+	{
+		path: "results/<run-id>/run.partial.json",
+		purpose: "In-flight checkpoint. Removed after final write.",
+	},
+	{
+		path: "public/results/index.json",
+		purpose: "Dashboard run index built by `bun dashboard:index`.",
+	},
+	{
+		path: "public/results/aggregates/<checkpoint>.json",
+		purpose: "Leaderboard aggregate for cross-run comparison.",
+	},
 ];
 
 /** Checkpoint fairness notes. */
@@ -170,14 +215,16 @@ export const testCatalog: AboutTestDefinition[] = [
 		slug: "tool-smoke",
 		description: "Tool-calling preflight.",
 		contract: "Same `add(a, b)` but as tool-call test.",
-		scoring: "Detects tool_missing early so later items aren't misread as model failures.",
+		scoring:
+			"Detects tool_missing early so later items aren't misread as model failures.",
 		tags: ["preflight"],
 	},
 	{
 		slug: "calculator-basic",
 		description: "Stateless `add`, `subtract`, `multiply`, `divide`.",
 		contract: "Four top-level exported functions.",
-		scoring: "Numeric correctness, zero/negative handling, division edge cases.",
+		scoring:
+			"Numeric correctness, zero/negative handling, division edge cases.",
 		tags: ["math", "stateless"],
 	},
 	{
@@ -197,22 +244,27 @@ export const testCatalog: AboutTestDefinition[] = [
 	{
 		slug: "rate-limiter",
 		description: "Per-key fixed-window rate limiter.",
-		contract: "`createRateLimiter()` → `allow`, `remaining`, `reset` with `nowMs`.",
+		contract:
+			"`createRateLimiter()` → `allow`, `remaining`, `reset` with `nowMs`.",
 		scoring: "Window boundaries, per-key isolation, quota accounting, reset.",
 		tags: ["stateful"],
 	},
 	{
 		slug: "ttl-cache",
 		description: "In-memory TTL cache.",
-		contract: "`createTtlCache()` → `set`, `get`, `has`, `delete`, `size`, `clear`.",
-		scoring: "Expiry boundaries, overwrite, undefined-value support, size accuracy.",
+		contract:
+			"`createTtlCache()` → `set`, `get`, `has`, `delete`, `size`, `clear`.",
+		scoring:
+			"Expiry boundaries, overwrite, undefined-value support, size accuracy.",
 		tags: ["stateful", "cache"],
 	},
 	{
 		slug: "event-emitter",
 		description: "Event emitter with listener lifecycle.",
-		contract: "`createEventEmitter()` → `on`, `once`, `off`, `emit`, `listenerCount`.",
-		scoring: "Registration order, duplicates, once semantics, per-event isolation.",
+		contract:
+			"`createEventEmitter()` → `on`, `once`, `off`, `emit`, `listenerCount`.",
+		scoring:
+			"Registration order, duplicates, once semantics, per-event isolation.",
 		tags: ["stateful", "events"],
 	},
 ];

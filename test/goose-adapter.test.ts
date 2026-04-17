@@ -267,15 +267,10 @@ describe("createGooseAdapter", () => {
 				}),
 			).rejects.toMatchObject({
 				message: expect.stringContaining('"sessionID":"abc"'),
-				output: expect.stringContaining(
-					"Would you like me to continue?",
-				),
+				output: expect.stringContaining("Would you like me to continue?"),
 				signalAssessment: {
 					classification: "tainted",
-					reasons: [
-						"internal_tool_transcript",
-						"agent_requested_input",
-					],
+					reasons: ["internal_tool_transcript", "agent_requested_input"],
 				},
 			});
 		} finally {

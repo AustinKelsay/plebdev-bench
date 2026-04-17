@@ -102,7 +102,7 @@ export function buildWorkspaceToolPrompt(
 		...(workspaceRootPath
 			? [
 					`- Workspace root: "${workspaceRootPath}". Treat that directory as the only allowed project root.`,
-					"- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect \"/\" or parent directories.",
+					'- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect "/" or parent directories.',
 				]
 			: []),
 		"- Operate only on files inside the current directory.",

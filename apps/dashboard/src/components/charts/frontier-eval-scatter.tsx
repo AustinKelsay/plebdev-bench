@@ -27,8 +27,8 @@ interface FrontierEvalScatterProps {
 }
 
 const HARNESS_COLORS: Record<string, string> = {
-	direct: "hsl(215, 70%, 62%)",  // steel blue
-	goose: "hsl(142, 60%, 49%)",   // brand green
+	direct: "hsl(215, 70%, 62%)", // steel blue
+	goose: "hsl(142, 60%, 49%)", // brand green
 	opencode: "hsl(38, 80%, 58%)", // warm amber
 };
 

@@ -21,8 +21,8 @@ import { runBenchmark } from "../runner/index.js";
 import {
 	type BenchConfig,
 	BenchConfigSchema,
-	testCategories,
 	type ModelProfileRegistry,
+	testCategories,
 } from "../schemas/index.js";
 
 /** Human-readable category list for CLI help text. */
@@ -131,10 +131,7 @@ export const runCommand = new Command("run")
 		"--machine-display-label <label>",
 		"Optional display label for a specific machine instance",
 	)
-	.option(
-		"--machine-id <id>",
-		"Deprecated alias for --machine-instance-id",
-	)
+	.option("--machine-id <id>", "Deprecated alias for --machine-instance-id")
 	.option(
 		"--machine-label <label>",
 		"Deprecated alias for --machine-display-label",
@@ -156,7 +153,10 @@ export const runCommand = new Command("run")
 				const fileProfiles = loadModelProfiles(options.modelConfig);
 				modelProfiles = mergeModelProfiles(modelProfiles, fileProfiles);
 				logger.info(
-					{ file: options.modelConfig, count: Object.keys(fileProfiles).length },
+					{
+						file: options.modelConfig,
+						count: Object.keys(fileProfiles).length,
+					},
 					"Loaded model profiles from file",
 				);
 			}
@@ -205,8 +205,7 @@ export const runCommand = new Command("run")
 				);
 			}
 			const resolvedMachineId = canonicalMachineId ?? legacyMachineId;
-			const resolvedMachineLabel =
-				canonicalMachineLabel ?? legacyMachineLabel;
+			const resolvedMachineLabel = canonicalMachineLabel ?? legacyMachineLabel;
 			if (legacyMachineId) {
 				logger.warn(
 					"Warning: --machine-id is deprecated; use --machine-instance-id",

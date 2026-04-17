@@ -12,11 +12,11 @@ import * as path from "node:path";
 import { Command } from "commander";
 import { z } from "zod";
 import { buildDashboardIndexArtifacts } from "../../apps/dashboard/scripts/build-index.js";
+import { logger } from "../lib/logger.js";
 import {
 	normalizeKnownPlanPayload,
 	normalizeKnownRunPayload,
 } from "../lib/machine-profile/legacy.js";
-import { logger } from "../lib/logger.js";
 import { RunPlanSchema, RunResultSchema } from "../schemas/index.js";
 
 /**
@@ -243,7 +243,9 @@ async function writePreparedArtifacts(
 			}
 			const shouldDeleteBackup =
 				rewrite.backupCreated &&
-				(writeCommitted || rewrite.rollbackSucceeded || !rewrite.renameCompleted);
+				(writeCommitted ||
+					rewrite.rollbackSucceeded ||
+					!rewrite.renameCompleted);
 			if (shouldDeleteBackup) {
 				try {
 					await fs.unlink(rewrite.backupPath);
@@ -316,7 +318,9 @@ async function migrateResultsDirectory(resultsDir: string): Promise<{
 
 /** CLI command for machine-profile artifact migration. */
 export const migrateMachineCommand = new Command("migrate-machine-profiles")
-	.description("Rewrite run artifacts to the standardized machine-profile schema")
+	.description(
+		"Rewrite run artifacts to the standardized machine-profile schema",
+	)
 	.option("-d, --dir <path>", "Results directory to rewrite", "results")
 	.option(
 		"--rebuild-dashboard-index",
@@ -355,9 +359,7 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 				);
 			}
 		} catch (error) {
-			console.error(
-				error instanceof Error ? error.message : String(error),
-			);
+			console.error(error instanceof Error ? error.message : String(error));
 			logger.error({ error }, "Machine-profile migration failed");
 			process.exit(1);
 		}

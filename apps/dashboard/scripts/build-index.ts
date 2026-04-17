@@ -8,10 +8,10 @@
  *   bun run apps/dashboard/scripts/build-index.ts --source-dir results --output-dir apps/dashboard/public/results
  */
 
-import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { fileURLToPath } from "node:url";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { computeBenchmarkCheckpoint } from "../../../src/lib/benchmark-checkpoint.js";
 import {
 	parseKnownPlanPayload,
@@ -23,10 +23,7 @@ import {
 	resolveRunMetadata,
 	summarizeCheckpoints,
 } from "../../../src/results/aggregate.js";
-import {
-	type RunPlan,
-	type RunResult,
-} from "../../../src/schemas/index.js";
+import type { RunPlan, RunResult } from "../../../src/schemas/index.js";
 import type {
 	DashboardIndex,
 	LeaderboardAggregate,
@@ -230,9 +227,7 @@ function sanitizePublishedRun(run: RunResult): RunResult {
 				? {
 						scoringFailure: {
 							...item.scoringFailure,
-							message: INTERNAL_TRACE_PATTERN.test(
-								item.scoringFailure.message,
-							)
+							message: INTERNAL_TRACE_PATTERN.test(item.scoringFailure.message)
 								? "[redacted internal tool transcript]"
 								: sanitizePublishedText(item.scoringFailure.message),
 						},
@@ -470,7 +465,7 @@ function buildRunListItems(bundles: AggregateRunInput[]): RunListItem[] {
 			...(metadata.machineProfileLabel
 				? { machineProfileLabel: metadata.machineProfileLabel }
 				: {}),
-			...(metadata.machineDisplayLabel ?? metadata.machineProfileLabel
+			...((metadata.machineDisplayLabel ?? metadata.machineProfileLabel)
 				? {
 						machineLabel:
 							metadata.machineDisplayLabel ?? metadata.machineProfileLabel,

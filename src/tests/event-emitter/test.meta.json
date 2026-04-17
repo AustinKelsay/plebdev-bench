@@ -1,10 +1,7 @@
 {
-  "category": "coding",
-  "description": "Event emitter listener lifecycle semantics",
-  "tags": [
-    "stateful",
-    "events"
-  ],
-  "timeoutMultiplier": 2.75,
-  "schemaVersion": 1
+	"category": "coding",
+	"description": "Event emitter listener lifecycle semantics",
+	"tags": ["stateful", "events"],
+	"timeoutMultiplier": 2.75,
+	"schemaVersion": 1
 }

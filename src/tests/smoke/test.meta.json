@@ -1,9 +1,6 @@
 {
-  "category": "coding",
-  "description": "Basic add function sanity check",
-  "tags": [
-    "baseline",
-    "stateless"
-  ],
-  "schemaVersion": 1
+	"category": "coding",
+	"description": "Basic add function sanity check",
+	"tags": ["baseline", "stateless"],
+	"schemaVersion": 1
 }

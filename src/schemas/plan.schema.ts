@@ -9,12 +9,12 @@ import { z } from "zod";
 import {
 	ArtifactRuntimeNameSchema,
 	BenchmarkCheckpointSchema,
+	HarnessCapabilitySchema,
 	MachineProfileSchema,
 	PassTypeSchema,
 	RunProvenanceSchema,
 	RuntimeEnvironmentSchema,
 	SCHEMA_VERSION,
-	HarnessCapabilitySchema,
 	TestCategorySchema,
 	TestScoringModeSchema,
 } from "./common.schema.js";

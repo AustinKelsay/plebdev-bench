@@ -128,8 +128,7 @@ function createRun(
 			displayLabel: "Machine A",
 			profileKey: machineProfileKey,
 			profileLabel: profile.profileLabel ?? TEST_PROFILE_LABEL,
-			normalizedProfile:
-				profile.normalizedProfile ?? TEST_NORMALIZED_PROFILE,
+			normalizedProfile: profile.normalizedProfile ?? TEST_NORMALIZED_PROFILE,
 			observedHardware: profile.observedHardware ?? TEST_HARDWARE,
 		},
 		benchmarkCheckpoint: {
@@ -179,14 +178,22 @@ describe("aggregateRunsForCheckpoint", () => {
 
 		const runs: AggregateRunInput[] = [
 			{
-				run: createRun("run-old", checkpointId, TEST_PROFILE_KEY, "instance-a", [
-					olderItem,
-				]),
+				run: createRun(
+					"run-old",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-a",
+					[olderItem],
+				),
 			},
 			{
-				run: createRun("run-new", checkpointId, TEST_PROFILE_KEY, "instance-b", [
-					newerItem,
-				]),
+				run: createRun(
+					"run-new",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-b",
+					[newerItem],
+				),
 			},
 		];
 
@@ -205,14 +212,22 @@ describe("aggregateRunsForCheckpoint", () => {
 
 		const runs: AggregateRunInput[] = [
 			{
-				run: createRun("run-old", checkpointId, TEST_PROFILE_KEY, "instance-a", [
-					olderItem,
-				]),
+				run: createRun(
+					"run-old",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-a",
+					[olderItem],
+				),
 			},
 			{
-				run: createRun("run-new", checkpointId, TEST_PROFILE_KEY, "instance-b", [
-					newerItem,
-				]),
+				run: createRun(
+					"run-new",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-b",
+					[newerItem],
+				),
 			},
 		];
 
@@ -335,7 +350,13 @@ describe("aggregateRunsForCheckpoint", () => {
 		const aggregate = aggregateRunsForCheckpoint(
 			[
 				{
-					run: createRun("run-empty", checkpointId, TEST_PROFILE_KEY, "instance-a", []),
+					run: createRun(
+						"run-empty",
+						checkpointId,
+						TEST_PROFILE_KEY,
+						"instance-a",
+						[],
+					),
 				},
 			],
 			checkpointId,

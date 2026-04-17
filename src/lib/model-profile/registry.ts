@@ -10,11 +10,12 @@
  */
 
 import * as fs from "node:fs";
+import type { Logger } from "pino";
 import { z } from "zod";
 import {
-	supportedRuntimeNames,
-	SupportedRuntimeNameSchema,
 	type SupportedRuntimeName,
+	SupportedRuntimeNameSchema,
+	supportedRuntimeNames,
 } from "../../schemas/common.schema.js";
 import {
 	ModelAliasFileSchema,
@@ -24,8 +25,8 @@ import {
 import {
 	ConfiguredModelProfileSchema,
 	ConfiguredModelVariantValueSchema,
-	ModelProfileFileSchema,
 	type ModelProfile,
+	ModelProfileFileSchema,
 	type ModelProfileRegistry,
 	ModelProfileRegistrySchema,
 } from "../../schemas/model-profile.schema.js";
@@ -62,6 +63,7 @@ type RegistryResolutionSource = Extract<
 	ModelProfile["resolutionSource"],
 	"configured_profile" | "legacy_alias"
 >;
+type RegistryLogger = Pick<Logger, "debug" | "warn">;
 type RegistryProfile = ModelProfileRegistry[string] & {
 	[REGISTRY_PROVENANCE]?: RegistryResolutionSource;
 };
@@ -97,7 +99,9 @@ function withRegistryProvenance(
 function getRegistryProfileProvenance(
 	profile: ModelProfileRegistry[string],
 ): RegistryResolutionSource {
-	return (profile as RegistryProfile)[REGISTRY_PROVENANCE] ?? "configured_profile";
+	return (
+		(profile as RegistryProfile)[REGISTRY_PROVENANCE] ?? "configured_profile"
+	);
 }
 
 /** Resolved runtime-specific model selection for one matrix row. */
@@ -116,7 +120,10 @@ function normalizeLegacyAliasMap(aliases: ModelAliasMap): ModelProfileRegistry {
 			{
 				profileLabel: humanizeSlug(profileKey),
 				variants: Object.fromEntries(
-					Object.entries(variants).map(([runtime, modelName]) => [runtime, modelName]),
+					Object.entries(variants).map(([runtime, modelName]) => [
+						runtime,
+						modelName,
+					]),
 				),
 			},
 			"legacy_alias",
@@ -140,7 +147,7 @@ function normalizeLegacyAliasMap(aliases: ModelAliasMap): ModelProfileRegistry {
  */
 function normalizeLoadedModelProfileRegistry(
 	registry: z.infer<typeof LegacyCompatibleModelProfileRegistrySchema>,
-	log: ReturnType<typeof logger.child>,
+	log: RegistryLogger,
 ): ModelProfileRegistry {
 	const droppedRuntimeNames = new Set<string>();
 	const normalized = Object.fromEntries(
@@ -214,7 +221,10 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 			{ profileCount: Object.keys(profileWrapper.data.models).length },
 			"Loaded versioned model profile file",
 		);
-		return withRegistryProvenance(profileWrapper.data.models, "configured_profile");
+		return withRegistryProvenance(
+			profileWrapper.data.models,
+			"configured_profile",
+		);
 	}
 
 	const legacyCompatibleProfileWrapper =

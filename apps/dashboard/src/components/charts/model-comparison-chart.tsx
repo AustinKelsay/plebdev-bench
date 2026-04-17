@@ -46,7 +46,12 @@ function ComparisonTooltip({
 	payload?: Array<{
 		name: string;
 		value: number;
-		payload: { test: string; modelAScore: number; modelBScore: number; delta: number };
+		payload: {
+			test: string;
+			modelAScore: number;
+			modelBScore: number;
+			delta: number;
+		};
 	}>;
 }) {
 	if (!active || !payload?.length) return null;
@@ -54,12 +59,8 @@ function ComparisonTooltip({
 	return (
 		<div className="bg-background-raised border border-border rounded p-2 text-sm font-mono">
 			<p className="font-medium mb-1">{d.test}</p>
-			<p className="text-success">
-				Model A: {d.modelAScore.toFixed(1)}%
-			</p>
-			<p className="text-info">
-				Model B: {d.modelBScore.toFixed(1)}%
-			</p>
+			<p className="text-success">Model A: {d.modelAScore.toFixed(1)}%</p>
+			<p className="text-info">Model B: {d.modelBScore.toFixed(1)}%</p>
 			<p className="text-foreground-muted text-xs mt-1">
 				Delta: {d.delta > 0 ? "+" : ""}
 				{d.delta.toFixed(1)}%

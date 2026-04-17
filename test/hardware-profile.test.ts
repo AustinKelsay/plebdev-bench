@@ -8,9 +8,9 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-	collectMachineProfile,
 	MACHINE_DISPLAY_LABEL_ENV_VAR,
 	MACHINE_INSTANCE_ID_ENV_VAR,
+	collectMachineProfile,
 } from "../src/lib/hardware-profile.js";
 import type { HardwareProfile } from "../src/schemas/index.js";
 

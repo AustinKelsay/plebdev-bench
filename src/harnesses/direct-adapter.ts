@@ -12,6 +12,8 @@
  * - Streaming mode keeps connection alive during model loading (critical for bf16)
  */
 
+import { generateOllama } from "../lib/ollama-client.js";
+import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -19,8 +21,6 @@ import {
 	hasRetryMarker,
 	stripRetryMarker,
 } from "./code-output-policy.js";
-import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
-import { generateOllama } from "../lib/ollama-client.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 const MIN_OUTPUT_LENGTH = 10;
 
@@ -47,7 +47,10 @@ export function createDirectAdapter(): Harness {
 			const isRetryAttempt = hasRetryMarker(prompt);
 			const promptWithoutMarker = stripRetryMarker(prompt);
 
-			const fullPrompt = buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
+			const fullPrompt = buildCodeOnlyPrompt(
+				promptWithoutMarker,
+				isRetryAttempt,
+			);
 
 			const response = await generateOllama({
 				baseUrl: runtime.baseUrl,
@@ -74,7 +77,8 @@ export function createDirectAdapter(): Harness {
 					});
 					return {
 						...retryResult,
-						...(initialPromptTokens !== undefined || retryResult.promptTokens !== undefined
+						...(initialPromptTokens !== undefined ||
+						retryResult.promptTokens !== undefined
 							? {
 									promptTokens:
 										(initialPromptTokens ?? 0) +

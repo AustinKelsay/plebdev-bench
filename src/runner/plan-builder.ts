@@ -13,8 +13,8 @@ import * as os from "node:os";
 import {
 	type HarnessName,
 	TOOL_CALLING_HARNESS_NAMES,
-	doesHarnessSupportCapabilities,
 	discoverHarnesses,
+	doesHarnessSupportCapabilities,
 	isHarnessCompatibleWithRuntime,
 	isValidHarnessName,
 	normalizeHarnessName,
@@ -173,8 +173,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 								requestedModel: modelSpec,
 								runtime: runtimeName,
 								resolved: resolvedSelection.runtimeModelName,
-								profileKey:
-									resolvedSelection.modelProfile.canonical.profileKey,
+								profileKey: resolvedSelection.modelProfile.canonical.profileKey,
 							},
 							"Resolved model selector",
 						);

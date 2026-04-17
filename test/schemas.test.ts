@@ -3,22 +3,22 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { getModelIdentityKey } from "../src/lib/model-profiles.js";
 import {
 	buildMachineProfileKey,
 	buildMachineProfileLabel,
 	normalizeMachineProfile,
 } from "../src/lib/machine-profile/normalization.js";
+import { getModelIdentityKey } from "../src/lib/model-profiles.js";
 import {
-	BenchConfigSchema,
+	AcceleratorDetectionSchema,
 	ArtifactRuntimeNameSchema,
+	BenchConfigSchema,
 	FrontierEvalFailureTypeSchema,
 	HardwareProfileSchema,
 	HarnessCapabilitySchema,
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
-	AcceleratorDetectionSchema,
 	RunPlanSchema,
 	RunResultSchema,
 	SCHEMA_VERSION,
@@ -291,9 +291,11 @@ describe("BenchConfigSchema", () => {
 		if (result.success) {
 			throw new Error("Expected BenchConfigSchema.safeParse to fail");
 		}
-		expect(result.error.issues.some((issue) => issue.path[0] === "machineInstanceId")).toBe(
-			true,
-		);
+		expect(
+			result.error.issues.some(
+				(issue) => issue.path[0] === "machineInstanceId",
+			),
+		).toBe(true);
 	});
 
 	it("should reject non-string canonical machine fields before alias backfill", () => {
@@ -391,7 +393,9 @@ describe("HardwareProfileSchema", () => {
 			result.error.issues.some(
 				(issue) =>
 					issue.path[0] === "detail" &&
-					issue.message.includes('requires detail when status is "unavailable"'),
+					issue.message.includes(
+						'requires detail when status is "unavailable"',
+					),
 			),
 		).toBe(true);
 	});
@@ -525,7 +529,9 @@ describe("HardwareProfileSchema", () => {
 			"nvidia/rtx-4060:x1",
 			"nvidia/rtx-4090:x1",
 		]);
-		expect(buildMachineProfileKey(dual4090)).not.toBe(buildMachineProfileKey(mixed));
+		expect(buildMachineProfileKey(dual4090)).not.toBe(
+			buildMachineProfileKey(mixed),
+		);
 	});
 });
 
@@ -698,11 +704,7 @@ describe("MatrixItemResultSchema", () => {
 		expect(result.status).toBe("completed");
 		expect(result.generation?.success).toBe(true);
 		expect(
-			getModelIdentityKey(
-				result.model,
-				result.modelProfile,
-				result.modelAlias,
-			),
+			getModelIdentityKey(result.model, result.modelProfile, result.modelAlias),
 		).toBe("llama3.2-3b-instruct");
 	});
 

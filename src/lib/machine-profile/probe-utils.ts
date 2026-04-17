@@ -50,7 +50,9 @@ export async function runProbe(
  * @param value - Raw probe stdout
  * @returns Positive integer when valid
  */
-export function parsePositiveInt(value: string | undefined): number | undefined {
+export function parsePositiveInt(
+	value: string | undefined,
+): number | undefined {
 	if (!value) return undefined;
 	const parsed = Number.parseInt(value.trim(), 10);
 	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
@@ -62,7 +64,9 @@ export function parsePositiveInt(value: string | undefined): number | undefined 
  * @param value - Raw memory string
  * @returns Memory in bytes when parsable
  */
-export function parseMemoryBytes(value: string | undefined): number | undefined {
+export function parseMemoryBytes(
+	value: string | undefined,
+): number | undefined {
 	if (!value) return undefined;
 	const normalized = value.trim().replace(/,/g, "");
 	const match = normalized.match(

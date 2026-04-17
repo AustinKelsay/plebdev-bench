@@ -264,7 +264,9 @@ function printSummary(result: CompareResult): void {
 					);
 				}
 			} else {
-				console.log("  Trusted pass rate:  unavailable (no trusted scored rows)");
+				console.log(
+					"  Trusted pass rate:  unavailable (no trusted scored rows)",
+				);
 			}
 		} else {
 			console.log(

@@ -7,9 +7,9 @@
  * - UI code should import from `@/lib/aggregations` only
  */
 
-export * from "./aggregations-core";
-export * from "./aggregations-tooling";
-export * from "./aggregations-compare";
-export * from "./aggregations-diagnostics";
-export * from "./aggregations-charts";
-export * from "./aggregations-test-types";
+export * from "./aggregations-core.js";
+export * from "./aggregations-tooling.js";
+export * from "./aggregations-compare.js";
+export * from "./aggregations-diagnostics.js";
+export * from "./aggregations-charts.js";
+export * from "./aggregations-test-types.js";

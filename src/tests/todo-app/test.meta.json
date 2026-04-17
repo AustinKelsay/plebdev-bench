@@ -1,10 +1,7 @@
 {
-  "category": "coding",
-  "description": "Stateful CRUD todo manager implementation",
-  "tags": [
-    "crud",
-    "stateful"
-  ],
-  "timeoutMultiplier": 2.5,
-  "schemaVersion": 1
+	"category": "coding",
+	"description": "Stateful CRUD todo manager implementation",
+	"tags": ["crud", "stateful"],
+	"timeoutMultiplier": 2.5,
+	"schemaVersion": 1
 }

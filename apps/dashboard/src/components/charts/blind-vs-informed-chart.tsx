@@ -31,7 +31,7 @@ interface BlindVsInformedChartProps {
 
 // Chart colors — toned for dark background consistency
 const COLORS = {
-	blind: "hsl(38, 80%, 58%)",    // warm amber for blind
+	blind: "hsl(38, 80%, 58%)", // warm amber for blind
 	informed: "hsl(142, 60%, 49%)", // brand green for informed
 	deltaPositive: "hsl(142, 60%, 49%)",
 	deltaNegative: "hsl(0, 70%, 60%)",

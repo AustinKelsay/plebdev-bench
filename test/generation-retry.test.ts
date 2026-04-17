@@ -70,11 +70,13 @@ describe("runGenerationWithInfraRetry", () => {
 	});
 
 	it("returns a structured harness error when fresh workspace preparation fails", async () => {
-		const generate = vi.fn().mockRejectedValueOnce(
-			new Error(
-				"OpenCode hung (no output for 213s). Process may be stuck on backend.",
-			),
-		);
+		const generate = vi
+			.fn()
+			.mockRejectedValueOnce(
+				new Error(
+					"OpenCode hung (no output for 213s). Process may be stuck on backend.",
+				),
+			);
 
 		const result = await runGenerationWithInfraRetry({
 			item: {

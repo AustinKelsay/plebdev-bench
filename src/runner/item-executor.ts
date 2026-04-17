@@ -29,14 +29,17 @@ import { createRuntime } from "../runtimes/index.js";
 import type {
 	AutomatedScore,
 	FrontierEval,
-	GenerationResult,
 	GenerationFailureType,
+	GenerationResult,
 	MatrixItem,
 	MatrixItemResult,
 	ScoringMetrics,
 	SignalAssessment,
 } from "../schemas/index.js";
-import { SignalAssessmentSchema, generationFailureTypes } from "../schemas/index.js";
+import {
+	SignalAssessmentSchema,
+	generationFailureTypes,
+} from "../schemas/index.js";
 import { runGenerationWithInfraRetry } from "./generation-retry.js";
 import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
 
@@ -78,7 +81,9 @@ function getExecutableRuntimeName(
  * @param value - Unknown candidate
  * @returns True when the value is a supported generation failure literal
  */
-function isGenerationFailureType(value: unknown): value is GenerationFailureType {
+function isGenerationFailureType(
+	value: unknown,
+): value is GenerationFailureType {
 	return (
 		typeof value === "string" &&
 		GENERATION_FAILURE_TYPE_SET.has(value as GenerationFailureType)

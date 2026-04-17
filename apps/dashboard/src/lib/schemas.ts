@@ -16,9 +16,6 @@ const TestCategorySchema = z.enum(["coding", "computer-use"]);
 /** Runtime name schema. */
 const RuntimeNameSchema = z.enum(["ollama", "vllm"]);
 
-/** Test category schema. */
-const TestCategorySchema = z.enum(["coding", "computer-use"]);
-
 /** Item status schema. */
 const ItemStatusSchema = z.enum(["pending", "running", "completed", "failed"]);
 

@@ -14,6 +14,6 @@ describe("buildWorkspaceToolPrompt", () => {
 		});
 
 		expect(prompt).toContain('Workspace root: "/tmp/fixture-root"');
-		expect(prompt).toContain("Do not inspect \"/\" or parent directories.");
+		expect(prompt).toContain('Do not inspect "/" or parent directories.');
 	});
 });

@@ -159,9 +159,7 @@ function deriveFamily(value: string): string {
 		if (isParameterToken(token) || isVariantOnlyToken(token)) {
 			break;
 		}
-		if (
-			(TUNING_PATTERNS as readonly string[]).includes(token)
-		) {
+		if ((TUNING_PATTERNS as readonly string[]).includes(token)) {
 			break;
 		}
 		familyTokens.push(token);
@@ -270,7 +268,9 @@ export function buildConfiguredModelProfile(args: {
 			...(args.profile.parameterScaleLabel
 				? { parameterScaleLabel: args.profile.parameterScaleLabel }
 				: parametersBillions !== undefined
-					? { parameterScaleLabel: `${formatCompactNumber(parametersBillions)}B` }
+					? {
+							parameterScaleLabel: `${formatCompactNumber(parametersBillions)}B`,
+						}
 					: {}),
 			...(args.profile.provider ? { provider: args.profile.provider } : {}),
 			...(tuning ? { tuning } : {}),
@@ -284,7 +284,9 @@ export function buildConfiguredModelProfile(args: {
 			...(configuredVariant.quantization
 				? { quantization: configuredVariant.quantization }
 				: {}),
-			...(configuredVariant.sourceId ? { sourceId: configuredVariant.sourceId } : {}),
+			...(configuredVariant.sourceId
+				? { sourceId: configuredVariant.sourceId }
+				: {}),
 		},
 		resolutionSource: args.resolutionSource,
 	};

@@ -56,7 +56,10 @@ function validateTestMetadata(
 		});
 	}
 
-	if (!Number.isFinite(value.timeoutMultiplier) || value.timeoutMultiplier <= 0) {
+	if (
+		!Number.isFinite(value.timeoutMultiplier) ||
+		value.timeoutMultiplier <= 0
+	) {
 		ctx.addIssue({
 			code: z.ZodIssueCode.custom,
 			path: ["timeoutMultiplier"],

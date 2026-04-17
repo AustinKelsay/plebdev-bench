@@ -125,31 +125,29 @@ describe("discoverTestCatalog", () => {
 		);
 	});
 
-		it("rejects harness capability requirements when tools are disabled", () => {
-			const root = createTempRoot();
-			createTestDir(root, "invalid-capabilities", {
-				category: "coding",
-				requiresTools: false,
-				requiredHarnessCapabilities: ["workspace-read"],
+	it("rejects harness capability requirements when tools are disabled", () => {
+		const root = createTempRoot();
+		createTestDir(root, "invalid-capabilities", {
+			category: "coding",
+			requiresTools: false,
+			requiredHarnessCapabilities: ["workspace-read"],
 		});
 
 		expect(() => discoverTestCatalog(root)).toThrow(
-				"requiredHarnessCapabilities may only be set when requiresTools is true",
-			);
-		});
-
-		it("rejects invalid timeout multipliers", () => {
-			const root = createTempRoot();
-			createTestDir(root, "bad-timeout-multiplier", {
-				category: "coding",
-				timeoutMultiplier: 0,
-			});
-
-			expect(() => discoverTestCatalog(root)).toThrow(
-				"timeoutMultiplier",
-			);
-		});
+			"requiredHarnessCapabilities may only be set when requiresTools is true",
+		);
 	});
+
+	it("rejects invalid timeout multipliers", () => {
+		const root = createTempRoot();
+		createTestDir(root, "bad-timeout-multiplier", {
+			category: "coding",
+			timeoutMultiplier: 0,
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow("timeoutMultiplier");
+	});
+});
 
 describe("selectTests", () => {
 	it("throws on unknown requested tests", () => {

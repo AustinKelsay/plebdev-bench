@@ -8,6 +8,7 @@
  */
 
 import { Badge } from "@/components/ui/badge";
+import type { BadgeProps } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Table,
@@ -17,7 +18,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { BadgeProps } from "@/components/ui/badge";
 import type { LeaderboardAggregatedItem } from "@/lib/types";
 import { formatDate, formatDuration } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -92,7 +92,9 @@ export function LeaderboardResultsTable({
 									</div>
 								</TableCell>
 								<TableCell>{item.runtime}</TableCell>
-								<TableCell className="max-w-[240px] truncate">{item.model}</TableCell>
+								<TableCell className="max-w-[240px] truncate">
+									{item.model}
+								</TableCell>
 								<TableCell>{item.harness}</TableCell>
 								<TableCell>{item.test}</TableCell>
 								<TableCell>{item.passType}</TableCell>
@@ -128,7 +130,10 @@ export function LeaderboardResultsTable({
 						))}
 						{items.length === 0 && (
 							<TableRow>
-								<TableCell colSpan={10} className="text-center text-foreground-muted">
+								<TableCell
+									colSpan={10}
+									className="text-center text-foreground-muted"
+								>
 									No items match current filters.
 								</TableCell>
 							</TableRow>

@@ -45,9 +45,7 @@ export const CanonicalModelProfileSchema = z.object({
 });
 
 /** Canonical model identity type. */
-export type CanonicalModelProfile = z.infer<
-	typeof CanonicalModelProfileSchema
->;
+export type CanonicalModelProfile = z.infer<typeof CanonicalModelProfileSchema>;
 
 /** Runtime-specific model variant metadata captured in a run artifact. */
 export const ModelVariantSchema = z.object({

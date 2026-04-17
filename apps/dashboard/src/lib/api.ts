@@ -1,3 +1,7 @@
+import {
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
+} from "../../../../src/lib/machine-profile/legacy.js";
 /**
  * Purpose: Fetch run data from static JSON files.
  * Exports: fetchRuns, fetchRun, fetchPlan, fetchRunWithPlan, fetchDashboardIndex, fetchLatestAggregate
@@ -9,10 +13,6 @@ import {
 	DashboardIndexLegacyOrCurrentSchema,
 	LeaderboardAggregateSchema,
 } from "./schemas";
-import {
-	parseKnownPlanPayload,
-	parseKnownRunPayload,
-} from "../../../../src/lib/machine-profile/legacy.js";
 import type {
 	DashboardIndex,
 	LeaderboardAggregate,

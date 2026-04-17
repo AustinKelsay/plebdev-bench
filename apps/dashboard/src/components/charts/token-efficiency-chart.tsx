@@ -30,8 +30,8 @@ interface TokenEfficiencyChartProps {
 }
 
 const HARNESS_COLORS: Record<string, string> = {
-	direct: "hsl(215, 70%, 62%)",  // steel blue
-	goose: "hsl(142, 60%, 49%)",   // brand green
+	direct: "hsl(215, 70%, 62%)", // steel blue
+	goose: "hsl(142, 60%, 49%)", // brand green
 	opencode: "hsl(38, 80%, 58%)", // warm amber
 };
 
@@ -131,10 +131,7 @@ export function TokenEfficiencyChart({ items }: TokenEfficiencyChartProps) {
 
 				<ResponsiveContainer width="100%" height={300}>
 					<ScatterChart margin={{ top: 20, right: 20, bottom: 30, left: 20 }}>
-						<CartesianGrid
-							strokeDasharray="3 3"
-							stroke="hsl(213, 23%, 15%)"
-						/>
+						<CartesianGrid strokeDasharray="3 3" stroke="hsl(213, 23%, 15%)" />
 						<XAxis
 							type="number"
 							dataKey="avgTokens"

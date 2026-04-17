@@ -7,7 +7,10 @@
  * - Probe failures return explicit unavailable status details
  */
 
-import type { HardwareProfile, ObservedAccelerator } from "../../schemas/index.js";
+import type {
+	HardwareProfile,
+	ObservedAccelerator,
+} from "../../schemas/index.js";
 import { parseMemoryBytes, runProbe } from "./probe-utils.js";
 
 /**
@@ -29,9 +32,13 @@ export function parseMacosAccelerators(rawJson: string): ObservedAccelerator[] {
 	if (
 		typeof parsed !== "object" ||
 		parsed === null ||
-		!Array.isArray((parsed as { SPDisplaysDataType?: unknown }).SPDisplaysDataType)
+		!Array.isArray(
+			(parsed as { SPDisplaysDataType?: unknown }).SPDisplaysDataType,
+		)
 	) {
-		throw new Error("malformed macOS accelerator probe JSON: missing SPDisplaysDataType array");
+		throw new Error(
+			"malformed macOS accelerator probe JSON: missing SPDisplaysDataType array",
+		);
 	}
 	const displays = (parsed as { SPDisplaysDataType: unknown[] })
 		.SPDisplaysDataType;
@@ -66,13 +73,12 @@ export function parseMacosAccelerators(rawJson: string): ObservedAccelerator[] {
 			typeof display.spdisplays_vendor === "string"
 				? display.spdisplays_vendor
 				: undefined;
-		const kind =
-			hasPciMetadata
-				? ("discrete" as const)
-				: vendor?.toLowerCase().includes("apple") ||
-						modelRaw.toLowerCase().includes("apple")
-					? ("integrated" as const)
-					: ("unknown" as const);
+		const kind = hasPciMetadata
+			? ("discrete" as const)
+			: vendor?.toLowerCase().includes("apple") ||
+					modelRaw.toLowerCase().includes("apple")
+				? ("integrated" as const)
+				: ("unknown" as const);
 		return [
 			{
 				modelRaw,

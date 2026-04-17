@@ -171,7 +171,9 @@ export function formatRunStats(
 
 		if (stats.scoring.byTest.length > 1) {
 			lines.push("  By test:");
-			const maxNameLen = Math.max(...stats.scoring.byTest.map((t) => t.name.length));
+			const maxNameLen = Math.max(
+				...stats.scoring.byTest.map((t) => t.name.length),
+			);
 			for (const t of stats.scoring.byTest) {
 				lines.push(
 					`    ${pad(t.name, maxNameLen)}  ${pad(`${t.passRate.toFixed(1)}%`, 6, "right")} (${t.passed}/${t.total})`,
@@ -225,9 +227,7 @@ export function formatRunStats(
 				lines.push("  Trusted avg: unavailable (no trustworthy eval rows)");
 			}
 		} else {
-			lines.push(
-				"  Trusted avg: unavailable (signalAssessment missing)",
-			);
+			lines.push("  Trusted avg: unavailable (signalAssessment missing)");
 		}
 
 		if (stats.frontier.byHarness.length > 1) {
@@ -273,9 +273,7 @@ export function formatRunStats(
 				...stats.signal.byHarness.map((entry) => entry.name.length),
 			);
 			for (const entry of stats.signal.byHarness) {
-				lines.push(
-					`    ${pad(entry.name, maxNameLen)}  ${entry.count}`,
-				);
+				lines.push(`    ${pad(entry.name, maxNameLen)}  ${entry.count}`);
 			}
 		}
 	}

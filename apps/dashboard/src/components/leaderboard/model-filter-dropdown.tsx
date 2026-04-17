@@ -28,7 +28,10 @@ function buildTriggerLabel(
 	selectedModels: string[],
 	availableModelCount: number,
 ): string {
-	if (selectedModels.length === 0 || selectedModels.length === availableModelCount) {
+	if (
+		selectedModels.length === 0 ||
+		selectedModels.length === availableModelCount
+	) {
 		return "All models";
 	}
 	if (selectedModels.length === 1) {
@@ -85,11 +88,15 @@ export function ModelFilterDropdown({
 
 	function handleModelToggle(model: string) {
 		if (selectedModels.includes(model)) {
-			onSelectionChange(selectedModels.filter((selected) => selected !== model));
+			onSelectionChange(
+				selectedModels.filter((selected) => selected !== model),
+			);
 			return;
 		}
 
-		onSelectionChange([...selectedModels, model].sort((a, b) => a.localeCompare(b)));
+		onSelectionChange(
+			[...selectedModels, model].sort((a, b) => a.localeCompare(b)),
+		);
 	}
 
 	function handleOptionKeyDown(

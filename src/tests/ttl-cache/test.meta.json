@@ -1,11 +1,7 @@
 {
-  "category": "coding",
-  "description": "Deterministic in-memory TTL cache semantics",
-  "tags": [
-    "stateful",
-    "cache",
-    "expiration"
-  ],
-  "timeoutMultiplier": 2.25,
-  "schemaVersion": 1
+	"category": "coding",
+	"description": "Deterministic in-memory TTL cache semantics",
+	"tags": ["stateful", "cache", "expiration"],
+	"timeoutMultiplier": 2.25,
+	"schemaVersion": 1
 }

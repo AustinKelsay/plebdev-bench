@@ -20,7 +20,7 @@ const RUN_LIST_SKELETON_KEYS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 const STAT_ACCENTS = [
 	"hsl(142, 60%, 49%)", // green — Live Runs
 	"hsl(215, 70%, 60%)", // blue — Profiles
-	"hsl(38, 80%, 58%)",  // amber — Instances
+	"hsl(38, 80%, 58%)", // amber — Instances
 	"hsl(265, 50%, 62%)", // purple — Last Published
 ];
 
@@ -123,10 +123,28 @@ export function RunListPage() {
 						<CardContent className="space-y-4 pt-6">
 							<div className="grid gap-3 md:grid-cols-4">
 								{[
-									{ label: "Live Runs", value: formatNumber(liveGroup?.runCount ?? 0), large: true },
-									{ label: "Profiles", value: formatNumber(liveGroup?.machineCount ?? 0), large: true },
-									{ label: "Instances", value: formatNumber(liveGroup?.instanceCount ?? 0), large: true },
-									{ label: "Last Published", value: liveGroup ? formatDate(liveGroup.latestRunAt) : "n/a", large: false },
+									{
+										label: "Live Runs",
+										value: formatNumber(liveGroup?.runCount ?? 0),
+										large: true,
+									},
+									{
+										label: "Profiles",
+										value: formatNumber(liveGroup?.machineCount ?? 0),
+										large: true,
+									},
+									{
+										label: "Instances",
+										value: formatNumber(liveGroup?.instanceCount ?? 0),
+										large: true,
+									},
+									{
+										label: "Last Published",
+										value: liveGroup
+											? formatDate(liveGroup.latestRunAt)
+											: "n/a",
+										large: false,
+									},
 								].map((stat, i) => (
 									<div
 										key={stat.label}
@@ -136,14 +154,18 @@ export function RunListPage() {
 										<p className="text-xs uppercase tracking-[0.16em] text-foreground-faint">
 											{stat.label}
 										</p>
-										<p className={`mt-2 font-semibold tabular-nums ${stat.large ? "text-2xl" : "text-lg"}`}>
+										<p
+											className={`mt-2 font-semibold tabular-nums ${stat.large ? "text-2xl" : "text-lg"}`}
+										>
 											{stat.value}
 										</p>
 									</div>
 								))}
 							</div>
 							<div className="space-y-2">
-								<p className="text-sm font-medium text-foreground">How seasons work</p>
+								<p className="text-sm font-medium text-foreground">
+									How seasons work
+								</p>
 								{[
 									"A new season starts when benchmark definitions change — prompts, specs, rubrics, or harness code. Each season is pinned to a checkpoint hash.",
 									"The leaderboard defaults to the live season so models are compared on identical ground — no moving targets.",
@@ -255,13 +277,20 @@ export function RunListPage() {
 										<Badge variant="outline">{group.checkpointId}</Badge>
 									) : null}
 									<span className="text-foreground-muted">
-										{formatNumber(group.runCount)} runs · {formatNumber(group.machineCount)} profiles · {formatNumber(group.instanceCount)} instances · {formatNumber(group.rawItemCount)} items · last published {formatDate(group.latestRunAt)}
+										{formatNumber(group.runCount)} runs ·{" "}
+										{formatNumber(group.machineCount)} profiles ·{" "}
+										{formatNumber(group.instanceCount)} instances ·{" "}
+										{formatNumber(group.rawItemCount)} items · last published{" "}
+										{formatDate(group.latestRunAt)}
 									</span>
 								</div>
 
 								<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 									{group.runs.map((run, i) => (
-										<div key={run.runId} className={`animate-fade-slide-up animate-stagger-${(i % 8) + 1}`}>
+										<div
+											key={run.runId}
+											className={`animate-fade-slide-up animate-stagger-${(i % 8) + 1}`}
+										>
 											<RunCard
 												run={run}
 												showCheckpointBadge={false}

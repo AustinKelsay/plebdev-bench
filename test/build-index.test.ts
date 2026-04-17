@@ -7,10 +7,10 @@
  * - Published result fixtures remain deterministic and isolated per test
  */
 
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	buildDashboardIndexArtifacts,
@@ -242,15 +242,14 @@ describe("buildDashboardIndexArtifacts", () => {
 							success: true,
 							output:
 								"Wrote /Users/example/.local/share/opencode/tool-output/run-1/solution.ts",
-							error:
-								'{"type":"step_start","sessionID":"abc123"}',
+							error: '{"type":"step_start","sessionID":"abc123"}',
 							durationMs: 1000,
 							codeFilePath:
 								"/Users/example/.local/share/opencode/tool-output/run-1/solution.ts",
 						},
 						generationFailure: {
 							type: "unknown",
-							message: 'THOUGHT: investigating tool transcript',
+							message: "THOUGHT: investigating tool transcript",
 						},
 						automatedScore: { passed: 6, failed: 0, total: 6 },
 						scoringFailure: {
@@ -363,12 +362,10 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(latestAggregate.checkpointId).toBe(checkpoint.checkpointId);
 		expect(latestAggregate.summary.runsMatched).toBe(1);
 		expect(latestAggregate.items).toHaveLength(1);
-		expect(
-			latestAggregate.items[0]?.generation?.codeFilePath,
-		).toBeUndefined();
-		expect(
-			latestAggregate.items[0]?.generation?.sourcePathToken,
-		).toBe("[path:solution.ts]");
+		expect(latestAggregate.items[0]?.generation?.codeFilePath).toBeUndefined();
+		expect(latestAggregate.items[0]?.generation?.sourcePathToken).toBe(
+			"[path:solution.ts]",
+		);
 		expect(latestAggregate.items[0]?.generation?.output).toContain(
 			"[path:solution.ts]",
 		);
@@ -386,12 +383,14 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(output.index.runs[0]?.runId).toBe("run-latest");
 		expect(output.index.runs[0]?.machineProfileKey).toBe(TEST_PROFILE_KEY);
 		expect(output.index.runs[0]?.machineProfileId).toBe(TEST_PROFILE_KEY);
-		expect(output.index.runs[0]?.machineInstanceId).toBe(
-			SCRUBBED_MACHINE_A,
-		);
+		expect(output.index.runs[0]?.machineInstanceId).toBe(SCRUBBED_MACHINE_A);
 		expect(output.index.runs[0]?.machineDisplayLabel).toBe("Machine A");
 		expect(output.index.runs[0]?.machineLabel).toBe("Machine A");
-		const publishedRunPath = path.join(outputResultsDir, "run-latest", "run.json");
+		const publishedRunPath = path.join(
+			outputResultsDir,
+			"run-latest",
+			"run.json",
+		);
 		expect(fs.existsSync(publishedRunPath)).toBe(true);
 		const publishedRun = JSON.parse(
 			fs.readFileSync(publishedRunPath, "utf-8"),
@@ -446,7 +445,11 @@ describe("buildDashboardIndexArtifacts", () => {
 		expect(publishedRun.items[0]?.scoringFailure?.message).not.toContain(
 			"/root/secret",
 		);
-		const publishedPlanPath = path.join(outputResultsDir, "run-latest", "plan.json");
+		const publishedPlanPath = path.join(
+			outputResultsDir,
+			"run-latest",
+			"plan.json",
+		);
 		expect(fs.existsSync(publishedPlanPath)).toBe(true);
 		const publishedPlan = JSON.parse(
 			fs.readFileSync(publishedPlanPath, "utf-8"),
@@ -537,7 +540,9 @@ describe("buildDashboardIndexArtifacts", () => {
 		const outputResultsDir = path.join(projectRoot, "published-results");
 		fs.mkdirSync(sourceResultsDir, { recursive: true });
 		fs.mkdirSync(path.join(outputResultsDir, "stale-run"), { recursive: true });
-		fs.mkdirSync(path.join(outputResultsDir, "aggregates"), { recursive: true });
+		fs.mkdirSync(path.join(outputResultsDir, "aggregates"), {
+			recursive: true,
+		});
 		fs.writeFileSync(
 			path.join(outputResultsDir, "stale-run", "run.json"),
 			'{"stale":true}\n',

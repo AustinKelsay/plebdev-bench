@@ -115,7 +115,9 @@ function buildLegacyInstanceId(legacyProfileId: string): string {
  * @param machine - Valid current-schema machine payload
  * @returns Normalized current-schema machine payload
  */
-function normalizeCurrentMachineProfile(machine: MachineProfile): MachineProfile {
+function normalizeCurrentMachineProfile(
+	machine: MachineProfile,
+): MachineProfile {
 	const normalizedProfile = normalizeMachineProfile(machine.observedHardware);
 	return {
 		...machine,
@@ -161,14 +163,12 @@ export function migrateLegacyMachineProfile(
 	return {
 		instanceId: buildLegacyInstanceId(legacyMachine.profileId),
 		instanceIdSource: "legacy_profile_id",
-		...(typeof legacyMachine.label === "string" && legacyMachine.label.length > 0
+		...(typeof legacyMachine.label === "string" &&
+		legacyMachine.label.length > 0
 			? { displayLabel: legacyMachine.label }
 			: {}),
 		profileKey: buildMachineProfileKey(normalizedProfile),
-		profileLabel: buildMachineProfileLabel(
-			observedHardware,
-			normalizedProfile,
-		),
+		profileLabel: buildMachineProfileLabel(observedHardware, normalizedProfile),
 		normalizedProfile,
 		observedHardware,
 	};

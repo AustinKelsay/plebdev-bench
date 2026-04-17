@@ -29,9 +29,7 @@ export function Header() {
 			<header className="relative border-b border-border bg-background-raised noise-overlay">
 				<div className="container mx-auto flex h-14 items-center px-4 relative z-10">
 					<Link to="/" className="mr-8 flex items-center space-x-0">
-						<span className="text-lg font-semibold text-success">
-							plebdev
-						</span>
+						<span className="text-lg font-semibold text-success">plebdev</span>
 						<span className="text-lg font-semibold text-foreground">
 							-bench
 						</span>
@@ -45,9 +43,7 @@ export function Header() {
 									to={item.href}
 									className={cn(
 										"relative text-sm font-medium transition-colors hover:text-foreground pb-0.5",
-										isActive
-											? "text-foreground"
-											: "text-foreground-muted",
+										isActive ? "text-foreground" : "text-foreground-muted",
 									)}
 								>
 									{item.label}

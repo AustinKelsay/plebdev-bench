@@ -398,7 +398,8 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 								],
 							),
 						};
-					} else if (decision.shouldRetry) {
+					}
+					if (decision.shouldRetry) {
 						const elapsedMs = Math.round(performance.now() - startTime);
 						const remainingMs = timeoutMs - elapsedMs;
 						if (!isRetryAttempt && remainingMs > 1000) {
@@ -452,9 +453,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					codeFilePath,
 					signalAssessment: appendSignalAssessmentReasons(
 						signalAssessment,
-						toolCallDetected && !codeFilePath
-							? ["tool_call_not_executed"]
-							: [],
+						toolCallDetected && !codeFilePath ? ["tool_call_not_executed"] : [],
 					),
 					// Goose doesn't provide token counts
 				};
@@ -483,16 +482,13 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					const effectiveOutput = trimmedCombined || execaError.message;
 					const errorReasons =
 						getTranscriptOrInputTaintReasons(effectiveOutput);
-					throw Object.assign(
-						new Error(`Goose failed: ${effectiveOutput}`),
-						{
-							signalAssessment:
-								errorReasons.length > 0
-									? appendSignalAssessmentReasons(undefined, errorReasons)
-									: undefined,
-							output: effectiveOutput,
-						},
-					);
+					throw Object.assign(new Error(`Goose failed: ${effectiveOutput}`), {
+						signalAssessment:
+							errorReasons.length > 0
+								? appendSignalAssessmentReasons(undefined, errorReasons)
+								: undefined,
+						output: effectiveOutput,
+					});
 				}
 
 				throw error;

@@ -69,7 +69,10 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
 	const machineLabel = readNonEmptyString(config.machineLabel);
 
-	if (config.machineInstanceId === undefined && machineProfileId !== undefined) {
+	if (
+		config.machineInstanceId === undefined &&
+		machineProfileId !== undefined
+	) {
 		config.machineInstanceId = machineProfileId;
 	}
 	if (config.machineDisplayLabel === undefined && machineLabel !== undefined) {
@@ -83,7 +86,7 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 		const migratedModelAliases = migrateLegacyModelAliases(config.modelAliases);
 		if (migratedModelAliases !== undefined) {
 			config.modelProfiles = migratedModelAliases;
-			delete config.modelAliases;
+			config.modelAliases = undefined;
 		}
 	}
 
@@ -164,8 +167,7 @@ const BenchConfigObjectSchema = z
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["machineProfileId"],
-				message:
-					`Conflicting bench config machine IDs: machineInstanceId="${config.machineInstanceId}" does not match deprecated machineProfileId="${config.machineProfileId}"`,
+				message: `Conflicting bench config machine IDs: machineInstanceId="${config.machineInstanceId}" does not match deprecated machineProfileId="${config.machineProfileId}"`,
 			});
 		}
 
@@ -177,8 +179,7 @@ const BenchConfigObjectSchema = z
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["machineLabel"],
-				message:
-					`Conflicting bench config machine labels: machineDisplayLabel="${config.machineDisplayLabel}" does not match deprecated machineLabel="${config.machineLabel}"`,
+				message: `Conflicting bench config machine labels: machineDisplayLabel="${config.machineDisplayLabel}" does not match deprecated machineLabel="${config.machineLabel}"`,
 			});
 		}
 
@@ -226,8 +227,7 @@ const BenchConfigOutputSchema = BenchConfigObjectSchema.transform(
 		modelAliases: _modelAliases,
 		vllmBaseUrl: _vllmBaseUrl,
 		...config
-	}) =>
-		config,
+	}) => config,
 );
 
 /** Zod schema for benchmark configuration. */

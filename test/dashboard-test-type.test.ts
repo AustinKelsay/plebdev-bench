@@ -7,6 +7,7 @@
  * - Leaderboard filtering can isolate a single benchmark category without touching result data
  */
 
+import { describe, expect, it } from "vitest";
 import {
 	createDefaultFilterState,
 	filterItems,
@@ -21,7 +22,6 @@ import type {
 	MatrixItemResult,
 } from "../apps/dashboard/src/lib/types.js";
 import { formatTestCategoryLabel } from "../apps/dashboard/src/lib/utils.js";
-import { describe, expect, it } from "vitest";
 
 /**
  * Creates a minimal matrix item for dashboard aggregation tests.

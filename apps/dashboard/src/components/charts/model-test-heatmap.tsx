@@ -78,7 +78,8 @@ export function ModelTestHeatmap({ items }: ModelTestHeatmapProps) {
 	// Longest test name determines how much extra width the rotated labels need
 	const maxTestLen = Math.max(...tests.map((t) => t.length), 0);
 	const RIGHT_PAD = Math.max(40, maxTestLen * 4);
-	const svgWidth = LABEL_WIDTH + tests.length * (CELL_SIZE + COL_GAP) + RIGHT_PAD;
+	const svgWidth =
+		LABEL_WIDTH + tests.length * (CELL_SIZE + COL_GAP) + RIGHT_PAD;
 	const svgHeight = HEADER_HEIGHT + models.length * (CELL_SIZE + ROW_GAP);
 
 	return (
@@ -104,9 +105,13 @@ export function ModelTestHeatmap({ items }: ModelTestHeatmapProps) {
 					>
 						{/* Column headers (test names) */}
 						{tests.map((test, ci) => {
-							const x = LABEL_WIDTH + ci * (CELL_SIZE + COL_GAP) + CELL_SIZE / 2;
+							const x =
+								LABEL_WIDTH + ci * (CELL_SIZE + COL_GAP) + CELL_SIZE / 2;
 							return (
-								<g key={test} transform={`translate(${x}, ${HEADER_HEIGHT - 6}) rotate(-55)`}>
+								<g
+									key={test}
+									transform={`translate(${x}, ${HEADER_HEIGHT - 6}) rotate(-55)`}
+								>
 									<text
 										x={0}
 										y={0}
@@ -142,8 +147,7 @@ export function ModelTestHeatmap({ items }: ModelTestHeatmapProps) {
 
 									{/* Cells */}
 									{tests.map((test, ci) => {
-										const cx =
-											LABEL_WIDTH + ci * (CELL_SIZE + COL_GAP);
+										const cx = LABEL_WIDTH + ci * (CELL_SIZE + COL_GAP);
 										const cell = cellLookup.get(`${model}|||${test}`);
 										const passRate = cell?.passRate ?? 0;
 										const hasData = cell !== undefined;
@@ -156,7 +160,11 @@ export function ModelTestHeatmap({ items }: ModelTestHeatmapProps) {
 												width={CELL_SIZE}
 												height={CELL_SIZE}
 												rx={2}
-												fill={hasData ? heatmapColor(passRate) : "hsl(213, 23%, 12%)"}
+												fill={
+													hasData
+														? heatmapColor(passRate)
+														: "hsl(213, 23%, 12%)"
+												}
 												fillOpacity={hasData ? 0.85 : 0.3}
 												stroke="hsl(213, 23%, 15%)"
 												strokeWidth={0.5}

@@ -9,7 +9,7 @@
  * - Machine filter labels are disambiguated when duplicate labels exist
  */
 
-import type { LeaderboardAggregatedItem } from "@/lib/types";
+import type { LeaderboardAggregatedItem } from "../../lib/types.js";
 
 /** Sentinel value meaning "no filter". */
 export const ALL_FILTER_VALUE = "all";

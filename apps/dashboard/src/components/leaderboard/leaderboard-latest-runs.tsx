@@ -86,7 +86,10 @@ export function LeaderboardLatestRuns({
 			) : (
 				<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 					{latestRuns.map((run) => {
-						const aggregateBadge = getRunAggregateBadge(run, latestCheckpointId);
+						const aggregateBadge = getRunAggregateBadge(
+							run,
+							latestCheckpointId,
+						);
 						const hasFailures = run.summary.failed > 0;
 						const machineBadgeLabel = getRunMachineBadgeLabel(run);
 
@@ -112,9 +115,7 @@ export function LeaderboardLatestRuns({
 												<Badge variant="warning">no-checkpoint</Badge>
 											)}
 											{machineBadgeLabel ? (
-												<Badge variant="outline">
-													{machineBadgeLabel}
-												</Badge>
+												<Badge variant="outline">{machineBadgeLabel}</Badge>
 											) : null}
 										</div>
 									</CardHeader>
@@ -127,7 +128,9 @@ export function LeaderboardLatestRuns({
 										</div>
 										<div>
 											<p className="text-xs text-foreground-muted">Duration</p>
-											<p className="font-medium">{formatDuration(run.durationMs)}</p>
+											<p className="font-medium">
+												{formatDuration(run.durationMs)}
+											</p>
 										</div>
 										<div className="col-span-2">
 											<Badge variant={hasFailures ? "destructive" : "success"}>

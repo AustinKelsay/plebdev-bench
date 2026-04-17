@@ -213,7 +213,7 @@ export const SignalAssessmentSchema = z
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["reasons"],
-				message: 'tainted signal assessments must include at least one reason',
+				message: "tainted signal assessments must include at least one reason",
 			});
 		}
 		if (value.classification === "trustworthy" && value.reasons.length > 0) {
@@ -221,7 +221,7 @@ export const SignalAssessmentSchema = z
 				code: z.ZodIssueCode.custom,
 				path: ["reasons"],
 				message:
-					'trustworthy signal assessments must not include taint reasons',
+					"trustworthy signal assessments must not include taint reasons",
 			});
 		}
 	});
@@ -287,9 +287,7 @@ export const machinePlatformFamilies = [
 export const MachinePlatformFamilySchema = z.enum(machinePlatformFamilies);
 
 /** Machine platform family type. */
-export type MachinePlatformFamily = z.infer<
-	typeof MachinePlatformFamilySchema
->;
+export type MachinePlatformFamily = z.infer<typeof MachinePlatformFamilySchema>;
 
 /** Valid sources for machine instance identity resolution. */
 export const machineInstanceIdSources = [
@@ -411,7 +409,7 @@ export const HardwareProfileSchema = z
 				code: z.ZodIssueCode.custom,
 				path: ["accelerators"],
 				message:
-					"accelerators must contain at least one accelerator when acceleratorDetection.status is \"detected\"",
+					'accelerators must contain at least one accelerator when acceleratorDetection.status is "detected"',
 			});
 		}
 
@@ -423,7 +421,7 @@ export const HardwareProfileSchema = z
 				code: z.ZodIssueCode.custom,
 				path: ["accelerators"],
 				message:
-					"accelerators must be empty when acceleratorDetection.status is \"none_detected\"",
+					'accelerators must be empty when acceleratorDetection.status is "none_detected"',
 			});
 		}
 
@@ -435,7 +433,7 @@ export const HardwareProfileSchema = z
 				code: z.ZodIssueCode.custom,
 				path: ["accelerators"],
 				message:
-					"accelerators must be empty when acceleratorDetection.status is \"unavailable\"",
+					'accelerators must be empty when acceleratorDetection.status is "unavailable"',
 			});
 		}
 	});

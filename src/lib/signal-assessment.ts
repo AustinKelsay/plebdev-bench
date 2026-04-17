@@ -86,7 +86,8 @@ export function appendSignalAssessmentReasons(
 	if (reasons.length === 0) {
 		return current ?? createTrustworthySignalAssessment();
 	}
-	const currentReasons = current?.classification === "tainted" ? current.reasons : [];
+	const currentReasons =
+		current?.classification === "tainted" ? current.reasons : [];
 	return createTaintedSignalAssessment([...currentReasons, ...reasons]);
 }
 
@@ -99,7 +100,9 @@ export function appendSignalAssessmentReasons(
 export function hasCompleteSignalAssessments(
 	results: readonly MatrixItemResult[],
 ): boolean {
-	return results.length > 0 && results.every((result) => result.signalAssessment);
+	return (
+		results.length > 0 && results.every((result) => result.signalAssessment)
+	);
 }
 
 /**
@@ -269,7 +272,9 @@ export function isAgentRequestedInputOutput(output: string): boolean {
 	if (trimmed.length === 0) {
 		return false;
 	}
-	return AGENT_REQUESTED_INPUT_PATTERNS.some((pattern) => pattern.test(trimmed));
+	return AGENT_REQUESTED_INPUT_PATTERNS.some((pattern) =>
+		pattern.test(trimmed),
+	);
 }
 
 /**
@@ -311,11 +316,9 @@ export function finalizeItemSignalAssessment(input: {
 		);
 	}
 	const rowFailed =
-		input.rowFailed ?? Boolean(input.automatedScore && input.automatedScore.failed > 0);
-	if (
-		!rowFailed ||
-		!input.output
-	) {
+		input.rowFailed ??
+		Boolean(input.automatedScore && input.automatedScore.failed > 0);
+	if (!rowFailed || !input.output) {
 		return assessment;
 	}
 

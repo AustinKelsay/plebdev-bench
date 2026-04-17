@@ -67,10 +67,12 @@ describe("normalizeOpenCodeOutput", () => {
 			output: "[Function bash]",
 			method: "raw",
 		});
-		expect(normalizeOpenCodeOutput("read /tmp/workspace/src/index.ts")).toEqual({
-			output: "read /tmp/workspace/src/index.ts",
-			method: "raw",
-		});
+		expect(normalizeOpenCodeOutput("read /tmp/workspace/src/index.ts")).toEqual(
+			{
+				output: "read /tmp/workspace/src/index.ts",
+				method: "raw",
+			},
+		);
 		expect(
 			normalizeOpenCodeOutput('write{content:"x",filePath:"src/index.ts"}'),
 		).toEqual({

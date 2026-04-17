@@ -7,8 +7,8 @@
  * - Aggregation is precomputed using machine+matrix-key best-result semantics
  */
 
-import { LeaderboardChartGallery } from "@/components/leaderboard/leaderboard-chart-gallery";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
+import { LeaderboardChartGallery } from "@/components/leaderboard/leaderboard-chart-gallery";
 import { LeaderboardLatestRuns } from "@/components/leaderboard/leaderboard-latest-runs";
 import { LeaderboardResultsTable } from "@/components/leaderboard/leaderboard-results-table";
 import { LeaderboardSummaryCards } from "@/components/leaderboard/leaderboard-summary-cards";
