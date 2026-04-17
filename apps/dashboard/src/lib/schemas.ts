@@ -16,6 +16,9 @@ const TestCategorySchema = z.enum(["coding", "computer-use"]);
 /** Runtime name schema. */
 const RuntimeNameSchema = z.enum(["ollama", "vllm"]);
 
+/** Test category schema. */
+const TestCategorySchema = z.enum(["coding", "computer-use"]);
+
 /** Item status schema. */
 const ItemStatusSchema = z.enum(["pending", "running", "completed", "failed"]);
 
@@ -62,10 +65,7 @@ const VerificationStatusSchema = z.enum([
 ]);
 
 /** Signal assessment classification schema. */
-const SignalAssessmentClassificationSchema = z.enum([
-	"trustworthy",
-	"tainted",
-]);
+const SignalAssessmentClassificationSchema = z.enum(["trustworthy", "tainted"]);
 
 /** Signal assessment reason schema. */
 const SignalAssessmentReasonSchema = z.enum([
@@ -92,10 +92,7 @@ const SignalAssessmentSchema = z
 				message: "tainted signal assessments must include at least one reason",
 			});
 		}
-		if (
-			value.classification === "trustworthy" &&
-			value.reasons.length > 0
-		) {
+		if (value.classification === "trustworthy" && value.reasons.length > 0) {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["reasons"],
@@ -303,12 +300,7 @@ const NormalizedMachineProfileSchema = z.object({
 /** Machine profile schema. */
 const MachineProfileSchema = z.object({
 	instanceId: z.string().min(1),
-	instanceIdSource: z.enum([
-		"config",
-		"env",
-		"generated",
-		"legacy_profile_id",
-	]),
+	instanceIdSource: z.enum(["config", "env", "generated", "legacy_profile_id"]),
 	displayLabel: z.string().min(1).optional(),
 	profileKey: z.string().min(1),
 	profileLabel: z.string().min(1),
@@ -356,6 +348,7 @@ const MatrixItemResultSchema = z.object({
 	modelProfile: ModelProfileSchema.optional(),
 	harness: z.string(),
 	test: z.string(),
+	category: TestCategorySchema.optional(),
 	passType: PassTypeSchema,
 	status: ItemStatusSchema,
 	startedAt: z.string().optional(),
@@ -401,6 +394,7 @@ const MatrixItemSchema = z.object({
 	modelProfile: ModelProfileSchema.optional(),
 	harness: z.string(),
 	test: z.string(),
+	category: TestCategorySchema.optional(),
 	passType: PassTypeSchema,
 });
 
@@ -509,7 +503,10 @@ export const DashboardIndexLegacyOrCurrentSchema = z
 			)[0];
 			return {
 				schemaVersion: 3 as const,
-				generatedAt: latestRun?.completedAt ?? latestRun?.startedAt ?? new Date(0).toISOString(),
+				generatedAt:
+					latestRun?.completedAt ??
+					latestRun?.startedAt ??
+					new Date(0).toISOString(),
 				latestCheckpointId: latestRun?.checkpointId ?? null,
 				runs: index,
 				checkpoints: [],

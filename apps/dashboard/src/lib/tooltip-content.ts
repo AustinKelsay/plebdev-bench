@@ -200,6 +200,16 @@ export const testDifficulty = {
 		"Stacked segments show failures by model size bucket (small/medium/large).",
 } as const;
 
+/** Test-type split chart explanations */
+export const testTypeSplit = {
+	title: "Per-model pass rates split by benchmark test type.",
+	description:
+		"Each row compares a model across test types. Sorted by spread so specialists rise to the top. Future test types appear automatically.",
+	spread:
+		"Difference between the model's best and worst test-type pass rate. Higher spread means more specialization.",
+	average: "Average pass rate across the visible test types for that model.",
+} as const;
+
 /** Head-to-head comparison explanations */
 export const headToHead = {
 	title: "Direct comparison between two models across all tests.",

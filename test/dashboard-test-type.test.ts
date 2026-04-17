@@ -13,6 +13,7 @@ import {
 } from "../apps/dashboard/src/components/leaderboard/leaderboard-filters.js";
 import {
 	computeBreakdown,
+	computeTestTypeComparisonData,
 	groupByTestType,
 } from "../apps/dashboard/src/lib/aggregations.js";
 import type {
@@ -133,5 +134,50 @@ describe("dashboard test-type views", () => {
 		expect(filterItems(items, filters).map((item) => item.id)).toEqual([
 			"computer-row",
 		]);
+	});
+
+	it("computes per-model test-type spread for specialization charts", () => {
+		const items = [
+			createMatrixItem({
+				id: "specialist-coding",
+				model: "specialist",
+				category: "coding",
+				test: "calculator-basic",
+				automatedScore: { passed: 1, failed: 0, total: 1 },
+			}),
+			createMatrixItem({
+				id: "specialist-computer",
+				model: "specialist",
+				category: "computer-use",
+				test: "workspace-smoke",
+				automatedScore: { passed: 0, failed: 1, total: 1 },
+			}),
+			createMatrixItem({
+				id: "balanced-coding",
+				model: "balanced",
+				category: "coding",
+				test: "calculator-basic",
+				automatedScore: { passed: 1, failed: 0, total: 2 },
+			}),
+			createMatrixItem({
+				id: "balanced-computer",
+				model: "balanced",
+				category: "computer-use",
+				test: "workspace-smoke",
+				automatedScore: { passed: 1, failed: 0, total: 2 },
+			}),
+		];
+
+		const result = computeTestTypeComparisonData(items);
+
+		expect(result.categories.map((category) => category.slug)).toEqual([
+			"coding",
+			"computer-use",
+		]);
+		expect(result.rows[0]?.model).toBe("specialist");
+		expect(result.rows[0]?.bestCategory).toBe("coding");
+		expect(result.rows[0]?.worstCategory).toBe("computer-use");
+		expect(result.rows[0]?.spread).toBe(1);
+		expect(result.rows[1]?.model).toBe("balanced");
 	});
 });

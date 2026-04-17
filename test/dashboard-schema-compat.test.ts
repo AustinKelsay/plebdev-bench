@@ -64,6 +64,51 @@ describe("LeaderboardAggregateSchema", () => {
 		expect(parsed.items[0]?.machineProfileKey).toBe("legacy-machine");
 		expect(parsed.items[0]?.machineDisplayLabel).toBe("Legacy Machine");
 	});
+
+	it("preserves category metadata on current aggregate items", () => {
+		const parsed = LeaderboardAggregateSchema.parse({
+			schemaVersion: 2,
+			generatedAt: "2026-03-30T12:00:00.000Z",
+			checkpointId: "chk_test",
+			summary: {
+				runsConsidered: 1,
+				runsMatched: 1,
+				rawItems: 1,
+				dedupedItems: 1,
+				machines: 1,
+				instances: 1,
+				automatedScoreItems: 1,
+				frontierEvalItems: 0,
+			},
+			machines: [
+				{
+					machineProfileKey: "machine-a",
+					verificationStatus: "self_reported",
+					runCount: 1,
+					itemCount: 1,
+					instanceCount: 1,
+				},
+			],
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "llama3.2:3b",
+					harness: "direct",
+					test: "workspace-smoke",
+					category: "computer-use",
+					passType: "blind",
+					status: "completed",
+					machineProfileKey: "machine-a",
+					verificationStatus: "self_reported",
+					sourceRunId: "run-a",
+					sourceCompletedAt: "2026-03-30T12:00:00.000Z",
+				},
+			],
+		});
+
+		expect(parsed.items[0]?.category).toBe("computer-use");
+	});
 });
 
 describe("DashboardIndexLegacyOrCurrentSchema", () => {
