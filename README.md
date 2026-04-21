@@ -69,6 +69,7 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - Goose has separate workspace turn budgets so computer-use tasks are no longer constrained by the old code-output defaults.
 - Workspace prompts now include the resolved workspace root path so tool harnesses are explicitly anchored inside the seeded fixture.
 - OpenCode workspace runs expose `read`, `glob`, `grep`, and `bash`, so search/delete benchmarks now measure model behavior instead of missing tool affordances.
+- OpenCode now runs with per-item generated config, `--pure`, explicit `--dir`, `enabled_providers`, and denied `external_directory` access so benchmark rows do not depend on user-global OpenCode config.
 - Generation now retries a single `harness_error` once on a fresh workspace before the row is recorded as failed.
 - Tests can declare `timeoutMultiplier` in `test.meta.json`, and the longer coding tasks now ship with higher calibrated multipliers so valid slow generations are less likely to be recorded as timeouts.
 - Run summaries now distinguish semantic scored-check pass rate from full item success rate and scored-row coverage.
@@ -214,6 +215,7 @@ Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work.
 - During execution, the runner writes periodic snapshots to `results/<run-id>/run.partial.json` and removes it after a successful final write.
 - If the process crashes, inspect `run.partial.json` for recovered progress.
 - Harness-level `harness_error` rows are retried once automatically. For workspace rows, the retry runs on a freshly seeded workspace.
+- OpenCode rows generate isolated config per item and should not require manually adding benchmark models to `~/.config/opencode/opencode.json`.
 - Goose headless turn controls:
   - `--goose-max-turns <n>` controls first attempt turns (default: `1`)
   - `--goose-retry-max-turns <n>` controls retry turns after off-task/turn-limit output (default: `3`)

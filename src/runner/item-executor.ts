@@ -23,7 +23,10 @@ import {
 	getOpenRouterKey,
 } from "../lib/openrouter-client.js";
 import { loadRubric } from "../lib/scoring-spec.js";
-import { finalizeItemSignalAssessment } from "../lib/signal-assessment.js";
+import {
+	finalizeItemSignalAssessment,
+	mergeSignalAssessments,
+} from "../lib/signal-assessment.js";
 import { prepareTestWorkspace } from "../lib/test-workspace.js";
 import { createRuntime } from "../runtimes/index.js";
 import type {
@@ -274,7 +277,10 @@ export async function executeItem(
 					supportsCompileRetry,
 				});
 				generation = scoringOutcome.generation;
-				signalAssessment = scoringOutcome.signalAssessment;
+				signalAssessment = mergeSignalAssessments(
+					signalAssessment,
+					scoringOutcome.signalAssessment,
+				);
 				const scoringResult = scoringOutcome.scoringResult;
 				const scoringOnlyDurationMsRounded = Math.round(
 					scoringOutcome.scoringOnlyDurationMs,

@@ -1,19 +1,19 @@
 /**
- * Purpose: Unit tests for OpenCode output normalization.
+ * Purpose: Unit tests for OpenCode event parsing.
  * Exports: none
  *
  * Invariants:
- * - JSONL assistant output is preserved as assistant text
- * - Tool-call payloads extract code-bearing content
- * - Protocol-only JSONL does not leak raw transport events downstream
+ * - JSONL assistant output is preserved as assistant text.
+ * - Tool-call payloads extract code-bearing content.
+ * - Protocol-only JSONL does not leak raw transport events downstream.
  */
 
 import { describe, expect, it } from "vitest";
-import { normalizeOpenCodeOutput } from "../src/harnesses/opencode-output.js";
+import { parseOpenCodeEvents } from "../src/harnesses/opencode-events.js";
 
-describe("normalizeOpenCodeOutput", () => {
+describe("parseOpenCodeEvents", () => {
 	it("extracts assistant text from JSONL events", () => {
-		const normalized = normalizeOpenCodeOutput(
+		const parsed = parseOpenCodeEvents(
 			[
 				JSON.stringify({ type: "message", part: { text: "export " } }),
 				JSON.stringify({
@@ -23,14 +23,18 @@ describe("normalizeOpenCodeOutput", () => {
 			].join("\n"),
 		);
 
-		expect(normalized).toEqual({
+		expect(parsed).toEqual({
 			output: "export const answer = 42;",
 			method: "json",
+			hasProtocolEvents: true,
+			hasToolUse: false,
+			hasToolError: false,
+			permissionDenied: false,
 		});
 	});
 
 	it("extracts write-tool content from JSONL events", () => {
-		const normalized = normalizeOpenCodeOutput(
+		const parsed = parseOpenCodeEvents(
 			JSON.stringify({
 				type: "tool_use",
 				toolCall: {
@@ -42,42 +46,75 @@ describe("normalizeOpenCodeOutput", () => {
 			}),
 		);
 
-		expect(normalized).toEqual({
+		expect(parsed).toEqual({
 			output: "export function createValue(): number { return 42; }",
 			method: "tool_call",
+			hasProtocolEvents: true,
+			hasToolUse: true,
+			hasToolError: false,
+			permissionDenied: false,
 		});
 	});
 
-	it("returns empty normalized output for protocol-only JSONL", () => {
-		const normalized = normalizeOpenCodeOutput(
+	it("returns empty parsed output for protocol-only JSONL", () => {
+		const parsed = parseOpenCodeEvents(
 			[
 				JSON.stringify({ type: "step_start", sessionID: "abc" }),
 				JSON.stringify({ type: "step_finish", sessionID: "abc" }),
 			].join("\n"),
 		);
 
-		expect(normalized).toEqual({
+		expect(parsed).toEqual({
 			output: "",
 			method: "json",
+			hasProtocolEvents: true,
+			hasToolUse: false,
+			hasToolError: false,
+			permissionDenied: false,
 		});
 	});
 
 	it("preserves raw transcript-like strings for downstream taint detection", () => {
-		expect(normalizeOpenCodeOutput("[Function bash]")).toEqual({
+		expect(parseOpenCodeEvents("[Function bash]")).toEqual({
 			output: "[Function bash]",
 			method: "raw",
+			hasProtocolEvents: false,
+			hasToolUse: false,
+			hasToolError: false,
+			permissionDenied: false,
 		});
-		expect(normalizeOpenCodeOutput("read /tmp/workspace/src/index.ts")).toEqual(
-			{
-				output: "read /tmp/workspace/src/index.ts",
-				method: "raw",
-			},
-		);
-		expect(
-			normalizeOpenCodeOutput('write{content:"x",filePath:"src/index.ts"}'),
-		).toEqual({
-			output: 'write{content:"x",filePath:"src/index.ts"}',
+		expect(parseOpenCodeEvents("read /tmp/workspace/src/index.ts")).toEqual({
+			output: "read /tmp/workspace/src/index.ts",
 			method: "raw",
+			hasProtocolEvents: false,
+			hasToolUse: false,
+			hasToolError: false,
+			permissionDenied: false,
+		});
+	});
+
+	it("marks permission-denied tool events", () => {
+		const parsed = parseOpenCodeEvents(
+			JSON.stringify({
+				type: "tool_use",
+				part: {
+					type: "tool",
+					state: {
+						status: "error",
+						error: "permission denied: external_directory",
+					},
+				},
+			}),
+		);
+
+		expect(parsed).toMatchObject({
+			output: "",
+			method: "json",
+			hasProtocolEvents: true,
+			hasToolUse: true,
+			hasToolError: true,
+			toolErrorText: "permission denied: external_directory",
+			permissionDenied: true,
 		});
 	});
 });

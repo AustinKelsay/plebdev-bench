@@ -195,6 +195,44 @@ describe("executeItem", () => {
 		});
 	});
 
+	it("preserves harness taint after successful scoring", async () => {
+		mocks.runGenerationWithInfraRetry.mockResolvedValueOnce({
+			generation: {
+				success: true,
+				output: "DONE",
+				durationMs: 123,
+			},
+			generationAttempts: 1,
+			signalAssessment: {
+				classification: "tainted",
+				reasons: ["tool_permission_denied"],
+			},
+		});
+		mocks.runScoringWithCompileRetry.mockResolvedValueOnce({
+			scoringResult: {
+				passed: 5,
+				failed: 0,
+				total: 5,
+			},
+			generation: {
+				success: true,
+				output: "DONE",
+				durationMs: 123,
+			},
+			scoringOnlyDurationMs: 12,
+			retryGenerationDurationMs: 0,
+			compileRetryUsed: false,
+		});
+
+		const result = await executeItem(WORKSPACE_ITEM, RUNTIME_CONFIG, 5_000);
+
+		expect(result.status).toBe("completed");
+		expect(result.signalAssessment).toEqual({
+			classification: "tainted",
+			reasons: ["tool_permission_denied"],
+		});
+	});
+
 	it("preserves harness metadata from failures handled in the outer catch", async () => {
 		mocks.prepareTestWorkspace.mockRejectedValueOnce(
 			Object.assign(new Error("workspace bootstrap failed"), {

@@ -1,12 +1,13 @@
 /**
- * Purpose: Unit tests for OpenCode model/base URL normalization.
+ * Purpose: Unit tests for OpenCode provider/model normalization.
  */
 
 import { describe, expect, it } from "vitest";
 import {
+	buildOpenCodeProviderSpec,
 	toOpenAiCompatBaseUrl,
 	toOpenCodeModelKey,
-} from "../src/harnesses/opencode-model.js";
+} from "../src/harnesses/opencode-provider.js";
 
 describe("toOpenAiCompatBaseUrl", () => {
 	it("appends /v1 when missing", () => {
@@ -35,17 +36,40 @@ describe("toOpenCodeModelKey", () => {
 
 	it("converts slash-separated models to stable keys", () => {
 		expect(toOpenCodeModelKey("Qwen/Qwen2.5-14B-Instruct")).toBe(
-			"Qwen__Qwen2.5-14B-Instruct",
+			"Qwen%2FQwen2.5-14B-Instruct",
 		);
 	});
 
 	it("supports model IDs with multiple slashes", () => {
-		expect(toOpenCodeModelKey("org/sub/model")).toBe("org__sub__model");
+		expect(toOpenCodeModelKey("org/sub/model")).toBe("org%2Fsub%2Fmodel");
+	});
+
+	it("escapes percent characters to avoid transport key collisions", () => {
+		expect(toOpenCodeModelKey("foo%2Fbar")).toBe("foo%252Fbar");
 	});
 
 	it("throws for empty model names", () => {
 		expect(() => toOpenCodeModelKey("")).toThrow(
 			"OpenCode model must be non-empty",
 		);
+	});
+});
+
+describe("buildOpenCodeProviderSpec", () => {
+	it("maps Ollama to a generated OpenAI-compatible OpenCode provider", () => {
+		expect(
+			buildOpenCodeProviderSpec({
+				runtimeName: "ollama",
+				runtimeBaseUrl: "http://localhost:11434",
+				model: "Qwen/Qwen2.5-14B-Instruct",
+			}),
+		).toMatchObject({
+			providerId: "ollama",
+			npmPackage: "@ai-sdk/openai-compatible",
+			baseURL: "http://localhost:11434/v1",
+			runtimeModelName: "Qwen/Qwen2.5-14B-Instruct",
+			transportModelKey: "Qwen%2FQwen2.5-14B-Instruct",
+			modelArg: "ollama/Qwen%2FQwen2.5-14B-Instruct",
+		});
 	});
 });

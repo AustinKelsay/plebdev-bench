@@ -1,27 +1,80 @@
 /**
- * Purpose: Regression tests for OpenCode workspace tool configuration.
+ * Purpose: Regression tests for generated OpenCode config/env isolation.
  */
 
 import { describe, expect, it } from "vitest";
-import { buildOpenCodeConfig } from "../src/harnesses/opencode-config.js";
+import {
+	buildOpenCodeConfig,
+	buildOpenCodeEnv,
+} from "../src/harnesses/opencode-config.js";
 
 describe("buildOpenCodeConfig", () => {
-	it("enables workspace tools and bash permissions for benchmark runs", () => {
-		const { config } = buildOpenCodeConfig({
+	it("declares inline runtime models without relying on global config", () => {
+		const { config, provider, permission } = buildOpenCodeConfig({
+			runtimeName: "ollama",
+			runtimeBaseUrl: "http://localhost:11434",
+			model: "Qwen/Qwen2.5-14B-Instruct",
+		});
+		const typedConfig = config as {
+			enabled_providers: string[];
+			model: string;
+			provider: Record<
+				string,
+				{
+					models: Record<string, { name: string; tools: boolean }>;
+				}
+			>;
+			permission: Record<string, string>;
+			tools?: unknown;
+		};
+
+		expect(provider.modelArg).toBe("ollama/Qwen%2FQwen2.5-14B-Instruct");
+		expect(typedConfig.enabled_providers).toEqual(["ollama"]);
+		expect(typedConfig.model).toBe("ollama/Qwen%2FQwen2.5-14B-Instruct");
+		expect(
+			typedConfig.provider.ollama?.models["Qwen%2FQwen2.5-14B-Instruct"],
+		).toEqual({
+			name: "Qwen/Qwen2.5-14B-Instruct",
+			tools: true,
+		});
+		expect(typedConfig.tools).toBeUndefined();
+		expect(typedConfig.permission).toEqual(permission);
+	});
+
+	it("denies external directories and user-interaction tools", () => {
+		const { permission } = buildOpenCodeConfig({
 			runtimeName: "ollama",
 			runtimeBaseUrl: "http://localhost:11434",
 			model: "qwen3.5:4b",
 		});
 
-		const typedConfig = config as {
-			permission: Record<string, string>;
-			tools: Record<string, boolean>;
-		};
+		expect(permission).toMatchObject({
+			"*": "allow",
+			external_directory: "deny",
+			question: "deny",
+			task: "deny",
+			skill: "deny",
+			webfetch: "deny",
+			websearch: "deny",
+			codesearch: "deny",
+			lsp: "deny",
+		});
+	});
+});
 
-		expect(typedConfig.permission.bash).toBe("allow");
-		expect(typedConfig.tools.read).toBe(true);
-		expect(typedConfig.tools.bash).toBe(true);
-		expect(typedConfig.tools.glob).toBe(true);
-		expect(typedConfig.tools.grep).toBe(true);
+describe("buildOpenCodeEnv", () => {
+	it("exports config dir/path/content for isolated headless runs", () => {
+		const env = buildOpenCodeEnv({
+			configDir: "/tmp/opencode-config",
+			configPath: "/tmp/opencode-config/opencode.json",
+			configJson: '{"permission":{"*":"allow"}}',
+			runtimeName: "ollama",
+		});
+
+		expect(env.OPENCODE_CONFIG_DIR).toBe("/tmp/opencode-config");
+		expect(env.OPENCODE_CONFIG).toBe("/tmp/opencode-config/opencode.json");
+		expect(env.OPENCODE_CONFIG_CONTENT).toBe('{"permission":{"*":"allow"}}');
+		expect(env.OPENCODE_DISABLE_AUTOUPDATE).toBe("true");
+		expect(env.OPENCODE_DISABLE_DEFAULT_PLUGINS).toBe("true");
 	});
 });

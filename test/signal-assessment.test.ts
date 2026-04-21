@@ -14,6 +14,7 @@ import {
 	finalizeItemSignalAssessment,
 	getTranscriptOrInputTaintReasons,
 	isInternalToolTranscriptOutput,
+	mergeSignalAssessments,
 } from "../src/lib/signal-assessment.js";
 
 describe("appendSignalAssessmentReasons", () => {
@@ -42,6 +43,26 @@ describe("createTaintedSignalAssessment", () => {
 		expect(() => createTaintedSignalAssessment([])).toThrow(
 			"createTaintedSignalAssessment called with empty reasons",
 		);
+	});
+});
+
+describe("mergeSignalAssessments", () => {
+	it("preserves prior taint when the next assessment is trustworthy", () => {
+		expect(
+			mergeSignalAssessments(
+				{
+					classification: "tainted",
+					reasons: ["tool_permission_denied"],
+				},
+				{
+					classification: "trustworthy",
+					reasons: [],
+				},
+			),
+		).toEqual({
+			classification: "tainted",
+			reasons: ["tool_permission_denied"],
+		});
 	});
 });
 
