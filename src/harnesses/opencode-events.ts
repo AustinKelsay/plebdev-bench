@@ -9,6 +9,7 @@
  */
 
 import { z } from "zod";
+import { isOpenCodePermissionDeniedText } from "./opencode-permissions.js";
 
 /** Method used to derive scorer-facing output from OpenCode process text. */
 export type OpenCodeEventParseMethod = "raw" | "json" | "tool_call";
@@ -92,10 +93,6 @@ function stripMarkdownCodeBlock(text: string): string {
 		/^```(?:json|typescript|ts|javascript|js)?\n([\s\S]*?)\n?```$/,
 	);
 	return match?.[1]?.trim() ?? trimmed;
-}
-
-function isPermissionDeniedText(text: string): boolean {
-	return /permission|rejected|denied|external_directory/i.test(text);
 }
 
 function extractContentFromArgs(args: Record<string, unknown>): string | null {
@@ -254,7 +251,7 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			hasToolError = true;
 			toolErrorText ??= stateError ?? "OpenCode tool call failed";
 			permissionDenied ||= stateError
-				? isPermissionDeniedText(stateError)
+				? isOpenCodePermissionDeniedText(stateError)
 				: false;
 		}
 

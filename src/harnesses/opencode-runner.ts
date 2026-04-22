@@ -17,6 +17,25 @@ const MIN_STALE_OUTPUT_TIMEOUT_MS = 120_000;
 const MAX_STALE_OUTPUT_TIMEOUT_MS = 300_000;
 const FORCE_KILL_DELAY_MS = 2_000;
 
+function killOpenCodeProcess(
+	proc: ResultPromise,
+	signal: NodeJS.Signals,
+	log: pino.Logger,
+): void {
+	try {
+		proc.kill(signal);
+	} catch (error) {
+		log.warn(
+			{
+				pid: proc.pid,
+				signal,
+				error: error instanceof Error ? error.message : String(error),
+			},
+			"Failed to signal OpenCode process",
+		);
+	}
+}
+
 /** Inputs for a single `opencode run` process. */
 export interface OpenCodeRunConfig {
 	/** CLI args passed after `opencode`. */
@@ -61,33 +80,15 @@ export function computeOpenCodeStaleOutputTimeoutMs(timeoutMs: number): number {
 
 async function forceKillProcess(
 	proc: ResultPromise,
-	pid: number | undefined,
 	log: pino.Logger,
 	reason: string,
 ): Promise<void> {
+	const pid = proc.pid;
 	log.warn({ pid, reason }, "Force killing OpenCode process");
-	proc.kill("SIGTERM");
+	killOpenCodeProcess(proc, "SIGTERM", log);
 	await new Promise((resolve) => setTimeout(resolve, FORCE_KILL_DELAY_MS));
-
-	if (!pid) return;
-
-	try {
-		process.kill(pid, 0);
-	} catch {
-		return;
-	}
-
-	log.warn({ pid }, "Process still alive after SIGTERM, killing process tree");
-
-	await execa("pkill", ["-9", "-P", String(pid)], { reject: false }).catch(
-		() => {},
-	);
-	await execa("kill", ["-9", String(pid)], { reject: false }).catch(() => {});
-	try {
-		process.kill(pid, "SIGKILL");
-	} catch {
-		// Process may have exited between checks.
-	}
+	log.warn({ pid }, "Escalating OpenCode process kill");
+	killOpenCodeProcess(proc, "SIGKILL", log);
 }
 
 /**
@@ -141,7 +142,6 @@ export async function runOpenCodeCommand(
 				if (staleCheckId) clearInterval(staleCheckId);
 				void forceKillProcess(
 					proc,
-					pid,
 					config.log,
 					`timeout after ${config.timeoutMs}ms`,
 				);
@@ -165,7 +165,6 @@ export async function runOpenCodeCommand(
 				if (timeoutId) clearTimeout(timeoutId);
 				void forceKillProcess(
 					proc,
-					pid,
 					config.log,
 					`no output for ${staleDuration}ms`,
 				);

@@ -1,5 +1,10 @@
 /**
  * Purpose: Regression tests for generated OpenCode config/env isolation.
+ * Exports: none
+ *
+ * Invariants:
+ * - Generated config remains self-contained and independent of user-global config.
+ * - Permission policy keeps external directories and interactive tools denied.
  */
 
 import { describe, expect, it } from "vitest";

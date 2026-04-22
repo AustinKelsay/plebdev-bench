@@ -1,5 +1,10 @@
 /**
  * Purpose: Unit tests for OpenCode process-runner timeout policy.
+ * Exports: none
+ *
+ * Invariants:
+ * - Stale-output thresholds are deterministic.
+ * - Process-runner policy tests do not require external network access.
  */
 
 import { describe, expect, it } from "vitest";

@@ -64,6 +64,24 @@ describe("mergeSignalAssessments", () => {
 			reasons: ["tool_permission_denied"],
 		});
 	});
+
+	it("merges tainted reasons from prior and next assessments", () => {
+		expect(
+			mergeSignalAssessments(
+				{
+					classification: "tainted",
+					reasons: ["tool_permission_denied"],
+				},
+				{
+					classification: "tainted",
+					reasons: ["internal_tool_transcript", "tool_permission_denied"],
+				},
+			),
+		).toEqual({
+			classification: "tainted",
+			reasons: ["tool_permission_denied", "internal_tool_transcript"],
+		});
+	});
 });
 
 describe("finalizeItemSignalAssessment", () => {

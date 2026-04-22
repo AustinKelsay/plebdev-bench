@@ -67,9 +67,9 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - Capability modeling now distinguishes plain workspace write access from directory creation via `workspace-mkdir`.
 - Preflight coverage now includes `tool-smoke`, `workspace-tool-smoke`, `file-search-smoke`, and `file-delete-smoke`.
 - Goose has separate workspace turn budgets so computer-use tasks are no longer constrained by the old code-output defaults.
-- Workspace prompts now include the resolved workspace root path so tool harnesses are explicitly anchored inside the seeded fixture.
+- Workspace prompts now anchor tool harnesses inside the seeded fixture; Goose includes the resolved workspace root path, while OpenCode omits the absolute root and uses relative-only path instructions.
 - OpenCode workspace runs expose `read`, `glob`, `grep`, and `bash`, so search/delete benchmarks now measure model behavior instead of missing tool affordances.
-- OpenCode now runs with per-item generated config, `--pure`, explicit `--dir`, `enabled_providers`, and denied `external_directory` access so benchmark rows do not depend on user-global OpenCode config.
+- OpenCode now runs with per-item generated config, `--pure`, explicit `--dir`, `enabled_providers`, denied `external_directory` access, and prompts use relative-only paths (no absolute workspace root) so benchmark rows do not depend on user-global OpenCode config.
 - Generation now retries a single `harness_error` once on a fresh workspace before the row is recorded as failed.
 - Tests can declare `timeoutMultiplier` in `test.meta.json`, and the longer coding tasks now ship with higher calibrated multipliers so valid slow generations are less likely to be recorded as timeouts.
 - Run summaries now distinguish semantic scored-check pass rate from full item success rate and scored-row coverage.

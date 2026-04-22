@@ -1,7 +1,7 @@
 /**
  * Purpose: OpenCode permission policy and permission-denial diagnostics.
  * Exports: OpenCodePermissionPolicy, createOpenCodePermissionPolicy,
- *          getOpenCodePermissionTaintReasons
+ *          isOpenCodePermissionDeniedText, getOpenCodePermissionTaintReasons
  *
  * Invariants:
  * - Default benchmark runs allow local workspace tools.
@@ -40,6 +40,16 @@ const PERMISSION_DENIAL_PATTERN =
 	/(permission requested|auto-rejecting|external_directory|permission denied|permission.*rejected|rejected.*permission|access denied)/i;
 
 /**
+ * Detects OpenCode permission-denial diagnostics in raw text.
+ *
+ * @param text - Raw OpenCode output or tool-error text
+ * @returns True when text indicates a permission denial
+ */
+export function isOpenCodePermissionDeniedText(text: string): boolean {
+	return PERMISSION_DENIAL_PATTERN.test(text);
+}
+
+/**
  * Returns a fresh OpenCode permission policy for generated config.
  *
  * @returns Permission policy object safe to serialize into `opencode.json`
@@ -57,7 +67,7 @@ export function createOpenCodePermissionPolicy(): OpenCodePermissionPolicy {
 export function getOpenCodePermissionTaintReasons(
 	...texts: readonly string[]
 ): SignalAssessmentReason[] {
-	return texts.some((text) => PERMISSION_DENIAL_PATTERN.test(text))
+	return texts.some((text) => isOpenCodePermissionDeniedText(text))
 		? ["tool_permission_denied"]
 		: [];
 }

@@ -1,5 +1,10 @@
 /**
  * Purpose: Unit tests for OpenCode provider/model normalization.
+ * Exports: none
+ *
+ * Invariants:
+ * - Runtime model IDs map to stable OpenCode provider keys.
+ * - OpenAI-compatible base URLs are normalized deterministically.
  */
 
 import { describe, expect, it } from "vitest";

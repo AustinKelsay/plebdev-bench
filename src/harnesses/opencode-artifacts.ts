@@ -17,6 +17,11 @@ import * as path from "node:path";
 import { z } from "zod";
 
 const OPENCODE_TOOL_OUTPUT_SUBPATH = path.join("opencode", "tool-output");
+const SOLUTION_FILENAME_PATTERN = /^[^/\\]+$/;
+
+const XdgDataHomeEnvSchema = z
+	.object({ XDG_DATA_HOME: z.string().optional() })
+	.passthrough();
 
 function isErrorWithCode(error: unknown, code: string): boolean {
 	return (
@@ -48,7 +53,15 @@ export interface OpenCodeArtifacts {
 
 const PrepareOpenCodeArtifactsOptsSchema = z.object({
 	workingDirectory: z.string().min(1).optional(),
-	solutionFilename: z.string().min(1),
+	solutionFilename: z
+		.string()
+		.min(1)
+		.regex(SOLUTION_FILENAME_PATTERN, {
+			message: "solutionFilename must be a basename",
+		})
+		.refine((value) => value !== "." && value !== "..", {
+			message: "solutionFilename must not be a special directory entry",
+		}),
 });
 
 /**
@@ -57,15 +70,17 @@ const PrepareOpenCodeArtifactsOptsSchema = z.object({
  * @returns Absolute tool-output root used for generated workspaces/configs
  */
 export function resolveOpenCodeToolOutputRoot(): string {
-	z.object({ XDG_DATA_HOME: z.string().optional() })
-		.passthrough()
-		.parse(process.env);
+	const env = XdgDataHomeEnvSchema.parse(process.env);
+	const xdgDataHomeValue = env.XDG_DATA_HOME?.trim();
 
 	const xdgDataHome =
-		typeof process.env.XDG_DATA_HOME === "string" &&
-		process.env.XDG_DATA_HOME.trim().length > 0
-			? process.env.XDG_DATA_HOME.trim()
+		xdgDataHomeValue && xdgDataHomeValue.length > 0
+			? xdgDataHomeValue
 			: path.join(os.homedir(), ".local", "share");
+
+	if (!path.isAbsolute(xdgDataHome)) {
+		throw new Error("XDG_DATA_HOME must be an absolute path when set");
+	}
 
 	return path.join(xdgDataHome, OPENCODE_TOOL_OUTPUT_SUBPATH);
 }
@@ -98,6 +113,13 @@ export async function prepareOpenCodeArtifacts(opts: {
 	await fs.promises.mkdir(configDir, { recursive: true });
 
 	const executionWorkspaceDir = await fs.promises.realpath(workspaceDir);
+	const solutionPath = path.resolve(
+		executionWorkspaceDir,
+		parsed.solutionFilename,
+	);
+	if (!solutionPath.startsWith(`${executionWorkspaceDir}${path.sep}`)) {
+		throw new Error("solutionFilename resolved outside executionWorkspaceDir");
+	}
 
 	return {
 		runId,
@@ -107,7 +129,7 @@ export async function prepareOpenCodeArtifacts(opts: {
 		hasExternalWorkspace,
 		configDir,
 		configPath: path.join(configDir, "opencode.json"),
-		solutionPath: path.join(executionWorkspaceDir, parsed.solutionFilename),
+		solutionPath,
 	};
 }
 
