@@ -33,7 +33,7 @@
 import { z } from "zod";
 
 /** Current schema version for all result/plan files. */
-export const SCHEMA_VERSION = "0.5.1";
+export const SCHEMA_VERSION = "0.5.2";
 
 /** Valid runtime names for active benchmark execution. */
 export const supportedRuntimeNames = ["ollama"] as const;

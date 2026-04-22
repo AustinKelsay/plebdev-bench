@@ -5,13 +5,17 @@
  * Checks for:
  * - direct: Always available (runtime availability checked separately)
  * - goose: CLI available via `which goose`
- * - opencode: CLI available via `which opencode`
+ * - opencode: CLI available and `opencode run` exposes required flags
  *
  * Note: Runtime availability (e.g., Ollama) is checked separately.
  */
 
 import { execa } from "execa";
 import type { HarnessName } from "./harness.js";
+import {
+	getOpenCodeRunFeatures,
+	isOpenCodeRunCompatible,
+} from "./opencode-cli.js";
 
 /**
  * Check if a specific CLI is available on the system.
@@ -23,6 +27,21 @@ async function isCliAvailable(cli: string): Promise<boolean> {
 	try {
 		await execa("which", [cli], { timeout: 5000 });
 		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Checks whether the installed OpenCode CLI supports benchmark run mode.
+ *
+ * @returns True when OpenCode is installed and exposes required run flags
+ */
+async function isOpenCodeAvailable(): Promise<boolean> {
+	if (!(await isCliAvailable("opencode"))) return false;
+	try {
+		const features = await getOpenCodeRunFeatures();
+		return isOpenCodeRunCompatible(features);
 	} catch {
 		return false;
 	}
@@ -42,7 +61,7 @@ export async function isHarnessAvailable(name: HarnessName): Promise<boolean> {
 		case "goose":
 			return isCliAvailable("goose");
 		case "opencode":
-			return isCliAvailable("opencode");
+			return isOpenCodeAvailable();
 		default:
 			return false;
 	}
@@ -62,7 +81,7 @@ export async function discoverHarnesses(): Promise<HarnessName[]> {
 	// Check CLI harnesses in parallel
 	const [gooseAvailable, opencodeAvailable] = await Promise.all([
 		isCliAvailable("goose"),
-		isCliAvailable("opencode"),
+		isOpenCodeAvailable(),
 	]);
 
 	if (gooseAvailable) {

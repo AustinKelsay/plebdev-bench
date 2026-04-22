@@ -100,6 +100,18 @@ export const ScoringMetricsSchema = z.object({
 
 	/** Compile-feedback retry generation time in milliseconds (when retry path is used). */
 	retryGenerationDurationMs: z.number().optional(),
+
+	/** Retry family used by the scoring pipeline. */
+	retryKind: z.enum(["compile-feedback", "opencode-workspace"]).optional(),
+
+	/** Stable human-readable reason for a scoring retry. */
+	retryReason: z.string().optional(),
+
+	/** Whether a scoring-level retry was attempted. */
+	retryAttempted: z.boolean().optional(),
+
+	/** Whether the retry result replaced the first attempt. */
+	retryPromoted: z.boolean().optional(),
 });
 
 /** Scoring metrics type. */

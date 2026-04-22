@@ -30,6 +30,19 @@ export interface ModelInfo {
 	sizeBytes: number;
 	/** Estimated parameter count in billions. */
 	parametersBillions: number;
+	/** Coarse model kind for benchmark eligibility decisions. */
+	modelKind?: "text-generation" | "embedding" | "unknown";
+	/** Runtime-reported or inferred model capabilities. */
+	capabilities?: {
+		generateText: boolean;
+		embedText: boolean;
+	};
+	/** Best-effort raw metadata used for diagnostics and plan exclusions. */
+	metadata?: {
+		family?: string;
+		families?: string[];
+		architecture?: string;
+	};
 }
 
 /**

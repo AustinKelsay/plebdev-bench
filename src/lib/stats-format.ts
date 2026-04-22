@@ -78,10 +78,15 @@ export function formatRunStats(
 	lines.push(`Run complete: ${runId}`);
 	lines.push(`  Completed: ${completed}/${total}`);
 	lines.push(`  Failed: ${failed}`);
-	if (stats.generationFailures && stats.generationFailures.total > 0) {
+	const generationFailureCount = stats.generationFailures?.total ?? 0;
+	if (generationFailureCount > 0 || failed > generationFailureCount) {
 		lines.push("  Failure breakdown:");
-		for (const { type, count } of stats.generationFailures.byType) {
+		for (const { type, count } of stats.generationFailures?.byType ?? []) {
 			lines.push(`    ${type}: ${count}`);
+		}
+		const scoredRowFailures = failed - generationFailureCount;
+		if (scoredRowFailures > 0) {
+			lines.push(`    scored_row_failure: ${scoredRowFailures}`);
 		}
 	}
 	lines.push(`  Duration: ${formatDuration(durationMs)}`);

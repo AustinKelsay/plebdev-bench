@@ -89,6 +89,8 @@ export {
 export {
 	MatrixItemSchema,
 	type MatrixItem,
+	ModelExclusionSchema,
+	type ModelExclusion,
 	RunPlanSchema,
 	type RunPlan,
 } from "./plan.schema.js";

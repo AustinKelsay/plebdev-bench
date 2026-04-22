@@ -55,6 +55,9 @@ describe("classifyGenerationError", () => {
 		expect(classifyGenerationError("Command failed with exit code 1")).toBe(
 			"harness_error",
 		);
+		expect(classifyGenerationError("OpenCode exited with code 1")).toBe(
+			"harness_error",
+		);
 	});
 
 	it("should return unknown for unrecognized errors", () => {

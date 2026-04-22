@@ -3,7 +3,7 @@
  * Exports: createOpenCodeAdapter
  *
  * Runs OpenCode directly with generated per-item config:
- * `opencode run <prompt> --model <provider>/<model> --format json --pure --dir <workspace>`
+ * `opencode run <prompt> --model <provider>/<model> --format json --dir <workspace>`
  *
  * Invariants:
  * - The public harness name remains `opencode`.
@@ -36,6 +36,11 @@ import {
 	prepareOpenCodeArtifacts,
 	readUsableOpenCodeSolution,
 } from "./opencode-artifacts.js";
+import {
+	buildOpenCodeRunArgs,
+	getOpenCodeRunFeatures,
+	isOpenCodeRunCompatible,
+} from "./opencode-cli.js";
 import { buildOpenCodeConfig, buildOpenCodeEnv } from "./opencode-config.js";
 import {
 	type OpenCodeParsedEvents,
@@ -165,7 +170,11 @@ export function createOpenCodeAdapter(): Harness {
 
 				const major = Number.parseInt(versionMatch[1], 10);
 				const minor = Number.parseInt(versionMatch[2], 10);
-				return major > 1 || (major === 1 && minor >= 1);
+				if (!(major > 1 || (major === 1 && minor >= 1))) {
+					return false;
+				}
+				const features = await getOpenCodeRunFeatures();
+				return isOpenCodeRunCompatible(features);
 			} catch {
 				return false;
 			}
@@ -216,19 +225,13 @@ export function createOpenCodeAdapter(): Harness {
 								artifacts.executionWorkspaceDir,
 							)
 						: buildCodeOutputPrompt(promptWithoutMarker, isRetryAttempt);
-				const args = [
-					"run",
-					fullPrompt,
-					"--model",
-					configResult.provider.modelArg,
-					"--format",
-					"json",
-					"--log-level",
-					"ERROR",
-					"--pure",
-					"--dir",
-					artifacts.executionWorkspaceDir,
-				];
+				const runFeatures = await getOpenCodeRunFeatures();
+				const args = buildOpenCodeRunArgs({
+					prompt: fullPrompt,
+					modelArg: configResult.provider.modelArg,
+					executionWorkspaceDir: artifacts.executionWorkspaceDir,
+					features: runFeatures,
+				});
 
 				log.debug(
 					{
@@ -236,6 +239,7 @@ export function createOpenCodeAdapter(): Harness {
 						modelArg: configResult.provider.modelArg,
 						executionWorkspaceDir: artifacts.executionWorkspaceDir,
 						configDir: artifacts.configDir,
+						supportsPure: runFeatures.supportsPure,
 					},
 					"Executing OpenCode command",
 				);

@@ -20,6 +20,36 @@ import {
 } from "./common.schema.js";
 import { ModelProfileSchema } from "./model-profile.schema.js";
 
+/** Model exclusion reason codes emitted during plan construction. */
+const ModelExclusionReasonSchema = z.literal("non_generative_model");
+
+/** Evidence captured when a discovered runtime model is excluded. */
+const ModelExclusionEvidenceSchema = z
+	.object({
+		family: z.string().optional(),
+		families: z.array(z.string()).optional(),
+		architecture: z.string().optional(),
+	})
+	.optional();
+
+/** Zod schema for models omitted from generative benchmark plans. */
+export const ModelExclusionSchema = z.object({
+	/** Runtime where the model was discovered. */
+	runtime: ArtifactRuntimeNameSchema,
+
+	/** Runtime model name that was excluded. */
+	model: z.string(),
+
+	/** Stable exclusion reason. */
+	reason: ModelExclusionReasonSchema,
+
+	/** Best-effort metadata explaining the exclusion. */
+	evidence: ModelExclusionEvidenceSchema,
+});
+
+/** Model omitted from a run plan before matrix expansion. */
+export type ModelExclusion = z.infer<typeof ModelExclusionSchema>;
+
 /** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
 export const MatrixItemSchema = z.object({
 	/** Unique item ID within the run (e.g., '01', '02'). */
@@ -105,6 +135,9 @@ export const RunPlanSchema = z.object({
 
 	/** Expanded matrix items to execute. */
 	items: z.array(MatrixItemSchema),
+
+	/** Discovered models omitted before matrix expansion. */
+	modelExclusions: z.array(ModelExclusionSchema).optional(),
 
 	/** Summary counts for display. */
 	summary: z.object({

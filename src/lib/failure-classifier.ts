@@ -70,7 +70,8 @@ export function classifyGenerationError(
 		lower.includes("no output") ||
 		lower.includes("not recognized") ||
 		lower.includes("command failed") ||
-		lower.includes("exit code")
+		lower.includes("exit code") ||
+		lower.includes("exited with code")
 	) {
 		return "harness_error";
 	}

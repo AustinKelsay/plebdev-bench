@@ -37,12 +37,23 @@ const ShowResponseSchema = z
 		details: z
 			.object({
 				parameter_size: z.string().optional(),
+				family: z.string().optional(),
+				families: z.array(z.string()).optional(),
 			})
 			.passthrough()
 			.optional(),
 		model_info: z.record(z.unknown()).optional(),
 	})
 	.passthrough();
+
+const EMBEDDING_ARCHITECTURES = new Set(["bert", "nomic-bert", "nomic_bert"]);
+const EMBEDDING_NAME_PATTERNS = [
+	/(^|[-_:])embed($|[-_:])/i,
+	/(^|[-_:])embedding($|[-_:])/i,
+	/^nomic-embed/i,
+	/^bge[-_:]/i,
+	/^e5[-_:]/i,
+] as const;
 
 /** Configuration for the Ollama runtime. */
 export interface OllamaRuntimeConfig {
@@ -86,6 +97,52 @@ async function fetchWithTimeout(
 	} finally {
 		clearTimeout(timeoutId);
 	}
+}
+
+/**
+ * Reads a string value from Ollama model_info metadata.
+ *
+ * @param modelInfo - Parsed model_info record
+ * @param key - Metadata key
+ * @returns Non-empty string value when present
+ */
+function readModelInfoString(
+	modelInfo: Record<string, unknown> | undefined,
+	key: string,
+): string | undefined {
+	const value = modelInfo?.[key];
+	return typeof value === "string" && value.trim().length > 0
+		? value.trim()
+		: undefined;
+}
+
+/**
+ * Infers whether a model is suitable for text generation benchmarks.
+ *
+ * @param model - Runtime model name
+ * @param details - Ollama `/api/show` details object
+ * @param modelInfo - Ollama `/api/show` model_info object
+ * @returns Coarse model kind for benchmark eligibility
+ */
+function inferModelKind(
+	model: string,
+	details: z.infer<typeof ShowResponseSchema>["details"],
+	modelInfo: Record<string, unknown> | undefined,
+): "text-generation" | "embedding" | "unknown" {
+	const architecture = readModelInfoString(modelInfo, "general.architecture");
+	const families = [
+		...(details?.family ? [details.family] : []),
+		...(details?.families ?? []),
+		...(architecture ? [architecture] : []),
+	].map((value) => value.toLowerCase());
+
+	if (families.some((family) => EMBEDDING_ARCHITECTURES.has(family))) {
+		return "embedding";
+	}
+	if (EMBEDDING_NAME_PATTERNS.some((pattern) => pattern.test(model))) {
+		return "embedding";
+	}
+	return "text-generation";
 }
 
 /**
@@ -181,11 +238,28 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 
 			// Estimate size in bytes (rough: ~0.5-1 byte per parameter for quantized)
 			const sizeBytes = parametersBillions * 1e9 * 0.6;
+			const architecture = readModelInfoString(
+				data.model_info,
+				"general.architecture",
+			);
+			const modelKind = inferModelKind(model, data.details, data.model_info);
 
 			return {
 				name: model,
 				sizeBytes,
 				parametersBillions,
+				modelKind,
+				capabilities: {
+					generateText: modelKind !== "embedding",
+					embedText: modelKind === "embedding",
+				},
+				metadata: {
+					...(data.details?.family ? { family: data.details.family } : {}),
+					...(data.details?.families
+						? { families: data.details.families }
+						: {}),
+					...(architecture ? { architecture } : {}),
+				},
 			};
 		},
 	};

@@ -217,7 +217,6 @@ describe("createOpenCodeAdapter", () => {
 
 			expect(options.cwd).toBe(canonicalWorkspaceDir);
 			expect(args[0]).toBe("run");
-			expect(args).toContain("--pure");
 			expect(args[args.indexOf("--dir") + 1]).toBe(canonicalWorkspaceDir);
 			expect(args[1]).not.toContain(canonicalWorkspaceDir);
 			expect(config.permission.external_directory).toBe("deny");

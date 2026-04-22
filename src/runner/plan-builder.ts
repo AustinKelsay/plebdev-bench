@@ -40,6 +40,7 @@ import {
 } from "../runtimes/index.js";
 import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
+import { filterGenerativeModels } from "./model-eligibility.js";
 
 /**
  * Gets the current Bun version.
@@ -112,6 +113,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const modelProfiles = config.modelProfiles;
 	const hasModelProfiles = Object.keys(modelProfiles).length > 0;
 	const matchedModelSelectors = new Set<string>();
+	const modelExclusions: NonNullable<RunPlan["modelExclusions"]> = [];
 	if (hasModelProfiles) {
 		log.info(
 			{ profiles: Object.keys(modelProfiles) },
@@ -180,9 +182,25 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 					}
 				}
 			}
+			const eligibility = await filterGenerativeModels({
+				runtimeName,
+				runtime,
+				models: filtered,
+				mode: "throw",
+				log,
+			});
+			filtered = eligibility.models;
 		} else {
-			filtered = discovered;
-			for (const discoveredModel of discovered) {
+			const eligibility = await filterGenerativeModels({
+				runtimeName,
+				runtime,
+				models: discovered,
+				mode: "record",
+				log,
+			});
+			filtered = eligibility.models;
+			modelExclusions.push(...eligibility.exclusions);
+			for (const discoveredModel of filtered) {
 				const modelProfile = buildResolvedModelProfile(
 					runtimeName,
 					discoveredModel,
@@ -456,6 +474,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			categories: config.categories,
 		},
 		items,
+		...(modelExclusions.length > 0 ? { modelExclusions } : {}),
 		summary: {
 			totalItems: items.length,
 			runtimes: summaryRuntimes.size,

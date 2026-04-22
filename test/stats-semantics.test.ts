@@ -60,5 +60,7 @@ describe("stats semantics", () => {
 		expect(output).toContain("Semantic pass rate:");
 		expect(output).toContain("Item success rate:");
 		expect(output).toContain("Scored rows:");
+		expect(output).toContain("timeout: 1");
+		expect(output).toContain("scored_row_failure: 1");
 	});
 });
