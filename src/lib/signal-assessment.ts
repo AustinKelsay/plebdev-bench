@@ -1,8 +1,9 @@
 /**
  * Purpose: Helpers for per-item benchmark signal assessment and trusted-metric filtering.
  * Exports: createTrustworthySignalAssessment, createTaintedSignalAssessment,
- *          appendSignalAssessmentReasons, hasCompleteSignalAssessments, isTaintedItem,
- *          isConfirmationOnlyOutput, isLikelyToolCallPayload,
+ *          appendSignalAssessmentReasons, mergeSignalAssessments,
+ *          hasCompleteSignalAssessments, isTaintedItem, isConfirmationOnlyOutput,
+ *          isLikelyToolCallPayload,
  *          isInternalToolTranscriptOutput, isAgentRequestedInputOutput,
  *          getTranscriptOrInputTaintReasons, finalizeItemSignalAssessment
  *
@@ -89,6 +90,24 @@ export function appendSignalAssessmentReasons(
 	const currentReasons =
 		current?.classification === "tainted" ? current.reasons : [];
 	return createTaintedSignalAssessment([...currentReasons, ...reasons]);
+}
+
+/**
+ * Preserves existing taint while adding later assessment taint reasons.
+ *
+ * @param existing - Current signal assessment
+ * @param next - New signal assessment from a later pipeline stage
+ * @returns Merged signal assessment, or undefined when neither assessment exists
+ */
+export function mergeSignalAssessments(
+	existing: SignalAssessment | undefined,
+	next: SignalAssessment | undefined,
+): SignalAssessment | undefined {
+	if (!next) return existing;
+	return appendSignalAssessmentReasons(
+		existing,
+		next.classification === "tainted" ? next.reasons : [],
+	);
 }
 
 /**

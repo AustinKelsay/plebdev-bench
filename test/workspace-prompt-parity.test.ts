@@ -32,6 +32,25 @@ function buildTestPromptPath(
 }
 
 describe("workspace prompt parity", () => {
+	it("workspace-smoke blind prompt declares the exact overwrite contract", () => {
+		const prompt = fs.readFileSync(
+			buildTestPromptPath("workspace-smoke", "blind"),
+			"utf-8",
+		);
+
+		expect(prompt).toContain(
+			"Overwrite `checklist/steps.txt` so its exact contents are the three lines below",
+		);
+		expect(prompt).toContain("bootstrap");
+		expect(prompt).toContain("verify-inputs");
+		expect(prompt).toContain("archive-results");
+		expect(prompt).toContain(
+			'`{"status":"ready","createdBy":"workspace-smoke","steps":3}`',
+		);
+		expect(prompt).toContain("Do not modify `docs/notes.txt`.");
+		expect(prompt).toContain("Do not create or delete any other files.");
+	});
+
 	it("file-locator informed prompt includes every scored JSON field", () => {
 		const promptPath = buildTestPromptPath("file-locator", "informed");
 		const prompt = fs.readFileSync(promptPath, "utf-8");

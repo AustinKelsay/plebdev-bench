@@ -201,10 +201,12 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 1. **Command Structure**:
    ```bash
-   opencode run "<prompt>" --model ollama/<model> --format json --log-level ERROR
+   opencode run "<prompt>" --model ollama/<transport-model-key> --format json --log-level ERROR --pure --dir <workspace>
    ```
    - `--format json` - Structured JSONL output for reliable parsing
    - `--log-level ERROR` - Reduces noise in output
+   - `--pure` - Runs without external plugins
+   - `--dir <workspace>` - Forces OpenCode to run from the exact benchmark workspace
    - No `--attach` flag - runs directly without server
 
 2. **Work Directory Setup**:
@@ -213,13 +215,17 @@ OpenCode now runs directly in a unique work directory per generation, using tool
    const toolOutputRoot = resolveOpenCodeToolOutputRoot(); // ~/.local/share/opencode/tool-output
    const workDir = path.join(toolOutputRoot, `plebdev-bench-opencode-${runId}`);
    ```
-   - Uses XDG_DATA_HOME location to avoid permission prompts
-   - Initializes as git repo (OpenCode expects git context)
-   - Creates local `opencode.json` config to enable tools
+   - Code-output mode creates an isolated generated workspace under XDG data home
+   - Workspace mode uses the runner-provided seeded workspace
+   - Both modes pass the canonical workspace `realpath()` to `--dir`
+   - Config files are written into a separate generated config directory
+   - No git initialization is required by the adapter
 
-3. **Local Config File** (`opencode.json` in workDir):
+3. **Local Config File** (`opencode.json` in the per-run config directory):
    ```json
    {
+     "enabled_providers": ["ollama"],
+     "model": "ollama/model:tag",
      "provider": {
        "ollama": {
          "npm": "@ai-sdk/openai-compatible",
@@ -227,19 +233,28 @@ OpenCode now runs directly in a unique work directory per generation, using tool
          "models": { "model:tag": { "name": "model:tag", "tools": true } }
        }
      },
-     "permission": { "edit": "allow", "write": "allow", "read": "allow", "bash": "allow" },
-     "tools": {
-       "edit": true,
-       "write": true,
-       "read": true,
-       "bash": true,
-       "glob": true,
-       "grep": true
+     "permission": {
+       "*": "allow",
+       "external_directory": "deny",
+       "question": "deny",
+       "task": "deny",
+       "skill": "deny",
+       "webfetch": "deny",
+       "websearch": "deny",
+       "codesearch": "deny",
+       "lsp": "deny"
      }
    }
    ```
+   - `enabled_providers` prevents user-global provider bleed
+   - Slash-containing runtime model IDs use a slash-safe transport key while preserving the real runtime model name in `models`
+   - Top-level deprecated `tools` config is not emitted; tool access is controlled through `permission`
+   - `external_directory` is denied because OpenCode is already launched inside the benchmark workspace
 
 4. **Environment Variables** (headless optimization):
+   - `OPENCODE_CONFIG_DIR=<per-run-config-dir>`
+   - `OPENCODE_CONFIG=<per-run-opencode.json>`
+   - `OPENCODE_CONFIG_CONTENT=<inline JSON config>`
    - `OPENCODE_DISABLE_AUTOUPDATE=true`
    - `OPENCODE_DISABLE_LSP_DOWNLOAD=true`
    - `OPENCODE_DISABLE_DEFAULT_PLUGINS=true`
@@ -252,10 +267,12 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 5. **Tool-Calling Flow**:
    - Prompt uses `buildToolPrompt()` to instruct tool usage
-   - OpenCode writes code to `solution.ts` via edit/write tool
+   - Code-output prompts ask OpenCode to write `solution.ts` with the `write` tool
    - Workspace-mode prompts switch to `buildWorkspaceToolPrompt()` and explicitly advertise `read`, `glob`, `grep`, and `bash`
+   - Workspace prompts use relative paths only; absolute workspace paths are not included in the prompt
    - Code read from file after execution
-   - Fallback: extract tool call from JSON output if file not created
+   - Fallback: if no file is created but assistant text contains usable code, persist it to `solution.ts` and mark the row tainted for output-contract violation
+   - Workspace mode does not require chat output; the workspace scorer decides semantic success
    - Fails with `tool_missing` if no code produced
 
 6. **Stale Output Detection**:
@@ -307,16 +324,17 @@ OpenCode uses its built-in `write` tool to write code directly to files instead 
 
 ### OpenCode Tool Calling Requirements
 
-**CRITICAL**: Unlike Goose (which uses `--with-builtin developer` CLI flag), OpenCode requires explicit tool enablement in the config file for **EACH model**.
+Unlike Goose, OpenCode uses generated provider config plus `permission` rules rather than a CLI flag like `--with-builtin developer`.
 
 | Harness | Tool Enabling Method |
 |---------|---------------------|
 | Goose | CLI flag: `--with-builtin developer` |
-| OpenCode | Config file: `"tools": true` per model |
+| OpenCode | Generated per-item provider config + `permission` policy |
 
-**Configuration** (`~/.config/opencode/opencode.json`):
+The benchmark no longer requires users to add benchmark models to `~/.config/opencode/opencode.json`. The adapter generates the model entry inline for each item:
 ```json
 {
+  "enabled_providers": ["ollama"],
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -334,10 +352,10 @@ OpenCode uses its built-in `write` tool to write code directly to files instead 
 }
 ```
 
-Without `"tools": true`, OpenCode will NOT pass tool calls to the model, and `solution.ts` will never be created.
+The model-level `"tools": true` entry remains in the generated provider model entry, but top-level deprecated `tools` config is not emitted.
 
 **Troubleshooting:**
-- If "solution.ts not created" appears in logs, check model config has `tools: true`
+- If "solution.ts not created" appears in logs, inspect the row's generated config/debug output first; user-global OpenCode config should not be required
 - If tools still don't work, try increasing `num_ctx` in Ollama (16k-32k minimum recommended)
 - Verify the model supports tool/function calling (not all models do)
 
@@ -346,7 +364,7 @@ Without `"tools": true`, OpenCode will NOT pass tool calls to the model, and `so
 The repo no longer carries the old `--attach` server helper. The current implementation runs OpenCode directly without a server, which provides:
 - Simpler architecture (no server lifecycle management)
 - Reliable tool execution (server mode had tool call issues)
-- Per-generation isolation (unique work directory)
+- Per-generation isolation (unique workspace/config directories)
 
 ### Tool Prompt Builder
 
