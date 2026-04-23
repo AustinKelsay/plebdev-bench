@@ -1,7 +1,8 @@
 /**
  * Purpose: OpenCode permission policy and permission-denial diagnostics.
- * Exports: OpenCodePermissionPolicy, createOpenCodePermissionPolicy,
- *          isOpenCodePermissionDeniedText, getOpenCodePermissionTaintReasons
+ * Exports: OPENCODE_PERMISSION_POLICY, OpenCodePermissionPolicy,
+ *          createOpenCodePermissionPolicy, isOpenCodePermissionDeniedText,
+ *          getOpenCodePermissionTaintReasons
  *
  * Invariants:
  * - Default benchmark runs allow local workspace tools.
@@ -12,19 +13,7 @@
 import type { SignalAssessmentReason } from "../schemas/index.js";
 
 /** Current OpenCode permission policy emitted into generated config. */
-export type OpenCodePermissionPolicy = {
-	readonly "*": "allow";
-	readonly external_directory: "deny";
-	readonly question: "deny";
-	readonly task: "deny";
-	readonly skill: "deny";
-	readonly webfetch: "deny";
-	readonly websearch: "deny";
-	readonly codesearch: "deny";
-	readonly lsp: "deny";
-};
-
-const OPENCODE_PERMISSION_POLICY: OpenCodePermissionPolicy = {
+export const OPENCODE_PERMISSION_POLICY = {
 	"*": "allow",
 	external_directory: "deny",
 	question: "deny",
@@ -34,7 +23,10 @@ const OPENCODE_PERMISSION_POLICY: OpenCodePermissionPolicy = {
 	websearch: "deny",
 	codesearch: "deny",
 	lsp: "deny",
-};
+} as const;
+
+/** Current OpenCode permission policy emitted into generated config. */
+export type OpenCodePermissionPolicy = typeof OPENCODE_PERMISSION_POLICY;
 
 const PERMISSION_DENIAL_PATTERN =
 	/(?:\bpermission\b[^\r\n.;]{0,40}\b(?:denied|rejected)\b|\b(?:denied|rejected)\b[^\r\n.;]{0,40}\bpermission\b|\baccess\s+denied\b|\bauto-?reject(?:ing|ed)?\b|\bexternal_directory\b[^\r\n.;]{0,80}\b(?:denied|rejected|auto-?reject(?:ing|ed)?)\b)/i;

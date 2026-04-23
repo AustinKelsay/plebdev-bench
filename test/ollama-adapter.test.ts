@@ -146,10 +146,7 @@ describe("OllamaRuntime", () => {
 			const info = await runtime.getModelInfo("llama3.2:8b");
 
 			expect(info.modelKind).toBe("unknown");
-			expect(info.capabilities).toEqual({
-				generateText: false,
-				embedText: false,
-			});
+			expect(info.capabilities).toEqual({});
 		});
 
 		it("still identifies embedding models from metadata", async () => {
@@ -174,10 +171,7 @@ describe("OllamaRuntime", () => {
 			const info = await runtime.getModelInfo("nomic-embed-text:latest");
 
 			expect(info.modelKind).toBe("embedding");
-			expect(info.capabilities).toEqual({
-				generateText: false,
-				embedText: true,
-			});
+			expect(info.capabilities).toEqual({ embedText: true });
 		});
 	});
 

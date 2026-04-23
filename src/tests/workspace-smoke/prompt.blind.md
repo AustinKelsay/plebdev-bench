@@ -13,7 +13,7 @@ Complete these exact filesystem operations:
    verify-inputs
    archive-results
    ```
-3. Create `artifacts/summary.json` with:
+3. Create `artifacts/summary.json` so its exact contents are the JSON below, with no additional whitespace or fields:
    `{"status":"ready","createdBy":"workspace-smoke","steps":3}`
 
 Acceptance requirements:

@@ -112,15 +112,13 @@ export function readPlanBestEffort(runDir: string): RunPlan | undefined {
 		if (!isBenignPlanReadError(error)) {
 			throw error;
 		}
-		if (typeof logger.warn === "function") {
-			logger.warn(
-				{
-					runDir,
-					error: error instanceof Error ? error.message : String(error),
-				},
-				"Unable to read plan metadata; continuing with run.json metadata",
-			);
-		}
+		logger.warn(
+			{
+				runDir,
+				error: error instanceof Error ? error.message : String(error),
+			},
+			"Unable to read plan metadata; continuing with run.json metadata",
+		);
 		return undefined;
 	}
 }

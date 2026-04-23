@@ -235,6 +235,15 @@ export const runCommand = new Command("run")
 			}
 			const hasExplicitOllamaUrl =
 				runCommand.getOptionValueSource("ollamaUrl") === "cli";
+			if (
+				hasExplicitOllamaUrl &&
+				deprecatedVllmUrl &&
+				parsedOllamaUrl !== deprecatedVllmUrl
+			) {
+				throw new Error(
+					`Conflicting runtime URL flags: --ollama-url="${parsedOllamaUrl}" does not match deprecated --vllm-url="${deprecatedVllmUrl}"`,
+				);
+			}
 			const resolvedOllamaUrl =
 				(hasExplicitOllamaUrl || !deprecatedVllmUrl
 					? parsedOllamaUrl

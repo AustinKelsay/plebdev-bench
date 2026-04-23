@@ -1,6 +1,8 @@
 /**
  * Purpose: Dashboard aggregations public API (stable import path).
- * Exports: re-exports from aggregations-core, aggregations-tooling, aggregations-compare, aggregations-diagnostics
+ * Exports: re-exports from aggregations-core, aggregations-tooling,
+ *          aggregations-compare, aggregations-diagnostics, aggregations-charts,
+ *          aggregations-test-types
  *
  * Invariants:
  * - Keep this module small; split implementations by concern (<500 lines)

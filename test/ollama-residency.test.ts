@@ -155,7 +155,7 @@ describe("ollama-residency", () => {
 				baseUrl: BASE_URL,
 				allowedModel: "qwen3.6:latest",
 				pollIntervalMs: 0,
-				settleTimeoutMs: 0,
+				settleTimeoutMs: Number.MIN_VALUE,
 			}),
 		).rejects.toThrow("allowed=qwen3.6:latest stillLoaded=gpt-oss:20b");
 	});
@@ -206,6 +206,34 @@ describe("ollama-residency", () => {
 				pollIntervalMs: Number.NaN,
 			}),
 		).rejects.toThrow(new RangeError("pollIntervalMs must be >= 0"));
+		expect(mockFetch).not.toHaveBeenCalled();
+	});
+
+	it("rejects invalid settle timeout values", async () => {
+		await expect(
+			ensureOnlyOllamaModelLoaded({
+				baseUrl: BASE_URL,
+				settleTimeoutMs: 0,
+			}),
+		).rejects.toThrow(new RangeError("settleTimeoutMs must be > 0"));
+		await expect(
+			ensureOnlyOllamaModelLoaded({
+				baseUrl: BASE_URL,
+				settleTimeoutMs: -1,
+			}),
+		).rejects.toThrow(new RangeError("settleTimeoutMs must be > 0"));
+		await expect(
+			ensureOnlyOllamaModelLoaded({
+				baseUrl: BASE_URL,
+				settleTimeoutMs: Number.NaN,
+			}),
+		).rejects.toThrow(new RangeError("settleTimeoutMs must be > 0"));
+		await expect(
+			ensureOnlyOllamaModelLoaded({
+				baseUrl: BASE_URL,
+				settleTimeoutMs: Number.POSITIVE_INFINITY,
+			}),
+		).rejects.toThrow(new RangeError("settleTimeoutMs must be > 0"));
 		expect(mockFetch).not.toHaveBeenCalled();
 	});
 

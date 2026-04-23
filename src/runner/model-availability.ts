@@ -16,6 +16,7 @@ import type { BenchConfig } from "../schemas/index.js";
  * @param runtimes - Runtime names to inspect
  * @param config - Benchmark config containing runtime connection details
  * @returns Human-readable per-runtime model summaries
+ * @throws {Error} If runtime construction fails before a diagnostic probe can run
  */
 export async function listAvailableModelsByRuntime(
 	runtimes: RuntimeName[],
@@ -27,7 +28,14 @@ export async function listAvailableModelsByRuntime(
 			ollamaBaseUrl: config.ollamaBaseUrl,
 			defaultTimeoutMs: config.generateTimeoutMs,
 		});
-		const available = await runtime.listModels();
+		let available: string[];
+		try {
+			available = await runtime.listModels();
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			availableByRuntime.push(`${runtimeName}: probe failed (${message})`);
+			continue;
+		}
 		if (available.length > 0) {
 			availableByRuntime.push(
 				`${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`,

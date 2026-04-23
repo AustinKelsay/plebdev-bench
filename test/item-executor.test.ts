@@ -241,6 +241,10 @@ describe("executeItem", () => {
 			scoringOnlyDurationMs: 12,
 			retryGenerationDurationMs: 0,
 			compileRetryUsed: false,
+			signalAssessment: {
+				classification: "tainted",
+				reasons: ["another_reason"],
+			},
 		});
 
 		const result = await executeItem(WORKSPACE_ITEM, RUNTIME_CONFIG, 5_000);
@@ -248,7 +252,7 @@ describe("executeItem", () => {
 		expect(result.status).toBe("completed");
 		expect(result.signalAssessment).toEqual({
 			classification: "tainted",
-			reasons: ["tool_permission_denied"],
+			reasons: ["tool_permission_denied", "another_reason"],
 		});
 	});
 

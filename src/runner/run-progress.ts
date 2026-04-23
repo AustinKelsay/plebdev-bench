@@ -2,11 +2,12 @@
  * Purpose: Runner progress snapshots, checkpoint writing, and guard-failure rows.
  * Exports: buildRunResultSnapshot, printModelGuardReport, readErrorMessage,
  *          buildResidencyGuardFailureResult, shouldWriteProgressCheckpoint,
- *          writeProgressCheckpoint
+ *          buildPreflightSkipResult, writeProgressCheckpoint
  *
  * Invariants:
  * - Progress snapshots use the same RunResult shape for partial and final writes.
  * - Residency guard failures are serialized as normal per-item generation failures.
+ * - Preflight skips are deterministic failed item rows with zero runtime duration.
  */
 
 import { writePartialResult } from "../results/writer.js";
@@ -135,6 +136,47 @@ export function buildResidencyGuardFailureResult(
 		generationFailure: {
 			type: "api_error",
 			message: `Residency guard failed: ${message}`,
+		},
+	};
+}
+
+/**
+ * Builds a failed item result for a row skipped after tool preflight failure.
+ *
+ * @param item - Matrix item skipped before execution
+ * @param message - Preflight failure reason that caused the skip
+ * @param failureType - Stable failure type inherited from the preflight failure
+ * @returns Matrix item result using the standard generation failure shape
+ */
+export function buildPreflightSkipResult(
+	item: MatrixItem,
+	message: string,
+	failureType: NonNullable<MatrixItemResult["generationFailure"]>["type"],
+): MatrixItemResult {
+	const now = new Date().toISOString();
+	const errorMessage = `Skipped: ${message}`;
+	return {
+		id: item.id,
+		runtime: item.runtime,
+		model: item.model,
+		...(item.modelAlias ? { modelAlias: item.modelAlias } : {}),
+		...(item.modelProfile ? { modelProfile: item.modelProfile } : {}),
+		harness: item.harness,
+		test: item.test,
+		...(item.category ? { category: item.category } : {}),
+		passType: item.passType,
+		status: "failed",
+		startedAt: now,
+		completedAt: now,
+		generation: {
+			success: false,
+			error: errorMessage,
+			failureType,
+			durationMs: 0,
+		},
+		generationFailure: {
+			type: failureType,
+			message: errorMessage,
 		},
 	};
 }

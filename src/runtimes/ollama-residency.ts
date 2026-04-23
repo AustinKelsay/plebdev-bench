@@ -184,6 +184,15 @@ function validatePollIntervalMs(pollIntervalMs: number | undefined): void {
 	}
 }
 
+function validateSettleTimeoutMs(settleTimeoutMs: number | undefined): void {
+	if (
+		settleTimeoutMs !== undefined &&
+		(!Number.isFinite(settleTimeoutMs) || settleTimeoutMs <= 0)
+	) {
+		throw new RangeError("settleTimeoutMs must be > 0");
+	}
+}
+
 /**
  * Lists models currently loaded in Ollama memory.
  *
@@ -254,9 +263,10 @@ export async function ensureOnlyOllamaModelLoaded(
 ): Promise<OllamaResidencyReport> {
 	validateRequestTimeoutMs(config.requestTimeoutMs);
 	validatePollIntervalMs(config.pollIntervalMs);
+	validateSettleTimeoutMs(config.settleTimeoutMs);
 	const settleTimeoutMs = config.settleTimeoutMs ?? RESIDENCY_SETTLE_TIMEOUT_MS;
 	const pollIntervalMs = config.pollIntervalMs ?? RESIDENCY_POLL_INTERVAL_MS;
-	const deadline = performance.now() + settleTimeoutMs;
+	let deadline: number | undefined;
 	const unloadedModels: string[] = [];
 	const requestedUnloadModels = new Set<string>();
 	let loadedModels = await listRunningOllamaModels(config);
@@ -282,9 +292,10 @@ export async function ensureOnlyOllamaModelLoaded(
 			});
 			requestedUnloadModels.add(model.name);
 			unloadedModels.push(model.name);
+			deadline ??= performance.now() + settleTimeoutMs;
 		}
 
-		if (performance.now() >= deadline) {
+		if (deadline !== undefined && performance.now() >= deadline) {
 			throw new Error(
 				`Timed out waiting for Ollama model residency; allowed=${formatAllowedModel(config.allowedModel)} stillLoaded=${foreignModels.map((model) => model.name).join(",") || "none"}`,
 			);

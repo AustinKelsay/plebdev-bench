@@ -91,28 +91,47 @@ export const FrontierEvalSchema = z.object({
 export type FrontierEval = z.infer<typeof FrontierEvalSchema>;
 
 /** Zod schema for scoring metrics (timing). */
-export const ScoringMetricsSchema = z.object({
-	/** Total scoring pipeline duration in milliseconds (includes compile-retry generation if used). */
-	durationMs: z.number(),
+export const ScoringMetricsSchema = z
+	.object({
+		/** Total scoring pipeline duration in milliseconds (includes compile-retry generation if used). */
+		durationMs: z.number(),
 
-	/** Pure scoring evaluation duration in milliseconds (excludes retry generation). */
-	scoringDurationMs: z.number().optional(),
+		/** Pure scoring evaluation duration in milliseconds (excludes retry generation). */
+		scoringDurationMs: z.number().optional(),
 
-	/** Compile-feedback retry generation time in milliseconds (when retry path is used). */
-	retryGenerationDurationMs: z.number().optional(),
+		/** Compile-feedback retry generation time in milliseconds (when retry path is used). */
+		retryGenerationDurationMs: z.number().optional(),
 
-	/** Retry family used by the scoring pipeline. */
-	retryKind: z.enum(["compile-feedback", "opencode-workspace"]).optional(),
+		/** Retry family used by the scoring pipeline. */
+		retryKind: z.enum(["compile-feedback", "opencode-workspace"]).optional(),
 
-	/** Stable human-readable reason for a scoring retry. */
-	retryReason: z.string().optional(),
+		/** Stable human-readable reason for a scoring retry. */
+		retryReason: z.string().optional(),
 
-	/** Whether a scoring-level retry was attempted. */
-	retryAttempted: z.boolean().optional(),
+		/** Whether a scoring-level retry was attempted. */
+		retryAttempted: z.boolean().optional(),
 
-	/** Whether the retry result replaced the first attempt. */
-	retryPromoted: z.boolean().optional(),
-});
+		/** Whether the retry result replaced the first attempt. */
+		retryPromoted: z.boolean().optional(),
+	})
+	.refine(
+		(metrics) => {
+			const retryFields = [
+				metrics.retryKind,
+				metrics.retryReason,
+				metrics.retryAttempted,
+				metrics.retryPromoted,
+			];
+			return retryFields.every((value) => value === undefined)
+				? true
+				: retryFields.every((value) => value !== undefined);
+		},
+		{
+			message:
+				"retryKind, retryReason, retryAttempted, and retryPromoted must be provided together",
+			path: ["retryKind"],
+		},
+	);
 
 /** Scoring metrics type. */
 export type ScoringMetrics = z.infer<typeof ScoringMetricsSchema>;

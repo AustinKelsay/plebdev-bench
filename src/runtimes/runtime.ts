@@ -34,8 +34,8 @@ export interface ModelInfo {
 	modelKind?: "text-generation" | "embedding" | "unknown";
 	/** Runtime-reported or inferred model capabilities. */
 	capabilities?: {
-		generateText: boolean;
-		embedText: boolean;
+		generateText?: boolean;
+		embedText?: boolean;
 	};
 	/** Best-effort raw metadata used for diagnostics and plan exclusions. */
 	metadata?: {

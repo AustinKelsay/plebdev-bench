@@ -1,6 +1,11 @@
 /**
  * Purpose: Run list page component displaying all benchmark runs grouped by checkpoint season.
- * Shows the live season first, then archived seasons for auditability.
+ * Exports: RunListPage
+ *
+ * Invariants:
+ * - Runs are grouped by checkpoint season.
+ * - The live season is shown first.
+ * - Archived seasons are retained for auditability.
  */
 
 import { PageContainer, PageHeader } from "@/components/layout/page-container";

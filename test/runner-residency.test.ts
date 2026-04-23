@@ -261,6 +261,55 @@ describe("runBenchmark Ollama residency guard", () => {
 		expect(mocks.executeItem.mock.calls[1][3]).toBe(true);
 	});
 
+	it("skips rows after failed tool preflight without residency probes", async () => {
+		const preflight = {
+			...createItem("01", "model-a"),
+			harness: "opencode",
+			tags: ["preflight"],
+		} satisfies MatrixItem;
+		const skipped = {
+			...createItem("02", "model-a"),
+			harness: "opencode",
+		} satisfies MatrixItem;
+		mocks.buildRunPlan.mockResolvedValueOnce(createPlan([preflight, skipped]));
+		mocks.executeItem.mockResolvedValueOnce({
+			...createResult(preflight),
+			status: "failed",
+			generation: {
+				success: false,
+				error: "permission tool unavailable",
+				failureType: "tool_missing",
+				durationMs: 11,
+			},
+			generationFailure: {
+				type: "tool_missing",
+				message: "permission tool unavailable",
+			},
+		});
+		const { runBenchmark } = await import("../src/runner/index.js");
+
+		await runBenchmark(CONFIG);
+
+		expect(mocks.executeItem).toHaveBeenCalledTimes(1);
+		expect(
+			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
+		).toEqual([{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" }]);
+		const [, runResult] = mocks.writeResult.mock.calls[0] as [
+			string,
+			{ items: MatrixItemResult[] },
+		];
+		expect(runResult.items[1]).toMatchObject({
+			id: skipped.id,
+			status: "failed",
+			generation: {
+				success: false,
+				error: "Skipped: permission tool unavailable",
+				failureType: "tool_missing",
+				durationMs: 0,
+			},
+		});
+	});
+
 	it("does not execute an item when the pre-item guard fails", async () => {
 		const item = createItem("01", "model-a");
 		mocks.buildRunPlan.mockResolvedValueOnce(createPlan([item]));

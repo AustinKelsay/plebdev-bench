@@ -167,7 +167,7 @@ Each run creates `results/<run-id>/`:
 
 ## Schemas
 
-Schema version: `0.5.1`
+Schema version: `0.5.2`
 
 | Schema | File | Purpose |
 |--------|------|---------|

@@ -68,6 +68,8 @@ const PrepareOpenCodeArtifactsOptsSchema = z.object({
  * Resolves OpenCode benchmark artifact storage under XDG data home.
  *
  * @returns Absolute tool-output root used for generated workspaces/configs
+ * @throws {z.ZodError} If process environment parsing fails
+ * @throws {Error} If XDG_DATA_HOME is set to a non-absolute path
  */
 export function resolveOpenCodeToolOutputRoot(): string {
 	const env = XdgDataHomeEnvSchema.parse(process.env);
@@ -90,8 +92,8 @@ export function resolveOpenCodeToolOutputRoot(): string {
  *
  * @param opts - Optional caller workspace and expected solution filename
  * @returns Prepared artifact paths
- * @throws z.ZodError when inputs are invalid
- * @throws {Error} when directories cannot be created or resolved
+ * @throws {z.ZodError} If input options are invalid
+ * @throws {Error} If workspace/config directories cannot be created or resolved
  */
 export async function prepareOpenCodeArtifacts(opts: {
 	workingDirectory?: string;
@@ -165,6 +167,7 @@ export async function prepareOpenCodeArtifacts(opts: {
  * @param solutionPath - Expected solution file path
  * @param minOutputLength - Minimum non-whitespace content length
  * @returns Code file path/content when present and usable, otherwise undefined
+ * @throws {Error} If the solution file exists but cannot be read
  */
 export async function readUsableOpenCodeSolution(
 	solutionPath: string,
@@ -195,6 +198,8 @@ export async function readUsableOpenCodeSolution(
  *
  * @param artifacts - Prepared paths to clean up
  * @param opts - Cleanup policy
+ * @returns Resolves after generated artifacts are removed
+ * @throws {Error} If filesystem cleanup fails
  */
 export async function cleanupOpenCodeArtifacts(
 	artifacts: OpenCodeArtifacts,

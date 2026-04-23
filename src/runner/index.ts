@@ -37,6 +37,7 @@ import type {
 import { executeItem } from "./item-executor.js";
 import { buildRunPlan } from "./plan-builder.js";
 import {
+	buildPreflightSkipResult,
 	buildResidencyGuardFailureResult,
 	buildRunResultSnapshot,
 	printModelGuardReport,
@@ -198,6 +199,27 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			!nextItem ||
 			nextItem.model !== item.model ||
 			nextItem.runtime !== item.runtime;
+		const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
+		const isToolHarness = toolCallingHarnesses.has(
+			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
+		);
+		const isPreflight = isPreflightTest(item.tags);
+
+		if (isToolHarness) {
+			const status = preflightStatus.get(preflightKey);
+			if (status?.skip) {
+				const message =
+					status.message ??
+					"preflight failed; skipping remaining items for this harness/model";
+				const failureType = status.failureType ?? "tool_missing";
+				log.warn(
+					{ harness: item.harness, model: item.model, test: item.test },
+					"Skipping item due to preflight failure",
+				);
+				results.push(buildPreflightSkipResult(item, message, failureType));
+				continue;
+			}
+		}
 
 		// Calculate dynamic timeout based on model size and harness
 		const modelInfo = modelInfoCache.get(`${item.runtime}:${item.model}`);
@@ -244,82 +266,6 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		console.log(
 			`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 		);
-
-		const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
-		const isToolHarness = toolCallingHarnesses.has(
-			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
-		);
-		const isPreflight = isPreflightTest(item.tags);
-
-		if (isToolHarness) {
-			const status = preflightStatus.get(preflightKey);
-			if (status?.skip) {
-				const now = new Date().toISOString();
-				const message =
-					status.message ??
-					"preflight failed; skipping remaining items for this harness/model";
-				log.warn(
-					{ harness: item.harness, model: item.model, test: item.test },
-					"Skipping item due to preflight failure",
-				);
-				results.push({
-					id: item.id,
-					runtime: item.runtime,
-					model: item.model,
-					...(item.modelAlias ? { modelAlias: item.modelAlias } : {}),
-					...(item.modelProfile ? { modelProfile: item.modelProfile } : {}),
-					harness: item.harness,
-					test: item.test,
-					passType: item.passType,
-					status: "failed",
-					startedAt: now,
-					completedAt: now,
-					generation: {
-						success: false,
-						error: `Skipped: ${message}`,
-						failureType: status.failureType ?? "tool_missing",
-						durationMs: 0,
-					},
-					generationFailure: {
-						type: status.failureType ?? "tool_missing",
-						message: `Skipped: ${message}`,
-					},
-				});
-				const itemCount = results.length;
-				if (
-					shouldWriteProgressCheckpoint(
-						itemCount,
-						total,
-						lastCheckpointItemCount,
-					)
-				) {
-					await writeProgressCheckpoint({
-						config,
-						plan,
-						startedAt,
-						startTime,
-						total,
-						results,
-						log,
-					});
-					lastCheckpointItemCount = itemCount;
-				}
-				if (isLastForModel) {
-					try {
-						const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
-							baseUrl: config.ollamaBaseUrl,
-						});
-						printModelGuardReport(postItemResidencyReport);
-					} catch (error) {
-						log.warn(
-							{ itemId: item.id, error: readErrorMessage(error) },
-							"Ollama residency guard failed after item; continuing",
-						);
-					}
-				}
-				continue;
-			}
-		}
 
 		const result = await executeItem(
 			item,

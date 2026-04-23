@@ -11,6 +11,13 @@
 import { type CompareResult, formatDelta } from "../results/compare.js";
 import { formatTimestamp, pad, truncate } from "./compare-utils.js";
 
+const STATUS_CHANGE_COLUMN_WIDTHS = {
+	model: 20,
+	harness: 10,
+	test: 20,
+	pass: 8,
+} as const;
+
 /**
  * Prints the header section with run identifiers and timestamps.
  *
@@ -171,22 +178,18 @@ export function printRegressions(result: CompareResult): void {
 
 	console.log("Regressions (completed → failed)");
 	console.log("-".repeat(60));
-
-	const modelW = 20;
-	const harnessW = 10;
-	const testW = 20;
-	const passW = 8;
+	const columnWidths = STATUS_CHANGE_COLUMN_WIDTHS;
 
 	console.log(
-		`${pad("MODEL", modelW)} ${pad("HARNESS", harnessW)} ${pad("TEST", testW)} ${pad("PASS", passW)}`,
+		`${pad("MODEL", columnWidths.model)} ${pad("HARNESS", columnWidths.harness)} ${pad("TEST", columnWidths.test)} ${pad("PASS", columnWidths.pass)}`,
 	);
 
 	for (const item of regressions) {
 		console.log(
-			`${pad(truncate(item.model, modelW), modelW)} ` +
-				`${pad(item.harness, harnessW)} ` +
-				`${pad(truncate(item.test, testW), testW)} ` +
-				`${pad(item.passType, passW)}`,
+			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
+				`${pad(item.harness, columnWidths.harness)} ` +
+				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
+				`${pad(item.passType, columnWidths.pass)}`,
 		);
 	}
 	console.log("");
@@ -208,22 +211,18 @@ export function printImprovements(result: CompareResult): void {
 
 	console.log("Improvements (failed → completed)");
 	console.log("-".repeat(60));
-
-	const modelW = 20;
-	const harnessW = 10;
-	const testW = 20;
-	const passW = 8;
+	const columnWidths = STATUS_CHANGE_COLUMN_WIDTHS;
 
 	console.log(
-		`${pad("MODEL", modelW)} ${pad("HARNESS", harnessW)} ${pad("TEST", testW)} ${pad("PASS", passW)}`,
+		`${pad("MODEL", columnWidths.model)} ${pad("HARNESS", columnWidths.harness)} ${pad("TEST", columnWidths.test)} ${pad("PASS", columnWidths.pass)}`,
 	);
 
 	for (const item of improvements) {
 		console.log(
-			`${pad(truncate(item.model, modelW), modelW)} ` +
-				`${pad(item.harness, harnessW)} ` +
-				`${pad(truncate(item.test, testW), testW)} ` +
-				`${pad(item.passType, passW)}`,
+			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
+				`${pad(item.harness, columnWidths.harness)} ` +
+				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
+				`${pad(item.passType, columnWidths.pass)}`,
 		);
 	}
 	console.log("");

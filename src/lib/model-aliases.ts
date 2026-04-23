@@ -1,6 +1,7 @@
 /**
  * Purpose: Legacy model alias resolution helpers retained for migration.
- * Exports: loadModelAliases, resolveModelForRuntime, parseInlineAlias, isAlias
+ * Exports: loadModelAliases, parseInlineAlias, parseInlineAliases, isAlias,
+ *          resolveModelForRuntime, resolveModelsForRuntime, mergeAliases
  *
  * Resolves canonical model names to runtime-specific identifiers.
  * New live config should prefer model profiles and active execution only uses Ollama,

@@ -400,7 +400,9 @@ export async function executeItem(
 			existing: signalAssessment,
 			automatedScore,
 			rowFailed:
-				(automatedScore?.failed ?? 0) > 0 || scoringFailure !== undefined,
+				!generation.success ||
+				(automatedScore?.failed ?? 0) > 0 ||
+				scoringFailure !== undefined,
 			output: generation.output,
 		});
 

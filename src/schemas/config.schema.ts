@@ -120,7 +120,11 @@ const BenchConfigObjectSchema = z
 		ollamaBaseUrl: z.string().url().default("http://localhost:11434"),
 
 		/** Removed runtime configuration retained only to emit a targeted validation error. */
-		vllmBaseUrl: z.string().trim().min(1).optional(),
+		vllmBaseUrl: z.preprocess(
+			(value) =>
+				typeof value === "string" && value.trim() === "" ? undefined : value,
+			z.string().trim().min(1).optional(),
+		),
 
 		/** Generation timeout in milliseconds (5 min default for large models). */
 		generateTimeoutMs: z.number().positive().default(300_000),
