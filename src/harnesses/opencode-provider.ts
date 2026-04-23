@@ -51,6 +51,11 @@ export function toOpenAiCompatBaseUrl(baseUrl: string): string {
 	if (!trimmed) {
 		throw new Error("OpenCode base URL must be non-empty");
 	}
+	try {
+		new URL(trimmed);
+	} catch {
+		throw new Error(`OpenCode base URL must be a valid URL: ${baseUrl}`);
+	}
 	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 

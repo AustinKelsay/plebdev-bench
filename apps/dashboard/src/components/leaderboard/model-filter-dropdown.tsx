@@ -28,18 +28,22 @@ const MODEL_SORT_COLLATOR = new Intl.Collator("en", { sensitivity: "variant" });
 
 function buildTriggerLabel(
 	selectedModels: string[],
-	availableModelCount: number,
+	currentModels: string[],
 ): string {
-	if (
-		selectedModels.length === 0 ||
-		selectedModels.length === availableModelCount
-	) {
+	const selectedModelSet = new Set(selectedModels);
+	const selectedCurrentModels = currentModels.filter((model) =>
+		selectedModelSet.has(model),
+	);
+	const hasAllCurrentModels =
+		currentModels.length > 0 &&
+		selectedCurrentModels.length === currentModels.length;
+	if (selectedModels.length === 0 || hasAllCurrentModels) {
 		return "All models";
 	}
-	if (selectedModels.length === 1) {
-		return selectedModels[0] ?? "All models";
+	if (selectedCurrentModels.length === 1) {
+		return selectedCurrentModels[0] ?? "All models";
 	}
-	return `${selectedModels.length} models selected`;
+	return `${selectedCurrentModels.length} models selected`;
 }
 
 /**
@@ -59,8 +63,8 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const triggerLabel = useMemo(
-		() => buildTriggerLabel(selectedModels, models.length),
-		[selectedModels, models.length],
+		() => buildTriggerLabel(selectedModels, models),
+		[selectedModels, models],
 	);
 
 	useEffect(() => {

@@ -22,6 +22,8 @@ export interface OpenCodeRunFeatures {
 	supportsFormat: boolean;
 	/** CLI supports choosing the execution workspace. */
 	supportsDir: boolean;
+	/** CLI supports setting run log verbosity. */
+	supportsLogLevel: boolean;
 	/** CLI supports plugin-free run mode. */
 	supportsPure: boolean;
 }
@@ -55,6 +57,7 @@ export function parseOpenCodeRunFeatures(
 		supportsModel: flags.has("--model"),
 		supportsFormat: flags.has("--format"),
 		supportsDir: flags.has("--dir"),
+		supportsLogLevel: flags.has("--log-level"),
 		supportsPure: flags.has("--pure"),
 	};
 }
@@ -69,7 +72,10 @@ export function isOpenCodeRunCompatible(
 	features: OpenCodeRunFeatures,
 ): boolean {
 	return (
-		features.supportsModel && features.supportsFormat && features.supportsDir
+		features.supportsModel &&
+		features.supportsFormat &&
+		features.supportsDir &&
+		features.supportsLogLevel
 	);
 }
 
@@ -145,6 +151,7 @@ export function buildOpenCodeRunArgs(opts: OpenCodeRunArgsOpts): string[] {
 		...(opts.features.supportsModel ? [] : ["--model"]),
 		...(opts.features.supportsFormat ? [] : ["--format"]),
 		...(opts.features.supportsDir ? [] : ["--dir"]),
+		...(opts.features.supportsLogLevel ? [] : ["--log-level"]),
 	];
 	if (missingFlags.length > 0) {
 		throw new Error(

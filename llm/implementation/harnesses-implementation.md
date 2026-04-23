@@ -278,7 +278,7 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 5. **Tool-Calling Flow**:
    - Prompt uses `buildToolPrompt()` to instruct tool usage
    - Code-output prompts ask OpenCode to write `solution.ts` with the `write` tool
-   - Workspace-mode prompts switch to `buildWorkspaceToolPrompt()` and explicitly advertise `read`, `glob`, `grep`, and `bash`
+   - Workspace-mode prompts switch through `buildWorkspacePrompt()` into `buildWorkspaceToolPrompt()` and explicitly advertise the adapter toolset: `read`, `edit`, `write`, `glob`, `grep`, and `bash`
    - Workspace prompts use relative paths only; absolute workspace paths are not included in the prompt
    - Code read from file after execution
    - Fallback: if no file is created but assistant text contains usable code, persist it to `solution.ts` and mark the row tainted for output-contract violation

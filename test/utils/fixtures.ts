@@ -65,6 +65,7 @@ export function fallbackCollectMachineProfile(
 		accelerators: [],
 		acceleratorDetection: {
 			status: "unavailable" as const,
+			detail: "no-accelerator-detected",
 		},
 	};
 	const instanceId =

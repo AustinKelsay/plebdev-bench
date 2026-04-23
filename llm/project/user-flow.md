@@ -45,19 +45,19 @@ progress output, and generated artifacts on disk.
 - **Decision points**:
   - Should OpenRouter frontier-eval be enabled (auto-enabled when API key is present)?
 
-### State S2 — Catalog Browse (Tests / Runtime / Harnesses / Models)
+### State S2 — Catalog Browse (Tests / Fixed Runtime / Harnesses / Models)
 - **User sees**: Lists of available tests, the active runtime (`ollama`), harness adapters, and discoverable local models.
 - **Artifacts**: Optional cached discovery output.
 - **Decision points**:
   - Which test(s) to run?
   - Which category/categories to run (`coding`, `computer-use`)?
-  - Which runtime to use? (`ollama` for now)
+  - Runtime is fixed to `ollama` for the MVP.
   - Which harness(es) to run through?
   - Which model(s) to benchmark?
 
 ### State S3 — Run Plan (Matrix + Pass Types)
 - **User sees**: A concrete execution plan before running:
-  - All combinations of runtime × harness × model × test × pass type (blind/informed)
+  - All combinations of the fixed `ollama` runtime × harness × model × test × pass type (blind/informed)
   - Estimated runtime and costs (if frontier eval is enabled)
 - **Artifacts**:
   - A saved “run plan” metadata blob (recommended) for reproducibility.

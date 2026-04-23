@@ -21,6 +21,7 @@ const getOpenCodeRunFeaturesMock = vi.fn(async () => ({
 	supportsModel: true,
 	supportsFormat: true,
 	supportsDir: true,
+	supportsLogLevel: true,
 	supportsPure: true,
 }));
 
@@ -599,7 +600,7 @@ describe("createOpenCodeAdapter", () => {
 			expect(result.codeFilePath).toMatch(/solution\.ts$/);
 			expect(result.signalAssessment).toEqual({
 				classification: "tainted",
-				reasons: ["tool_permission_denied"],
+				reasons: ["tool_permission_denied", "output_contract_violation"],
 			});
 		} finally {
 			if (result.codeFilePath) {

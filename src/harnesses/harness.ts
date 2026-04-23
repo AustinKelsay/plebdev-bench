@@ -13,7 +13,11 @@
  */
 
 import type { Runtime } from "../runtimes/index.js";
-import type { HarnessCapability, SignalAssessment } from "../schemas/index.js";
+import type {
+	HarnessCapability,
+	SignalAssessment,
+	SupportedRuntimeName,
+} from "../schemas/index.js";
 
 /** Supported harness names. "direct" replaces "ollama" for clarity. */
 export const HARNESS_NAMES = ["direct", "goose", "opencode"] as const;
@@ -58,7 +62,7 @@ export type HarnessPromptMode = (typeof HARNESS_PROMPT_MODES)[number];
  */
 export const HARNESS_RUNTIME_COMPATIBILITY: Record<
 	HarnessName,
-	readonly string[]
+	readonly SupportedRuntimeName[]
 > = {
 	direct: ["ollama"],
 	goose: ["ollama"],
@@ -76,7 +80,9 @@ export function isHarnessCompatibleWithRuntime(
 	runtime: string,
 ): boolean {
 	const compatibleRuntimes = HARNESS_RUNTIME_COMPATIBILITY[harness];
-	return compatibleRuntimes.includes(runtime);
+	return compatibleRuntimes.some(
+		(compatibleRuntime) => compatibleRuntime === runtime,
+	);
 }
 
 /**

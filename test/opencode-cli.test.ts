@@ -17,22 +17,24 @@ import {
 describe("OpenCode CLI helpers", () => {
 	it("parses required and optional run flags from help text", () => {
 		const features = parseOpenCodeRunFeatures(
-			"--model=model\n--format json\n--dir path\n--pure",
+			"--model=model\n--format json\n--dir path\n--log-level ERROR\n--pure",
 		);
 
 		expect(isOpenCodeRunCompatible(features)).toBe(true);
+		expect(features.supportsLogLevel).toBe(true);
 		expect(features.supportsPure).toBe(true);
 	});
 
 	it("does not infer run flags from longer option names", () => {
 		const features = parseOpenCodeRunFeatures(
-			"--modeler model\n--formatter json\n--directory path\n--purely",
+			"--modeler model\n--formatter json\n--directory path\n--log-leveler noisy\n--purely",
 		);
 
 		expect(features).toEqual({
 			supportsModel: false,
 			supportsFormat: false,
 			supportsDir: false,
+			supportsLogLevel: false,
 			supportsPure: false,
 		});
 		expect(isOpenCodeRunCompatible(features)).toBe(false);
@@ -47,6 +49,7 @@ describe("OpenCode CLI helpers", () => {
 				supportsModel: true,
 				supportsFormat: true,
 				supportsDir: true,
+				supportsLogLevel: true,
 				supportsPure: false,
 			},
 		});
@@ -75,6 +78,7 @@ describe("OpenCode CLI helpers", () => {
 				supportsModel: true,
 				supportsFormat: true,
 				supportsDir: true,
+				supportsLogLevel: true,
 				supportsPure: true,
 			},
 		});
@@ -105,9 +109,27 @@ describe("OpenCode CLI helpers", () => {
 					supportsModel: true,
 					supportsFormat: false,
 					supportsDir: true,
+					supportsLogLevel: true,
 					supportsPure: false,
 				},
 			}),
 		).toThrow(/missing --format/);
+	});
+
+	it("rejects argv construction when --log-level is unsupported", () => {
+		expect(() =>
+			buildOpenCodeRunArgs({
+				prompt: "Do the task.",
+				modelArg: "ollama/gpt-oss:20b",
+				executionWorkspaceDir: "/tmp/workspace",
+				features: {
+					supportsModel: true,
+					supportsFormat: true,
+					supportsDir: true,
+					supportsLogLevel: false,
+					supportsPure: false,
+				},
+			}),
+		).toThrow(/missing --log-level/);
 	});
 });

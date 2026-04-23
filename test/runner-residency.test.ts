@@ -291,6 +291,7 @@ describe("runBenchmark Ollama residency guard", () => {
 		await runBenchmark(CONFIG);
 
 		expect(mocks.executeItem).toHaveBeenCalledTimes(1);
+		expect(mocks.writePartialResult).toHaveBeenCalledTimes(1);
 		expect(
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
 		).toEqual([
@@ -371,6 +372,7 @@ describe("runBenchmark Ollama residency guard", () => {
 
 		await expect(runBenchmark(CONFIG)).resolves.toBeUndefined();
 
+		expect(mocks.writePartialResult).toHaveBeenCalledTimes(1);
 		expect(
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
 		).toEqual([

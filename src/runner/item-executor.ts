@@ -173,6 +173,17 @@ export async function executeItem(
 		ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
 		defaultTimeoutMs: timeoutMs,
 	});
+	log.debug("Loading prompt...");
+	const prompt = await loadPrompt(item.test, item.passType);
+	log.debug({ harness: item.harness }, "Creating harness...");
+	const harness = createHarness(item.harness, {
+		goose: {
+			maxTurns: runtimeConfig.gooseMaxTurns,
+			retryMaxTurns: runtimeConfig.gooseRetryMaxTurns,
+			workspaceMaxTurns: runtimeConfig.gooseWorkspaceMaxTurns,
+			workspaceRetryMaxTurns: runtimeConfig.gooseWorkspaceRetryMaxTurns,
+		},
+	});
 	let workspace: Awaited<ReturnType<typeof prepareTestWorkspace>> | undefined;
 	let generationAttempts = 0;
 	try {
@@ -183,26 +194,12 @@ export async function executeItem(
 		let generation: GenerationResult;
 		let generationFailure: MatrixItemResult["generationFailure"];
 		let signalAssessment: MatrixItemResult["signalAssessment"];
-		let promptForRetry = "";
 		const runtimeForRetry: ReturnType<typeof createRuntime> | undefined =
 			runtime;
-		let harnessForRetry: ReturnType<typeof createHarness> | undefined;
+		const harnessForRetry: ReturnType<typeof createHarness> | undefined =
+			harness;
 
 		try {
-			log.debug("Loading prompt...");
-			const prompt = await loadPrompt(item.test, item.passType);
-			promptForRetry = prompt;
-
-			log.debug({ harness: item.harness }, "Creating harness...");
-			const harness = createHarness(item.harness, {
-				goose: {
-					maxTurns: runtimeConfig.gooseMaxTurns,
-					retryMaxTurns: runtimeConfig.gooseRetryMaxTurns,
-					workspaceMaxTurns: runtimeConfig.gooseWorkspaceMaxTurns,
-					workspaceRetryMaxTurns: runtimeConfig.gooseWorkspaceRetryMaxTurns,
-				},
-			});
-			harnessForRetry = harness;
 			const generationOutcome = await runGenerationWithInfraRetry({
 				item,
 				prompt,
@@ -269,7 +266,7 @@ export async function executeItem(
 					generation,
 					harnessForRetry,
 					runtimeForRetry,
-					promptForRetry,
+					promptForRetry: prompt,
 					timeoutMs,
 					unloadAfter,
 					log,

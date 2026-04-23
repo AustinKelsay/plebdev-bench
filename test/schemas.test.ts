@@ -145,6 +145,12 @@ describe("BenchConfigSchema", () => {
 		expect(config.gooseWorkspaceRetryMaxTurns).toBe(9);
 	});
 
+	it("should reject empty runtime selections", () => {
+		expect(() => BenchConfigSchema.parse({ runtimes: [] })).toThrow(
+			"runtimes must include at least one runtime",
+		);
+	});
+
 	it("should reject invalid URL", () => {
 		expect(() =>
 			BenchConfigSchema.parse({ ollamaBaseUrl: "not-a-url" }),

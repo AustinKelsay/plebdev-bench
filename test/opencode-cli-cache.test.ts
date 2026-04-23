@@ -31,7 +31,7 @@ describe("getOpenCodeRunFeatures", () => {
 		await expect(getOpenCodeRunFeatures()).rejects.toThrow("flaky help probe");
 
 		execaMock.mockResolvedValueOnce({
-			stdout: "--model\n--format\n--dir\n--pure",
+			stdout: "--model\n--format\n--dir\n--log-level\n--pure",
 			stderr: "",
 		});
 
@@ -39,6 +39,7 @@ describe("getOpenCodeRunFeatures", () => {
 			supportsModel: true,
 			supportsFormat: true,
 			supportsDir: true,
+			supportsLogLevel: true,
 			supportsPure: true,
 		});
 		expect(execaMock).toHaveBeenCalledTimes(2);
@@ -60,7 +61,7 @@ describe("getOpenCodeRunFeatures", () => {
 		const first = getOpenCodeRunFeatures();
 		const second = getOpenCodeRunFeatures();
 		resolveHelp!({
-			stdout: "--model\n--format\n--dir\n--pure",
+			stdout: "--model\n--format\n--dir\n--log-level\n--pure",
 			stderr: "",
 		});
 
@@ -69,12 +70,14 @@ describe("getOpenCodeRunFeatures", () => {
 				supportsModel: true,
 				supportsFormat: true,
 				supportsDir: true,
+				supportsLogLevel: true,
 				supportsPure: true,
 			},
 			{
 				supportsModel: true,
 				supportsFormat: true,
 				supportsDir: true,
+				supportsLogLevel: true,
 				supportsPure: true,
 			},
 		]);

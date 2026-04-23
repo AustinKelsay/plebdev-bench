@@ -290,7 +290,7 @@ describe("RunResultSchema", () => {
 describe("RunPlanSchema", () => {
 	it("preserves legacy vllmBaseUrl config fields for older plan display", () => {
 		const parsed = RunPlanSchema.parse({
-			schemaVersion: SCHEMA_VERSION,
+			schemaVersion: "0.5.0",
 			runId: "run-legacy-plan",
 			createdAt: "2026-03-25T12:00:00.000Z",
 			config: {

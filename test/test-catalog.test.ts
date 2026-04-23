@@ -146,6 +146,32 @@ describe("discoverTestCatalog", () => {
 		});
 
 		expect(() => discoverTestCatalog(root)).toThrow("timeoutMultiplier");
+
+		const nanRoot = createTempRoot();
+		createTestDir(nanRoot, "nan-timeout-multiplier", {
+			category: "coding",
+			timeoutMultiplier: Number.NaN,
+		});
+		expect(() => discoverTestCatalog(nanRoot)).toThrow("timeoutMultiplier");
+
+		const infinityRoot = createTempRoot();
+		createTestDir(infinityRoot, "infinite-timeout-multiplier", {
+			category: "coding",
+			timeoutMultiplier: 1,
+		});
+		fs.writeFileSync(
+			path.join(
+				infinityRoot,
+				"src",
+				"tests",
+				"infinite-timeout-multiplier",
+				TEST_METADATA_FILE,
+			),
+			'{"category":"coding","timeoutMultiplier":1e999}',
+		);
+		expect(() => discoverTestCatalog(infinityRoot)).toThrow(
+			"timeoutMultiplier",
+		);
 	});
 });
 

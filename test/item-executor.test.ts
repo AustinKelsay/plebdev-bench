@@ -155,6 +155,26 @@ describe("executeItem", () => {
 		expect(mocks.runGenerationWithInfraRetry).not.toHaveBeenCalled();
 	});
 
+	it("throws prompt loading failures before recoverable generation handling", async () => {
+		mocks.loadPrompt.mockRejectedValueOnce(new Error("prompt missing"));
+
+		await expect(
+			executeItem(CODE_OUTPUT_ITEM, RUNTIME_CONFIG, 5_000),
+		).rejects.toThrow("prompt missing");
+		expect(mocks.runGenerationWithInfraRetry).not.toHaveBeenCalled();
+	});
+
+	it("throws harness construction failures before recoverable generation handling", async () => {
+		mocks.createHarness.mockImplementationOnce(() => {
+			throw new Error("unknown harness");
+		});
+
+		await expect(
+			executeItem(CODE_OUTPUT_ITEM, RUNTIME_CONFIG, 5_000),
+		).rejects.toThrow("unknown harness");
+		expect(mocks.runGenerationWithInfraRetry).not.toHaveBeenCalled();
+	});
+
 	it("preserves harness metadata from generation failures handled in the inner catch", async () => {
 		mocks.runGenerationWithInfraRetry.mockRejectedValueOnce(
 			Object.assign(new Error("Harness surfaced transcript output"), {

@@ -197,6 +197,16 @@ describe("parseOpenCodeEvents", () => {
 		expect(parsed.output).toBe('export const path = "C:\\\\tmp";');
 		expect(parsed.method).toBe("tool_call");
 	});
+
+	it("marks direct tool-call fallback permission denied from raw sibling text", () => {
+		const parsed = parseOpenCodeEvents(
+			'{"toolCall":{"name":"write","arguments":{"content":"export const answer = 42;"}},"error":"permission denied: external_directory"',
+		);
+
+		expect(parsed.output).toBe("export const answer = 42;");
+		expect(parsed.method).toBe("tool_call");
+		expect(parsed.permissionDenied).toBe(true);
+	});
 });
 
 describe("isOpenCodePermissionDeniedText", () => {

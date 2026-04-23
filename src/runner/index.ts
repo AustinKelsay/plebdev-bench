@@ -192,7 +192,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
 				baseUrl: config.ollamaBaseUrl,
 			});
-			printModelGuardReport(postItemResidencyReport);
+			printModelGuardReport(postItemResidencyReport, log);
 		} catch (error) {
 			log.warn(
 				{ itemId: item.id, error: readErrorMessage(error) },
@@ -229,8 +229,30 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 					"Skipping item due to preflight failure",
 				);
 				results.push(buildPreflightSkipResult(item, message, failureType));
-				if (isLastForModel) {
-					await runPostItemResidencyTeardown(item);
+				try {
+					const itemCount = results.length;
+					if (
+						shouldWriteProgressCheckpoint(
+							itemCount,
+							total,
+							lastCheckpointItemCount,
+						)
+					) {
+						await writeProgressCheckpoint({
+							config,
+							plan,
+							startedAt,
+							startTime,
+							total,
+							results,
+							log,
+						});
+						lastCheckpointItemCount = itemCount;
+					}
+				} finally {
+					if (isLastForModel) {
+						await runPostItemResidencyTeardown(item);
+					}
 				}
 				continue;
 			}
@@ -252,7 +274,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				baseUrl: config.ollamaBaseUrl,
 				allowedModel: item.model,
 			});
-			printModelGuardReport(preItemResidencyReport);
+			printModelGuardReport(preItemResidencyReport, log);
 		} catch (error) {
 			const errorMessage = readErrorMessage(error);
 			if (isToolHarness && isPreflight) {

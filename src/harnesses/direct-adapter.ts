@@ -94,6 +94,14 @@ export function createDirectAdapter(): Harness {
 								}
 							: {}),
 						durationMs: Math.round(performance.now() - startTime),
+						...(decision.taintReasons.length > 0
+							? {
+									signalAssessment: appendSignalAssessmentReasons(
+										retryResult.signalAssessment,
+										decision.taintReasons,
+									),
+								}
+							: {}),
 					};
 				}
 			}

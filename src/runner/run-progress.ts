@@ -10,6 +10,7 @@
  * - Preflight skips are deterministic failed item rows with zero runtime duration.
  */
 
+import type { Logger } from "pino";
 import { createTrustworthySignalAssessment } from "../lib/signal-assessment.js";
 import { writePartialResult } from "../results/writer.js";
 import type { OllamaResidencyReport } from "../runtimes/ollama-residency.js";
@@ -81,15 +82,24 @@ export function buildRunResultSnapshot(
 }
 
 /**
- * Prints a deterministic model guard line only when unloads were requested.
+ * Emits a structured model guard report only when unloads were requested.
  *
  * @param report - Ollama residency report from the model guard
- * @returns Nothing; writes to stdout when unloads occurred
+ * @param log - Run logger used for structured progress output
+ * @returns Nothing; writes a structured log when unloads occurred
+ * @throws {Error} If the logger write fails or the report shape is malformed at runtime
  */
-export function printModelGuardReport(report: OllamaResidencyReport): void {
+export function printModelGuardReport(
+	report: OllamaResidencyReport,
+	log: Pick<Logger, "info">,
+): void {
 	if (report.unloadedModels.length === 0) return;
-	console.log(
-		`model guard: allowed=${report.allowedModel ?? "none"} unloaded=${report.unloadedModels.join(",")}`,
+	log.info(
+		{
+			allowedModel: report.allowedModel ?? "none",
+			unloadedModels: report.unloadedModels,
+		},
+		"model guard report",
 	);
 }
 

@@ -99,7 +99,10 @@ const BenchConfigObjectSchema = z
 		schemaVersion: z.string().default(SCHEMA_VERSION),
 
 		/** Runtimes to use. Ollama is the only supported runtime. */
-		runtimes: z.array(SupportedRuntimeNameSchema).default(["ollama"]),
+		runtimes: z
+			.array(SupportedRuntimeNameSchema)
+			.nonempty("runtimes must include at least one runtime")
+			.default(["ollama"]),
 
 		/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
 		models: z.array(z.string()).default([]),

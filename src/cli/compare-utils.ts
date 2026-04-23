@@ -9,6 +9,7 @@
  * - Invalid plan JSON/schema errors are not treated as benign missing metadata.
  */
 
+import { ZodError } from "zod";
 import { logger } from "../lib/logger.js";
 import { readPlan } from "../results/reader.js";
 import type { RunPlan, RunResult } from "../schemas/index.js";
@@ -86,7 +87,7 @@ export function isBenignPlanReadError(error: unknown): boolean {
 		return false;
 	}
 
-	if (error.name === "ZodError") {
+	if (error instanceof ZodError) {
 		return false;
 	}
 

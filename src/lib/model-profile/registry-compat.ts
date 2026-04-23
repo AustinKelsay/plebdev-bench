@@ -53,6 +53,7 @@ type RegistryLogger = Pick<Logger, "warn">;
  * @param log - Loader logger for compatibility diagnostics
  * @returns Registry normalized to the current supported runtime set
  * @throws {Error} If the normalized payload still fails current schema validation
+ * or if migration filtering leaves any profile with no supported runtime variants
  */
 export function normalizeLoadedModelProfileRegistry(
 	registry: z.infer<typeof LegacyCompatibleModelProfileRegistrySchema>,

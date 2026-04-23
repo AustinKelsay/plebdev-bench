@@ -338,6 +338,7 @@ export function createOpenCodeAdapter(): Harness {
 						executionWorkspaceDir: artifacts.executionWorkspaceDir,
 						configDir: artifacts.configDir,
 						supportsPure: runFeatures.supportsPure,
+						supportsLogLevel: runFeatures.supportsLogLevel,
 					},
 					"Executing OpenCode command",
 				);
@@ -441,7 +442,18 @@ export function createOpenCodeAdapter(): Harness {
 					const elapsedMs = Math.round(performance.now() - startTime);
 					const remainingMs = timeoutMs - elapsedMs;
 					if (remainingMs > 1000) {
-						const firstAttemptAssessment = signalAssessment;
+						const firstAttemptAssessment = buildSignalAssessment(
+							parsed,
+							processResult.stdout,
+							processResult.stderr,
+							[
+								"output_contract_violation",
+								...decision.taintReasons,
+								...(parsed.method === "tool_call"
+									? (["tool_call_not_executed"] as const)
+									: []),
+							],
+						);
 						try {
 							const retryResult = await createOpenCodeAdapter().generate({
 								...opts,

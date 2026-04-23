@@ -39,7 +39,6 @@ async function isCliAvailable(cli: string): Promise<boolean> {
  * @returns True when OpenCode is installed and exposes required run flags
  */
 async function isOpenCodeAvailable(): Promise<boolean> {
-	if (!(await isCliAvailable("opencode"))) return false;
 	try {
 		const features = await getOpenCodeRunFeatures();
 		return isOpenCodeRunCompatible(features);

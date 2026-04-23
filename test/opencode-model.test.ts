@@ -32,6 +32,12 @@ describe("toOpenAiCompatBaseUrl", () => {
 			"OpenCode base URL must be non-empty",
 		);
 	});
+
+	it("throws for malformed URLs", () => {
+		expect(() => toOpenAiCompatBaseUrl("not a url")).toThrow(
+			"OpenCode base URL must be a valid URL",
+		);
+	});
 });
 
 describe("toOpenCodeModelKey", () => {

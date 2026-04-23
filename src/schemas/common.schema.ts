@@ -16,7 +16,7 @@ export const SCHEMA_VERSION = "0.5.2";
 export const supportedRuntimeNames = ["ollama"] as const;
 
 /** Zod schema for runtimes accepted by current config and execution flows. */
-export const SupportedRuntimeNameSchema = z.literal("ollama");
+export const SupportedRuntimeNameSchema = z.enum(supportedRuntimeNames);
 
 /** Runtime name type accepted by current config and execution flows. */
 export type SupportedRuntimeName = z.infer<typeof SupportedRuntimeNameSchema>;

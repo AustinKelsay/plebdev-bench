@@ -342,7 +342,8 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			hasToolUse: true,
 			permissionDenied:
 				diagnostics.permissionDenied ||
-				isOpenCodePermissionDeniedText(directToolCallCode),
+				isOpenCodePermissionDeniedText(directToolCallCode) ||
+				isOpenCodePermissionDeniedText(raw),
 		});
 	}
 	if (parsedLines > 0) {
