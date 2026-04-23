@@ -311,4 +311,67 @@ describe("RunPlanSchema", () => {
 
 		expect(parsed.config.vllmBaseUrl).toBe("http://localhost:8000");
 	});
+
+	it("preserves additive plan fields for dashboard compatibility", () => {
+		const parsed = RunPlanSchema.parse({
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-additive-plan",
+			createdAt: "2026-03-25T12:00:00.000Z",
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 300_000,
+				passTypes: ["blind"],
+				futureConfigField: "kept",
+			},
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "qwen3:27b",
+					harness: "direct",
+					test: "smoke",
+					passType: "blind",
+					futureItemField: "kept",
+				},
+			],
+			modelExclusions: [
+				{
+					runtime: "ollama",
+					model: "nomic-embed-text",
+					reason: "non_generative_model",
+					evidence: {
+						architecture: "bert",
+					},
+				},
+			],
+			summary: {
+				totalItems: 1,
+				runtimes: 1,
+				models: 1,
+				harnesses: 1,
+				tests: 1,
+				categories: 1,
+				futureSummaryField: "kept",
+			},
+			futureTopLevelField: "kept",
+		});
+
+		expect(parsed.summary.categories).toBe(1);
+		expect(parsed.modelExclusions?.[0]).toMatchObject({
+			model: "nomic-embed-text",
+			reason: "non_generative_model",
+		});
+		expect((parsed as Record<string, unknown>).futureTopLevelField).toBe(
+			"kept",
+		);
+		expect((parsed.config as Record<string, unknown>).futureConfigField).toBe(
+			"kept",
+		);
+		expect((parsed.items[0] as Record<string, unknown>).futureItemField).toBe(
+			"kept",
+		);
+		expect((parsed.summary as Record<string, unknown>).futureSummaryField).toBe(
+			"kept",
+		);
+	});
 });

@@ -169,6 +169,10 @@ export async function executeItem(
 	});
 
 	const startedAt = new Date().toISOString();
+	const runtime = createRuntime(getExecutableRuntimeName(item.runtime), {
+		ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
+		defaultTimeoutMs: timeoutMs,
+	});
 	let workspace: Awaited<ReturnType<typeof prepareTestWorkspace>> | undefined;
 	let generationAttempts = 0;
 	try {
@@ -180,19 +184,14 @@ export async function executeItem(
 		let generationFailure: MatrixItemResult["generationFailure"];
 		let signalAssessment: MatrixItemResult["signalAssessment"];
 		let promptForRetry = "";
-		let runtimeForRetry: ReturnType<typeof createRuntime> | undefined;
+		const runtimeForRetry: ReturnType<typeof createRuntime> | undefined =
+			runtime;
 		let harnessForRetry: ReturnType<typeof createHarness> | undefined;
 
 		try {
 			log.debug("Loading prompt...");
 			const prompt = await loadPrompt(item.test, item.passType);
 			promptForRetry = prompt;
-
-			const runtime = createRuntime(getExecutableRuntimeName(item.runtime), {
-				ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
-				defaultTimeoutMs: timeoutMs,
-			});
-			runtimeForRetry = runtime;
 
 			log.debug({ harness: item.harness }, "Creating harness...");
 			const harness = createHarness(item.harness, {

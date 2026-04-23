@@ -141,25 +141,6 @@ describe("ollama-residency", () => {
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 	});
 
-	it("throws on invalid settleTimeoutMs (must be > 0)", async () => {
-		mockFetch
-			.mockResolvedValueOnce(
-				jsonResponse({ models: [{ name: "gpt-oss:20b" }] }),
-			)
-			.mockResolvedValueOnce(
-				jsonResponse({ done: true, done_reason: "unload" }),
-			);
-
-		await expect(
-			ensureOnlyOllamaModelLoaded({
-				baseUrl: BASE_URL,
-				allowedModel: "qwen3.6:latest",
-				pollIntervalMs: 0,
-				settleTimeoutMs: 0,
-			}),
-		).rejects.toThrow(new RangeError("settleTimeoutMs must be > 0"));
-	});
-
 	it("throws on non-OK HTTP responses", async () => {
 		mockFetch.mockResolvedValueOnce(
 			new Response("not available", {

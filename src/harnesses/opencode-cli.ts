@@ -50,11 +50,12 @@ let cachedFeaturesPromise: Promise<OpenCodeRunFeatures> | undefined;
 export function parseOpenCodeRunFeatures(
 	helpText: string,
 ): OpenCodeRunFeatures {
+	const flags = new Set(helpText.match(/--[A-Za-z0-9][A-Za-z0-9-]*/g) ?? []);
 	return {
-		supportsModel: helpText.includes("--model"),
-		supportsFormat: helpText.includes("--format"),
-		supportsDir: helpText.includes("--dir"),
-		supportsPure: helpText.includes("--pure"),
+		supportsModel: flags.has("--model"),
+		supportsFormat: flags.has("--format"),
+		supportsDir: flags.has("--dir"),
+		supportsPure: flags.has("--pure"),
 	};
 }
 

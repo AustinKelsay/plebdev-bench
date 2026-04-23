@@ -283,9 +283,15 @@ describe("compare formatters", () => {
 		const fixture = buildCompareFixture();
 		fixture.matched[1] = {
 			...fixture.matched[1],
-			model: "improvement-model-name-that-is-very-long",
-			test: "improvement-test-name-that-is-very-long",
+			model: "zzzz-improvement-model-name-that-is-very-long",
+			test: "zzzz-improvement-test-name-that-is-very-long",
 		};
+		fixture.matched.push({
+			...fixture.matched[1],
+			key: "aaa-improvement",
+			model: "aaaa-improvement-model-name-that-is-very-long",
+			test: "aaaa-improvement-test-name-that-is-very-long",
+		});
 
 		printImprovements(fixture);
 
@@ -295,20 +301,43 @@ describe("compare formatters", () => {
 		expect(output).toContain("PASS");
 		expect(output).toContain("…");
 		expect(output).toContain("blind");
-		expect(output).not.toContain("improvement-model-name-that-is-very-long");
+		expect(output.indexOf("aaaa")).toBeLessThan(output.indexOf("zzzz"));
+		expect(output).not.toContain(
+			"zzzz-improvement-model-name-that-is-very-long",
+		);
 	});
 
 	it("prints exclusive items with truncation and overflow counts", () => {
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const fixture = buildCompareFixture();
+		fixture.onlyInB = [
+			createMatrixItemResult({
+				id: "only-b-2",
+				model: "zzzz-exclusive",
+				harness: "direct",
+				test: "zzzz-exclusive-test",
+				passType: "blind",
+			}),
+			createMatrixItemResult({
+				id: "only-b-1",
+				model: "aaaa-exclusive",
+				harness: "direct",
+				test: "aaaa-exclusive-test",
+				passType: "blind",
+			}),
+		];
 
-		printExclusiveItems(buildCompareFixture());
+		printExclusiveItems(fixture);
 
 		const output = readLoggedOutput(logSpy);
 		expect(output).toContain("Items only in Run A (11)");
-		expect(output).toContain("Items only in Run B (1)");
+		expect(output).toContain("Items only in Run B (2)");
 		expect(output).toContain("MODEL");
 		expect(output).toContain("…");
 		expect(output).toContain("... and 1 more");
+		expect(output.indexOf("aaaa-exclusive")).toBeLessThan(
+			output.indexOf("zzzz-exclusive"),
+		);
 		expect(output).not.toContain("model-name-that-is-very-long-11");
 	});
 });

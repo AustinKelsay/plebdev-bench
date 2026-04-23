@@ -45,8 +45,8 @@ src/
 │   ├── run-command.ts    # `bench run` implementation
 │   └── compare-command.ts # Compare command
 ├── schemas/              # Zod schemas (source of truth)
-│   ├── common.schema.ts  # SCHEMA_VERSION, PassType, RuntimeName
-│   │                     # Supported runtime = ollama; artifact runtime also accepts legacy vllm
+│   ├── common.schema.ts  # SCHEMA_VERSION, PassType, SupportedRuntimeNameSchema, ArtifactRuntimeNameSchema
+│   │                     # Supported runtime selection = ollama; artifact runtime also accepts legacy vllm
 │   ├── config.schema.ts  # BenchConfig
 │   ├── plan.schema.ts    # RunPlan, MatrixItem
 │   └── result.schema.ts  # RunResult, MatrixItemResult

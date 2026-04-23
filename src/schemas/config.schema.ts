@@ -121,9 +121,8 @@ const BenchConfigObjectSchema = z
 
 		/** Removed runtime configuration retained only to emit a targeted validation error. */
 		vllmBaseUrl: z.preprocess(
-			(value) =>
-				typeof value === "string" && value.trim() === "" ? undefined : value,
-			z.string().trim().min(1).optional(),
+			(value) => (typeof value === "string" ? value.trim() : value),
+			z.string().optional(),
 		),
 
 		/** Generation timeout in milliseconds (5 min default for large models). */

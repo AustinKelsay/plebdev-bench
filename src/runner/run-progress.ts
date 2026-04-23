@@ -98,6 +98,7 @@ export function printModelGuardReport(report: OllamaResidencyReport): void {
  *
  * @param error - Unknown thrown value
  * @returns Error message string
+ * @throws {never} This helper only stringifies thrown values
  */
 export function readErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
@@ -109,6 +110,7 @@ export function readErrorMessage(error: unknown): string {
  * @param item - Matrix item that could not be executed
  * @param error - Residency guard failure
  * @returns Matrix item result using the standard generation failure shape
+ * @throws {never} This helper only assembles an in-memory result object
  */
 export function buildResidencyGuardFailureResult(
 	item: MatrixItem,

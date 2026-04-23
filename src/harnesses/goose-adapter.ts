@@ -455,31 +455,28 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					// Goose doesn't provide token counts
 				};
 			} catch (error) {
-				// Check if it's a timeout error
-				if (error instanceof Error && error.message.includes("timed out")) {
-					throw new Error(
-						`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
-					);
-				}
+				const isTimeoutError =
+					error instanceof Error && error.message.includes("timed out");
 
-				// Check for execa error with stdout/stderr
-				if (error && typeof error === "object" && "stderr" in error) {
+				if (
+					error &&
+					typeof error === "object" &&
+					("stdout" in error || "stderr" in error)
+				) {
 					const execaError = error as {
 						stdout?: string;
 						stderr?: string;
 						message: string;
 					};
-					const trimmedCombined = [execaError.stdout, execaError.stderr]
-						.filter(
-							(part): part is string =>
-								typeof part === "string" && part.trim().length > 0,
-						)
-						.join("\n")
-						.trim();
+					const trimmedCombined =
+						`${execaError.stdout ?? ""}\n${execaError.stderr ?? ""}`.trim();
 					const effectiveOutput = trimmedCombined || execaError.message;
 					const errorReasons =
 						getTranscriptOrInputTaintReasons(effectiveOutput);
-					throw Object.assign(new Error(`Goose failed: ${effectiveOutput}`), {
+					const message = isTimeoutError
+						? `Goose timed out after ${Math.round(timeoutMs / 1000)}s: ${effectiveOutput}`
+						: `Goose failed: ${effectiveOutput}`;
+					throw Object.assign(new Error(message), {
 						signalAssessment:
 							errorReasons.length > 0
 								? appendSignalAssessmentReasons(undefined, errorReasons)
@@ -488,11 +485,13 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					});
 				}
 
+				if (isTimeoutError) {
+					throw new Error(
+						`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
+					);
+				}
+
 				throw error;
-			} finally {
-				// Clean up temp directory (best effort, but preserve if codeFilePath is set)
-				// Note: cleanup happens after scoring reads the file
-				// We leave cleanup to the caller/GC since the file needs to persist for scoring
 			}
 		},
 	};

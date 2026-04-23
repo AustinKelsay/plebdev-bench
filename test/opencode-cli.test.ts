@@ -17,11 +17,25 @@ import {
 describe("OpenCode CLI helpers", () => {
 	it("parses required and optional run flags from help text", () => {
 		const features = parseOpenCodeRunFeatures(
-			"--model model\n--format json\n--dir path\n--pure",
+			"--model=model\n--format json\n--dir path\n--pure",
 		);
 
 		expect(isOpenCodeRunCompatible(features)).toBe(true);
 		expect(features.supportsPure).toBe(true);
+	});
+
+	it("does not infer run flags from longer option names", () => {
+		const features = parseOpenCodeRunFeatures(
+			"--modeler model\n--formatter json\n--directory path\n--purely",
+		);
+
+		expect(features).toEqual({
+			supportsModel: false,
+			supportsFormat: false,
+			supportsDir: false,
+			supportsPure: false,
+		});
+		expect(isOpenCodeRunCompatible(features)).toBe(false);
 	});
 
 	it("omits optional --pure when the installed CLI does not advertise it", () => {

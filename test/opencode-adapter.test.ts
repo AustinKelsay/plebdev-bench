@@ -240,7 +240,7 @@ describe("createOpenCodeAdapter", () => {
 			expect(options.cwd).toBe(canonicalWorkspaceDir);
 			expect(args[0]).toBe("run");
 			expect(args[args.indexOf("--dir") + 1]).toBe(canonicalWorkspaceDir);
-			expect(args[1]).not.toContain(canonicalWorkspaceDir);
+			expect(args[args.length - 1]).not.toContain(canonicalWorkspaceDir);
 			expect(config.permission.external_directory).toBe("deny");
 			expect(config.enabled_providers).toEqual(["ollama"]);
 		} finally {

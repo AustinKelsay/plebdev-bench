@@ -100,10 +100,15 @@ export function buildWorkspaceToolPrompt(
 		workspaceRootPath,
 		pathMode = "absolute-anchor",
 	} = config;
+	const trimmedWorkspaceRootPath = workspaceRootPath?.trim();
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
 	}
-	if (pathMode === "absolute-anchor" && workspaceRootPath === undefined) {
+	if (
+		pathMode === "absolute-anchor" &&
+		(trimmedWorkspaceRootPath === undefined ||
+			trimmedWorkspaceRootPath.length === 0)
+	) {
 		throw new Error("absolute-anchor requires workspaceRootPath");
 	}
 
@@ -118,9 +123,9 @@ export function buildWorkspaceToolPrompt(
 					'- Do not inspect "/" or parent directories.',
 				]
 			: [
-					...(workspaceRootPath
+					...(trimmedWorkspaceRootPath
 						? [
-								`- Workspace root: "${workspaceRootPath}". Treat that directory as the only allowed project root.`,
+								`- Workspace root: "${trimmedWorkspaceRootPath}". Treat that directory as the only allowed project root.`,
 								'- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect "/" or parent directories.',
 							]
 						: []),

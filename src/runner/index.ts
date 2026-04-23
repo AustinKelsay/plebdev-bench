@@ -32,6 +32,7 @@ import { ensureOnlyOllamaModelLoaded } from "../runtimes/ollama-residency.js";
 import type {
 	BenchConfig,
 	GenerationFailureType,
+	MatrixItem,
 	MatrixItemResult,
 } from "../schemas/index.js";
 import { executeItem } from "./item-executor.js";
@@ -184,6 +185,22 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		log.warn("No preflight tests present in plan; tool preflight is disabled");
 	}
 
+	const runPostItemResidencyTeardown = async (
+		item: MatrixItem,
+	): Promise<void> => {
+		try {
+			const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
+				baseUrl: config.ollamaBaseUrl,
+			});
+			printModelGuardReport(postItemResidencyReport);
+		} catch (error) {
+			log.warn(
+				{ itemId: item.id, error: readErrorMessage(error) },
+				"Ollama residency guard failed after item; continuing",
+			);
+		}
+	};
+
 	for (let i = 0; i < plan.items.length; i++) {
 		const item = plan.items[i];
 		const itemNum = String(i + 1).padStart(2, "0");
@@ -212,6 +229,9 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 					"Skipping item due to preflight failure",
 				);
 				results.push(buildPreflightSkipResult(item, message, failureType));
+				if (isLastForModel) {
+					await runPostItemResidencyTeardown(item);
+				}
 				continue;
 			}
 		}
@@ -300,17 +320,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			lastCheckpointItemCount = itemCount;
 		}
 		if (isLastForModel) {
-			try {
-				const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
-					baseUrl: config.ollamaBaseUrl,
-				});
-				printModelGuardReport(postItemResidencyReport);
-			} catch (error) {
-				log.warn(
-					{ itemId: item.id, error: readErrorMessage(error) },
-					"Ollama residency guard failed after item; continuing",
-				);
-			}
+			await runPostItemResidencyTeardown(item);
 		}
 
 		if (isToolHarness && isPreflight) {

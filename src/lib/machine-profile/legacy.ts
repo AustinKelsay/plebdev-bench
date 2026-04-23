@@ -30,12 +30,15 @@ import {
 	normalizeMachineProfile,
 } from "./normalization.js";
 
-export const LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set([
+const _LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set([
 	"0.2.2",
 	"0.3.0",
 	"0.4.0",
 	"0.5.0",
 ]);
+
+export const LEGACY_ARTIFACT_SCHEMA_VERSIONS: ReadonlySet<string> =
+	_LEGACY_ARTIFACT_SCHEMA_VERSIONS;
 
 /**
  * Type guard for plain object records.

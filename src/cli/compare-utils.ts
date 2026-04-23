@@ -186,12 +186,16 @@ export function pad(
  */
 export function formatTimestamp(iso: string): string {
 	const date = new Date(iso);
-	return date.toLocaleString("en-US", {
+	if (Number.isNaN(date.getTime())) return "Invalid Date";
+	const parts = new Intl.DateTimeFormat("en-US", {
 		month: "short",
 		day: "2-digit",
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
 		timeZone: "UTC",
-	});
+	}).formatToParts(date);
+	const readPart = (type: Intl.DateTimeFormatPartTypes): string =>
+		parts.find((part) => part.type === type)?.value ?? "";
+	return `${readPart("month")} ${readPart("day")}, ${readPart("hour")}:${readPart("minute")}`;
 }

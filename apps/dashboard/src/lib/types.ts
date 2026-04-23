@@ -7,8 +7,10 @@
 import type {
 	ArtifactRuntimeName,
 	ModelExclusion,
+	SignalAssessmentReason as SharedSignalAssessmentReason,
 	TestCategory,
 } from "../../../../src/schemas/index.js";
+export type { SignalAssessmentReason } from "../../../../src/schemas/index.js";
 
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
@@ -54,20 +56,10 @@ export type VerificationStatus = "self_reported" | "verified" | "rejected";
 /** Item-level signal quality classification */
 export type SignalAssessmentClassification = "trustworthy" | "tainted";
 
-/** Stable reason codes for tainted benchmark rows */
-export type SignalAssessmentReason =
-	| "output_contract_violation"
-	| "mixed_prose_salvaged"
-	| "tool_permission_denied"
-	| "tool_call_not_executed"
-	| "confirmation_without_artifact"
-	| "internal_tool_transcript"
-	| "agent_requested_input";
-
 /** Item-level benchmark signal assessment */
 export interface SignalAssessment {
 	classification: SignalAssessmentClassification;
-	reasons: SignalAssessmentReason[];
+	reasons: SharedSignalAssessmentReason[];
 }
 
 /** Resolution source for canonical model-profile metadata */

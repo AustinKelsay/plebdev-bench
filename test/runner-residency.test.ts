@@ -261,7 +261,7 @@ describe("runBenchmark Ollama residency guard", () => {
 		expect(mocks.executeItem.mock.calls[1][3]).toBe(true);
 	});
 
-	it("skips rows after failed tool preflight without residency probes", async () => {
+	it("skips rows after failed tool preflight and unloads at the model boundary", async () => {
 		const preflight = {
 			...createItem("01", "model-a"),
 			harness: "opencode",
@@ -293,7 +293,10 @@ describe("runBenchmark Ollama residency guard", () => {
 		expect(mocks.executeItem).toHaveBeenCalledTimes(1);
 		expect(
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
-		).toEqual([{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" }]);
+		).toEqual([
+			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
+			{ baseUrl: CONFIG.ollamaBaseUrl },
+		]);
 		const [, runResult] = mocks.writeResult.mock.calls[0] as [
 			string,
 			{ items: MatrixItemResult[] },
@@ -368,7 +371,12 @@ describe("runBenchmark Ollama residency guard", () => {
 
 		await expect(runBenchmark(CONFIG)).resolves.toBeUndefined();
 
-		expect(mocks.ensureOnlyOllamaModelLoaded).toHaveBeenCalledTimes(1);
+		expect(
+			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
+		).toEqual([
+			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
+			{ baseUrl: CONFIG.ollamaBaseUrl },
+		]);
 		expect(mocks.executeItem).not.toHaveBeenCalled();
 		const [, runResult] = mocks.writeResult.mock.calls[0] as [
 			string,

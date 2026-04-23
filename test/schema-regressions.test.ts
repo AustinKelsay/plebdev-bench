@@ -4,7 +4,7 @@
  *
  * Invariants:
  * - Boundary schemas reject incoherent records with targeted errors.
- * - Legacy blank config aliases are normalized before deprecation checks.
+ * - Deprecated config aliases emit targeted errors even when blank.
  */
 
 import { describe, expect, it } from "vitest";
@@ -14,9 +14,22 @@ import {
 } from "../src/schemas/index.js";
 
 describe("schema regressions", () => {
-	it("normalizes blank vllmBaseUrl config values to absent", () => {
-		expect(BenchConfigSchema.parse({ vllmBaseUrl: "   " })).not.toHaveProperty(
-			"vllmBaseUrl",
+	it("rejects blank deprecated vllmBaseUrl config values", () => {
+		const result = BenchConfigSchema.safeParse({ vllmBaseUrl: "   " });
+
+		expect(result.success).toBe(false);
+		if (result.success) {
+			throw new Error("expected deprecated vllmBaseUrl to fail");
+		}
+		expect(result.error.issues).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: ["vllmBaseUrl"],
+					message: expect.stringContaining(
+						'Bench config no longer supports "vllmBaseUrl"',
+					),
+				}),
+			]),
 		);
 	});
 

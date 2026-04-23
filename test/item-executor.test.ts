@@ -140,6 +140,21 @@ describe("executeItem", () => {
 		});
 	});
 
+	it("throws unsupported artifact runtimes before recoverable generation handling", async () => {
+		const unsupportedRuntimeItem = {
+			...CODE_OUTPUT_ITEM,
+			runtime: "vllm",
+		} satisfies MatrixItem;
+
+		await expect(
+			executeItem(unsupportedRuntimeItem, RUNTIME_CONFIG, 5_000),
+		).rejects.toThrow(
+			'Unsupported runtime "vllm" in live execution. Only "ollama" is supported.',
+		);
+		expect(mocks.createRuntime).not.toHaveBeenCalled();
+		expect(mocks.runGenerationWithInfraRetry).not.toHaveBeenCalled();
+	});
+
 	it("preserves harness metadata from generation failures handled in the inner catch", async () => {
 		mocks.runGenerationWithInfraRetry.mockRejectedValueOnce(
 			Object.assign(new Error("Harness surfaced transcript output"), {

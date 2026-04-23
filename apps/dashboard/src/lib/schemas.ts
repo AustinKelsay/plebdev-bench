@@ -128,6 +128,29 @@ const ModelVariantSchema = z.object({
 	sourceId: z.string().min(1).optional(),
 });
 
+/** Model exclusion reason schema. */
+const ModelExclusionReasonSchema = z.literal("non_generative_model");
+
+/** Evidence attached to an excluded discovered model. */
+const ModelExclusionEvidenceSchema = z
+	.object({
+		family: z.string().optional(),
+		families: z.array(z.string()).optional(),
+		architecture: z.string().optional(),
+	})
+	.passthrough()
+	.optional();
+
+/** Discovered model omitted from a run plan before matrix expansion. */
+const ModelExclusionSchema = z
+	.object({
+		runtime: RuntimeNameSchema,
+		model: z.string(),
+		reason: ModelExclusionReasonSchema,
+		evidence: ModelExclusionEvidenceSchema,
+	})
+	.passthrough();
+
 /** Resolved model-profile schema. */
 const ModelProfileSchema = z.object({
 	canonical: CanonicalModelProfileSchema,
@@ -383,55 +406,93 @@ export const RunResultSchema = z.object({
 });
 
 /** Matrix item schema (for plan). */
-const MatrixItemSchema = z.object({
-	id: z.string(),
-	runtime: z.string(),
-	model: z.string(),
-	modelAlias: z.string().optional(),
-	modelProfile: ModelProfileSchema.optional(),
-	harness: z.string(),
-	test: z.string(),
-	category: TestCategorySchema.optional(),
-	passType: PassTypeSchema,
-});
+const MatrixItemSchema = z
+	.object({
+		id: z.string(),
+		runtime: z.string(),
+		model: z.string(),
+		modelAlias: z.string().optional(),
+		modelProfile: ModelProfileSchema.optional(),
+		harness: z.string(),
+		test: z.string(),
+		category: TestCategorySchema.optional(),
+		passType: PassTypeSchema,
+	})
+	.passthrough();
+
+/**
+ * Normalizes dashboard plan payloads with an explicit schemaVersion hook.
+ *
+ * @param payload - Unknown plan JSON payload
+ * @returns Payload to parse without dropping additive fields
+ */
+function normalizeDashboardRunPlanPayload(payload: unknown): unknown {
+	if (
+		typeof payload === "object" &&
+		payload !== null &&
+		!Array.isArray(payload)
+	) {
+		const schemaVersion = (payload as Record<string, unknown>).schemaVersion;
+		if (typeof schemaVersion === "string") {
+			// Future dashboard-only migrations should branch on schemaVersion here.
+			return payload;
+		}
+	}
+	return payload;
+}
 
 /** Run plan schema (plan.json). */
-export const RunPlanSchema = z.object({
-	schemaVersion: z.string(),
-	runId: z.string(),
-	createdAt: z.string(),
-	runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
-	machine: MachineProfileSchema.optional(),
-	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
-	provenance: RunProvenanceSchema.optional(),
-	// Legacy pre-0.3.0 field
-	environment: z
-		.object({
-			platform: z.string(),
-			bunVersion: z.string(),
-		})
-		.optional(),
-	config: z.object({
-		ollamaBaseUrl: z.string(),
-		// Legacy plan field. TODO: remove after adding explicit schemaVersion migrations.
-		vllmBaseUrl: z.string().optional(),
-		generateTimeoutMs: z.number(),
-		gooseMaxTurns: z.number().int().positive().optional(),
-		gooseRetryMaxTurns: z.number().int().positive().optional(),
-		gooseWorkspaceMaxTurns: z.number().int().positive().optional(),
-		gooseWorkspaceRetryMaxTurns: z.number().int().positive().optional(),
-		categories: z.array(TestCategorySchema).optional(),
-		passTypes: z.array(PassTypeSchema),
-	}),
-	items: z.array(MatrixItemSchema),
-	summary: z.object({
-		totalItems: z.number(),
-		runtimes: z.number(),
-		models: z.number(),
-		harnesses: z.number(),
-		tests: z.number(),
-	}),
-});
+const RunPlanObjectSchema = z
+	.object({
+		schemaVersion: z.string(),
+		runId: z.string(),
+		createdAt: z.string(),
+		runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
+		machine: MachineProfileSchema.optional(),
+		benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
+		provenance: RunProvenanceSchema.optional(),
+		// Legacy pre-0.3.0 field
+		environment: z
+			.object({
+				platform: z.string(),
+				bunVersion: z.string(),
+			})
+			.passthrough()
+			.optional(),
+		config: z
+			.object({
+				ollamaBaseUrl: z.string(),
+				// Legacy plan field. TODO: remove after adding explicit schemaVersion migrations.
+				vllmBaseUrl: z.string().optional(),
+				generateTimeoutMs: z.number(),
+				gooseMaxTurns: z.number().int().positive().optional(),
+				gooseRetryMaxTurns: z.number().int().positive().optional(),
+				gooseWorkspaceMaxTurns: z.number().int().positive().optional(),
+				gooseWorkspaceRetryMaxTurns: z.number().int().positive().optional(),
+				categories: z.array(TestCategorySchema).optional(),
+				passTypes: z.array(PassTypeSchema),
+			})
+			.passthrough(),
+		items: z.array(MatrixItemSchema),
+		modelExclusions: z.array(ModelExclusionSchema).optional(),
+		summary: z
+			.object({
+				totalItems: z.number(),
+				runtimes: z.number(),
+				models: z.number(),
+				harnesses: z.number(),
+				tests: z.number(),
+				categories: z.number().optional(),
+			})
+			.passthrough(),
+	})
+	.passthrough();
+
+/** Run plan schema (plan.json). */
+export const RunPlanSchema = z.preprocess(
+	normalizeDashboardRunPlanPayload,
+	RunPlanObjectSchema,
+);
 
 /** Run list item schema (index.json entries). */
 export const RunListItemSchema = z.object({

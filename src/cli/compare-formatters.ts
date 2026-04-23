@@ -18,6 +18,24 @@ const STATUS_CHANGE_COLUMN_WIDTHS = {
 	pass: 8,
 } as const;
 
+type ComparableDisplayRow = Pick<
+	CompareResult["matched"][number],
+	"model" | "harness" | "test" | "passType"
+>;
+
+function compareDisplayRows(
+	left: ComparableDisplayRow,
+	right: ComparableDisplayRow,
+): number {
+	const modelCompare = left.model.localeCompare(right.model);
+	if (modelCompare !== 0) return modelCompare;
+	const harnessCompare = left.harness.localeCompare(right.harness);
+	if (harnessCompare !== 0) return harnessCompare;
+	const testCompare = left.test.localeCompare(right.test);
+	if (testCompare !== 0) return testCompare;
+	return left.passType.localeCompare(right.passType);
+}
+
 /**
  * Prints the header section with run identifiers and timestamps.
  *
@@ -176,15 +194,7 @@ export function printRegressions(result: CompareResult): void {
 		(m) =>
 			m.deltas.status?.a === "completed" && m.deltas.status?.b === "failed",
 	);
-	regressions.sort((left, right) => {
-		const modelCompare = left.model.localeCompare(right.model);
-		if (modelCompare !== 0) return modelCompare;
-		const harnessCompare = left.harness.localeCompare(right.harness);
-		if (harnessCompare !== 0) return harnessCompare;
-		const testCompare = left.test.localeCompare(right.test);
-		if (testCompare !== 0) return testCompare;
-		return left.passType.localeCompare(right.passType);
-	});
+	regressions.sort(compareDisplayRows);
 
 	if (regressions.length === 0) return;
 
@@ -219,6 +229,7 @@ export function printImprovements(result: CompareResult): void {
 		(m) =>
 			m.deltas.status?.a === "failed" && m.deltas.status?.b === "completed",
 	);
+	improvements.sort(compareDisplayRows);
 
 	if (improvements.length === 0) return;
 
@@ -299,13 +310,16 @@ export function printScoringDeltas(result: CompareResult): void {
  * @throws {Error} If stdout writes fail or the result payload is malformed at runtime
  */
 export function printExclusiveItems(result: CompareResult): void {
-	if (result.onlyInA.length > 0) {
-		console.log(`Items only in Run A (${result.onlyInA.length})`);
+	const onlyInA = [...result.onlyInA].sort(compareDisplayRows);
+	const onlyInB = [...result.onlyInB].sort(compareDisplayRows);
+
+	if (onlyInA.length > 0) {
+		console.log(`Items only in Run A (${onlyInA.length})`);
 		console.log("-".repeat(60));
 		console.log(
 			`${pad("MODEL", STATUS_CHANGE_COLUMN_WIDTHS.model)} ${pad("HARNESS", STATUS_CHANGE_COLUMN_WIDTHS.harness)} ${pad("TEST", STATUS_CHANGE_COLUMN_WIDTHS.test)} ${pad("PASS", STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
 		);
-		for (const item of result.onlyInA.slice(0, 10)) {
+		for (const item of onlyInA.slice(0, 10)) {
 			console.log(
 				`${pad(truncate(item.model, STATUS_CHANGE_COLUMN_WIDTHS.model), STATUS_CHANGE_COLUMN_WIDTHS.model)} ` +
 					`${pad(truncate(item.harness, STATUS_CHANGE_COLUMN_WIDTHS.harness), STATUS_CHANGE_COLUMN_WIDTHS.harness)} ` +
@@ -313,19 +327,19 @@ export function printExclusiveItems(result: CompareResult): void {
 					`${pad(item.passType, STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
 			);
 		}
-		if (result.onlyInA.length > 10) {
-			console.log(`  ... and ${result.onlyInA.length - 10} more`);
+		if (onlyInA.length > 10) {
+			console.log(`  ... and ${onlyInA.length - 10} more`);
 		}
 		console.log("");
 	}
 
-	if (result.onlyInB.length > 0) {
-		console.log(`Items only in Run B (${result.onlyInB.length})`);
+	if (onlyInB.length > 0) {
+		console.log(`Items only in Run B (${onlyInB.length})`);
 		console.log("-".repeat(60));
 		console.log(
 			`${pad("MODEL", STATUS_CHANGE_COLUMN_WIDTHS.model)} ${pad("HARNESS", STATUS_CHANGE_COLUMN_WIDTHS.harness)} ${pad("TEST", STATUS_CHANGE_COLUMN_WIDTHS.test)} ${pad("PASS", STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
 		);
-		for (const item of result.onlyInB.slice(0, 10)) {
+		for (const item of onlyInB.slice(0, 10)) {
 			console.log(
 				`${pad(truncate(item.model, STATUS_CHANGE_COLUMN_WIDTHS.model), STATUS_CHANGE_COLUMN_WIDTHS.model)} ` +
 					`${pad(truncate(item.harness, STATUS_CHANGE_COLUMN_WIDTHS.harness), STATUS_CHANGE_COLUMN_WIDTHS.harness)} ` +
@@ -333,8 +347,8 @@ export function printExclusiveItems(result: CompareResult): void {
 					`${pad(item.passType, STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
 			);
 		}
-		if (result.onlyInB.length > 10) {
-			console.log(`  ... and ${result.onlyInB.length - 10} more`);
+		if (onlyInB.length > 10) {
+			console.log(`  ... and ${onlyInB.length - 10} more`);
 		}
 		console.log("");
 	}

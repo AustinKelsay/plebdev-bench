@@ -248,6 +248,46 @@ describe("createGooseAdapter", () => {
 		}
 	});
 
+	it("preserves stdout and stderr when Goose times out with process output", async () => {
+		const { createGooseAdapter } = await import(
+			"../src/harnesses/goose-adapter.js"
+		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-goose-timeout-output-"),
+		);
+		const runtime = createRuntime();
+		execaMock.mockRejectedValueOnce(
+			Object.assign(new Error("Command timed out"), {
+				stdout: '{"sessionID":"abc","type":"step_start"}',
+				stderr:
+					"Would you like me to continue? I reached the maximum number of actions without user input.",
+			}),
+		);
+
+		try {
+			const adapter = createGooseAdapter();
+			await expect(
+				adapter.generate({
+					model: "qwen3.5:4b",
+					prompt: "Touch one file and reply DONE.",
+					timeoutMs: 5_000,
+					runtime,
+					promptMode: "workspace",
+					workingDirectory: workspaceDir,
+				}),
+			).rejects.toMatchObject({
+				message: expect.stringContaining("Goose timed out after 5s"),
+				output: expect.stringContaining("Would you like me to continue?"),
+				signalAssessment: {
+					classification: "tainted",
+					reasons: ["internal_tool_transcript", "agent_requested_input"],
+				},
+			});
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
+	});
+
 	it("falls back to the execa message when stdout and stderr are empty", async () => {
 		const { createGooseAdapter } = await import(
 			"../src/harnesses/goose-adapter.js"
