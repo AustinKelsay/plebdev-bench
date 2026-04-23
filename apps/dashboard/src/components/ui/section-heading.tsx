@@ -8,6 +8,8 @@
  *
  * @param title - Section title text
  * @param description - Muted description below the title
+ * @returns React element containing the heading and description.
+ * @throws Never throws.
  */
 export function SectionHeading({
 	title,

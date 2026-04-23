@@ -1,3 +1,12 @@
+/**
+ * Purpose: Blind vs informed prompt comparison chart.
+ * Exports: BlindVsInformedChart
+ *
+ * Invariants:
+ * - Shows paired bars comparing blind and informed pass rates.
+ * - Provides model and harness breakdown tabs over the same item set.
+ */
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,10 +18,6 @@ import {
 } from "@/lib/aggregations";
 import { blindInformed as blindInformedTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
-/**
- * Purpose: Blind vs informed prompt comparison chart.
- * Shows paired bars comparing pass rates between blind and informed prompts.
- */
 import {
 	Bar,
 	BarChart,
@@ -267,6 +272,13 @@ function DeltaSummary({ data }: { data: ChartData[] }) {
 	);
 }
 
+/**
+ * Renders blind-vs-informed pass-rate chart tabs by model and harness.
+ *
+ * @param items - Benchmark rows used to compute model and harness breakdowns.
+ * @returns React element containing chart tabs for model and harness breakdowns.
+ * @throws Never throws.
+ */
 export function BlindVsInformedChart({ items }: BlindVsInformedChartProps) {
 	const byModel = computeBlindInformedBreakdown(items, groupByModel);
 	const byHarness = computeBlindInformedBreakdown(items, groupByHarness);

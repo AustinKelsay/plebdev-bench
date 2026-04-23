@@ -122,7 +122,6 @@ export async function getOpenCodeRunFeatures(): Promise<OpenCodeRunFeatures> {
 export function buildOpenCodeRunArgs(opts: OpenCodeRunArgsOpts): string[] {
 	return [
 		"run",
-		opts.prompt,
 		"--model",
 		opts.modelArg,
 		"--format",
@@ -132,5 +131,6 @@ export function buildOpenCodeRunArgs(opts: OpenCodeRunArgsOpts): string[] {
 		...(opts.features.supportsPure ? ["--pure"] : []),
 		"--dir",
 		opts.executionWorkspaceDir,
+		opts.prompt,
 	];
 }

@@ -60,6 +60,66 @@ export interface OpenCodeCommandResult {
 	exitCode: number | null;
 }
 
+function readErrorTextProperty(error: unknown, key: string): string {
+	const record =
+		typeof error === "object" && error !== null
+			? (error as Record<string, unknown>)
+			: undefined;
+	const value = record?.[key];
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) {
+		return value
+			.filter((part): part is string => typeof part === "string")
+			.join("\n");
+	}
+	return "";
+}
+
+function readErrorDurationMs(
+	error: unknown,
+	fallbackDurationMs: number,
+): number {
+	const record =
+		typeof error === "object" && error !== null
+			? (error as Record<string, unknown>)
+			: undefined;
+	return typeof record?.durationMs === "number" &&
+		Number.isFinite(record.durationMs)
+		? record.durationMs
+		: fallbackDurationMs;
+}
+
+function buildOpenCodeCommandError(
+	message: string,
+	startTime: number,
+	stdoutChunks: readonly string[],
+	stderrChunks: readonly string[],
+	cause?: unknown,
+): Error {
+	const stdout =
+		stdoutChunks.join("") || readErrorTextProperty(cause, "stdout");
+	const stderr =
+		stderrChunks.join("") || readErrorTextProperty(cause, "stderr");
+	const capturedOutput = [stdout, stderr]
+		.filter((part) => part.trim().length > 0)
+		.join("\n");
+	const output = capturedOutput || readErrorTextProperty(cause, "output");
+	const durationMs = readErrorDurationMs(
+		cause,
+		Math.round(performance.now() - startTime),
+	);
+
+	return Object.assign(
+		new Error(message, cause instanceof Error ? { cause } : {}),
+		{
+			durationMs,
+			...(output.trim().length > 0 ? { output } : {}),
+			...(stdout.trim().length > 0 ? { stdout } : {}),
+			...(stderr.trim().length > 0 ? { stderr } : {}),
+		},
+	);
+}
+
 /**
  * Computes the no-output timeout threshold for OpenCode runs.
  *
@@ -101,6 +161,7 @@ async function forceKillProcess(
 export async function runOpenCodeCommand(
 	config: OpenCodeRunConfig,
 ): Promise<OpenCodeCommandResult> {
+	const startTime = performance.now();
 	const controller = new AbortController();
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
 	let staleCheckId: ReturnType<typeof setInterval> | undefined;
@@ -112,6 +173,7 @@ export async function runOpenCodeCommand(
 
 	const stdoutChunks: string[] = [];
 	const stderrChunks: string[] = [];
+
 	const proc = execa("opencode", config.args, {
 		env: config.env,
 		cwd: config.cwd,
@@ -123,6 +185,22 @@ export async function runOpenCodeCommand(
 	});
 	const pid = proc.pid;
 	config.log.debug({ pid }, "OpenCode process started");
+
+	async function forceKillAndReject(
+		reject: (reason?: unknown) => void,
+		reason: string,
+		message: string,
+	): Promise<void> {
+		try {
+			await forceKillProcess(proc, config.log, reason);
+		} catch (error) {
+			config.log.error({ err: error, reason }, "OpenCode process kill failed");
+		}
+		controller.abort();
+		reject(
+			buildOpenCodeCommandError(message, startTime, stdoutChunks, stderrChunks),
+		);
+	}
 
 	proc.stdout?.on("data", (chunk: Buffer) => {
 		lastOutputTime = Date.now();
@@ -140,16 +218,10 @@ export async function runOpenCodeCommand(
 				killAttempted = true;
 				timedOut = true;
 				if (staleCheckId) clearInterval(staleCheckId);
-				void forceKillProcess(
-					proc,
-					config.log,
+				void forceKillAndReject(
+					reject,
 					`timeout after ${config.timeoutMs}ms`,
-				);
-				controller.abort();
-				reject(
-					new Error(
-						`OpenCode timed out after ${Math.round(config.timeoutMs / 1000)}s. Try increasing --timeout.`,
-					),
+					`OpenCode timed out after ${Math.round(config.timeoutMs / 1000)}s. Try increasing --timeout.`,
 				);
 			}, config.timeoutMs);
 		});
@@ -163,16 +235,10 @@ export async function runOpenCodeCommand(
 				killAttempted = true;
 				staleKilled = true;
 				if (timeoutId) clearTimeout(timeoutId);
-				void forceKillProcess(
-					proc,
-					config.log,
+				void forceKillAndReject(
+					reject,
 					`no output for ${staleDuration}ms`,
-				);
-				controller.abort();
-				reject(
-					new Error(
-						`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
-					),
+					`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
 				);
 			}, STALE_CHECK_INTERVAL_MS);
 		});
@@ -187,18 +253,38 @@ export async function runOpenCodeCommand(
 	} catch (error) {
 		if (error instanceof Error && error.name === "AbortError") {
 			if (timedOut) {
-				throw new Error(
+				throw buildOpenCodeCommandError(
 					`OpenCode timed out after ${Math.round(config.timeoutMs / 1000)}s. Try increasing --timeout.`,
+					startTime,
+					stdoutChunks,
+					stderrChunks,
+					error,
 				);
 			}
 			if (staleKilled) {
-				throw new Error(
+				throw buildOpenCodeCommandError(
 					`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
+					startTime,
+					stdoutChunks,
+					stderrChunks,
+					error,
 				);
 			}
-			throw new Error("OpenCode was aborted");
+			throw buildOpenCodeCommandError(
+				"OpenCode was aborted",
+				startTime,
+				stdoutChunks,
+				stderrChunks,
+				error,
+			);
 		}
-		throw error;
+		throw buildOpenCodeCommandError(
+			error instanceof Error ? error.message : String(error),
+			startTime,
+			stdoutChunks,
+			stderrChunks,
+			error,
+		);
 	} finally {
 		if (timeoutId) clearTimeout(timeoutId);
 		if (staleCheckId) clearInterval(staleCheckId);

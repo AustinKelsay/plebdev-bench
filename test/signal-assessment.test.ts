@@ -166,7 +166,31 @@ describe("finalizeItemSignalAssessment", () => {
 		]);
 	});
 
-	it("marks continuation prompts as tainted", () => {
+	it("marks harness-boundary continuation prompts as tainted", () => {
+		expect(
+			getTranscriptOrInputTaintReasons(
+				"Would you like me to continue? I reached the maximum number of actions without user input.",
+			),
+		).toEqual(["agent_requested_input"]);
+	});
+
+	it("marks agent-scoped input prompts as tainted", () => {
+		expect(
+			getTranscriptOrInputTaintReasons(
+				"OpenCode agent is awaiting user input to continue.",
+			),
+		).toEqual(["agent_requested_input"]);
+	});
+
+	it("does not mark generic UI input copy as agent requests", () => {
+		expect(getTranscriptOrInputTaintReasons("Awaiting user input")).toEqual([]);
+		expect(getTranscriptOrInputTaintReasons("Need user input")).toEqual([]);
+		expect(getTranscriptOrInputTaintReasons("Need your confirmation")).toEqual(
+			[],
+		);
+	});
+
+	it("does not mark generated artifact continuation copy as input requests", () => {
 		const assessment = finalizeItemSignalAssessment({
 			existing: undefined,
 			automatedScore: { passed: 0, failed: 5, total: 5 },
@@ -175,8 +199,8 @@ describe("finalizeItemSignalAssessment", () => {
 		});
 
 		expect(assessment).toEqual({
-			classification: "tainted",
-			reasons: ["agent_requested_input"],
+			classification: "trustworthy",
+			reasons: [],
 		});
 	});
 

@@ -201,13 +201,14 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 1. **Command Structure**:
    ```bash
-   opencode run "<prompt>" --model ollama/<transport-model-key> --format json --log-level ERROR --pure --dir <workspace>
+   opencode run --model ollama/<transport-model-key> --format json --log-level ERROR [--pure] --dir <workspace> "<prompt>"
    ```
    - `--format json` - Structured JSONL output for reliable parsing
    - `--log-level ERROR` - Reduces noise in output
-   - `--pure` - Runs without external plugins
+   - `--pure` (when supported) - Runs without external plugins
    - `--dir <workspace>` - Forces OpenCode to run from the exact benchmark workspace
    - No `--attach` flag - runs directly without server
+   - Older OpenCode builds may not expose `--pure`; the adapter detects supported run features and omits the flag automatically.
 
 2. **Work Directory Setup**:
    ```typescript

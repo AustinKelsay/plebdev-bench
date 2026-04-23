@@ -31,14 +31,19 @@ const INTERNAL_TOOL_FILE_PATH_MARKER_PATTERN =
 	/(?:<parameter=filePath>|\bfilePath\s*:)/i;
 
 const AGENT_REQUESTED_INPUT_PATTERNS = [
-	/\bwould you like me to continue\b/i,
-	/\breached the maximum number of actions(?:[\s\S]*?)\bwithout user input\b/i,
+	/\bwould you like me to continue\?\s*(?:i\s+)?(?:have\s+)?reached the maximum number of actions\b/i,
+	/\breached the maximum number of actions(?:[\s\S]{0,160})\bwithout user input\b(?:[\s\S]{0,160})\bwould you like me to continue\??\b/i,
 	/\b(?:assistant|agent)\s+(?:is\s+)?operating\s+without\s+user\s+input\b/i,
-	/\bawaiting user input\b/i,
-	/\bneed(?:ing)? user input\b/i,
-	/\bplease confirm(?:\s+to\s+continue|\s+that\s+you\s+want\s+to\s+continue|\s+how\s+you(?:'d| would)\s+like\s+to\s+proceed)\b/i,
-	/\bneed your confirmation\b/i,
+	/\b(?:assistant|agent|harness|goose|opencode)\b[\s\S]{0,120}\b(?:awaiting|needs?|needing|requires?)\s+user\s+input\b/i,
+	/\b(?:awaiting|needs?|needing|requires?)\s+user\s+input\b[\s\S]{0,120}\b(?:assistant|agent|harness|goose|opencode)\b/i,
+	/\b(?:assistant|agent|harness|goose|opencode)\b[\s\S]{0,120}\bplease confirm\s+(?:to\s+(?:continue|proceed)|that\s+you\s+want\s+(?:me|the\s+run|the\s+agent)\s+to\s+continue|how\s+you(?:'d| would)\s+like\s+to\s+proceed)\b/i,
+	/\bplease confirm\s+(?:to\s+(?:continue|proceed)|that\s+you\s+want\s+(?:me|the\s+run|the\s+agent)\s+to\s+continue)\b[\s\S]{0,120}\b(?:assistant|agent|harness|goose|opencode)\b/i,
+	/\b(?:assistant|agent|harness|goose|opencode)\b[\s\S]{0,120}\bneeds?\s+your\s+confirmation(?:\s+to\s+(?:continue|proceed))?\b/i,
 ] as const;
+
+interface TranscriptOrInputTaintOptions {
+	source?: "harness" | "artifact";
+}
 
 /**
  * Builds a trustworthy signal assessment.
@@ -284,11 +289,18 @@ export function isInternalToolTranscriptOutput(output: string): boolean {
  * Detects outputs where the agent is asking for user confirmation/input.
  *
  * @param output - Raw generation output
+ * @param options - Context for deciding whether input-request phrases are boundary text
  * @returns True when output asks the user to continue or confirm
  */
-export function isAgentRequestedInputOutput(output: string): boolean {
+export function isAgentRequestedInputOutput(
+	output: string,
+	options: TranscriptOrInputTaintOptions = {},
+): boolean {
 	const trimmed = output.trim();
 	if (trimmed.length === 0) {
+		return false;
+	}
+	if ((options.source ?? "harness") !== "harness") {
 		return false;
 	}
 	return AGENT_REQUESTED_INPUT_PATTERNS.some((pattern) =>
@@ -300,16 +312,18 @@ export function isAgentRequestedInputOutput(output: string): boolean {
  * Collects transcript/input-specific taint reasons for harness boundary output.
  *
  * @param output - Raw or normalized output text
+ * @param options - Context for filtering harness-boundary-only patterns
  * @returns Stable taint reasons for non-semantic transcript/input leakage
  */
 export function getTranscriptOrInputTaintReasons(
 	output: string,
+	options: TranscriptOrInputTaintOptions = {},
 ): SignalAssessmentReason[] {
 	const reasons: SignalAssessmentReason[] = [];
 	if (isInternalToolTranscriptOutput(output)) {
 		reasons.push("internal_tool_transcript");
 	}
-	if (isAgentRequestedInputOutput(output)) {
+	if (isAgentRequestedInputOutput(output, options)) {
 		reasons.push("agent_requested_input");
 	}
 	return reasons;
@@ -348,7 +362,9 @@ export function finalizeItemSignalAssessment(input: {
 	if (isLikelyToolCallPayload(input.output)) {
 		reasons.push("tool_call_not_executed");
 	}
-	reasons.push(...getTranscriptOrInputTaintReasons(input.output));
+	reasons.push(
+		...getTranscriptOrInputTaintReasons(input.output, { source: "artifact" }),
+	);
 
 	assessment = appendSignalAssessmentReasons(assessment, reasons);
 	return assessment;

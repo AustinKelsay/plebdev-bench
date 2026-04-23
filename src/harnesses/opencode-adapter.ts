@@ -3,7 +3,7 @@
  * Exports: createOpenCodeAdapter
  *
  * Runs OpenCode directly with generated per-item config:
- * `opencode run <prompt> --model <provider>/<model> --format json --dir <workspace>`
+ * `opencode run --model <provider>/<model> --format json --dir <workspace> <prompt>`
  *
  * Invariants:
  * - The public harness name remains `opencode`.
@@ -161,17 +161,24 @@ export function createOpenCodeAdapter(): Harness {
 
 		async ping(): Promise<boolean> {
 			try {
-				const result = await execa("opencode", ["--version"], {
-					timeout: 5000,
-				});
-				const version = result.stdout.trim();
-				const versionMatch = version.match(/(\d+)\.(\d+)/);
-				if (!versionMatch) return true;
-
-				const major = Number.parseInt(versionMatch[1], 10);
-				const minor = Number.parseInt(versionMatch[2], 10);
-				if (!(major > 1 || (major === 1 && minor >= 1))) {
-					return false;
+				try {
+					const result = await execa("opencode", ["--version"], {
+						timeout: 5000,
+					});
+					const version = result.stdout.trim();
+					const versionMatch = version.match(/(\d+)\.(\d+)/);
+					logger.debug(
+						{
+							version,
+							parsedVersion: versionMatch?.[0],
+						},
+						"Detected OpenCode version",
+					);
+				} catch (error) {
+					logger.debug(
+						{ err: error },
+						"OpenCode version probe failed; using run feature detection",
+					);
 				}
 				const features = await getOpenCodeRunFeatures();
 				return isOpenCodeRunCompatible(features);
@@ -216,7 +223,6 @@ export function createOpenCodeAdapter(): Harness {
 					configDir: artifacts.configDir,
 					configPath: artifacts.configPath,
 					configJson: configResult.configJson,
-					runtimeName: runtime.name,
 				});
 				const fullPrompt =
 					promptMode === "workspace"
@@ -339,15 +345,23 @@ export function createOpenCodeAdapter(): Harness {
 					const elapsedMs = Math.round(performance.now() - startTime);
 					const remainingMs = timeoutMs - elapsedMs;
 					if (remainingMs > 1000) {
-						const retryResult = await createOpenCodeAdapter().generate({
-							...opts,
-							prompt: appendRetryMarker(promptWithoutMarker),
-							timeoutMs: remainingMs,
-						});
-						return {
-							...retryResult,
-							durationMs: Math.round(performance.now() - startTime),
-						};
+						try {
+							const retryResult = await createOpenCodeAdapter().generate({
+								...opts,
+								prompt: appendRetryMarker(promptWithoutMarker),
+								timeoutMs: remainingMs,
+							});
+							return {
+								...retryResult,
+								durationMs: Math.round(performance.now() - startTime),
+							};
+						} catch (error) {
+							const totalDurationMs = Math.round(performance.now() - startTime);
+							if (error !== null && typeof error === "object") {
+								Object.assign(error, { durationMs: totalDurationMs });
+							}
+							throw error;
+						}
 					}
 				}
 

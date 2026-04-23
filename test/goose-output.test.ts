@@ -5,7 +5,7 @@
  * Invariants:
  * - Assistant JSON payloads normalize to assistant text
  * - Tool-call JSON payloads extract code-bearing content
- * - Parsed payloads with no assistant artifact normalize to empty output
+ * - Parsed payloads with no assistant artifact preserve diagnostic JSON
  */
 
 import { describe, expect, it } from "vitest";
@@ -69,20 +69,19 @@ describe("normalizeGooseOutput", () => {
 		});
 	});
 
-	it("returns empty normalized output for parsed status-only payloads", () => {
-		const normalized = normalizeGooseOutput(
-			JSON.stringify({
-				messages: [
-					{
-						role: "system",
-						content: [{ text: "still working" }],
-					},
-				],
-			}),
-		);
+	it("preserves parsed status-only payloads for diagnostics", () => {
+		const raw = JSON.stringify({
+			messages: [
+				{
+					role: "system",
+					content: [{ text: "still working" }],
+				},
+			],
+		});
+		const normalized = normalizeGooseOutput(raw);
 
 		expect(normalized).toEqual({
-			output: "",
+			output: raw,
 			method: "json",
 		});
 	});

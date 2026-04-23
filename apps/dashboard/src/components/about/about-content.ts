@@ -53,7 +53,7 @@ export interface AboutTestDefinition {
 export const aboutFacts: AboutFact[] = [
 	{
 		label: "Matrix",
-		value: "runtime x harness x model x test x passType",
+		value: "runtime x harness x model x test x promptMode",
 		detail: "Reproducible Cartesian product so results are comparable.",
 	},
 	{
@@ -93,9 +93,9 @@ export const benchmarkDimensions: BenchmarkDimension[] = [
 			"Task under `src/tests/<slug>` with prompts, scoring spec, and optional rubric.",
 	},
 	{
-		name: "passType",
+		name: "promptMode",
 		description:
-			"`blind` (task contract only) or `informed` (includes benchmark framing).",
+			"`blind` (task contract only) or `informed` (includes benchmark framing) - prompt mode.",
 	},
 ];
 

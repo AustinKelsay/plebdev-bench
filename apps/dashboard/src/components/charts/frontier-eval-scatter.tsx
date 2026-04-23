@@ -26,11 +26,19 @@ interface FrontierEvalScatterProps {
 	items: MatrixItemResult[];
 }
 
-const HARNESS_COLORS: Record<string, string> = {
+const HARNESS_COLORS = {
 	direct: "hsl(215, 70%, 62%)", // steel blue
 	goose: "hsl(142, 60%, 49%)", // brand green
 	opencode: "hsl(38, 80%, 58%)", // warm amber
-};
+} as const;
+
+type KnownHarnessName = keyof typeof HARNESS_COLORS;
+
+function readHarnessColor(harness: string): string {
+	return Object.prototype.hasOwnProperty.call(HARNESS_COLORS, harness)
+		? HARNESS_COLORS[harness as KnownHarnessName]
+		: CHART_COLORS.muted;
+}
 
 function CustomTooltip({
 	active,
@@ -104,7 +112,7 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 	const dataByHarness = harnesses.map((harness) => ({
 		harness,
 		data: dataPoints.filter((d) => d.harness === harness),
-		color: HARNESS_COLORS[harness] || CHART_COLORS.muted,
+		color: readHarnessColor(harness),
 	}));
 
 	// Determine if we have token data for point sizing

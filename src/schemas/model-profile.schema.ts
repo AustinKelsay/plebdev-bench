@@ -1,7 +1,8 @@
 /**
  * Purpose: Canonical model-profile schemas for grouping runtime-specific variants.
  * Exports: ModelProfileSchema, ModelProfile, ConfiguredModelVariantSchema,
- *          ConfiguredModelProfileSchema, ModelProfileRegistrySchema,
+ *          ConfiguredModelProfileSchema, ArtifactConfiguredModelProfileSchema,
+ *          ModelProfileRegistrySchema, ArtifactModelProfileRegistrySchema,
  *          ModelProfileFileSchema
  *
  * Model profiles separate stable model identity from runtime-specific deployment
@@ -96,23 +97,41 @@ export type ConfiguredModelVariantValue = z.infer<
 	typeof ConfiguredModelVariantValueSchema
 >;
 
-/** Configured canonical model profile with runtime-specific variants. */
-export const ConfiguredModelProfileSchema = z.object({
+const ConfiguredModelProfileBaseSchema = z.object({
 	profileLabel: z.string().trim().min(1).optional(),
 	family: z.string().trim().min(1).optional(),
 	parametersBillions: z.number().positive().optional(),
 	parameterScaleLabel: z.string().trim().min(1).optional(),
 	provider: z.string().trim().min(1).optional(),
 	tuning: z.string().trim().min(1).optional(),
-	variants: z.record(
-		SupportedRuntimeNameSchema,
-		ConfiguredModelVariantValueSchema,
-	),
 });
+
+/** Configured canonical model profile with active runtime-specific variants. */
+export const ConfiguredModelProfileSchema =
+	ConfiguredModelProfileBaseSchema.extend({
+		variants: z.record(
+			SupportedRuntimeNameSchema,
+			ConfiguredModelVariantValueSchema,
+		),
+	});
+
+/** Persisted canonical model profile with current and legacy artifact variants. */
+export const ArtifactConfiguredModelProfileSchema =
+	ConfiguredModelProfileBaseSchema.extend({
+		variants: z.record(
+			ArtifactRuntimeNameSchema,
+			ConfiguredModelVariantValueSchema,
+		),
+	});
 
 /** Configured canonical model profile type. */
 export type ConfiguredModelProfile = z.infer<
 	typeof ConfiguredModelProfileSchema
+>;
+
+/** Persisted canonical model profile type. */
+export type ArtifactConfiguredModelProfile = z.infer<
+	typeof ArtifactConfiguredModelProfileSchema
 >;
 
 /** Registry of canonical profile keys to configured model profiles. */
@@ -124,10 +143,21 @@ export const ModelProfileRegistrySchema = z.record(
 /** Registry of configured model profiles. */
 export type ModelProfileRegistry = z.infer<typeof ModelProfileRegistrySchema>;
 
+/** Persisted registry of canonical profile keys to artifact-compatible profiles. */
+export const ArtifactModelProfileRegistrySchema = z.record(
+	z.string().trim().min(1),
+	ArtifactConfiguredModelProfileSchema,
+);
+
+/** Registry of artifact-compatible model profiles. */
+export type ArtifactModelProfileRegistry = z.infer<
+	typeof ArtifactModelProfileRegistrySchema
+>;
+
 /** Versioned model-profile file wrapper. */
 export const ModelProfileFileSchema = z.object({
 	schemaVersion: z.literal(SCHEMA_VERSION),
-	models: ModelProfileRegistrySchema,
+	models: ArtifactModelProfileRegistrySchema,
 });
 
 /** Persisted model-profile file type. */

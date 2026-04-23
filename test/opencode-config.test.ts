@@ -73,7 +73,6 @@ describe("buildOpenCodeEnv", () => {
 			configDir: "/tmp/opencode-config",
 			configPath: "/tmp/opencode-config/opencode.json",
 			configJson: '{"permission":{"*":"allow"}}',
-			runtimeName: "ollama",
 		});
 
 		expect(env.OPENCODE_CONFIG_DIR).toBe("/tmp/opencode-config");

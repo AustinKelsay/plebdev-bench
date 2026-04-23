@@ -206,7 +206,7 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 
 - **Command model**: single primary command (no multi-step interactive wizard).
 - **Interactivity**: non-interactive by default; no “confirm plan” prompt in MVP.
-- **Discovery**: models/harnesses are auto-discovered by default; runtime is fixed to `ollama` unless explicitly passed as `--runtimes ollama`.
+- **Discovery**: models/harnesses are auto-discovered by default; runtime is fixed to `ollama` for the MVP.
 - **Run plan persistence**: save an explicit plan artifact per run for reproducibility.
 - **Results format**: one JSON per run (structured for easy aggregation/analysis).
 - **Exit codes**: non-zero only on crashes (failed tests/items are recorded but do not fail the process).

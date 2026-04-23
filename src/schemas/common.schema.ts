@@ -1,33 +1,10 @@
 /**
  * Purpose: Shared primitives and constants for the benchmark domain.
- * Exports: SCHEMA_VERSION, passTypes, PassTypeSchema, PassType,
- *          itemStatusTypes, ItemStatusSchema, ItemStatus,
- *          supportedRuntimeNames, SupportedRuntimeNameSchema, SupportedRuntimeName,
- *          artifactRuntimeNames, ArtifactRuntimeNameSchema, ArtifactRuntimeName,
- *          testCategories, TestCategorySchema, TestCategory,
- *          testScoringModes, TestScoringModeSchema, TestScoringMode,
- *          harnessCapabilities, HarnessCapabilitySchema, HarnessCapability,
- *          generationFailureTypes, GenerationFailureTypeSchema, GenerationFailureType,
- *          scoringFailureTypes, ScoringFailureTypeSchema, ScoringFailureType,
- *          frontierEvalFailureTypes, FrontierEvalFailureTypeSchema, FrontierEvalFailureType,
- *          signalAssessmentClassifications, SignalAssessmentClassificationSchema, SignalAssessmentClassification,
- *          signalAssessmentReasonTypes, SignalAssessmentReasonSchema, SignalAssessmentReason,
- *          SignalAssessmentSchema, SignalAssessment,
- *          verificationStatusTypes, VerificationStatusSchema, VerificationStatus,
- *          BenchmarkCheckpointSchema, BenchmarkCheckpoint,
- *          RuntimeEnvironmentSchema, RuntimeEnvironment,
- *          machinePlatformFamilies, MachinePlatformFamilySchema, MachinePlatformFamily,
- *          machineInstanceIdSources, MachineInstanceIdSourceSchema, MachineInstanceIdSource,
- *          acceleratorDetectionStatuses, AcceleratorDetectionStatusSchema, AcceleratorDetectionStatus,
- *          observedAcceleratorKinds, ObservedAcceleratorKindSchema, ObservedAcceleratorKind,
- *          LegacyHardwareProfileSchema, LegacyHardwareProfile,
- *          ObservedAcceleratorSchema, ObservedAccelerator,
- *          AcceleratorDetectionSchema, AcceleratorDetection,
- *          HardwareProfileSchema, HardwareProfile,
- *          NormalizedMachineProfileSchema, NormalizedMachineProfile,
- *          LegacyMachineProfileSchema, LegacyMachineProfile,
- *          MachineProfileSchema, MachineProfile,
- *          RunProvenanceSchema, RunProvenance
+ * Exports: schema version, domain literal lists, Zod schemas, and inferred types.
+ *
+ * Invariants:
+ * - `supportedRuntimeNames` is the active execution runtime set.
+ * - `artifactRuntimeNames` extends active runtimes for historical artifacts.
  */
 
 import { z } from "zod";
@@ -45,7 +22,7 @@ export const SupportedRuntimeNameSchema = z.literal("ollama");
 export type SupportedRuntimeName = z.infer<typeof SupportedRuntimeNameSchema>;
 
 /** Valid runtime names allowed when reading historical plan/result artifacts. */
-export const artifactRuntimeNames = ["ollama", "vllm"] as const;
+export const artifactRuntimeNames = [...supportedRuntimeNames, "vllm"] as const;
 
 /** Zod schema for runtimes allowed in stored artifacts. */
 export const ArtifactRuntimeNameSchema = z.enum(artifactRuntimeNames);

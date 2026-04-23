@@ -39,13 +39,16 @@ describe("workspace prompt parity", () => {
 		);
 
 		expect(prompt).toContain(
-			"Overwrite `checklist/steps.txt` so its exact contents are the three lines below",
-		);
-		expect(prompt).toContain("bootstrap");
-		expect(prompt).toContain("verify-inputs");
-		expect(prompt).toContain("archive-results");
-		expect(prompt).toContain(
-			'`{"status":"ready","createdBy":"workspace-smoke","steps":3}`',
+			[
+				"2. Overwrite `checklist/steps.txt` so its exact contents are the three lines below, ending with a trailing newline:",
+				"   ```text",
+				"   bootstrap",
+				"   verify-inputs",
+				"   archive-results",
+				"   ```",
+				"3. Create `artifacts/summary.json` with:",
+				'   `{"status":"ready","createdBy":"workspace-smoke","steps":3}`',
+			].join("\n"),
 		);
 		expect(prompt).toContain("Do not modify `docs/notes.txt`.");
 		expect(prompt).toContain("Do not create or delete any other files.");

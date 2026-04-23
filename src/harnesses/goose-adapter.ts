@@ -2,14 +2,10 @@
  * Purpose: Goose CLI adapter implementing the Harness interface.
  * Exports: createGooseAdapter, GooseAdapterOptions
  *
- * This adapter runs Goose via CLI using execa.
- * Command: goose run --no-session --provider <provider> --model <model> -q --output-format json -i -
- * Prompt is passed via stdin and asks for final TypeScript code output.
- *
  * Invariants:
- * - Uses runtime.baseUrl for provider-specific API routing
- * - Timeout handled via execa options
- * - Tool output is optional; plain assistant output is still scored
+ * - Runs Goose through execa with stdin prompts and bounded timeouts.
+ * - Passes runtime.baseUrl through Goose env for provider API routing.
+ * - Tool output is optional; plain assistant output is still scored.
  */
 
 import * as crypto from "node:crypto";
@@ -36,7 +32,6 @@ import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
-
 /** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
 
@@ -173,7 +168,6 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 
 		async ping(): Promise<boolean> {
 			try {
-				// Check if goose CLI is available
 				await execa("which", ["goose"], { timeout: 5000 });
 				return true;
 			} catch {
@@ -216,11 +210,14 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			const provider = "ollama";
 
 			// Set up environment for Goose (headless mode)
-			const env = {
+			const env: NodeJS.ProcessEnv = {
 				...process.env,
 				GOOSE_PROVIDER: provider,
 				GOOSE_MODEL: model,
 			};
+			if (runtime.baseUrl) {
+				env.GOOSE_BASE_URL = runtime.baseUrl;
+			}
 
 			const fullPrompt =
 				promptMode === "workspace"

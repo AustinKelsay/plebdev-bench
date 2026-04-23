@@ -37,7 +37,7 @@ const OPENCODE_PERMISSION_POLICY: OpenCodePermissionPolicy = {
 };
 
 const PERMISSION_DENIAL_PATTERN =
-	/(permission requested|auto-rejecting|external_directory|permission denied|permission.*rejected|rejected.*permission|access denied)/i;
+	/(?:\bpermission\b[^\r\n.;]{0,40}\b(?:denied|rejected)\b|\b(?:denied|rejected)\b[^\r\n.;]{0,40}\bpermission\b|\baccess\s+denied\b|\bauto-?reject(?:ing|ed)?\b|\bexternal_directory\b[^\r\n.;]{0,80}\b(?:denied|rejected|auto-?reject(?:ing|ed)?)\b)/i;
 
 /**
  * Detects OpenCode permission-denial diagnostics in raw text.

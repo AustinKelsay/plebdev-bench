@@ -105,6 +105,10 @@ export const runCommand = new Command("run")
 		"Limit to specific harnesses: direct, goose, opencode (default: all available). 'ollama' is accepted as alias for 'direct'.",
 	)
 	.option("--ollama-url <url>", "Ollama API base URL", "http://localhost:11434")
+	.option(
+		"--vllm-url <url>",
+		"Deprecated alias for --ollama-url; runtime remains Ollama-only",
+	)
 	.option("--timeout <ms>", "Generation timeout in milliseconds", "300000")
 	.option("--goose-max-turns <n>", "Goose max turns for initial attempt", "1")
 	.option(
@@ -216,10 +220,29 @@ export const runCommand = new Command("run")
 					"Warning: --machine-label is deprecated; use --machine-display-label",
 				);
 			}
+			const parsedOllamaUrl = normalizeOptionalStringOption(
+				"--ollama-url",
+				options.ollamaUrl,
+			);
+			const deprecatedVllmUrl = normalizeOptionalStringOption(
+				"--vllm-url",
+				options.vllmUrl,
+			);
+			if (deprecatedVllmUrl) {
+				logger.warn(
+					"Warning: --vllm-url is deprecated; use --ollama-url. This alias will be removed next release.",
+				);
+			}
+			const hasExplicitOllamaUrl =
+				runCommand.getOptionValueSource("ollamaUrl") === "cli";
+			const resolvedOllamaUrl =
+				(hasExplicitOllamaUrl || !deprecatedVllmUrl
+					? parsedOllamaUrl
+					: deprecatedVllmUrl) ?? "http://localhost:11434";
 
 			// Build config from CLI options
 			const configInput: Partial<BenchConfig> = {
-				ollamaBaseUrl: options.ollamaUrl,
+				ollamaBaseUrl: resolvedOllamaUrl,
 				generateTimeoutMs: Number.parseInt(options.timeout, 10),
 				gooseMaxTurns: parseStrictIntegerOption(
 					"--goose-max-turns",

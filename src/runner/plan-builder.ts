@@ -96,9 +96,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	);
 
 	const runtimes =
-		config.runtimes.length > 0
-			? (config.runtimes as RuntimeName[])
-			: [...RUNTIME_NAMES];
+		config.runtimes.length > 0 ? config.runtimes : [...RUNTIME_NAMES];
 	log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 
 	// Discover models per runtime

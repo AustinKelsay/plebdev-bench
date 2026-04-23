@@ -117,7 +117,14 @@ export async function prepareOpenCodeArtifacts(opts: {
 		executionWorkspaceDir,
 		parsed.solutionFilename,
 	);
-	if (!solutionPath.startsWith(`${executionWorkspaceDir}${path.sep}`)) {
+	const relativeSolutionPath = path.relative(
+		executionWorkspaceDir,
+		solutionPath,
+	);
+	if (
+		relativeSolutionPath.startsWith("..") ||
+		path.isAbsolute(relativeSolutionPath)
+	) {
 		throw new Error("solutionFilename resolved outside executionWorkspaceDir");
 	}
 

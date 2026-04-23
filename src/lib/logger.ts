@@ -8,6 +8,17 @@
 
 import pino from "pino";
 import pretty from "pino-pretty";
+import { z } from "zod";
+
+const EnvSchema = z
+	.object({
+		LOG_LEVEL: z
+			.enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])
+			.optional(),
+	})
+	.passthrough();
+
+const parsedEnv = EnvSchema.parse(process.env);
 
 const prettyStream = pretty({
 	colorize: true,
@@ -37,7 +48,7 @@ export const logger = pino(
 			censor: "[redacted]",
 			remove: false,
 		},
-		level: process.env.LOG_LEVEL ?? "info",
+		level: parsedEnv.LOG_LEVEL ?? "info",
 	},
 	prettyStream,
 );

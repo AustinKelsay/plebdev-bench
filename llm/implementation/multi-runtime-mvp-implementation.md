@@ -1,4 +1,6 @@
-Purpose: Historical document for the completed multi-runtime MVP implementation. Kept only for artifact/debugging context; current benchmark execution is Ollama-only.
+HISTORICAL BEHAVIOR (Feb 8, 2026) — DO NOT USE FOR CURRENT RUNTIME
+
+Archived for artifact/debugging context; active benchmarks are Ollama-only.
 
 # Multi-Runtime MVP Implementation
 

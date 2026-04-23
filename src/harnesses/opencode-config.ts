@@ -95,7 +95,7 @@ export function buildOpenCodeConfig(
 /**
  * Builds environment overrides for a headless OpenCode run.
  *
- * @param opts - Generated config directory/path/content and runtime name
+ * @param opts - Generated config directory/path/content
  * @returns Environment variables for `execa`
  * @throws z.ZodError when inputs fail validation
  */
@@ -103,14 +103,12 @@ export function buildOpenCodeEnv(opts: {
 	configDir: string;
 	configPath: string;
 	configJson: string;
-	runtimeName: "ollama";
 }): Record<string, string> {
 	const parsed = z
 		.object({
 			configDir: z.string().min(1),
 			configPath: z.string().min(1),
 			configJson: z.string().min(1),
-			runtimeName: RuntimeNameSchema,
 		})
 		.parse(opts);
 	const safeEnv = Object.fromEntries(

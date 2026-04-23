@@ -1,5 +1,10 @@
 /**
  * Purpose: Regression tests for Goose workspace turn budgeting.
+ * Exports: createGooseAdapter test suite
+ *
+ * Invariants:
+ * - Runtime fixtures are deterministic and side-effect free.
+ * - Temp workspaces are removed after each test.
  */
 
 import * as fs from "node:fs";
@@ -14,6 +19,21 @@ vi.mock("execa", () => ({
 	execa: execaMock,
 }));
 
+function createRuntime(): Runtime {
+	return {
+		name: "ollama",
+		baseUrl: "http://localhost:11434",
+		apiFormat: "ollama",
+		ping: async () => true,
+		listModels: async () => ["qwen3.5:4b"],
+		getModelInfo: async () => ({
+			name: "qwen3.5:4b",
+			sizeBytes: 0,
+			parametersBillions: 4,
+		}),
+	};
+}
+
 describe("createGooseAdapter", () => {
 	beforeEach(() => {
 		execaMock.mockReset();
@@ -26,18 +46,7 @@ describe("createGooseAdapter", () => {
 		const workspaceDir = await fs.promises.mkdtemp(
 			path.join(os.tmpdir(), "plebdev-goose-workspace-"),
 		);
-		const runtime: Runtime = {
-			name: "ollama",
-			baseUrl: "http://localhost:11434",
-			apiFormat: "ollama",
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-			getModelInfo: async () => ({
-				name: "qwen3.5:4b",
-				sizeBytes: 0,
-				parametersBillions: 4,
-			}),
-		};
+		const runtime = createRuntime();
 
 		execaMock.mockResolvedValue({
 			exitCode: 0,
@@ -67,6 +76,11 @@ describe("createGooseAdapter", () => {
 				expect.arrayContaining(["--max-turns", "8"]),
 				expect.objectContaining({
 					cwd: workspaceDir,
+					env: expect.objectContaining({
+						GOOSE_BASE_URL: "http://localhost:11434",
+						GOOSE_MODEL: "qwen3.5:4b",
+						GOOSE_PROVIDER: "ollama",
+					}),
 					input: expect.stringContaining("Workspace benchmark mode."),
 				}),
 			);
@@ -82,18 +96,7 @@ describe("createGooseAdapter", () => {
 		const workspaceDir = await fs.promises.mkdtemp(
 			path.join(os.tmpdir(), "plebdev-goose-tool-call-"),
 		);
-		const runtime: Runtime = {
-			name: "ollama",
-			baseUrl: "http://localhost:11434",
-			apiFormat: "ollama",
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-			getModelInfo: async () => ({
-				name: "qwen3.5:4b",
-				sizeBytes: 0,
-				parametersBillions: 4,
-			}),
-		};
+		const runtime = createRuntime();
 		execaMock.mockResolvedValue({
 			exitCode: 0,
 			stdout: JSON.stringify({
@@ -132,18 +135,7 @@ describe("createGooseAdapter", () => {
 		const workspaceDir = await fs.promises.mkdtemp(
 			path.join(os.tmpdir(), "plebdev-goose-workspace-prompt-"),
 		);
-		const runtime: Runtime = {
-			name: "ollama",
-			baseUrl: "http://localhost:11434",
-			apiFormat: "ollama",
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-			getModelInfo: async () => ({
-				name: "qwen3.5:4b",
-				sizeBytes: 0,
-				parametersBillions: 4,
-			}),
-		};
+		const runtime = createRuntime();
 		execaMock.mockResolvedValue({
 			exitCode: 0,
 			stdout: JSON.stringify({
@@ -189,18 +181,7 @@ describe("createGooseAdapter", () => {
 		const workspaceDir = await fs.promises.mkdtemp(
 			path.join(os.tmpdir(), "plebdev-goose-stderr-taint-"),
 		);
-		const runtime: Runtime = {
-			name: "ollama",
-			baseUrl: "http://localhost:11434",
-			apiFormat: "ollama",
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-			getModelInfo: async () => ({
-				name: "qwen3.5:4b",
-				sizeBytes: 0,
-				parametersBillions: 4,
-			}),
-		};
+		const runtime = createRuntime();
 		execaMock.mockResolvedValue({
 			exitCode: 0,
 			stdout: "export function add(a: number, b: number) { return a + b; }",
@@ -234,18 +215,7 @@ describe("createGooseAdapter", () => {
 		const workspaceDir = await fs.promises.mkdtemp(
 			path.join(os.tmpdir(), "plebdev-goose-error-"),
 		);
-		const runtime: Runtime = {
-			name: "ollama",
-			baseUrl: "http://localhost:11434",
-			apiFormat: "ollama",
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-			getModelInfo: async () => ({
-				name: "qwen3.5:4b",
-				sizeBytes: 0,
-				parametersBillions: 4,
-			}),
-		};
+		const runtime = createRuntime();
 		execaMock.mockRejectedValueOnce(
 			Object.assign(new Error("goose failed"), {
 				stdout: '{"sessionID":"abc","type":"step_start"}',
@@ -285,18 +255,7 @@ describe("createGooseAdapter", () => {
 		const workspaceDir = await fs.promises.mkdtemp(
 			path.join(os.tmpdir(), "plebdev-goose-empty-error-"),
 		);
-		const runtime: Runtime = {
-			name: "ollama",
-			baseUrl: "http://localhost:11434",
-			apiFormat: "ollama",
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-			getModelInfo: async () => ({
-				name: "qwen3.5:4b",
-				sizeBytes: 0,
-				parametersBillions: 4,
-			}),
-		};
+		const runtime = createRuntime();
 		execaMock.mockRejectedValueOnce(
 			Object.assign(new Error("goose failed without streams"), {
 				stdout: "",

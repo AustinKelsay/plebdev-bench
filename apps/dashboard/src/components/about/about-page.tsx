@@ -89,7 +89,7 @@ export function AboutPage() {
 					</CardTitle>
 					<CardDescription className="max-w-3xl text-sm leading-6">
 						Each run expands a matrix of runtime × harness × model × test ×
-						prompt mode, then saves results as JSON artifacts and exits. The
+						promptMode, then saves results as JSON artifacts and exits. The
 						dashboard reads those artifacts — it never runs the benchmark
 						itself.
 					</CardDescription>

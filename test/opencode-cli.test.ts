@@ -1,5 +1,10 @@
 /**
  * Purpose: Regression tests for OpenCode CLI feature parsing and argv building.
+ * Exports: OpenCode CLI helper test suite
+ *
+ * Invariants:
+ * - Argv ordering is deterministic with flags before the positional prompt.
+ * - Tests do not spawn OpenCode or mutate filesystem state.
  */
 
 import { describe, expect, it } from "vitest";
@@ -35,7 +40,6 @@ describe("OpenCode CLI helpers", () => {
 		expect(args).not.toContain("--pure");
 		expect(args).toEqual([
 			"run",
-			"Do the task.",
 			"--model",
 			"ollama/gpt-oss:20b",
 			"--format",
@@ -44,6 +48,7 @@ describe("OpenCode CLI helpers", () => {
 			"ERROR",
 			"--dir",
 			"/tmp/workspace",
+			"Do the task.",
 		]);
 	});
 });

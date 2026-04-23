@@ -18,6 +18,7 @@ import {
 	parseInlineModelProfile,
 	resolveModelSelection,
 } from "../src/lib/model-profiles.js";
+import { SCHEMA_VERSION } from "../src/schemas/index.js";
 import {
 	ConfiguredModelProfileSchema,
 	ModelProfileFileSchema,
@@ -93,7 +94,7 @@ describe("model-profile registry provenance", () => {
 				profilePath,
 				JSON.stringify(
 					{
-						schemaVersion: "0.5.1",
+						schemaVersion: SCHEMA_VERSION,
 						models: {
 							"qwen3-27b-instruct": {
 								profileLabel: "Qwen 3 27B Instruct",
@@ -101,6 +102,13 @@ describe("model-profile registry provenance", () => {
 								variants: {
 									ollama: "qwen3:27b",
 									vllm: "Qwen/Qwen3-27B-Instruct",
+								},
+							},
+							"legacy-vllm-only": {
+								profileLabel: "Legacy vLLM Only",
+								family: "qwen3",
+								variants: {
+									vllm: "Qwen/Qwen3-32B-Instruct",
 								},
 							},
 						},
@@ -118,6 +126,7 @@ describe("model-profile registry provenance", () => {
 					"vllm",
 				),
 			).toBe(false);
+			expect(registry["legacy-vllm-only"]).toBeUndefined();
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
@@ -168,6 +177,29 @@ describe("ModelProfileFileSchema", () => {
 				},
 			}).success,
 		).toBe(false);
+		expect(
+			ConfiguredModelProfileSchema.safeParse({
+				variants: {
+					vllm: "Qwen/Qwen3-27B-Instruct",
+				},
+			}).success,
+		).toBe(false);
+	});
+
+	it("accepts legacy artifact runtime keys in persisted files", () => {
+		expect(
+			ModelProfileFileSchema.safeParse({
+				schemaVersion: SCHEMA_VERSION,
+				models: {
+					"qwen3-27b-instruct": {
+						variants: {
+							ollama: "qwen3:27b",
+							vllm: "Qwen/Qwen3-27B-Instruct",
+						},
+					},
+				},
+			}).success,
+		).toBe(true);
 	});
 });
 

@@ -413,6 +413,48 @@ describe("createOpenCodeAdapter", () => {
 		});
 	});
 
+	it("preserves execa output and timing when OpenCode execution rejects", async () => {
+		const { createOpenCodeAdapter } = await import(
+			"../src/harnesses/opencode-adapter.js"
+		);
+		execaMock.mockImplementation((command: string) => {
+			if (command !== "opencode") {
+				throw new Error(`Unexpected command: ${command}`);
+			}
+			const stdout = new PassThrough();
+			const stderr = new PassThrough();
+			const processError = Object.assign(new Error("provider crashed"), {
+				stdout: "partial stdout",
+				stderr: "provider failed",
+				output: ["partial stdout", "provider failed"],
+				durationMs: 456,
+			});
+			const proc = Promise.reject(processError) as Promise<never> & {
+				pid: number;
+				stdout: PassThrough;
+				stderr: PassThrough;
+			};
+			Object.assign(proc, { pid: 123, stdout, stderr });
+			return proc;
+		});
+
+		const adapter = createOpenCodeAdapter();
+		await expect(
+			adapter.generate({
+				model: "qwen3.5:4b",
+				prompt: "Return an add function.",
+				timeoutMs: 5_000,
+				runtime: createRuntime(),
+			}),
+		).rejects.toMatchObject({
+			message: "provider crashed",
+			output: "partial stdout\nprovider failed",
+			stdout: "partial stdout",
+			stderr: "provider failed",
+			durationMs: 456,
+		});
+	});
+
 	it("retries protocol-only code-output once, then throws with taint evidence", async () => {
 		const { createOpenCodeAdapter } = await import(
 			"../src/harnesses/opencode-adapter.js"

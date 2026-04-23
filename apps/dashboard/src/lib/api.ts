@@ -1,14 +1,16 @@
-import {
-	parseKnownPlanPayload,
-	parseKnownRunPayload,
-} from "../../../../src/lib/machine-profile/legacy.js";
 /**
  * Purpose: Fetch run data from static JSON files.
  * Exports: fetchRuns, fetchRun, fetchPlan, fetchRunWithPlan, fetchDashboardIndex, fetchLatestAggregate
  *
- * Data is loaded from the results directory via Vite's dev server.
- * All fetched JSON is validated with Zod schemas at this boundary.
+ * Invariants:
+ * - Data is loaded from the results directory via Vite's dev server.
+ * - All fetched JSON is validated with Zod schemas at this boundary.
  */
+
+import {
+	parseKnownPlanPayload,
+	parseKnownRunPayload,
+} from "../../../../src/lib/machine-profile/legacy.js";
 import {
 	DashboardIndexLegacyOrCurrentSchema,
 	LeaderboardAggregateSchema,

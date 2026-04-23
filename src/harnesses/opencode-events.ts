@@ -220,6 +220,7 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 	}
 
 	const textParts: string[] = [];
+	const unparsedLines: string[] = [];
 	let parsedLines = 0;
 	let hasToolUse = false;
 	let hasToolError = false;
@@ -227,18 +228,24 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 	let permissionDenied = false;
 	let toolCallOutput: string | null = null;
 
-	for (const line of trimmed
+	const lines = trimmed
 		.split(/\r?\n/)
-		.filter((candidate) => candidate.trim().length > 0)) {
+		.filter((candidate) => candidate.trim().length > 0);
+
+	for (const line of lines) {
 		let parsedLine: unknown;
 		try {
 			parsedLine = JSON.parse(line) as unknown;
 		} catch {
+			unparsedLines.push(line);
 			continue;
 		}
 
 		const eventParse = OpenCodeEventSchema.safeParse(parsedLine);
-		if (!eventParse.success) continue;
+		if (!eventParse.success) {
+			unparsedLines.push(line);
+			continue;
+		}
 		const event = eventParse.data;
 		parsedLines += 1;
 
@@ -268,29 +275,38 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 		toolErrorText,
 		permissionDenied,
 	};
+	const allLinesParsed = parsedLines === lines.length;
 
 	if (toolCallOutput) {
 		return buildParsedEvents(toolCallOutput, "tool_call", diagnostics);
 	}
 	if (parsedLines > 0 && textParts.length > 0) {
 		const combined = textParts.join("");
-		const toolCallCode = extractFromToolCallText(combined);
+		const mixedOutput =
+			unparsedLines.length > 0
+				? [combined, ...unparsedLines].join("\n")
+				: combined;
+		const toolCallCode = extractFromToolCallText(mixedOutput);
 		return buildParsedEvents(
-			toolCallCode ?? combined,
-			toolCallCode ? "tool_call" : "json",
+			toolCallCode ?? mixedOutput,
+			toolCallCode ? "tool_call" : unparsedLines.length > 0 ? "raw" : "json",
 			diagnostics,
 		);
 	}
-	if (parsedLines > 0) {
+	if (parsedLines > 0 && allLinesParsed) {
 		return buildParsedEvents("", "json", diagnostics);
 	}
 
 	const directToolCallCode = extractFromToolCallText(raw);
 	if (directToolCallCode) {
 		return buildParsedEvents(directToolCallCode, "tool_call", {
-			hasProtocolEvents: false,
+			...diagnostics,
+			hasProtocolEvents: parsedLines > 0,
 			hasToolUse: true,
 		});
+	}
+	if (parsedLines > 0) {
+		return buildParsedEvents(raw, "raw", diagnostics);
 	}
 
 	return buildParsedEvents(raw, "raw", { hasProtocolEvents: false });

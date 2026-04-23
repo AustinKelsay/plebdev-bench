@@ -152,14 +152,17 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 
 	const profileWrapper = ModelProfileFileSchema.safeParse(parsed);
 	if (profileWrapper.success) {
+		const normalized = normalizeLoadedModelProfileRegistry(
+			LegacyCompatibleModelProfileRegistrySchema.parse(
+				profileWrapper.data.models,
+			),
+			log,
+		);
 		log.debug(
-			{ profileCount: Object.keys(profileWrapper.data.models).length },
+			{ profileCount: Object.keys(normalized).length },
 			"Loaded versioned model profile file",
 		);
-		return withRegistryProvenance(
-			profileWrapper.data.models,
-			"configured_profile",
-		);
+		return withRegistryProvenance(normalized, "configured_profile");
 	}
 
 	const legacyCompatibleProfileWrapper =

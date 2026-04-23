@@ -59,28 +59,60 @@ export function normalizeLoadedModelProfileRegistry(
 	log: RegistryLogger,
 ): ModelProfileRegistry {
 	const droppedRuntimeNames = new Set<string>();
-	const normalized = Object.fromEntries(
-		Object.entries(registry).map(([profileKey, profile]) => [
+	const droppedProfiles: Array<{
+		profileKey: string;
+		originalRuntimes: string[];
+	}> = [];
+	const normalizedEntries: Array<
+		[string, z.infer<typeof LegacyCompatibleConfiguredModelProfileSchema>]
+	> = [];
+
+	for (const [profileKey, profile] of Object.entries(registry)) {
+		const originalRuntimes = Object.keys(profile.variants);
+		const variants = Object.fromEntries(
+			Object.entries(profile.variants).filter(([runtime]) => {
+				const isSupported = SUPPORTED_RUNTIME_NAME_SET.has(runtime);
+				if (!isSupported) {
+					droppedRuntimeNames.add(runtime);
+				}
+				return isSupported;
+			}),
+		);
+
+		if (Object.keys(variants).length === 0) {
+			droppedProfiles.push({
+				profileKey,
+				originalRuntimes: originalRuntimes.sort(),
+			});
+			continue;
+		}
+
+		normalizedEntries.push([
 			profileKey,
 			{
 				...profile,
-				variants: Object.fromEntries(
-					Object.entries(profile.variants).filter(([runtime]) => {
-						const isSupported = SUPPORTED_RUNTIME_NAME_SET.has(runtime);
-						if (!isSupported) {
-							droppedRuntimeNames.add(runtime);
-						}
-						return isSupported;
-					}),
-				),
+				variants,
 			},
-		]),
-	);
+		]);
+	}
+
+	const normalized = Object.fromEntries(normalizedEntries);
 
 	if (droppedRuntimeNames.size > 0) {
 		log.warn(
 			{ droppedRuntimeNames: [...droppedRuntimeNames].sort() },
 			"Ignoring unsupported runtime variants from loaded model profile file",
+		);
+	}
+	if (droppedProfiles.length > 0) {
+		log.warn(
+			{
+				droppedProfileKeys: droppedProfiles.map(
+					(profile) => profile.profileKey,
+				),
+				droppedProfiles,
+			},
+			"Dropping model profiles with no supported runtime variants",
 		);
 	}
 

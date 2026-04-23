@@ -11,6 +11,7 @@
  */
 
 import { execa } from "execa";
+import { logger } from "../lib/logger.js";
 import type { HarnessName } from "./harness.js";
 import {
 	getOpenCodeRunFeatures,
@@ -42,7 +43,11 @@ async function isOpenCodeAvailable(): Promise<boolean> {
 	try {
 		const features = await getOpenCodeRunFeatures();
 		return isOpenCodeRunCompatible(features);
-	} catch {
+	} catch (error) {
+		logger.error(
+			{ err: error, probe: "opencode", functionName: "isOpenCodeAvailable" },
+			"OpenCode probe failed",
+		);
 		return false;
 	}
 }
