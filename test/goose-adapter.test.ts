@@ -77,7 +77,7 @@ describe("createGooseAdapter", () => {
 				expect.objectContaining({
 					cwd: workspaceDir,
 					env: expect.objectContaining({
-						GOOSE_BASE_URL: "http://localhost:11434",
+						OLLAMA_HOST: "http://localhost:11434",
 						GOOSE_MODEL: "qwen3.5:4b",
 						GOOSE_PROVIDER: "ollama",
 					}),

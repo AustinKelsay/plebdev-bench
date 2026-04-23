@@ -141,6 +141,25 @@ describe("parseOpenCodeEvents", () => {
 			permissionDenied: true,
 		});
 	});
+
+	it("marks permission denied when denial text appears in event text fields", () => {
+		const parsed = parseOpenCodeEvents(
+			JSON.stringify({
+				type: "message",
+				text: "permission denied: external_directory",
+			}),
+		);
+
+		expect(parsed.permissionDenied).toBe(true);
+	});
+
+	it("marks permission denied when raw fallback output contains denial text", () => {
+		const parsed = parseOpenCodeEvents(
+			"! permission requested: external_directory (/tmp/foo/*); auto-rejecting",
+		);
+
+		expect(parsed.permissionDenied).toBe(true);
+	});
 });
 
 describe("isOpenCodePermissionDeniedText", () => {

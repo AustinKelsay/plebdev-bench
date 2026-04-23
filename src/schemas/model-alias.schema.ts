@@ -30,7 +30,12 @@ import { SCHEMA_VERSION } from "./common.schema.js";
  */
 export const ModelAliasEntrySchema = z.record(
 	z.string(), // runtime name retained for backwards compatibility
-	z.string(), // runtime-specific model name
+	z
+		.string()
+		.refine((value) => value.trim().length > 0, {
+			message: "alias target must be a non-empty string",
+		})
+		.transform((value) => value.trim()), // runtime-specific model name
 );
 
 /**

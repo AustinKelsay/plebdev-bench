@@ -228,27 +228,29 @@ export async function runOpenCodeCommand(
 
 	try {
 		const timeoutPromise: Promise<never> = new Promise((_, reject) => {
-			timeoutId = setTimeout(() => {
+			timeoutId = setTimeout(async () => {
 				if (killAttempted) return;
 				killAttempted = true;
 				timedOut = true;
 				if (staleCheckId) clearInterval(staleCheckId);
-				forceKillAndReject(
-					reject,
-					`timeout after ${config.timeoutMs}ms`,
-					`OpenCode timed out after ${Math.round(config.timeoutMs / 1000)}s. Try increasing --timeout.`,
-				).catch((error) =>
+				try {
+					await forceKillAndReject(
+						reject,
+						`timeout after ${config.timeoutMs}ms`,
+						`OpenCode timed out after ${Math.round(config.timeoutMs / 1000)}s. Try increasing --timeout.`,
+					);
+				} catch (error) {
 					logForceKillRejection(
 						config.log,
 						error,
 						`timeout after ${config.timeoutMs}ms`,
-					),
-				);
+					);
+				}
 			}, config.timeoutMs);
 		});
 
 		const stalePromise: Promise<never> = new Promise((_, reject) => {
-			staleCheckId = setInterval(() => {
+			staleCheckId = setInterval(async () => {
 				if (killAttempted) return;
 				const staleDuration = Date.now() - lastOutputTime;
 				if (staleDuration <= staleTimeoutMs) return;
@@ -256,21 +258,50 @@ export async function runOpenCodeCommand(
 				killAttempted = true;
 				staleKilled = true;
 				if (timeoutId) clearTimeout(timeoutId);
-				forceKillAndReject(
-					reject,
-					`no output for ${staleDuration}ms`,
-					`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
-				).catch((error) =>
+				try {
+					await forceKillAndReject(
+						reject,
+						`no output for ${staleDuration}ms`,
+						`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
+					);
+				} catch (error) {
 					logForceKillRejection(
 						config.log,
 						error,
 						`no output for ${staleDuration}ms`,
-					),
-				);
+					);
+				}
 			}, STALE_CHECK_INTERVAL_MS);
 		});
 
-		const result = await Promise.race([proc, timeoutPromise, stalePromise]);
+		const procResultPromise = proc.then((result) => {
+			if (timedOut) {
+				throw buildOpenCodeCommandError(
+					`OpenCode timed out after ${Math.round(config.timeoutMs / 1000)}s. Try increasing --timeout.`,
+					startTime,
+					stdoutChunks,
+					stderrChunks,
+				);
+			}
+			if (staleKilled) {
+				throw buildOpenCodeCommandError(
+					`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
+					startTime,
+					stdoutChunks,
+					stderrChunks,
+				);
+			}
+			return result;
+		});
+		void procResultPromise.catch(() => {});
+		void timeoutPromise.catch(() => {});
+		void stalePromise.catch(() => {});
+
+		const result = await Promise.race([
+			procResultPromise,
+			timeoutPromise,
+			stalePromise,
+		]);
 
 		return {
 			stdout: stdoutChunks.join(""),

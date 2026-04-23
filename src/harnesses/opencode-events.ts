@@ -237,6 +237,7 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 		try {
 			parsedLine = JSON.parse(line) as unknown;
 		} catch {
+			permissionDenied ||= isOpenCodePermissionDeniedText(line);
 			unparsedLines.push(line);
 			continue;
 		}
@@ -260,12 +261,30 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			permissionDenied ||= stateError
 				? isOpenCodePermissionDeniedText(stateError)
 				: false;
+			permissionDenied ||= toolErrorText
+				? isOpenCodePermissionDeniedText(toolErrorText)
+				: false;
 		}
 
 		toolCallOutput ??= extractFromToolCallObject(event);
+		permissionDenied ||=
+			typeof event.text === "string"
+				? isOpenCodePermissionDeniedText(event.text)
+				: false;
+		permissionDenied ||=
+			typeof event.part?.text === "string"
+				? isOpenCodePermissionDeniedText(event.part.text)
+				: false;
+		permissionDenied ||=
+			typeof event.part?.delta?.text === "string"
+				? isOpenCodePermissionDeniedText(event.part.delta.text)
+				: false;
 
 		const text = readEventText(event);
-		if (text) textParts.push(text);
+		if (text) {
+			permissionDenied ||= isOpenCodePermissionDeniedText(text);
+			textParts.push(text);
+		}
 	}
 
 	const diagnostics = {
@@ -286,11 +305,15 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			unparsedLines.length > 0
 				? [combined, ...unparsedLines].join("\n")
 				: combined;
+		const mixedPermissionDenied = isOpenCodePermissionDeniedText(mixedOutput);
 		const toolCallCode = extractFromToolCallText(mixedOutput);
 		return buildParsedEvents(
 			toolCallCode ?? mixedOutput,
 			toolCallCode ? "tool_call" : unparsedLines.length > 0 ? "raw" : "json",
-			diagnostics,
+			{
+				...diagnostics,
+				permissionDenied: diagnostics.permissionDenied || mixedPermissionDenied,
+			},
 		);
 	}
 	if (parsedLines > 0 && allLinesParsed) {
@@ -303,11 +326,21 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			...diagnostics,
 			hasProtocolEvents: parsedLines > 0,
 			hasToolUse: true,
+			permissionDenied:
+				diagnostics.permissionDenied ||
+				isOpenCodePermissionDeniedText(directToolCallCode),
 		});
 	}
 	if (parsedLines > 0) {
-		return buildParsedEvents(raw, "raw", diagnostics);
+		return buildParsedEvents(raw, "raw", {
+			...diagnostics,
+			permissionDenied:
+				diagnostics.permissionDenied || isOpenCodePermissionDeniedText(raw),
+		});
 	}
 
-	return buildParsedEvents(raw, "raw", { hasProtocolEvents: false });
+	return buildParsedEvents(raw, "raw", {
+		hasProtocolEvents: false,
+		permissionDenied: isOpenCodePermissionDeniedText(raw),
+	});
 }

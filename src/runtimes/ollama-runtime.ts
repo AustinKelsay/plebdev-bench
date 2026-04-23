@@ -46,6 +46,14 @@ const ShowResponseSchema = z
 	})
 	.passthrough();
 
+/**
+ * Architecture tokens and family names commonly used by embedding-only models.
+ *
+ * Heuristics are based on Ollama `/api/show` metadata, popular vendor naming
+ * conventions, and the benchmark's need to exclude embedding-only models from
+ * text-generation rows. This list is intentionally small and may still miss
+ * edge cases; update it when new embedding families appear in benchmark runs.
+ */
 const EMBEDDING_ARCHITECTURES = new Set(["bert", "nomic-bert", "nomic_bert"]);
 const EMBEDDING_NAME_PATTERNS = [
 	/(^|[-_:])embed($|[-_:])/i,
@@ -53,6 +61,38 @@ const EMBEDDING_NAME_PATTERNS = [
 	/^nomic-embed/i,
 	/^bge[-_:]/i,
 	/^e5[-_:]/i,
+] as const;
+/**
+ * Architecture tokens and family names commonly used by text-generation models.
+ *
+ * These heuristics cover current benchmark families such as Llama, Qwen,
+ * Mistral, Gemma, DeepSeek, and GPT-OSS. They are derived from vendor naming
+ * conventions and observed Ollama metadata rather than a formal registry, so
+ * unknown or novel architectures still fall back to `"unknown"`.
+ */
+const TEXT_GENERATION_ARCHITECTURES = new Set([
+	"llama",
+	"qwen2",
+	"qwen3",
+	"mistral",
+	"mixtral",
+	"gemma",
+	"gemma2",
+	"gemma3",
+	"deepseek",
+	"phi3",
+	"phi4",
+	"gpt-oss",
+]);
+const TEXT_GENERATION_NAME_PATTERNS = [
+	/^llama/i,
+	/^qwen/i,
+	/^mistral/i,
+	/^mixtral/i,
+	/^gemma/i,
+	/^deepseek/i,
+	/^phi[-_:]?/i,
+	/^gpt-oss/i,
 ] as const;
 
 /** Configuration for the Ollama runtime. */
@@ -141,6 +181,12 @@ function inferModelKind(
 	}
 	if (EMBEDDING_NAME_PATTERNS.some((pattern) => pattern.test(model))) {
 		return "embedding";
+	}
+	if (families.some((family) => TEXT_GENERATION_ARCHITECTURES.has(family))) {
+		return "text-generation";
+	}
+	if (TEXT_GENERATION_NAME_PATTERNS.some((pattern) => pattern.test(model))) {
+		return "text-generation";
 	}
 	return "unknown";
 }

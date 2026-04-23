@@ -53,6 +53,14 @@ import { buildToolPrompt, buildWorkspaceToolPrompt } from "./tool-prompt.js";
 const MIN_OUTPUT_LENGTH = 10;
 const SOLUTION_FILENAME = "solution.ts";
 
+/**
+ * Builds the code-output prompt contract for OpenCode runs.
+ *
+ * @param prompt - Benchmark task prompt without retry markers
+ * @param isRetryAttempt - Whether the adapter is retrying after missing output
+ * @returns Tool-oriented prompt string that requires writing `solution.ts`
+ * @throws {never} This helper only formats prompt text
+ */
 function buildCodeOutputPrompt(
 	prompt: string,
 	isRetryAttempt: boolean,
@@ -73,6 +81,14 @@ function buildCodeOutputPrompt(
 	});
 }
 
+/**
+ * Builds the workspace-mode prompt contract for OpenCode runs.
+ *
+ * @param prompt - Benchmark task prompt without retry markers
+ * @param workspaceRootPath - Canonical workspace root passed to OpenCode
+ * @returns Tool-oriented workspace prompt string
+ * @throws {never} This helper only formats prompt text
+ */
 function buildWorkspacePrompt(
 	prompt: string,
 	workspaceRootPath: string,
@@ -87,6 +103,18 @@ function buildWorkspacePrompt(
 	});
 }
 
+/**
+ * Chooses the best process output stream for downstream parsing.
+ *
+ * Prefers stdout when it contains any non-whitespace content. Falls back to
+ * stderr only when stderr meets the `MIN_OUTPUT_LENGTH` threshold, otherwise
+ * preserves stdout so tiny stderr snippets do not replace structured output.
+ *
+ * @param stdout - Captured OpenCode stdout
+ * @param stderr - Captured OpenCode stderr
+ * @returns Selected process text for OpenCode event parsing
+ * @throws {never} This helper only selects between provided strings
+ */
 function selectProcessOutput(stdout: string, stderr: string): string {
 	if (stdout.trim().length > 0) {
 		return stdout;
@@ -94,6 +122,21 @@ function selectProcessOutput(stdout: string, stderr: string): string {
 	return stderr.trim().length >= MIN_OUTPUT_LENGTH ? stderr : stdout;
 }
 
+/**
+ * Builds taint evidence from parsed OpenCode output plus raw process streams.
+ *
+ * Collects transcript/input leakage, protocol-only transcript output,
+ * permission-denial evidence, and any caller-provided extra reasons. Parsed
+ * scorer-facing output is treated as an artifact so normal completion text does
+ * not trigger harness-boundary `agent_requested_input` checks.
+ *
+ * @param parsed - Parsed OpenCode protocol output and diagnostics
+ * @param stdout - Raw stdout captured from the OpenCode process
+ * @param stderr - Raw stderr captured from the OpenCode process
+ * @param extraReasons - Additional stable taint reasons to append
+ * @returns Signal assessment when any taint reason is present, otherwise undefined
+ * @throws {never} This helper only aggregates stable taint reasons
+ */
 function buildSignalAssessment(
 	parsed: OpenCodeParsedEvents,
 	stdout: string,
@@ -118,7 +161,9 @@ function buildSignalAssessment(
 	const reasons = Array.from(
 		new Set([
 			...stderrReasons,
-			...getTranscriptOrInputTaintReasons(parsed.output),
+			...getTranscriptOrInputTaintReasons(parsed.output, {
+				source: "artifact",
+			}),
 			...protocolOnlyReasons,
 			...permissionReasons,
 			...extraReasons,
@@ -129,6 +174,18 @@ function buildSignalAssessment(
 		: undefined;
 }
 
+/**
+ * Builds failure-path taint evidence from raw process output.
+ *
+ * Aggregates transcript leakage and permission-denial signals from stdout and
+ * stderr. Failures always return a concrete signal assessment so downstream
+ * serialization can preserve trusted-metric completeness.
+ *
+ * @param stdout - Raw stdout captured before failure
+ * @param stderr - Raw stderr captured before failure
+ * @returns Signal assessment summarizing failure-path taint evidence
+ * @throws {never} This helper only aggregates stable taint reasons
+ */
 function buildFailureSignalAssessment(
 	stdout: string,
 	stderr: string,
@@ -143,6 +200,19 @@ function buildFailureSignalAssessment(
 	return appendSignalAssessmentReasons(undefined, reasons);
 }
 
+/**
+ * Builds an Error carrying structured OpenCode failure evidence.
+ *
+ * The returned error includes `durationMs` plus optional `output` and
+ * `signalAssessment` properties used by runner serialization.
+ *
+ * @param message - User-facing failure message
+ * @param durationMs - Measured command duration in milliseconds
+ * @param output - Raw or parsed output payload to attach when present
+ * @param signalAssessment - Optional taint evidence to attach
+ * @returns Error instance enriched with runner-facing metadata
+ * @throws {never} This helper only constructs an Error object
+ */
 function buildOpenCodeFailure(
 	message: string,
 	durationMs: number,
@@ -156,6 +226,14 @@ function buildOpenCodeFailure(
 	});
 }
 
+/**
+ * Persists salvaged code output into the expected solution artifact path.
+ *
+ * @param artifacts - Prepared OpenCode artifact paths for the generation
+ * @param code - Code content to write into `solution.ts`
+ * @returns Absolute path to the written salvaged code file
+ * @throws {Error} If the salvaged code file cannot be written
+ */
 async function writeSalvagedCode(
 	artifacts: OpenCodeArtifacts,
 	code: string,

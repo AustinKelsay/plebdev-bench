@@ -19,6 +19,7 @@ import type { RunPlan, RunResult } from "../schemas/index.js";
  * @param checkpointA - Baseline checkpoint ID
  * @param checkpointB - Comparison checkpoint ID
  * @param allowCrossCheckpoint - Whether to bypass checkpoint guardrails
+ * @returns Nothing; throws when checkpoints are not comparable
  * @throws {Error} If checkpoints are missing or mismatched and override is disabled
  */
 export function assertComparableCheckpoints(
@@ -43,6 +44,7 @@ export function assertComparableCheckpoints(
  * @param checkpointB - Comparison checkpoint ID
  * @param allowCrossCheckpoint - Whether guardrail bypass is enabled
  * @returns Guard failure message when checkpoints are not comparable
+ * @throws {never} This helper only formats validation messages
  */
 export function getCheckpointGuardMessage(
 	checkpointA: string | undefined,
@@ -66,6 +68,7 @@ export function getCheckpointGuardMessage(
  *
  * @param error - Error thrown from readPlan
  * @returns True when compare should continue without plan metadata
+ * @throws {never} This helper only inspects the provided error value
  */
 export function isBenignPlanReadError(error: unknown): boolean {
 	if (!(error instanceof Error)) {
@@ -129,6 +132,7 @@ export function readPlanBestEffort(runDir: string): RunPlan | undefined {
  * @param run - Run result artifact
  * @param plan - Optional run plan artifact
  * @returns Resolved checkpoint ID, if present
+ * @throws {never} This helper only reads already-parsed metadata
  */
 export function resolveCheckpointId(
 	run: RunResult,
@@ -146,6 +150,7 @@ export function resolveCheckpointId(
  * @param str - Input string
  * @param maxLen - Maximum output length
  * @returns Original string or truncated display string
+ * @throws {never} This helper only slices the provided string
  */
 export function truncate(str: string, maxLen: number): string {
 	if (str.length <= maxLen) return str;
@@ -159,6 +164,7 @@ export function truncate(str: string, maxLen: number): string {
  * @param width - Target width
  * @param align - Padding direction
  * @returns Padded string
+ * @throws {never} This helper only pads the provided string
  */
 export function pad(
 	str: string,
@@ -172,10 +178,11 @@ export function pad(
 }
 
 /**
- * Formats an ISO timestamp for compact terminal display.
+ * Formats an ISO timestamp for compact UTC terminal display.
  *
  * @param iso - ISO timestamp string
- * @returns Locale-stable display timestamp
+ * @returns UTC-based locale-stable display timestamp
+ * @throws {never} Invalid dates are rendered as `Invalid Date`
  */
 export function formatTimestamp(iso: string): string {
 	const date = new Date(iso);
@@ -185,5 +192,6 @@ export function formatTimestamp(iso: string): string {
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
+		timeZone: "UTC",
 	});
 }

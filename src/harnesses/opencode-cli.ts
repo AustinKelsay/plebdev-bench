@@ -38,7 +38,7 @@ export interface OpenCodeRunArgsOpts {
 	features: OpenCodeRunFeatures;
 }
 
-let cachedFeatures: Promise<OpenCodeRunFeatures> | undefined;
+let cachedFeatures: OpenCodeRunFeatures | undefined;
 
 /**
  * Parses `opencode run --help` output into feature flags.
@@ -109,8 +109,17 @@ export async function detectOpenCodeRunFeatures(): Promise<OpenCodeRunFeatures> 
  * @throws {Error} If OpenCode feature detection fails
  */
 export async function getOpenCodeRunFeatures(): Promise<OpenCodeRunFeatures> {
-	cachedFeatures ??= detectOpenCodeRunFeatures();
-	return cachedFeatures;
+	if (cachedFeatures) {
+		return cachedFeatures;
+	}
+	try {
+		const detectedFeatures = await detectOpenCodeRunFeatures();
+		cachedFeatures = detectedFeatures;
+		return detectedFeatures;
+	} catch (error) {
+		cachedFeatures = undefined;
+		throw error;
+	}
 }
 
 /**

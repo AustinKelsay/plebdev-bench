@@ -10,7 +10,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupOpenCodeArtifacts,
 	prepareOpenCodeArtifacts,
@@ -19,6 +19,7 @@ import {
 
 const ORIGINAL_XDG_DATA_HOME = process.env.XDG_DATA_HOME;
 const tempRoots: string[] = [];
+let testXdgDataHome: string;
 
 async function createTempRoot(): Promise<string> {
 	const tempRoot = await fs.promises.mkdtemp(
@@ -35,6 +36,11 @@ function restoreXdgDataHome(): void {
 	}
 	process.env.XDG_DATA_HOME = ORIGINAL_XDG_DATA_HOME;
 }
+
+beforeEach(async () => {
+	testXdgDataHome = await createTempRoot();
+	process.env.XDG_DATA_HOME = testXdgDataHome;
+});
 
 afterEach(async () => {
 	restoreXdgDataHome();
@@ -58,19 +64,14 @@ describe("resolveOpenCodeToolOutputRoot", () => {
 	});
 
 	it("uses absolute XDG_DATA_HOME values", async () => {
-		const tempRoot = await createTempRoot();
-		process.env.XDG_DATA_HOME = tempRoot;
-
 		expect(resolveOpenCodeToolOutputRoot()).toBe(
-			path.join(tempRoot, "opencode", "tool-output"),
+			path.join(testXdgDataHome, "opencode", "tool-output"),
 		);
 	});
 });
 
 describe("prepareOpenCodeArtifacts", () => {
 	it("accepts basename solution filenames inside the execution workspace", async () => {
-		const tempRoot = await createTempRoot();
-		process.env.XDG_DATA_HOME = tempRoot;
 		const artifacts = await prepareOpenCodeArtifacts({
 			solutionFilename: "solution.ts",
 		});
@@ -85,8 +86,6 @@ describe("prepareOpenCodeArtifacts", () => {
 	});
 
 	it("accepts basename solution filenames with adjacent dots", async () => {
-		const tempRoot = await createTempRoot();
-		process.env.XDG_DATA_HOME = tempRoot;
 		const artifacts = await prepareOpenCodeArtifacts({
 			solutionFilename: "file..txt",
 		});
@@ -101,9 +100,7 @@ describe("prepareOpenCodeArtifacts", () => {
 	});
 
 	it("rejects missing caller-supplied workspaces", async () => {
-		const tempRoot = await createTempRoot();
-		process.env.XDG_DATA_HOME = tempRoot;
-		const missingWorkspace = path.join(tempRoot, "missing-workspace");
+		const missingWorkspace = path.join(testXdgDataHome, "missing-workspace");
 
 		await expect(
 			prepareOpenCodeArtifacts({
@@ -114,9 +111,7 @@ describe("prepareOpenCodeArtifacts", () => {
 	});
 
 	it("rejects caller-supplied workspaces that are files", async () => {
-		const tempRoot = await createTempRoot();
-		process.env.XDG_DATA_HOME = tempRoot;
-		const filePath = path.join(tempRoot, "workspace-file");
+		const filePath = path.join(testXdgDataHome, "workspace-file");
 		await fs.promises.writeFile(filePath, "not a directory", "utf-8");
 
 		await expect(

@@ -212,14 +212,23 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 2. **Work Directory Setup**:
    ```typescript
-   // Create unique temp directory in OpenCode's tool-output root
    const toolOutputRoot = resolveOpenCodeToolOutputRoot(); // ~/.local/share/opencode/tool-output
-   const workDir = path.join(toolOutputRoot, `plebdev-bench-opencode-${runId}`);
+   const workspaceDir = path.join(
+     toolOutputRoot,
+     `plebdev-bench-opencode-${runId}`,
+   );
+   const configDir = path.join(
+     toolOutputRoot,
+     `plebdev-bench-opencode-config-${runId}`,
+   );
+   await fs.promises.mkdir(workspaceDir, { recursive: true });
+   await fs.promises.mkdir(configDir, { recursive: true });
+   const executionWorkspaceDir = await fs.promises.realpath(workspaceDir);
+   // opencode run ... --dir executionWorkspaceDir
    ```
    - Code-output mode creates an isolated generated workspace under XDG data home
-   - Workspace mode uses the runner-provided seeded workspace
-   - Both modes pass the canonical workspace `realpath()` to `--dir`
-   - Config files are written into a separate generated config directory
+   - Workspace mode uses the runner-provided seeded workspace and still canonicalizes it with `realpath()` before `--dir`
+   - Config files are written into a separate generated config directory outside the execution workspace
    - No git initialization is required by the adapter
 
 3. **Local Config File** (`opencode.json` in the per-run config directory):

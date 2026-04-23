@@ -10,6 +10,7 @@
  * - Preflight skips are deterministic failed item rows with zero runtime duration.
  */
 
+import { createTrustworthySignalAssessment } from "../lib/signal-assessment.js";
 import { writePartialResult } from "../results/writer.js";
 import type { OllamaResidencyReport } from "../runtimes/ollama-residency.js";
 import type {
@@ -137,6 +138,7 @@ export function buildResidencyGuardFailureResult(
 			type: "api_error",
 			message: `Residency guard failed: ${message}`,
 		},
+		signalAssessment: createTrustworthySignalAssessment(),
 	};
 }
 
@@ -178,6 +180,7 @@ export function buildPreflightSkipResult(
 			type: failureType,
 			message: errorMessage,
 		},
+		signalAssessment: createTrustworthySignalAssessment(),
 	};
 }
 

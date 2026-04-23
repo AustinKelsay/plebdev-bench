@@ -23,6 +23,7 @@ const STATUS_CHANGE_COLUMN_WIDTHS = {
  *
  * @param result - Completed compare result
  * @returns Nothing; writes to stdout
+ * @throws {Error} If stdout writes fail or the result payload is malformed at runtime
  */
 export function printHeader(result: CompareResult): void {
 	console.log("");
@@ -42,6 +43,7 @@ export function printHeader(result: CompareResult): void {
  *
  * @param result - Completed compare result
  * @returns Nothing; writes to stdout
+ * @throws {Error} If stdout writes fail or the result payload is malformed at runtime
  */
 export function printSummary(result: CompareResult): void {
 	const { summary } = result;
@@ -167,6 +169,7 @@ export function printSummary(result: CompareResult): void {
  *
  * @param result - Completed compare result
  * @returns Nothing; writes to stdout
+ * @throws {Error} If stdout writes fail or the result payload is malformed at runtime
  */
 export function printRegressions(result: CompareResult): void {
 	const regressions = result.matched.filter(
@@ -200,6 +203,7 @@ export function printRegressions(result: CompareResult): void {
  *
  * @param result - Completed compare result
  * @returns Nothing; writes to stdout
+ * @throws {Error} If stdout writes fail or the result payload is malformed at runtime
  */
 export function printImprovements(result: CompareResult): void {
 	const improvements = result.matched.filter(
@@ -233,6 +237,7 @@ export function printImprovements(result: CompareResult): void {
  *
  * @param result - Completed compare result
  * @returns Nothing; writes to stdout
+ * @throws {Error} If stdout writes fail or the result payload is malformed at runtime
  */
 export function printScoringDeltas(result: CompareResult): void {
 	const withScoreDeltas = result.matched.filter(
@@ -282,6 +287,7 @@ export function printScoringDeltas(result: CompareResult): void {
  *
  * @param result - Completed compare result
  * @returns Nothing; writes to stdout
+ * @throws {Error} If stdout writes fail or the result payload is malformed at runtime
  */
 export function printExclusiveItems(result: CompareResult): void {
 	if (result.onlyInA.length > 0) {

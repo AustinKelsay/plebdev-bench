@@ -2,6 +2,12 @@
  * Purpose: Pino logger configured for human-readable CLI output.
  * Exports: logger, createLogger
  *
+ * Invariants:
+ * - Exports `logger` and `createLogger`.
+ * - Output is human-readable synchronous `pino-pretty`.
+ * - Structured fields such as runId, model, harness, test, and passType are preserved.
+ * - `createLogger` always returns a configured Pino logger instance.
+ *
  * Default behavior: human-readable via synchronous pino-pretty stream.
  * Structured fields: runId, model, harness, test, passType.
  */

@@ -216,7 +216,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				GOOSE_MODEL: model,
 			};
 			if (runtime.baseUrl) {
-				env.GOOSE_BASE_URL = runtime.baseUrl;
+				env.OLLAMA_HOST = runtime.baseUrl;
 			}
 
 			const fullPrompt =

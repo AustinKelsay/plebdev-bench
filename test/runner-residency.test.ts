@@ -307,6 +307,10 @@ describe("runBenchmark Ollama residency guard", () => {
 				failureType: "tool_missing",
 				durationMs: 0,
 			},
+			signalAssessment: {
+				classification: "trustworthy",
+				reasons: [],
+			},
 		});
 	});
 
@@ -338,6 +342,10 @@ describe("runBenchmark Ollama residency guard", () => {
 			generationFailure: {
 				type: "api_error",
 				message: expect.stringContaining("residency failed"),
+			},
+			signalAssessment: {
+				classification: "trustworthy",
+				reasons: [],
 			},
 		});
 	});

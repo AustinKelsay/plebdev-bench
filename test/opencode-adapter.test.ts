@@ -277,6 +277,47 @@ describe("createOpenCodeAdapter", () => {
 		}
 	});
 
+	it("does not treat artifact output as agent-requested input", async () => {
+		const { createOpenCodeAdapter } = await import(
+			"../src/harnesses/opencode-adapter.js"
+		);
+		const workspaceDir = await fs.promises.mkdtemp(
+			path.join(os.tmpdir(), "plebdev-opencode-artifact-text-"),
+		);
+		execaMock.mockImplementation((command: string) => {
+			if (command === "opencode") {
+				return createProcess(
+					[
+						JSON.stringify({
+							type: "message",
+							part: {
+								text: 'export const banner = "Would you like me to continue? I reached the maximum number of actions without user input.";',
+							},
+						}),
+					].join("\n"),
+				);
+			}
+			throw new Error(`Unexpected command: ${command}`);
+		});
+
+		try {
+			const adapter = createOpenCodeAdapter();
+			const result = await adapter.generate({
+				model: "qwen3.5:4b",
+				prompt: "Write one file and report the banner string.",
+				timeoutMs: 5_000,
+				runtime: createRuntime(),
+				promptMode: "workspace",
+				workingDirectory: workspaceDir,
+			});
+
+			expect(result.output).toContain("Would you like me to continue?");
+			expect(result.signalAssessment).toBeUndefined();
+		} finally {
+			await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+		}
+	});
+
 	it("prefers solution.ts in code-output mode", async () => {
 		const { createOpenCodeAdapter } = await import(
 			"../src/harnesses/opencode-adapter.js"

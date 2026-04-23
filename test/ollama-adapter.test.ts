@@ -129,6 +129,32 @@ describe("OllamaRuntime", () => {
 					JSON.stringify({
 						details: {
 							parameter_size: "8B",
+							family: "mystery-family",
+						},
+						model_info: {
+							"general.architecture": "totally-unknown-architecture",
+						},
+					}),
+					{ status: 200 },
+				),
+			);
+
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const info = await runtime.getModelInfo("mystery-model:8b");
+
+			expect(info.modelKind).toBe("unknown");
+			expect(info.capabilities).toEqual({});
+		});
+
+		it("marks known text-generation architectures as generative", async () => {
+			mockFetch.mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						details: {
+							parameter_size: "8B",
 							family: "llama",
 						},
 						model_info: {
@@ -145,8 +171,8 @@ describe("OllamaRuntime", () => {
 			});
 			const info = await runtime.getModelInfo("llama3.2:8b");
 
-			expect(info.modelKind).toBe("unknown");
-			expect(info.capabilities).toEqual({});
+			expect(info.modelKind).toBe("text-generation");
+			expect(info.capabilities).toEqual({ generateText: true });
 		});
 
 		it("still identifies embedding models from metadata", async () => {

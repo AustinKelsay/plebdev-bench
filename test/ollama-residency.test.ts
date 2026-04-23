@@ -155,9 +155,9 @@ describe("ollama-residency", () => {
 				baseUrl: BASE_URL,
 				allowedModel: "qwen3.6:latest",
 				pollIntervalMs: 0,
-				settleTimeoutMs: Number.MIN_VALUE,
+				settleTimeoutMs: 0,
 			}),
-		).rejects.toThrow("allowed=qwen3.6:latest stillLoaded=gpt-oss:20b");
+		).rejects.toThrow(new RangeError("settleTimeoutMs must be > 0"));
 	});
 
 	it("throws on non-OK HTTP responses", async () => {

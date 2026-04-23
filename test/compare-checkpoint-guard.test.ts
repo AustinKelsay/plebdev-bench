@@ -14,6 +14,7 @@ import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	assertComparableCheckpoints,
+	formatTimestamp,
 	readPlanBestEffort,
 	resolveCheckpointId,
 } from "../src/cli/compare-utils.js";
@@ -62,6 +63,12 @@ describe("assertComparableCheckpoints", () => {
 				true,
 			),
 		).not.toThrow();
+	});
+});
+
+describe("formatTimestamp", () => {
+	it("renders timestamps in UTC for deterministic CLI output", () => {
+		expect(formatTimestamp("2026-01-02T03:04:00.000Z")).toBe("Jan 02, 03:04");
 	});
 });
 

@@ -17,15 +17,12 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { z } from "zod";
 
-const ModelFilterPropsSchema = z.object({
-	models: z.array(z.string()),
-	selectedModels: z.array(z.string()),
-	onSelectionChange: z.function().args(z.array(z.string())).returns(z.void()),
-});
-
-type ModelFilterDropdownProps = z.infer<typeof ModelFilterPropsSchema>;
+interface ModelFilterDropdownProps {
+	models: string[];
+	selectedModels: string[];
+	onSelectionChange: (selectedModels: string[]) => void;
+}
 
 const MODEL_SORT_COLLATOR = new Intl.Collator("en", { sensitivity: "variant" });
 
@@ -55,8 +52,7 @@ function buildTriggerLabel(
  * @returns React element containing the model filter dropdown
  */
 export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
-	const { models, selectedModels, onSelectionChange } =
-		ModelFilterPropsSchema.parse(props);
+	const { models, selectedModels, onSelectionChange } = props;
 	const [isOpen, setIsOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const triggerLabel = useMemo(
