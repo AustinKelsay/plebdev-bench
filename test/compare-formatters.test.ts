@@ -11,6 +11,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	printExclusiveItems,
 	printHeader,
+	printImprovements,
+	printRegressions,
 	printScoringDeltas,
 	printSummary,
 } from "../src/cli/compare-formatters.js";
@@ -248,6 +250,52 @@ describe("compare formatters", () => {
 		);
 		expect(output).toContain("Δ -20.0%");
 		expect(output).toContain("Δ +40.0%");
+	});
+
+	it("prints regressions with deterministic table columns and truncation", () => {
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const fixture = buildCompareFixture();
+		fixture.matched[0] = {
+			...fixture.matched[0],
+			model: "zzzz-model-name-that-is-very-long",
+			test: "zzzz-test-name-that-is-very-long",
+		};
+		fixture.matched.push({
+			...fixture.matched[0],
+			key: "aaa-regressor",
+			model: "aaaa-model-name-that-is-very-long",
+			test: "aaaa-test-name-that-is-very-long",
+		});
+
+		printRegressions(fixture);
+
+		const output = readLoggedOutput(logSpy);
+		expect(output).toContain("Regressions (completed → failed)");
+		expect(output).toContain("MODEL");
+		expect(output).toContain("HARNESS");
+		expect(output).toContain("…");
+		expect(output.indexOf("aaaa")).toBeLessThan(output.indexOf("zzzz"));
+		expect(output).not.toContain("zzzz-model-name-that-is-very-long");
+	});
+
+	it("prints improvements with deterministic table columns and truncation", () => {
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const fixture = buildCompareFixture();
+		fixture.matched[1] = {
+			...fixture.matched[1],
+			model: "improvement-model-name-that-is-very-long",
+			test: "improvement-test-name-that-is-very-long",
+		};
+
+		printImprovements(fixture);
+
+		const output = readLoggedOutput(logSpy);
+		expect(output).toContain("Improvements (failed → completed)");
+		expect(output).toContain("MODEL");
+		expect(output).toContain("PASS");
+		expect(output).toContain("…");
+		expect(output).toContain("blind");
+		expect(output).not.toContain("improvement-model-name-that-is-very-long");
 	});
 
 	it("prints exclusive items with truncation and overflow counts", () => {

@@ -71,11 +71,6 @@ function shouldSkipRemainingToolItems(result: MatrixItemResult): boolean {
 }
 
 /**
- * Prints a deterministic model guard line only when unloads were requested.
- *
- * @param report - Ollama residency report from the model guard
- */
-/**
  * Runs the complete benchmark workflow.
  *
  * @param config - Benchmark configuration

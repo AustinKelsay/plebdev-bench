@@ -7,7 +7,7 @@
  * - Permission policy keeps external directories and interactive tools denied.
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	buildOpenCodeConfig,
 	buildOpenCodeEnv,
@@ -97,43 +97,26 @@ describe("buildOpenCodeConfig", () => {
 });
 
 describe("buildOpenCodeEnv", () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
 	it("exports config dir/path/content for isolated headless runs", () => {
-		const inheritedConfig = process.env.OPENCODE_CONFIG;
-		const inheritedDisable = process.env.OPENCODE_DISABLE_WEBSEARCH;
-		const inheritedCustom = process.env.OPENCODE_USER_SETTING;
-		process.env.OPENCODE_CONFIG = "/tmp/user-opencode.json";
-		process.env.OPENCODE_DISABLE_WEBSEARCH = "false";
-		process.env.OPENCODE_USER_SETTING = "leak";
+		vi.stubEnv("OPENCODE_CONFIG", "/tmp/user-opencode.json");
+		vi.stubEnv("OPENCODE_DISABLE_WEBSEARCH", "false");
+		vi.stubEnv("OPENCODE_USER_SETTING", "leak");
 		const env = buildOpenCodeEnv({
 			configDir: "/tmp/opencode-config",
 			configPath: "/tmp/opencode-config/opencode.json",
 			configJson: '{"permission":{"*":"allow"}}',
 		});
 
-		try {
-			expect(env.OPENCODE_CONFIG_DIR).toBe("/tmp/opencode-config");
-			expect(env.OPENCODE_CONFIG).toBe("/tmp/opencode-config/opencode.json");
-			expect(env.OPENCODE_CONFIG_CONTENT).toBe('{"permission":{"*":"allow"}}');
-			expect(env.OPENCODE_DISABLE_AUTOUPDATE).toBe("true");
-			expect(env.OPENCODE_DISABLE_DEFAULT_PLUGINS).toBe("true");
-			expect(env.OPENCODE_DISABLE_WEBSEARCH).toBe("true");
-			expect(env.OPENCODE_USER_SETTING).toBeUndefined();
-		} finally {
-			if (inheritedConfig === undefined) {
-				Reflect.deleteProperty(process.env, "OPENCODE_CONFIG");
-			} else {
-				process.env.OPENCODE_CONFIG = inheritedConfig;
-			}
-			if (inheritedDisable === undefined) {
-				Reflect.deleteProperty(process.env, "OPENCODE_DISABLE_WEBSEARCH");
-			} else {
-				process.env.OPENCODE_DISABLE_WEBSEARCH = inheritedDisable;
-			}
-			if (inheritedCustom === undefined) {
-				Reflect.deleteProperty(process.env, "OPENCODE_USER_SETTING");
-			} else {
-				process.env.OPENCODE_USER_SETTING = inheritedCustom;
-			}
-		}
+		expect(env.OPENCODE_CONFIG_DIR).toBe("/tmp/opencode-config");
+		expect(env.OPENCODE_CONFIG).toBe("/tmp/opencode-config/opencode.json");
+		expect(env.OPENCODE_CONFIG_CONTENT).toBe('{"permission":{"*":"allow"}}');
+		expect(env.OPENCODE_DISABLE_AUTOUPDATE).toBe("true");
+		expect(env.OPENCODE_DISABLE_DEFAULT_PLUGINS).toBe("true");
+		expect(env.OPENCODE_DISABLE_WEBSEARCH).toBe("true");
+		expect(env.OPENCODE_USER_SETTING).toBeUndefined();
 	});
 });

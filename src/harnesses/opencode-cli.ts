@@ -39,6 +39,7 @@ export interface OpenCodeRunArgsOpts {
 }
 
 let cachedFeatures: OpenCodeRunFeatures | undefined;
+let cachedFeaturesPromise: Promise<OpenCodeRunFeatures> | undefined;
 
 /**
  * Parses `opencode run --help` output into feature flags.
@@ -112,14 +113,22 @@ export async function getOpenCodeRunFeatures(): Promise<OpenCodeRunFeatures> {
 	if (cachedFeatures) {
 		return cachedFeatures;
 	}
-	try {
-		const detectedFeatures = await detectOpenCodeRunFeatures();
-		cachedFeatures = detectedFeatures;
-		return detectedFeatures;
-	} catch (error) {
-		cachedFeatures = undefined;
-		throw error;
+	if (cachedFeaturesPromise) {
+		return cachedFeaturesPromise;
 	}
+
+	cachedFeaturesPromise = detectOpenCodeRunFeatures()
+		.then((detectedFeatures) => {
+			cachedFeatures = detectedFeatures;
+			cachedFeaturesPromise = undefined;
+			return detectedFeatures;
+		})
+		.catch((error) => {
+			cachedFeatures = undefined;
+			cachedFeaturesPromise = undefined;
+			throw error;
+		});
+	return cachedFeaturesPromise;
 }
 
 /**

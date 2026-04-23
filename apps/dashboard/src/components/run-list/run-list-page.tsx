@@ -39,7 +39,7 @@ function groupBorderColor(group: { isLatest: boolean; isLegacy: boolean }) {
 /**
  * Renders the benchmark run list page grouped by checkpoint season.
  *
- * @param props - None; run data is loaded from dashboard context via `useRuns`.
+ * Takes no params; run data is loaded from dashboard context via `useRuns`.
  * @returns JSX element containing loading, error, empty, and grouped run states.
  * @throws No intentional runtime errors; hook/provider failures are surfaced as error UI.
  */

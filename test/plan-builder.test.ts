@@ -78,6 +78,21 @@ vi.mock("../src/lib/run-id.js", () => ({
 	generateRunId: generateRunIdMock,
 }));
 
+function createRuntimeStub(overrides: Record<string, unknown> = {}) {
+	return {
+		ping: async () => true,
+		listModels: async () => ["qwen3.5:4b"],
+		getModelInfo: async (model: string) => ({
+			name: model,
+			sizeBytes: 4_000_000_000,
+			parametersBillions: 4,
+			modelKind: "text-generation",
+			capabilities: { generateText: true },
+		}),
+		...overrides,
+	};
+}
+
 describe("buildRunPlan", () => {
 	afterEach(() => {
 		collectMachineProfileMock.mockReset();
@@ -94,17 +109,7 @@ describe("buildRunPlan", () => {
 		generateRunIdMock.mockReset();
 
 		discoverHarnessesMock.mockResolvedValue(["direct", "goose", "opencode"]);
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-			getModelInfo: async (model: string) => ({
-				name: model,
-				sizeBytes: 4_000_000_000,
-				parametersBillions: 4,
-				modelKind: "text-generation",
-				capabilities: { generateText: true },
-			}),
-		});
+		createRuntimeMock.mockReturnValue(createRuntimeStub());
 		computeBenchmarkCheckpointMock.mockReturnValue({
 			checkpointId: "chk_test",
 			algorithm: "sha256v1",
@@ -231,10 +236,11 @@ describe("buildRunPlan", () => {
 	});
 
 	it("groups discovered Ollama variants under one canonical model profile", async () => {
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["qwen3:27b"],
-		});
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["qwen3:27b"],
+			}),
+		);
 
 		const catalog = [
 			{
@@ -291,10 +297,11 @@ describe("buildRunPlan", () => {
 	});
 
 	it("dedupes overlapping model selectors that resolve to the same runtime model", async () => {
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["qwen3:27b"],
-		});
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["qwen3:27b"],
+			}),
+		);
 		const catalog = [
 			{
 				slug: "smoke",
@@ -395,10 +402,11 @@ describe("buildRunPlan", () => {
 	});
 
 	it("fails when requested model selectors are not found on any reachable runtime", async () => {
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["qwen3:27b"],
-		});
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["qwen3:27b"],
+			}),
+		);
 		const catalog = [
 			{
 				slug: "smoke",
@@ -439,16 +447,17 @@ describe("buildRunPlan", () => {
 	});
 
 	it("reports when discovered models are all excluded before matrix expansion", async () => {
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["nomic-embed-text:latest"],
-			getModelInfo: async () => ({
-				name: "nomic-embed-text:latest",
-				sizeBytes: 1_000_000,
-				parametersBillions: 0.3,
-				capabilities: { generateText: false, embedText: true },
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["nomic-embed-text:latest"],
+				getModelInfo: async () => ({
+					name: "nomic-embed-text:latest",
+					sizeBytes: 1_000_000,
+					parametersBillions: 0.3,
+					capabilities: { generateText: false, embedText: true },
+				}),
 			}),
-		});
+		);
 		discoverTestCatalogMock.mockReturnValue([]);
 		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
@@ -474,10 +483,12 @@ describe("buildRunPlan", () => {
 	});
 
 	it("fails immediately when Ollama is unreachable", async () => {
-		createRuntimeMock.mockReturnValue({
-			ping: async () => false,
-			listModels: async () => [],
-		});
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				ping: async () => false,
+				listModels: async () => [],
+			}),
+		);
 		discoverTestCatalogMock.mockReturnValue([]);
 		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
 

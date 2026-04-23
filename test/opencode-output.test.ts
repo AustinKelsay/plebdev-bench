@@ -188,6 +188,15 @@ describe("parseOpenCodeEvents", () => {
 
 		expect(parsed.permissionDenied).toBe(true);
 	});
+
+	it("safely extracts raw fallback tool content containing quotes and backslashes", () => {
+		const parsed = parseOpenCodeEvents(
+			'{"toolCall":{"name":"write","arguments":{"content":"export const path = "C:\\\\tmp";"}}}',
+		);
+
+		expect(parsed.output).toBe('export const path = "C:\\\\tmp";');
+		expect(parsed.method).toBe("tool_call");
+	});
 });
 
 describe("isOpenCodePermissionDeniedText", () => {

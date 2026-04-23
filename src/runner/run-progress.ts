@@ -34,6 +34,7 @@ const PARTIAL_RESULT_CHECKPOINT_INTERVAL = 20;
  * @param total - Total planned items
  * @param results - Completed item results so far
  * @returns Run result snapshot payload
+ * @throws {never} This helper only assembles an in-memory result object
  */
 export function buildRunResultSnapshot(
 	plan: RunPlan,
@@ -191,6 +192,7 @@ export function buildPreflightSkipResult(
  * @param total - Total planned item count
  * @param lastCheckpointItemCount - Item count at the last checkpoint
  * @returns True when a checkpoint should be written
+ * @throws {never} This helper only compares numeric counters
  */
 export function shouldWriteProgressCheckpoint(
 	itemCount: number,

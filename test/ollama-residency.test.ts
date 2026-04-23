@@ -141,7 +141,7 @@ describe("ollama-residency", () => {
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 	});
 
-	it("times out with the still-loaded foreign model names", async () => {
+	it("throws on invalid settleTimeoutMs (must be > 0)", async () => {
 		mockFetch
 			.mockResolvedValueOnce(
 				jsonResponse({ models: [{ name: "gpt-oss:20b" }] }),

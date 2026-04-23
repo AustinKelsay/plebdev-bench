@@ -1,6 +1,7 @@
 /**
  * Purpose: Migrate legacy run/plan machine payloads to the current schema shape.
- * Exports: migrateLegacyMachineProfile, migrateLegacyPlanPayload, migrateLegacyRunPayload,
+ * Exports: LEGACY_ARTIFACT_SCHEMA_VERSIONS, migrateLegacyMachineProfile,
+ *          migrateLegacyPlanPayload, migrateLegacyRunPayload,
  *          normalizeKnownPlanPayload, normalizeKnownRunPayload,
  *          parseKnownPlanPayload, parseKnownRunPayload
  *
@@ -29,7 +30,7 @@ import {
 	normalizeMachineProfile,
 } from "./normalization.js";
 
-const LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set([
+export const LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set([
 	"0.2.2",
 	"0.3.0",
 	"0.4.0",

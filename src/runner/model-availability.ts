@@ -36,11 +36,11 @@ export async function listAvailableModelsByRuntime(
 			availableByRuntime.push(`${runtimeName}: probe failed (${message})`);
 			continue;
 		}
-		if (available.length > 0) {
-			availableByRuntime.push(
-				`${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`,
-			);
-		}
+		availableByRuntime.push(
+			available.length === 0
+				? `${runtimeName}: (no models installed)`
+				: `${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`,
+		);
 	}
 	return availableByRuntime;
 }

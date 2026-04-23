@@ -33,4 +33,17 @@ describe("listAvailableModelsByRuntime", () => {
 			} as Parameters<typeof listAvailableModelsByRuntime>[1]),
 		).resolves.toEqual(["ollama: probe failed (connection down)"]);
 	});
+
+	it("records successful empty runtime probes", async () => {
+		createRuntimeMock.mockReturnValueOnce({
+			listModels: vi.fn().mockResolvedValueOnce([]),
+		});
+
+		await expect(
+			listAvailableModelsByRuntime(["ollama"], {
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 300_000,
+			} as Parameters<typeof listAvailableModelsByRuntime>[1]),
+		).resolves.toEqual(["ollama: (no models installed)"]);
+	});
 });

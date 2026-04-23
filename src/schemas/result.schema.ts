@@ -144,7 +144,7 @@ export const ScoringMetricsSchema = z
 		{
 			message:
 				"retry metrics must be fully absent, or when retryAttempted is true include retryKind, non-empty retryReason, and retryPromoted; when retryAttempted is false the other retry fields must be absent",
-			path: ["retryAttempted"],
+			path: ["retryKind"],
 		},
 	);
 

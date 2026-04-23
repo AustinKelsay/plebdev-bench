@@ -212,13 +212,13 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 2. **Work Directory Setup**:
    ```typescript
-   const toolOutputRoot = resolveOpenCodeToolOutputRoot(); // ~/.local/share/opencode/tool-output
+   const workspaceRoot = getWorkspaceRoot(); // XDG data home tool-output root
    const workspaceDir = path.join(
-     toolOutputRoot,
+     workspaceRoot,
      `plebdev-bench-opencode-${runId}`,
    );
    const configDir = path.join(
-     toolOutputRoot,
+     workspaceRoot,
      `plebdev-bench-opencode-config-${runId}`,
    );
    await fs.promises.mkdir(workspaceDir, { recursive: true });
@@ -307,7 +307,7 @@ OpenCode uses its built-in `write` tool to write code directly to files instead 
 2. **Execution creates a tool-output workspace** per generation:
    ```typescript
    const workDir = path.join(
-     toolOutputRoot,
+     workspaceRoot,
      `plebdev-bench-opencode-${runId}`,
    );
    ```

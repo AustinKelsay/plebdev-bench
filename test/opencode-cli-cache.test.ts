@@ -43,4 +43,41 @@ describe("getOpenCodeRunFeatures", () => {
 		});
 		expect(execaMock).toHaveBeenCalledTimes(2);
 	});
+
+	it("shares an in-flight feature probe across concurrent callers", async () => {
+		let resolveHelp: (value: { stdout: string; stderr: string }) => void;
+		const helpPromise = new Promise<{ stdout: string; stderr: string }>(
+			(resolve) => {
+				resolveHelp = resolve;
+			},
+		);
+		execaMock.mockReturnValueOnce(helpPromise);
+
+		const { getOpenCodeRunFeatures } = await import(
+			"../src/harnesses/opencode-cli.js"
+		);
+
+		const first = getOpenCodeRunFeatures();
+		const second = getOpenCodeRunFeatures();
+		resolveHelp!({
+			stdout: "--model\n--format\n--dir\n--pure",
+			stderr: "",
+		});
+
+		await expect(Promise.all([first, second])).resolves.toEqual([
+			{
+				supportsModel: true,
+				supportsFormat: true,
+				supportsDir: true,
+				supportsPure: true,
+			},
+			{
+				supportsModel: true,
+				supportsFormat: true,
+				supportsDir: true,
+				supportsPure: true,
+			},
+		]);
+		expect(execaMock).toHaveBeenCalledTimes(1);
+	});
 });

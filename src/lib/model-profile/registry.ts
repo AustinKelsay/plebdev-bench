@@ -372,6 +372,8 @@ function findConfiguredVariantByRuntimeModel(
  * @param runtimeModelName - Runtime-specific model identifier
  * @param registry - Configured model-profile registry
  * @returns Resolved model profile
+ * @throws {Error} If `findConfiguredVariantByRuntimeModel` finds multiple
+ * configured profiles for the same runtime/runtimeModelName mapping
  */
 export function buildResolvedModelProfile(
 	runtime: SupportedRuntimeName,
@@ -407,6 +409,8 @@ export function buildResolvedModelProfile(
  * @param runtime - Target runtime
  * @param registry - Configured model-profile registry
  * @returns Resolved runtime model and profile, or undefined if the profile lacks a mapping for this runtime
+ * @throws {Error} If `findConfiguredVariantByRuntimeModel` finds multiple
+ * configured profiles for the same runtime/runtimeModelName mapping
  */
 export function resolveModelSelection(
 	modelSpec: string,

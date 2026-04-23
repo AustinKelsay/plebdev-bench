@@ -6,9 +6,9 @@
 
 import type {
 	ArtifactRuntimeName,
+	ModelExclusion,
 	TestCategory,
-} from "../../../../src/schemas/common.schema.js";
-import type { ModelExclusion } from "../../../../src/schemas/plan.schema.js";
+} from "../../../../src/schemas/index.js";
 
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";

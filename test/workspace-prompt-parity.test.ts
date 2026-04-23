@@ -59,8 +59,15 @@ describe("workspace prompt parity", () => {
 				'   `{"status":"ready","createdBy":"workspace-smoke","steps":3}`',
 			].join("\n"),
 		);
-		expect(prompt).toContain("Do not modify `docs/notes.txt`.");
-		expect(prompt).toContain("Do not create or delete any other files.");
+		expect(prompt).toContain(
+			"Only perform the requested writes to `logs/session.log`, `checklist/steps.txt`, and `artifacts/summary.json`.",
+		);
+		expect(prompt).toContain(
+			"You may read other files, including `docs/notes.txt`, but must not modify them.",
+		);
+		expect(prompt).toContain(
+			"Do not create, delete, or modify any other files.",
+		);
 	});
 
 	it("file-locator informed prompt includes every scored JSON field", () => {

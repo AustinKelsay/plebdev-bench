@@ -221,15 +221,15 @@ Schema version: `0.5.2`
 
 ```typescript
 {
-  runtimes: ["ollama"]        // Fixed active runtime
-  models: []                  // Auto-discover all from Ollama
-  harnesses: []               // Auto-discover all available
-  tests: []                   // Auto-discover all from src/tests/
-  categories: []              // Auto-discover all categories
-  passTypes: ["blind", "informed"]
-  ollamaBaseUrl: "http://localhost:11434"
-  generateTimeoutMs: 300_000  // 5 minutes (for large models)
-  outputDir: "results"
+  runtimes: ["ollama"],       // Fixed active runtime
+  models: [],                 // Auto-discover all from Ollama
+  harnesses: [],              // Auto-discover all available
+  tests: [],                  // Auto-discover all from src/tests/
+  categories: [],             // Auto-discover all categories
+  passTypes: ["blind", "informed"],
+  ollamaBaseUrl: "http://localhost:11434",
+  generateTimeoutMs: 300_000, // 5 minutes (for large models)
+  outputDir: "results",
 }
 ```
 

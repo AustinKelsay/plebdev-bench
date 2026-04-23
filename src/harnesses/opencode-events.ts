@@ -188,7 +188,15 @@ function extractFromToolCallText(text: string): string | null {
 		);
 		if (!contentMatch?.[1]) return null;
 		try {
-			return JSON.parse(`"${contentMatch[1]}"`) as string;
+			const escapedContent = contentMatch[1]
+				.replace(/\\/g, "\\\\")
+				.replace(/"/g, '\\"')
+				.replaceAll("\b", "\\b")
+				.replaceAll("\f", "\\f")
+				.replaceAll("\n", "\\n")
+				.replaceAll("\r", "\\r")
+				.replaceAll("\t", "\\t");
+			return JSON.parse(`"${escapedContent}"`) as string;
 		} catch {
 			return contentMatch[1];
 		}

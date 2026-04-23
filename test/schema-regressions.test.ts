@@ -21,21 +21,33 @@ describe("schema regressions", () => {
 	});
 
 	it("rejects partial retry metric payloads", () => {
-		expect(() =>
-			MatrixItemResultSchema.parse({
-				id: "04",
-				runtime: "ollama",
-				model: "llama3.2:3b",
-				harness: "direct",
-				test: "smoke",
-				passType: "blind",
-				status: "completed",
-				scoringMetrics: {
-					durationMs: 12,
-					retryKind: "compile-feedback",
-				},
-			}),
-		).toThrow(/retryKind/);
+		const partialRetryResult = MatrixItemResultSchema.safeParse({
+			id: "04",
+			runtime: "ollama",
+			model: "llama3.2:3b",
+			harness: "direct",
+			test: "smoke",
+			passType: "blind",
+			status: "completed",
+			scoringMetrics: {
+				durationMs: 12,
+				retryKind: "compile-feedback",
+			},
+		});
+		expect(partialRetryResult.success).toBe(false);
+		if (partialRetryResult.success) {
+			throw new Error("expected partial retry metrics to fail");
+		}
+		expect(partialRetryResult.error.issues).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: ["scoringMetrics", "retryKind"],
+					message: expect.stringContaining(
+						"retry metrics must be fully absent",
+					),
+				}),
+			]),
+		);
 
 		const result = MatrixItemResultSchema.parse({
 			id: "05",
@@ -61,21 +73,33 @@ describe("schema regressions", () => {
 			retryPromoted: false,
 		});
 
-		expect(() =>
-			MatrixItemResultSchema.parse({
-				id: "06",
-				runtime: "ollama",
-				model: "llama3.2:3b",
-				harness: "direct",
-				test: "smoke",
-				passType: "blind",
-				status: "completed",
-				scoringMetrics: {
-					durationMs: 12,
-					retryAttempted: false,
-					retryPromoted: true,
-				},
-			}),
-		).toThrow(/retry metrics must be fully absent/);
+		const inconsistentRetryResult = MatrixItemResultSchema.safeParse({
+			id: "06",
+			runtime: "ollama",
+			model: "llama3.2:3b",
+			harness: "direct",
+			test: "smoke",
+			passType: "blind",
+			status: "completed",
+			scoringMetrics: {
+				durationMs: 12,
+				retryAttempted: false,
+				retryPromoted: true,
+			},
+		});
+		expect(inconsistentRetryResult.success).toBe(false);
+		if (inconsistentRetryResult.success) {
+			throw new Error("expected inconsistent retry metrics to fail");
+		}
+		expect(inconsistentRetryResult.error.issues).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: ["scoringMetrics", "retryKind"],
+					message: expect.stringContaining(
+						"when retryAttempted is false the other retry fields must be absent",
+					),
+				}),
+			]),
+		);
 	});
 });

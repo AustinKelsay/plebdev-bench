@@ -13,6 +13,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	LEGACY_ARTIFACT_SCHEMA_VERSIONS,
 	migrateLegacyMachineProfile,
 	migrateLegacyPlanPayload,
 	migrateLegacyRunPayload,
@@ -129,6 +130,7 @@ describe("legacy machine-profile migration", () => {
 	});
 
 	it("accepts prior current-version artifacts after a schema bump", () => {
+		expect(LEGACY_ARTIFACT_SCHEMA_VERSIONS.has("0.5.0")).toBe(true);
 		const parsedPlan = parseKnownPlanPayload({
 			schemaVersion: "0.5.0",
 			runId: "run-current-minus-one",

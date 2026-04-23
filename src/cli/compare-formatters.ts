@@ -176,6 +176,15 @@ export function printRegressions(result: CompareResult): void {
 		(m) =>
 			m.deltas.status?.a === "completed" && m.deltas.status?.b === "failed",
 	);
+	regressions.sort((left, right) => {
+		const modelCompare = left.model.localeCompare(right.model);
+		if (modelCompare !== 0) return modelCompare;
+		const harnessCompare = left.harness.localeCompare(right.harness);
+		if (harnessCompare !== 0) return harnessCompare;
+		const testCompare = left.test.localeCompare(right.test);
+		if (testCompare !== 0) return testCompare;
+		return left.passType.localeCompare(right.passType);
+	});
 
 	if (regressions.length === 0) return;
 
