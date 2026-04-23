@@ -441,6 +441,7 @@ export function createOpenCodeAdapter(): Harness {
 					const elapsedMs = Math.round(performance.now() - startTime);
 					const remainingMs = timeoutMs - elapsedMs;
 					if (remainingMs > 1000) {
+						const firstAttemptAssessment = signalAssessment;
 						try {
 							const retryResult = await createOpenCodeAdapter().generate({
 								...opts,
@@ -450,6 +451,12 @@ export function createOpenCodeAdapter(): Harness {
 							return {
 								...retryResult,
 								durationMs: Math.round(performance.now() - startTime),
+								signalAssessment: appendSignalAssessmentReasons(
+									retryResult.signalAssessment,
+									firstAttemptAssessment?.classification === "tainted"
+										? firstAttemptAssessment.reasons
+										: [],
+								),
 							};
 						} catch (error) {
 							const totalDurationMs = Math.round(performance.now() - startTime);

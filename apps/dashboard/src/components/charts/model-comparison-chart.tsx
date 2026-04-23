@@ -38,6 +38,14 @@ interface ModelComparisonChartProps {
 	items: MatrixItemResult[];
 }
 
+/**
+ * Renders the head-to-head tooltip for a single test row.
+ *
+ * @param props - Tooltip activation state and Recharts payload entries
+ * @param props.active - Whether the tooltip is currently active
+ * @param props.payload - Payload entries containing test, model scores, and delta
+ * @returns Tooltip markup for the active row, or `null` when inactive or empty
+ */
 function ComparisonTooltip({
 	active,
 	payload,

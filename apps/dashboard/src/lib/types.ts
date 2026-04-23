@@ -8,6 +8,7 @@ import type {
 	ArtifactRuntimeName,
 	TestCategory,
 } from "../../../../src/schemas/common.schema.js";
+import type { ModelExclusion } from "../../../../src/schemas/plan.schema.js";
 
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
@@ -314,6 +315,7 @@ export interface RunPlan {
 	environment?: LegacyEnvironment;
 	config: PlanConfig;
 	items: MatrixItem[];
+	modelExclusions?: ModelExclusion[];
 	summary: {
 		totalItems: number;
 		runtimes: number;

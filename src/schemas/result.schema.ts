@@ -116,20 +116,35 @@ export const ScoringMetricsSchema = z
 	})
 	.refine(
 		(metrics) => {
-			const retryFields = [
-				metrics.retryKind,
-				metrics.retryReason,
-				metrics.retryAttempted,
-				metrics.retryPromoted,
-			];
-			return retryFields.every((value) => value === undefined)
-				? true
-				: retryFields.every((value) => value !== undefined);
+			const hasAnyRetryField =
+				metrics.retryKind !== undefined ||
+				metrics.retryReason !== undefined ||
+				metrics.retryAttempted !== undefined ||
+				metrics.retryPromoted !== undefined;
+			if (!hasAnyRetryField) {
+				return true;
+			}
+			if (metrics.retryAttempted === true) {
+				return (
+					metrics.retryKind !== undefined &&
+					typeof metrics.retryReason === "string" &&
+					metrics.retryReason.trim().length > 0 &&
+					typeof metrics.retryPromoted === "boolean"
+				);
+			}
+			if (metrics.retryAttempted === false) {
+				return (
+					metrics.retryKind === undefined &&
+					metrics.retryReason === undefined &&
+					metrics.retryPromoted === undefined
+				);
+			}
+			return false;
 		},
 		{
 			message:
-				"retryKind, retryReason, retryAttempted, and retryPromoted must be provided together",
-			path: ["retryKind"],
+				"retry metrics must be fully absent, or when retryAttempted is true include retryKind, non-empty retryReason, and retryPromoted; when retryAttempted is false the other retry fields must be absent",
+			path: ["retryAttempted"],
 		},
 	);
 

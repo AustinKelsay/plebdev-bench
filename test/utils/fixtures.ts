@@ -7,6 +7,12 @@
  * - Machine identities are stable unless explicitly overridden by options.
  */
 
+import {
+	buildMachineProfileKey,
+	buildMachineProfileLabel,
+	normalizeMachineProfile,
+} from "../../src/lib/machine-profile/normalization.js";
+
 interface FallbackMachineProfileOptions {
 	machineInstanceId?: string;
 	machineDisplayLabel?: string;
@@ -80,24 +86,18 @@ export function fallbackCollectMachineProfile(
 					readNonEmpty(env.BENCH_MACHINE_INSTANCE_ID) !== undefined
 				? "env"
 				: "generated";
+	const normalizedProfile = normalizeMachineProfile(hardware);
+	const profileKey = buildMachineProfileKey(normalizedProfile);
+	const profileLabel = buildMachineProfileLabel(hardware, normalizedProfile);
 
 	return {
 		machine: {
 			instanceId,
 			instanceIdSource: identitySource,
 			...(displayLabel ? { displayLabel } : {}),
-			profileKey: "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro-gpu_na_x1",
-			profileLabel: "Apple M4 Pro / 64GB / Apple M4 Pro GPU",
-			normalizedProfile: {
-				platformFamily: "macos" as const,
-				arch: hardware.arch,
-				cpuVendor: "apple",
-				cpuModelKey: "m4-pro",
-				logicalCores: hardware.logicalCores,
-				memoryGiB: 64,
-				acceleratorKey: "apple/m4-pro-gpu",
-				acceleratorCount: 1,
-			},
+			profileKey,
+			profileLabel,
+			normalizedProfile,
 			observedHardware: hardware,
 		},
 		isAnonymous: identitySource === "generated",

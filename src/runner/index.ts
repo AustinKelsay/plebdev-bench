@@ -239,8 +239,17 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			});
 			printModelGuardReport(preItemResidencyReport);
 		} catch (error) {
+			const errorMessage = readErrorMessage(error);
+			if (isToolHarness && isPreflight) {
+				preflightStatus.set(preflightKey, {
+					status: "failed",
+					skip: true,
+					message: `Residency guard failed: ${errorMessage}`,
+					failureType: "api_error",
+				});
+			}
 			log.warn(
-				{ itemId: item.id, error: readErrorMessage(error) },
+				{ itemId: item.id, error: errorMessage },
 				"Ollama residency guard failed before item; recording item failure",
 			);
 			results.push(buildResidencyGuardFailureResult(item, error));

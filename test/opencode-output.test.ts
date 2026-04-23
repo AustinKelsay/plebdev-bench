@@ -57,6 +57,34 @@ describe("parseOpenCodeEvents", () => {
 		});
 	});
 
+	it("prefers the latest non-empty write payload across tool events", () => {
+		const parsed = parseOpenCodeEvents(
+			[
+				JSON.stringify({
+					type: "tool_use",
+					toolCall: {
+						name: "write",
+						arguments: {
+							content: "export const first = 1;",
+						},
+					},
+				}),
+				JSON.stringify({
+					type: "tool_use",
+					toolCall: {
+						name: "write",
+						arguments: {
+							content: "export const second = 2;",
+						},
+					},
+				}),
+			].join("\n"),
+		);
+
+		expect(parsed.output).toBe("export const second = 2;");
+		expect(parsed.method).toBe("tool_call");
+	});
+
 	it("returns empty parsed output for protocol-only JSONL", () => {
 		const parsed = parseOpenCodeEvents(
 			[

@@ -17,10 +17,24 @@ import type { GenerateOpts } from "../src/harnesses/index.js";
 import type { Runtime } from "../src/runtimes/index.js";
 
 const execaMock = vi.fn();
+const getOpenCodeRunFeaturesMock = vi.fn(async () => ({
+	supportsModel: true,
+	supportsFormat: true,
+	supportsDir: true,
+	supportsPure: true,
+}));
 
 vi.mock("execa", () => ({
 	execa: execaMock,
 }));
+
+vi.mock("../src/harnesses/opencode-cli.js", async () => {
+	const actual = await vi.importActual("../src/harnesses/opencode-cli.js");
+	return {
+		...actual,
+		getOpenCodeRunFeatures: getOpenCodeRunFeaturesMock,
+	};
+});
 
 interface MockOpenCodeOptions {
 	cwd: string;
@@ -82,6 +96,7 @@ function createProcess(
 describe("createOpenCodeAdapter", () => {
 	beforeEach(() => {
 		execaMock.mockReset();
+		getOpenCodeRunFeaturesMock.mockClear();
 	});
 
 	it("preserves caller-provided workspaces in workspace mode", async () => {
@@ -543,5 +558,56 @@ describe("createOpenCodeAdapter", () => {
 		expect(
 			execaMock.mock.calls.filter(([command]) => command === "opencode"),
 		).toHaveLength(2);
+	});
+
+	it("preserves first-attempt taint when a retry later succeeds", async () => {
+		const { createOpenCodeAdapter } = await import(
+			"../src/harnesses/opencode-adapter.js"
+		);
+		execaMock
+			.mockImplementationOnce((command: string) => {
+				if (command === "opencode") {
+					return createProcess(
+						"DONE",
+						"! permission requested: external_directory (/tmp/foo/*); auto-rejecting\n",
+					);
+				}
+				throw new Error(`Unexpected command: ${command}`);
+			})
+			.mockImplementationOnce(
+				(command: string, _args: string[], options: MockOpenCodeOptions) => {
+					if (command === "opencode") {
+						fs.writeFileSync(
+							path.join(options.cwd, "solution.ts"),
+							"export const recovered = true;\n",
+						);
+						return createProcess("DONE");
+					}
+					throw new Error(`Unexpected command: ${command}`);
+				},
+			);
+
+		const adapter = createOpenCodeAdapter();
+		const result = await adapter.generate({
+			model: "qwen3.5:4b",
+			prompt: "Return one complete TypeScript module.",
+			timeoutMs: 5_000,
+			runtime: createRuntime(),
+		});
+
+		try {
+			expect(result.codeFilePath).toMatch(/solution\.ts$/);
+			expect(result.signalAssessment).toEqual({
+				classification: "tainted",
+				reasons: ["tool_permission_denied"],
+			});
+		} finally {
+			if (result.codeFilePath) {
+				await fs.promises.rm(path.dirname(result.codeFilePath), {
+					recursive: true,
+					force: true,
+				});
+			}
+		}
 	});
 });

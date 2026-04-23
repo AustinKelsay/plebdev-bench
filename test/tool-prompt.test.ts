@@ -37,4 +37,14 @@ describe("buildWorkspaceToolPrompt", () => {
 		);
 		expect(prompt).toContain('- For searches, use path "." or "./".');
 	});
+
+	it("rejects absolute-anchor mode without a workspace root", () => {
+		expect(() =>
+			buildWorkspaceToolPrompt({
+				toolNames: ["read", "write"],
+				taskPrompt: "Update the fixture.",
+				pathMode: "absolute-anchor",
+			}),
+		).toThrow("absolute-anchor requires workspaceRootPath");
+	});
 });

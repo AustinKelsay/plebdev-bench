@@ -243,7 +243,7 @@ describe("executeItem", () => {
 			compileRetryUsed: false,
 			signalAssessment: {
 				classification: "tainted",
-				reasons: ["another_reason"],
+				reasons: ["confirmation_without_artifact"],
 			},
 		});
 
@@ -252,7 +252,7 @@ describe("executeItem", () => {
 		expect(result.status).toBe("completed");
 		expect(result.signalAssessment).toEqual({
 			classification: "tainted",
-			reasons: ["tool_permission_denied", "another_reason"],
+			reasons: ["tool_permission_denied", "confirmation_without_artifact"],
 		});
 	});
 

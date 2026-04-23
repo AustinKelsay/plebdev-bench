@@ -103,6 +103,9 @@ export function buildWorkspaceToolPrompt(
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
 	}
+	if (pathMode === "absolute-anchor" && workspaceRootPath === undefined) {
+		throw new Error("absolute-anchor requires workspaceRootPath");
+	}
 
 	const toolLabel = formatToolNames(toolNames);
 	const pathLines =

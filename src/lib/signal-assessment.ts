@@ -49,6 +49,7 @@ interface TranscriptOrInputTaintOptions {
  * Builds a trustworthy signal assessment.
  *
  * @returns Trustworthy assessment with no taint reasons
+ * @throws {never} This helper only returns a constant trustworthy assessment
  */
 export function createTrustworthySignalAssessment(): SignalAssessment {
 	return {
@@ -84,6 +85,7 @@ export function createTaintedSignalAssessment(
  * @param current - Existing assessment, if any
  * @param reasons - Reasons to append
  * @returns Updated assessment
+ * @throws {never} This helper only merges stable taint reason arrays
  */
 export function appendSignalAssessmentReasons(
 	current: SignalAssessment | undefined,
@@ -103,6 +105,7 @@ export function appendSignalAssessmentReasons(
  * @param existing - Current signal assessment
  * @param next - New signal assessment from a later pipeline stage
  * @returns Merged signal assessment, or undefined when neither assessment exists
+ * @throws {never} This helper only merges existing assessment payloads
  */
 export function mergeSignalAssessments(
 	existing: SignalAssessment | undefined,
@@ -120,6 +123,7 @@ export function mergeSignalAssessments(
  *
  * @param results - Run rows
  * @returns True when trusted metrics can be computed
+ * @throws {never} This helper only inspects assessment presence on results
  */
 export function hasCompleteSignalAssessments(
 	results: readonly MatrixItemResult[],
@@ -134,6 +138,7 @@ export function hasCompleteSignalAssessments(
  *
  * @param item - Matrix item result
  * @returns True when classification is tainted
+ * @throws {never} This helper only inspects the provided row
  */
 export function isTaintedItem(item: MatrixItemResult): boolean {
 	return item.signalAssessment?.classification === "tainted";
@@ -144,6 +149,7 @@ export function isTaintedItem(item: MatrixItemResult): boolean {
  *
  * @param output - Raw generation output
  * @returns True when output is only a short confirmation
+ * @throws {never} This helper only matches static output patterns
  */
 export function isConfirmationOnlyOutput(output: string): boolean {
 	const trimmed = output.trim();
@@ -158,6 +164,7 @@ export function isConfirmationOnlyOutput(output: string): boolean {
  *
  * @param output - Raw generation output
  * @returns True when output resembles an unevaluated tool call
+ * @throws {never} JSON parse failures are caught and reported as `false`
  */
 export function isLikelyToolCallPayload(output: string): boolean {
 	const trimmed = output.trim();
@@ -273,6 +280,7 @@ function hasToolInvocationTranscriptBlock(output: string): boolean {
  *
  * @param output - Raw generation output
  * @returns True when output resembles internal transport/tool transcript text
+ * @throws {never} This helper only applies deterministic text heuristics
  */
 export function isInternalToolTranscriptOutput(output: string): boolean {
 	const trimmed = output.trim();
@@ -291,6 +299,7 @@ export function isInternalToolTranscriptOutput(output: string): boolean {
  * @param output - Raw generation output
  * @param options - Context for deciding whether input-request phrases are boundary text
  * @returns True when output asks the user to continue or confirm
+ * @throws {never} This helper only applies deterministic text heuristics
  */
 export function isAgentRequestedInputOutput(
 	output: string,
@@ -314,6 +323,7 @@ export function isAgentRequestedInputOutput(
  * @param output - Raw or normalized output text
  * @param options - Context for filtering harness-boundary-only patterns
  * @returns Stable taint reasons for non-semantic transcript/input leakage
+ * @throws {never} This helper only returns stable reason codes derived from text
  */
 export function getTranscriptOrInputTaintReasons(
 	output: string,

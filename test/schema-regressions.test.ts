@@ -60,5 +60,22 @@ describe("schema regressions", () => {
 			retryAttempted: true,
 			retryPromoted: false,
 		});
+
+		expect(() =>
+			MatrixItemResultSchema.parse({
+				id: "06",
+				runtime: "ollama",
+				model: "llama3.2:3b",
+				harness: "direct",
+				test: "smoke",
+				passType: "blind",
+				status: "completed",
+				scoringMetrics: {
+					durationMs: 12,
+					retryAttempted: false,
+					retryPromoted: true,
+				},
+			}),
+		).toThrow(/retry metrics must be fully absent/);
 	});
 });

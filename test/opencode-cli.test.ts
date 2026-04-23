@@ -80,4 +80,20 @@ describe("OpenCode CLI helpers", () => {
 			"Do the task.",
 		]);
 	});
+
+	it("rejects argv construction when required run flags are unsupported", () => {
+		expect(() =>
+			buildOpenCodeRunArgs({
+				prompt: "Do the task.",
+				modelArg: "ollama/gpt-oss:20b",
+				executionWorkspaceDir: "/tmp/workspace",
+				features: {
+					supportsModel: true,
+					supportsFormat: false,
+					supportsDir: true,
+					supportsPure: false,
+				},
+			}),
+		).toThrow(/missing --format/);
+	});
 });

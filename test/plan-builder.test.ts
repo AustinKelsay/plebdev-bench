@@ -97,6 +97,13 @@ describe("buildRunPlan", () => {
 		createRuntimeMock.mockReturnValue({
 			ping: async () => true,
 			listModels: async () => ["qwen3.5:4b"],
+			getModelInfo: async (model: string) => ({
+				name: model,
+				sizeBytes: 4_000_000_000,
+				parametersBillions: 4,
+				modelKind: "text-generation",
+				capabilities: { generateText: true },
+			}),
 		});
 		computeBenchmarkCheckpointMock.mockReturnValue({
 			checkpointId: "chk_test",

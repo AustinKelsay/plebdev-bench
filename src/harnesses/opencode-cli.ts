@@ -127,8 +127,20 @@ export async function getOpenCodeRunFeatures(): Promise<OpenCodeRunFeatures> {
  *
  * @param opts - Prompt, model, workspace, and detected CLI features
  * @returns Argument list passed after the `opencode` executable
+ * @throws {Error} If the installed OpenCode CLI does not advertise required
+ * benchmark run flags for the provided model/workspace configuration
  */
 export function buildOpenCodeRunArgs(opts: OpenCodeRunArgsOpts): string[] {
+	const missingFlags = [
+		...(opts.features.supportsModel ? [] : ["--model"]),
+		...(opts.features.supportsFormat ? [] : ["--format"]),
+		...(opts.features.supportsDir ? [] : ["--dir"]),
+	];
+	if (missingFlags.length > 0) {
+		throw new Error(
+			`Installed OpenCode CLI is incompatible with benchmark runs; missing ${missingFlags.join(", ")} for model ${opts.modelArg} in workspace ${opts.executionWorkspaceDir}`,
+		);
+	}
 	return [
 		"run",
 		"--model",

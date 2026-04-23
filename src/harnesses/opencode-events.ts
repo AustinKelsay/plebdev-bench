@@ -266,7 +266,13 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 				: false;
 		}
 
-		toolCallOutput ??= extractFromToolCallObject(event);
+		const extractedToolCallOutput = extractFromToolCallObject(event);
+		if (
+			typeof extractedToolCallOutput === "string" &&
+			extractedToolCallOutput.trim().length > 0
+		) {
+			toolCallOutput = extractedToolCallOutput;
+		}
 		permissionDenied ||=
 			typeof event.text === "string"
 				? isOpenCodePermissionDeniedText(event.text)

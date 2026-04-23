@@ -304,9 +304,12 @@ OpenCode uses its built-in `write` tool to write code directly to files instead 
    Use the write tool to write your code to "solution.ts" in the current directory.
    ```
 
-2. **Execution creates temp directory** per generation:
+2. **Execution creates a tool-output workspace** per generation:
    ```typescript
-   const workDir = path.join(os.tmpdir(), `plebdev-bench-opencode-${runId}`);
+   const workDir = path.join(
+     toolOutputRoot,
+     `plebdev-bench-opencode-${runId}`,
+   );
    ```
 
 3. **After execution**, adapter checks for file:

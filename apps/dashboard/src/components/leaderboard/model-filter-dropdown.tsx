@@ -50,6 +50,9 @@ function buildTriggerLabel(
  * @param props.selectedModels - Explicitly selected models; empty means all
  * @param props.onSelectionChange - Called whenever the selection changes
  * @returns React element containing the model filter dropdown
+ * @throws {TypeError} When callers violate the runtime props contract, such as
+ * passing non-array `models`/`selectedModels` values or omitting
+ * `onSelectionChange`
  */
 export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 	const { models, selectedModels, onSelectionChange } = props;

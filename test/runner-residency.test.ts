@@ -350,6 +350,50 @@ describe("runBenchmark Ollama residency guard", () => {
 		});
 	});
 
+	it("caches failed preflight residency guards and skips later tool rows", async () => {
+		const preflight = {
+			...createItem("01", "model-a"),
+			harness: "opencode",
+			tags: ["preflight"],
+		} satisfies MatrixItem;
+		const skipped = {
+			...createItem("02", "model-a"),
+			harness: "opencode",
+		} satisfies MatrixItem;
+		mocks.buildRunPlan.mockResolvedValueOnce(createPlan([preflight, skipped]));
+		mocks.ensureOnlyOllamaModelLoaded.mockRejectedValueOnce(
+			new Error("residency failed"),
+		);
+		const { runBenchmark } = await import("../src/runner/index.js");
+
+		await expect(runBenchmark(CONFIG)).resolves.toBeUndefined();
+
+		expect(mocks.ensureOnlyOllamaModelLoaded).toHaveBeenCalledTimes(1);
+		expect(mocks.executeItem).not.toHaveBeenCalled();
+		const [, runResult] = mocks.writeResult.mock.calls[0] as [
+			string,
+			{ items: MatrixItemResult[] },
+		];
+		expect(runResult.items[0]).toMatchObject({
+			id: preflight.id,
+			status: "failed",
+			generationFailure: {
+				type: "api_error",
+				message: expect.stringContaining("residency failed"),
+			},
+		});
+		expect(runResult.items[1]).toMatchObject({
+			id: skipped.id,
+			status: "failed",
+			generation: {
+				success: false,
+				error: "Skipped: Residency guard failed: residency failed",
+				failureType: "api_error",
+				durationMs: 0,
+			},
+		});
+	});
+
 	afterEach(() => {
 		consoleLogSpy?.mockRestore();
 	});

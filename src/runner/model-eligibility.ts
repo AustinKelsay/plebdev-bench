@@ -50,7 +50,7 @@ function buildExclusionEvidence(info: ModelInfo): ModelExclusion["evidence"] {
  * @returns True when the model should be included in generative rows
  */
 function canGenerateText(info: ModelInfo): boolean {
-	return info.capabilities?.generateText !== false;
+	return info.capabilities?.generateText ?? info.modelKind !== "embedding";
 }
 
 /**

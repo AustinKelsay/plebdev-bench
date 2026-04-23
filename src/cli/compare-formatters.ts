@@ -292,10 +292,16 @@ export function printScoringDeltas(result: CompareResult): void {
 export function printExclusiveItems(result: CompareResult): void {
 	if (result.onlyInA.length > 0) {
 		console.log(`Items only in Run A (${result.onlyInA.length})`);
-		console.log("-".repeat(40));
+		console.log("-".repeat(60));
+		console.log(
+			`${pad("MODEL", STATUS_CHANGE_COLUMN_WIDTHS.model)} ${pad("HARNESS", STATUS_CHANGE_COLUMN_WIDTHS.harness)} ${pad("TEST", STATUS_CHANGE_COLUMN_WIDTHS.test)} ${pad("PASS", STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
+		);
 		for (const item of result.onlyInA.slice(0, 10)) {
 			console.log(
-				`  ${item.model} / ${item.harness} / ${item.test} / ${item.passType}`,
+				`${pad(truncate(item.model, STATUS_CHANGE_COLUMN_WIDTHS.model), STATUS_CHANGE_COLUMN_WIDTHS.model)} ` +
+					`${pad(truncate(item.harness, STATUS_CHANGE_COLUMN_WIDTHS.harness), STATUS_CHANGE_COLUMN_WIDTHS.harness)} ` +
+					`${pad(truncate(item.test, STATUS_CHANGE_COLUMN_WIDTHS.test), STATUS_CHANGE_COLUMN_WIDTHS.test)} ` +
+					`${pad(item.passType, STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
 			);
 		}
 		if (result.onlyInA.length > 10) {
@@ -306,10 +312,16 @@ export function printExclusiveItems(result: CompareResult): void {
 
 	if (result.onlyInB.length > 0) {
 		console.log(`Items only in Run B (${result.onlyInB.length})`);
-		console.log("-".repeat(40));
+		console.log("-".repeat(60));
+		console.log(
+			`${pad("MODEL", STATUS_CHANGE_COLUMN_WIDTHS.model)} ${pad("HARNESS", STATUS_CHANGE_COLUMN_WIDTHS.harness)} ${pad("TEST", STATUS_CHANGE_COLUMN_WIDTHS.test)} ${pad("PASS", STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
+		);
 		for (const item of result.onlyInB.slice(0, 10)) {
 			console.log(
-				`  ${item.model} / ${item.harness} / ${item.test} / ${item.passType}`,
+				`${pad(truncate(item.model, STATUS_CHANGE_COLUMN_WIDTHS.model), STATUS_CHANGE_COLUMN_WIDTHS.model)} ` +
+					`${pad(truncate(item.harness, STATUS_CHANGE_COLUMN_WIDTHS.harness), STATUS_CHANGE_COLUMN_WIDTHS.harness)} ` +
+					`${pad(truncate(item.test, STATUS_CHANGE_COLUMN_WIDTHS.test), STATUS_CHANGE_COLUMN_WIDTHS.test)} ` +
+					`${pad(item.passType, STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
 			);
 		}
 		if (result.onlyInB.length > 10) {
