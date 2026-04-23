@@ -166,6 +166,24 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function validateRequestTimeoutMs(requestTimeoutMs: number | undefined): void {
+	if (
+		requestTimeoutMs !== undefined &&
+		(!Number.isFinite(requestTimeoutMs) || requestTimeoutMs <= 0)
+	) {
+		throw new RangeError("requestTimeoutMs must be > 0");
+	}
+}
+
+function validatePollIntervalMs(pollIntervalMs: number | undefined): void {
+	if (
+		pollIntervalMs !== undefined &&
+		(!Number.isFinite(pollIntervalMs) || pollIntervalMs < 0)
+	) {
+		throw new RangeError("pollIntervalMs must be >= 0");
+	}
+}
+
 /**
  * Lists models currently loaded in Ollama memory.
  *
@@ -176,6 +194,7 @@ function sleep(ms: number): Promise<void> {
 export async function listRunningOllamaModels(
 	config: OllamaResidencyBaseConfig,
 ): Promise<LoadedOllamaModel[]> {
+	validateRequestTimeoutMs(config.requestTimeoutMs);
 	const timeoutMs = config.requestTimeoutMs ?? RESIDENCY_REQUEST_TIMEOUT_MS;
 	const endpoint = `${config.baseUrl}/api/ps`;
 	const json = await fetchJson(endpoint, { method: "GET" }, timeoutMs);
@@ -198,6 +217,7 @@ export async function listRunningOllamaModels(
 export async function unloadOllamaModel(
 	config: UnloadOllamaModelConfig,
 ): Promise<void> {
+	validateRequestTimeoutMs(config.requestTimeoutMs);
 	const timeoutMs = config.requestTimeoutMs ?? RESIDENCY_REQUEST_TIMEOUT_MS;
 	const endpoint = `${config.baseUrl}/api/generate`;
 	const json = await fetchJson(
@@ -232,6 +252,8 @@ export async function unloadOllamaModel(
 export async function ensureOnlyOllamaModelLoaded(
 	config: EnsureOnlyOllamaModelLoadedConfig,
 ): Promise<OllamaResidencyReport> {
+	validateRequestTimeoutMs(config.requestTimeoutMs);
+	validatePollIntervalMs(config.pollIntervalMs);
 	const settleTimeoutMs = config.settleTimeoutMs ?? RESIDENCY_SETTLE_TIMEOUT_MS;
 	const pollIntervalMs = config.pollIntervalMs ?? RESIDENCY_POLL_INTERVAL_MS;
 	const deadline = performance.now() + settleTimeoutMs;

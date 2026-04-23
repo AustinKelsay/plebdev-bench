@@ -16,7 +16,7 @@ import {
 	assertComparableCheckpoints,
 	readPlanBestEffort,
 	resolveCheckpointId,
-} from "../src/cli/compare-command.js";
+} from "../src/cli/compare-utils.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 import type { RunPlan, RunResult } from "../src/schemas/index.js";
 

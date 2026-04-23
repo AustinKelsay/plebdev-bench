@@ -24,5 +24,17 @@ describe("computeOpenCodeStaleOutputTimeoutMs", () => {
 		expect(() => computeOpenCodeStaleOutputTimeoutMs(0)).toThrow(
 			"timeoutMs must be a finite positive number",
 		);
+		expect(() => computeOpenCodeStaleOutputTimeoutMs(-1)).toThrow(
+			"timeoutMs must be a finite positive number",
+		);
+		expect(() => computeOpenCodeStaleOutputTimeoutMs(Number.NaN)).toThrow(
+			"timeoutMs must be a finite positive number",
+		);
+		expect(() =>
+			computeOpenCodeStaleOutputTimeoutMs(Number.POSITIVE_INFINITY),
+		).toThrow("timeoutMs must be a finite positive number");
+		expect(() =>
+			computeOpenCodeStaleOutputTimeoutMs(Number.NEGATIVE_INFINITY),
+		).toThrow("timeoutMs must be a finite positive number");
 	});
 });

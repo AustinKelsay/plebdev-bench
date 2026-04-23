@@ -1,5 +1,11 @@
 /**
  * Purpose: Regression tests for OpenCode adapter direct-run orchestration.
+ * Exports: none
+ *
+ * Invariants:
+ * - OpenCode and git process execution is mocked.
+ * - Adapter outputs preserve structured failure evidence for runner serialization.
+ * - Workspace-mode tests use temporary directories and clean them up.
  */
 
 import * as fs from "node:fs";
@@ -185,7 +191,8 @@ describe("createOpenCodeAdapter", () => {
 			path.join(os.tmpdir(), "plebdev-opencode-link-"),
 		);
 		const linkWorkspaceDir = path.join(linkParentDir, "workspace");
-		await fs.promises.symlink(realWorkspaceDir, linkWorkspaceDir, "dir");
+		const linkType = process.platform === "win32" ? "junction" : "dir";
+		await fs.promises.symlink(realWorkspaceDir, linkWorkspaceDir, linkType);
 		const canonicalWorkspaceDir = await fs.promises.realpath(linkWorkspaceDir);
 
 		execaMock.mockImplementation((command: string) => {

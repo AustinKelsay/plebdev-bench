@@ -497,19 +497,29 @@ All harnesses share the same Ollama model pool:
   - Goose: `GOOSE_PROVIDER=ollama GOOSE_MODEL=llama3.2:3b`
   - OpenCode: `--model ollama/llama3.2:3b`
 
-**OpenCode Model Configuration**: OpenCode requires models to be registered in its config file (`~/.config/opencode/opencode.json`). If a model exists in Ollama but not in OpenCode's config, it will fail with empty output. Add models to the config:
+**OpenCode Model Configuration**: OpenCode model registration is generated per benchmark item. Do not edit `~/.config/opencode/opencode.json` for benchmark rows; inspect the generated row config/debug output when troubleshooting model wiring. The adapter emits provider `models` entries with model-level `"tools": true` and does not emit deprecated top-level `tools` config:
 
 ```json
 {
+  "enabled_providers": ["ollama"],
   "provider": {
     "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
       "models": {
-        "your-model:tag": { "name": "your-model:tag" }
+        "your-model:tag": {
+          "name": "your-model:tag",
+          "tools": true
+        }
       }
     }
   }
 }
 ```
+
+If tool calls still fail after the generated config is correct, verify the model supports tool/function calling and increase Ollama `num_ctx` when needed.
 
 ## Dynamic Timeouts
 

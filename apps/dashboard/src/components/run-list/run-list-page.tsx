@@ -31,6 +31,13 @@ function groupBorderColor(group: { isLatest: boolean; isLegacy: boolean }) {
 	return "border-l-foreground-faint";
 }
 
+/**
+ * Renders the benchmark run list page grouped by checkpoint season.
+ *
+ * @param props - None; run data is loaded from dashboard context via `useRuns`.
+ * @returns JSX element containing loading, error, empty, and grouped run states.
+ * @throws No intentional runtime errors; hook/provider failures are surfaced as error UI.
+ */
 export function RunListPage() {
 	const { runs, checkpoints, latestCheckpointId, loading, error } = useRuns();
 	const checkpointGroups = buildRunCheckpointGroups(

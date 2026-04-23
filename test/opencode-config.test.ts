@@ -26,6 +26,7 @@ describe("buildOpenCodeConfig", () => {
 			provider: Record<
 				string,
 				{
+					options: { baseURL: string };
 					models: Record<string, { name: string; tools: boolean }>;
 				}
 			>;
@@ -34,6 +35,9 @@ describe("buildOpenCodeConfig", () => {
 		};
 
 		expect(provider.modelArg).toBe("ollama/Qwen%2FQwen2.5-14B-Instruct");
+		expect(typedConfig.provider.ollama?.options.baseURL).toBe(
+			"http://localhost:11434/v1",
+		);
 		expect(typedConfig.enabled_providers).toEqual(["ollama"]);
 		expect(typedConfig.model).toBe("ollama/Qwen%2FQwen2.5-14B-Instruct");
 		expect(
@@ -65,20 +69,71 @@ describe("buildOpenCodeConfig", () => {
 			lsp: "deny",
 		});
 	});
+
+	it("uses trimmed model names in provider config and model args", () => {
+		const { config, provider } = buildOpenCodeConfig({
+			runtimeName: "ollama",
+			runtimeBaseUrl: "http://localhost:11434",
+			model: "  Qwen/Qwen2.5-14B-Instruct  ",
+		});
+		const typedConfig = config as {
+			model: string;
+			provider: {
+				ollama?: {
+					models: Record<string, { name: string; tools: boolean }>;
+				};
+			};
+		};
+
+		expect(provider.runtimeModelName).toBe("Qwen/Qwen2.5-14B-Instruct");
+		expect(typedConfig.model).toBe("ollama/Qwen%2FQwen2.5-14B-Instruct");
+		expect(
+			typedConfig.provider.ollama?.models["Qwen%2FQwen2.5-14B-Instruct"],
+		).toEqual({
+			name: "Qwen/Qwen2.5-14B-Instruct",
+			tools: true,
+		});
+	});
 });
 
 describe("buildOpenCodeEnv", () => {
 	it("exports config dir/path/content for isolated headless runs", () => {
+		const inheritedConfig = process.env.OPENCODE_CONFIG;
+		const inheritedDisable = process.env.OPENCODE_DISABLE_WEBSEARCH;
+		const inheritedCustom = process.env.OPENCODE_USER_SETTING;
+		process.env.OPENCODE_CONFIG = "/tmp/user-opencode.json";
+		process.env.OPENCODE_DISABLE_WEBSEARCH = "false";
+		process.env.OPENCODE_USER_SETTING = "leak";
 		const env = buildOpenCodeEnv({
 			configDir: "/tmp/opencode-config",
 			configPath: "/tmp/opencode-config/opencode.json",
 			configJson: '{"permission":{"*":"allow"}}',
 		});
 
-		expect(env.OPENCODE_CONFIG_DIR).toBe("/tmp/opencode-config");
-		expect(env.OPENCODE_CONFIG).toBe("/tmp/opencode-config/opencode.json");
-		expect(env.OPENCODE_CONFIG_CONTENT).toBe('{"permission":{"*":"allow"}}');
-		expect(env.OPENCODE_DISABLE_AUTOUPDATE).toBe("true");
-		expect(env.OPENCODE_DISABLE_DEFAULT_PLUGINS).toBe("true");
+		try {
+			expect(env.OPENCODE_CONFIG_DIR).toBe("/tmp/opencode-config");
+			expect(env.OPENCODE_CONFIG).toBe("/tmp/opencode-config/opencode.json");
+			expect(env.OPENCODE_CONFIG_CONTENT).toBe('{"permission":{"*":"allow"}}');
+			expect(env.OPENCODE_DISABLE_AUTOUPDATE).toBe("true");
+			expect(env.OPENCODE_DISABLE_DEFAULT_PLUGINS).toBe("true");
+			expect(env.OPENCODE_DISABLE_WEBSEARCH).toBe("true");
+			expect(env.OPENCODE_USER_SETTING).toBeUndefined();
+		} finally {
+			if (inheritedConfig === undefined) {
+				Reflect.deleteProperty(process.env, "OPENCODE_CONFIG");
+			} else {
+				process.env.OPENCODE_CONFIG = inheritedConfig;
+			}
+			if (inheritedDisable === undefined) {
+				Reflect.deleteProperty(process.env, "OPENCODE_DISABLE_WEBSEARCH");
+			} else {
+				process.env.OPENCODE_DISABLE_WEBSEARCH = inheritedDisable;
+			}
+			if (inheritedCustom === undefined) {
+				Reflect.deleteProperty(process.env, "OPENCODE_USER_SETTING");
+			} else {
+				process.env.OPENCODE_USER_SETTING = inheritedCustom;
+			}
+		}
 	});
 });

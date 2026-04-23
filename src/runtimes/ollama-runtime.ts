@@ -142,7 +142,7 @@ function inferModelKind(
 	if (EMBEDDING_NAME_PATTERNS.some((pattern) => pattern.test(model))) {
 		return "embedding";
 	}
-	return "text-generation";
+	return "unknown";
 }
 
 /**
@@ -250,7 +250,7 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 				parametersBillions,
 				modelKind,
 				capabilities: {
-					generateText: modelKind !== "embedding",
+					generateText: modelKind === "text-generation",
 					embedText: modelKind === "embedding",
 				},
 				metadata: {

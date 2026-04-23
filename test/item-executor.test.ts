@@ -173,6 +173,25 @@ describe("executeItem", () => {
 		});
 	});
 
+	it("normalizes negative generation failure durations to zero", async () => {
+		mocks.runGenerationWithInfraRetry.mockRejectedValueOnce(
+			Object.assign(new Error("Harness reported invalid duration"), {
+				durationMs: -1,
+				failureType: "harness_error",
+			}),
+		);
+
+		const result = await executeItem(CODE_OUTPUT_ITEM, RUNTIME_CONFIG, 5_000);
+
+		expect(result.status).toBe("failed");
+		expect(result.generation).toMatchObject({
+			success: false,
+			error: "Harness reported invalid duration",
+			failureType: "harness_error",
+			durationMs: 0,
+		});
+	});
+
 	it("drops malformed signal assessments from harness errors", async () => {
 		mocks.runGenerationWithInfraRetry.mockRejectedValueOnce(
 			Object.assign(new Error("Harness surfaced malformed taint payload"), {

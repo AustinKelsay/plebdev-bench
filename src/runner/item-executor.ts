@@ -127,7 +127,8 @@ function extractGenerationFailureDetails(error: unknown): {
 		failureType,
 		durationMs:
 			typeof errorRecord?.durationMs === "number" &&
-			Number.isFinite(errorRecord.durationMs)
+			Number.isFinite(errorRecord.durationMs) &&
+			errorRecord.durationMs >= 0
 				? errorRecord.durationMs
 				: 0,
 		output:

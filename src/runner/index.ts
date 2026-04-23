@@ -20,7 +20,6 @@ import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { isPreflightTest } from "../lib/tool-smoke.js";
 import {
 	deletePartialResult,
-	writePartialResult,
 	writePlan,
 	writeResult,
 } from "../results/writer.js";
@@ -29,83 +28,31 @@ import {
 	type RuntimeName,
 	createRuntime,
 } from "../runtimes/index.js";
-import {
-	type OllamaResidencyReport,
-	ensureOnlyOllamaModelLoaded,
-} from "../runtimes/ollama-residency.js";
+import { ensureOnlyOllamaModelLoaded } from "../runtimes/ollama-residency.js";
 import type {
 	BenchConfig,
 	GenerationFailureType,
 	MatrixItemResult,
-	RunResult,
 } from "../schemas/index.js";
-import { SCHEMA_VERSION } from "../schemas/index.js";
 import { executeItem } from "./item-executor.js";
 import { buildRunPlan } from "./plan-builder.js";
+import {
+	buildResidencyGuardFailureResult,
+	buildRunResultSnapshot,
+	printModelGuardReport,
+	readErrorMessage,
+	shouldWriteProgressCheckpoint,
+	writeProgressCheckpoint,
+} from "./run-progress.js";
 
 /** Warn if run.json exceeds this size (bytes). */
 const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
-/** Write crash-safe run checkpoints every N completed items. */
-const PARTIAL_RESULT_CHECKPOINT_INTERVAL = 20;
 /** Generation failures that indicate a tool harness/model should stop early. */
 const PREFLIGHT_SKIP_FAILURE_TYPES = new Set<GenerationFailureType>([
 	"api_error",
 	"harness_error",
 	"tool_missing",
 ]);
-
-/**
- * Builds a run result snapshot from current progress.
- *
- * @param plan - Run plan metadata source
- * @param startedAt - Run start timestamp
- * @param total - Total planned items
- * @param results - Completed item results so far
- * @returns Run result snapshot payload
- */
-function buildRunResultSnapshot(
-	plan: Awaited<ReturnType<typeof buildRunPlan>>,
-	startedAt: string,
-	runStartTimeMs: number,
-	total: number,
-	results: MatrixItemResult[],
-): RunResult {
-	const completed = results.filter((r) => r.status === "completed").length;
-	const failed = results.filter((r) => r.status === "failed").length;
-	const pending = Math.max(0, total - results.length);
-	const completedAt = new Date().toISOString();
-	const durationMs = Math.round(performance.now() - runStartTimeMs);
-
-	return {
-		schemaVersion: SCHEMA_VERSION,
-		runId: plan.runId,
-		...(plan.machine ? { machine: plan.machine } : {}),
-		...(plan.benchmarkCheckpoint
-			? { benchmarkCheckpoint: plan.benchmarkCheckpoint }
-			: {}),
-		provenance: {
-			verificationStatus: "self_reported",
-			source: plan.provenance?.source ?? "local_cli",
-			...(plan.provenance?.submittedBy
-				? { submittedBy: plan.provenance.submittedBy }
-				: {}),
-			...(plan.provenance?.submittedAt
-				? { submittedAt: plan.provenance.submittedAt }
-				: {}),
-			...(plan.provenance?.notes ? { notes: plan.provenance.notes } : {}),
-		},
-		startedAt,
-		completedAt,
-		durationMs,
-		summary: {
-			total,
-			completed,
-			failed,
-			pending,
-		},
-		items: results,
-	};
-}
 
 /**
  * Determines whether a preflight failure means later tool rows should be skipped.
@@ -127,13 +74,6 @@ function shouldSkipRemainingToolItems(result: MatrixItemResult): boolean {
  *
  * @param report - Ollama residency report from the model guard
  */
-function printModelGuardReport(report: OllamaResidencyReport): void {
-	if (report.unloadedModels.length === 0) return;
-	console.log(
-		`model guard: allowed=${report.allowedModel ?? "none"} unloaded=${report.unloadedModels.join(",")}`,
-	);
-}
-
 /**
  * Runs the complete benchmark workflow.
  *
@@ -270,11 +210,35 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			item.timeoutMultiplier,
 		);
 
-		const preItemResidencyReport = await ensureOnlyOllamaModelLoaded({
-			baseUrl: config.ollamaBaseUrl,
-			allowedModel: item.model,
-		});
-		printModelGuardReport(preItemResidencyReport);
+		try {
+			const preItemResidencyReport = await ensureOnlyOllamaModelLoaded({
+				baseUrl: config.ollamaBaseUrl,
+				allowedModel: item.model,
+			});
+			printModelGuardReport(preItemResidencyReport);
+		} catch (error) {
+			log.warn(
+				{ itemId: item.id, error: readErrorMessage(error) },
+				"Ollama residency guard failed before item; recording item failure",
+			);
+			results.push(buildResidencyGuardFailureResult(item, error));
+			const itemCount = results.length;
+			if (
+				shouldWriteProgressCheckpoint(itemCount, total, lastCheckpointItemCount)
+			) {
+				await writeProgressCheckpoint({
+					config,
+					plan,
+					startedAt,
+					startTime,
+					total,
+					results,
+					log,
+				});
+				lastCheckpointItemCount = itemCount;
+			}
+			continue;
+		}
 
 		// Progress counter (terminal-native UX)
 		console.log(
@@ -322,34 +286,36 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 					},
 				});
 				const itemCount = results.length;
-				const shouldCheckpoint =
-					itemCount === total ||
-					itemCount - lastCheckpointItemCount >=
-						PARTIAL_RESULT_CHECKPOINT_INTERVAL;
-				if (shouldCheckpoint) {
-					const partialSnapshot = buildRunResultSnapshot(
+				if (
+					shouldWriteProgressCheckpoint(
+						itemCount,
+						total,
+						lastCheckpointItemCount,
+					)
+				) {
+					await writeProgressCheckpoint({
+						config,
 						plan,
 						startedAt,
 						startTime,
 						total,
 						results,
-					);
-					await writePartialResult(config.outputDir, partialSnapshot);
-					log.info(
-						{
-							completedItems: itemCount,
-							totalItems: total,
-							checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
-						},
-						"Wrote run checkpoint",
-					);
+						log,
+					});
 					lastCheckpointItemCount = itemCount;
 				}
 				if (isLastForModel) {
-					const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
-						baseUrl: config.ollamaBaseUrl,
-					});
-					printModelGuardReport(postItemResidencyReport);
+					try {
+						const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
+							baseUrl: config.ollamaBaseUrl,
+						});
+						printModelGuardReport(postItemResidencyReport);
+					} catch (error) {
+						log.warn(
+							{ itemId: item.id, error: readErrorMessage(error) },
+							"Ollama residency guard failed after item; continuing",
+						);
+					}
 				}
 				continue;
 			}
@@ -369,33 +335,32 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		);
 		results.push(result);
 		const itemCount = results.length;
-		const shouldCheckpoint =
-			itemCount === total ||
-			itemCount - lastCheckpointItemCount >= PARTIAL_RESULT_CHECKPOINT_INTERVAL;
-		if (shouldCheckpoint) {
-			const partialSnapshot = buildRunResultSnapshot(
+		if (
+			shouldWriteProgressCheckpoint(itemCount, total, lastCheckpointItemCount)
+		) {
+			await writeProgressCheckpoint({
+				config,
 				plan,
 				startedAt,
 				startTime,
 				total,
 				results,
-			);
-			await writePartialResult(config.outputDir, partialSnapshot);
-			log.info(
-				{
-					completedItems: itemCount,
-					totalItems: total,
-					checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
-				},
-				"Wrote run checkpoint",
-			);
+				log,
+			});
 			lastCheckpointItemCount = itemCount;
 		}
 		if (isLastForModel) {
-			const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
-				baseUrl: config.ollamaBaseUrl,
-			});
-			printModelGuardReport(postItemResidencyReport);
+			try {
+				const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
+					baseUrl: config.ollamaBaseUrl,
+				});
+				printModelGuardReport(postItemResidencyReport);
+			} catch (error) {
+				log.warn(
+					{ itemId: item.id, error: readErrorMessage(error) },
+					"Ollama residency guard failed after item; continuing",
+				);
+			}
 		}
 
 		if (isToolHarness && isPreflight) {

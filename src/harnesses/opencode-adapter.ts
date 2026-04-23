@@ -129,6 +129,20 @@ function buildSignalAssessment(
 		: undefined;
 }
 
+function buildFailureSignalAssessment(
+	stdout: string,
+	stderr: string,
+): SignalAssessment {
+	const reasons = Array.from(
+		new Set([
+			...getTranscriptOrInputTaintReasons(stdout),
+			...getTranscriptOrInputTaintReasons(stderr),
+			...getOpenCodePermissionTaintReasons(stdout, stderr, ""),
+		]),
+	);
+	return appendSignalAssessmentReasons(undefined, reasons);
+}
+
 function buildOpenCodeFailure(
 	message: string,
 	durationMs: number,
@@ -262,12 +276,6 @@ export function createOpenCodeAdapter(): Harness {
 					processResult.stdout,
 					processResult.stderr,
 				);
-				const parsed = parseOpenCodeEvents(rawOutput);
-				const signalAssessment = buildSignalAssessment(
-					parsed,
-					processResult.stdout,
-					processResult.stderr,
-				);
 
 				if (processResult.exitCode !== 0) {
 					const stderrPreview = processResult.stderr.trim().slice(0, 800);
@@ -280,9 +288,19 @@ export function createOpenCodeAdapter(): Harness {
 						`OpenCode exited with ${exitDescription}: ${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
 						durationMs,
 						rawOutput,
-						signalAssessment,
+						buildFailureSignalAssessment(
+							processResult.stdout,
+							processResult.stderr,
+						),
 					);
 				}
+
+				const parsed = parseOpenCodeEvents(rawOutput);
+				const signalAssessment = buildSignalAssessment(
+					parsed,
+					processResult.stdout,
+					processResult.stderr,
+				);
 
 				if (processResult.stderr.trim().length > 0) {
 					log.warn(

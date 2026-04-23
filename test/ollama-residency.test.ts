@@ -173,6 +173,42 @@ describe("ollama-residency", () => {
 		).rejects.toThrow("Ollama residency request failed: 500 Server Error");
 	});
 
+	it("rejects invalid request timeout values", async () => {
+		await expect(
+			listRunningOllamaModels({ baseUrl: BASE_URL, requestTimeoutMs: 0 }),
+		).rejects.toThrow(new RangeError("requestTimeoutMs must be > 0"));
+		await expect(
+			unloadOllamaModel({
+				baseUrl: BASE_URL,
+				model: "gpt-oss:20b",
+				requestTimeoutMs: -1,
+			}),
+		).rejects.toThrow(new RangeError("requestTimeoutMs must be > 0"));
+		await expect(
+			ensureOnlyOllamaModelLoaded({
+				baseUrl: BASE_URL,
+				requestTimeoutMs: Number.POSITIVE_INFINITY,
+			}),
+		).rejects.toThrow(new RangeError("requestTimeoutMs must be > 0"));
+		expect(mockFetch).not.toHaveBeenCalled();
+	});
+
+	it("rejects invalid poll interval values", async () => {
+		await expect(
+			ensureOnlyOllamaModelLoaded({
+				baseUrl: BASE_URL,
+				pollIntervalMs: -1,
+			}),
+		).rejects.toThrow(new RangeError("pollIntervalMs must be >= 0"));
+		await expect(
+			ensureOnlyOllamaModelLoaded({
+				baseUrl: BASE_URL,
+				pollIntervalMs: Number.NaN,
+			}),
+		).rejects.toThrow(new RangeError("pollIntervalMs must be >= 0"));
+		expect(mockFetch).not.toHaveBeenCalled();
+	});
+
 	it("throws on invalid /api/ps schemas", async () => {
 		mockFetch.mockResolvedValueOnce(jsonResponse({ models: [{ size: 123 }] }));
 

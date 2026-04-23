@@ -51,4 +51,33 @@ describe("OpenCode CLI helpers", () => {
 			"Do the task.",
 		]);
 	});
+
+	it("includes --pure when the installed CLI advertises it", () => {
+		const args = buildOpenCodeRunArgs({
+			prompt: "Do the task.",
+			modelArg: "ollama/gpt-oss:20b",
+			executionWorkspaceDir: "/tmp/workspace",
+			features: {
+				supportsModel: true,
+				supportsFormat: true,
+				supportsDir: true,
+				supportsPure: true,
+			},
+		});
+
+		expect(args).toContain("--pure");
+		expect(args).toEqual([
+			"run",
+			"--model",
+			"ollama/gpt-oss:20b",
+			"--format",
+			"json",
+			"--log-level",
+			"ERROR",
+			"--pure",
+			"--dir",
+			"/tmp/workspace",
+			"Do the task.",
+		]);
+	});
 });

@@ -413,6 +413,8 @@ export const RunPlanSchema = z.object({
 		.optional(),
 	config: z.object({
 		ollamaBaseUrl: z.string(),
+		// Legacy plan field. TODO: remove after adding explicit schemaVersion migrations.
+		vllmBaseUrl: z.string().optional(),
 		generateTimeoutMs: z.number(),
 		gooseMaxTurns: z.number().int().positive().optional(),
 		gooseRetryMaxTurns: z.number().int().positive().optional(),

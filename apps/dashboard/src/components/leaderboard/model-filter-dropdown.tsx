@@ -92,7 +92,18 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 	function handleModelToggle(model: string) {
 		if (selectedModels.includes(model)) {
 			onSelectionChange(
-				selectedModels.filter((selected) => selected !== model),
+				selectedModels
+					.filter((selected) => selected !== model)
+					.sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b)),
+			);
+			return;
+		}
+
+		if (selectedModels.length === 0) {
+			onSelectionChange(
+				models
+					.filter((availableModel) => availableModel !== model)
+					.sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b)),
 			);
 			return;
 		}

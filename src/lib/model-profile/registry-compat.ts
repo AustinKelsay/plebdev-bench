@@ -5,7 +5,7 @@
  *
  * Invariants:
  * - Old profile files may include runtime variants that are no longer executable.
- * - Unsupported runtime variants are dropped with a warning before current schema validation.
+ * - Profiles with no supported runtime variants fail fast instead of being dropped.
  */
 
 import type { Logger } from "pino";
@@ -105,14 +105,15 @@ export function normalizeLoadedModelProfileRegistry(
 		);
 	}
 	if (droppedProfiles.length > 0) {
-		log.warn(
-			{
-				droppedProfileKeys: droppedProfiles.map(
-					(profile) => profile.profileKey,
-				),
-				droppedProfiles,
-			},
-			"Dropping model profiles with no supported runtime variants",
+		throw new Error(
+			`Model profile file contains profiles with no supported runtime variants: ${droppedProfiles
+				.map(
+					(profile) =>
+						`${profile.profileKey} (original runtimes: ${profile.originalRuntimes.join(", ") || "none"})`,
+				)
+				.join(
+					"; ",
+				)}. Migrate these profiles to supported runtime variants before loading the registry.`,
 		);
 	}
 

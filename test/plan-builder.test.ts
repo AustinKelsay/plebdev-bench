@@ -431,6 +431,41 @@ describe("buildRunPlan", () => {
 		).rejects.toThrow("Requested model selectors not found: missing-model");
 	});
 
+	it("reports when discovered models are all excluded before matrix expansion", async () => {
+		createRuntimeMock.mockReturnValue({
+			ping: async () => true,
+			listModels: async () => ["nomic-embed-text:latest"],
+			getModelInfo: async () => ({
+				name: "nomic-embed-text:latest",
+				sizeBytes: 1_000_000,
+				parametersBillions: 0.3,
+				capabilities: { generateText: false, embedText: true },
+			}),
+		});
+		discoverTestCatalogMock.mockReturnValue([]);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+		await expect(
+			buildRunPlan({
+				schemaVersion: SCHEMA_VERSION,
+				runtimes: ["ollama"],
+				models: [],
+				harnesses: [],
+				tests: [],
+				categories: [],
+				passTypes: ["blind"],
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 300_000,
+				gooseMaxTurns: 1,
+				gooseRetryMaxTurns: 3,
+				gooseWorkspaceMaxTurns: 8,
+				gooseWorkspaceRetryMaxTurns: 12,
+				outputDir: "results",
+				modelProfiles: {},
+			}),
+		).rejects.toThrow("Models were discovered but all were excluded");
+	});
+
 	it("fails immediately when Ollama is unreachable", async () => {
 		createRuntimeMock.mockReturnValue({
 			ping: async () => false,

@@ -77,7 +77,10 @@ export const aboutFacts: AboutFact[] = [
 
 /** Benchmark matrix dimensions. */
 export const benchmarkDimensions: BenchmarkDimension[] = [
-	{ name: "runtime", description: "Inference backend (Ollama, vLLM)." },
+	{
+		name: "runtime",
+		description: "Inference backend (currently Ollama; vLLM is historical).",
+	},
 	{
 		name: "harness",
 		description: "Adapter that calls the model (direct HTTP, Goose, OpenCode).",

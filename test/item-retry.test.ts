@@ -14,6 +14,7 @@ import type { Runtime } from "../src/runtimes/index.js";
 import type { MatrixItem } from "../src/schemas/index.js";
 
 const scoreGenerationMock = vi.fn();
+let generateMock: ReturnType<typeof vi.fn>;
 
 vi.mock("../src/lib/scorer.js", () => ({
 	scoreGeneration: scoreGenerationMock,
@@ -62,13 +63,14 @@ function createHarness(generateMock: ReturnType<typeof vi.fn>): Harness {
 describe("runScoringWithCompileRetry", () => {
 	beforeEach(() => {
 		scoreGenerationMock.mockReset();
+		generateMock = vi.fn();
 	});
 
 	it("retries direct-harness import failures and promotes the better retry result", async () => {
 		const { runScoringWithCompileRetry } = await import(
 			"../src/runner/item-retry.js"
 		);
-		const generateMock = vi.fn().mockResolvedValue({
+		generateMock.mockResolvedValue({
 			output: "export function createValue(): number { return 42; }",
 			durationMs: 1200,
 		});
@@ -130,7 +132,7 @@ describe("runScoringWithCompileRetry", () => {
 		const { runScoringWithCompileRetry } = await import(
 			"../src/runner/item-retry.js"
 		);
-		const generateMock = vi.fn().mockResolvedValue({
+		generateMock.mockResolvedValue({
 			output:
 				"export function createTodoApp(): { ok: boolean } { return { ok: true }; }",
 			durationMs: 900,

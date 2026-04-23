@@ -109,7 +109,26 @@ export async function prepareOpenCodeArtifacts(opts: {
 		`plebdev-bench-opencode-config-${runId}`,
 	);
 
-	await fs.promises.mkdir(workspaceDir, { recursive: true });
+	if (hasExternalWorkspace) {
+		let workspaceStats: fs.Stats;
+		try {
+			workspaceStats = await fs.promises.stat(workspaceDir);
+		} catch (error) {
+			if (isErrorWithCode(error, "ENOENT")) {
+				throw new Error(
+					`OpenCode workingDirectory does not exist: ${workspaceDir}`,
+				);
+			}
+			throw error;
+		}
+		if (!workspaceStats.isDirectory()) {
+			throw new Error(
+				`OpenCode workingDirectory must be a directory: ${workspaceDir}`,
+			);
+		}
+	} else {
+		await fs.promises.mkdir(workspaceDir, { recursive: true });
+	}
 	await fs.promises.mkdir(configDir, { recursive: true });
 
 	const executionWorkspaceDir = await fs.promises.realpath(workspaceDir);

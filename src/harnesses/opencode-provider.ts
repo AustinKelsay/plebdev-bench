@@ -15,7 +15,7 @@ import { z } from "zod";
 const BuildOpenCodeProviderSpecOptsSchema = z.object({
 	runtimeName: z.literal("ollama"),
 	runtimeBaseUrl: z.string().min(1),
-	model: z.string().min(1),
+	model: z.string().trim().min(1),
 });
 
 const MODEL_KEY_PERCENT_ESCAPE = "%25";

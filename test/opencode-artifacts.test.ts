@@ -100,6 +100,33 @@ describe("prepareOpenCodeArtifacts", () => {
 		}
 	});
 
+	it("rejects missing caller-supplied workspaces", async () => {
+		const tempRoot = await createTempRoot();
+		process.env.XDG_DATA_HOME = tempRoot;
+		const missingWorkspace = path.join(tempRoot, "missing-workspace");
+
+		await expect(
+			prepareOpenCodeArtifacts({
+				workingDirectory: missingWorkspace,
+				solutionFilename: "solution.ts",
+			}),
+		).rejects.toThrow("OpenCode workingDirectory does not exist");
+	});
+
+	it("rejects caller-supplied workspaces that are files", async () => {
+		const tempRoot = await createTempRoot();
+		process.env.XDG_DATA_HOME = tempRoot;
+		const filePath = path.join(tempRoot, "workspace-file");
+		await fs.promises.writeFile(filePath, "not a directory", "utf-8");
+
+		await expect(
+			prepareOpenCodeArtifacts({
+				workingDirectory: filePath,
+				solutionFilename: "solution.ts",
+			}),
+		).rejects.toThrow("OpenCode workingDirectory must be a directory");
+	});
+
 	it("rejects parent-segment solution filenames", async () => {
 		await expect(
 			prepareOpenCodeArtifacts({ solutionFilename: "../solution.ts" }),

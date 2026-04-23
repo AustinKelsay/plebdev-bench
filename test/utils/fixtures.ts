@@ -48,7 +48,7 @@ function readNonEmpty(value: string | undefined): string | undefined {
 export function fallbackCollectMachineProfile(
 	options: FallbackMachineProfileOptions = {},
 ) {
-	const env = options.env ?? process.env;
+	const env = options.env ?? {};
 	const hardware = options.hardwareProfile ?? {
 		platform: "darwin",
 		arch: "arm64",

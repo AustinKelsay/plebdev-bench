@@ -40,13 +40,13 @@ import {
 } from "../runtimes/index.js";
 import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
+import { listAvailableModelsByRuntime } from "./model-availability.js";
 import { filterGenerativeModels } from "./model-eligibility.js";
 
 /**
  * Gets the current Bun version.
  */
 function getBunVersion(): string {
-	// Bun exposes version info
 	return typeof Bun !== "undefined" ? Bun.version : "unknown";
 }
 
@@ -112,6 +112,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const hasModelProfiles = Object.keys(modelProfiles).length > 0;
 	const matchedModelSelectors = new Set<string>();
 	const modelExclusions: NonNullable<RunPlan["modelExclusions"]> = [];
+	let discoveredModelCount = 0;
 	if (hasModelProfiles) {
 		log.info(
 			{ profiles: Object.keys(modelProfiles) },
@@ -133,6 +134,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		}
 
 		const discovered = await runtime.listModels();
+		discoveredModelCount += discovered.length;
 
 		// Apply --models filter if provided (with alias resolution)
 		let filtered: string[];
@@ -246,8 +248,13 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			(modelSpec) => !matchedModelSelectors.has(modelSpec),
 		);
 		if (unresolvedSelectors.length > 0) {
+			const availableByRuntime = await listAvailableModelsByRuntime(
+				runtimes,
+				config,
+			);
 			throw new Error(
-				`Requested model selectors not found: ${unresolvedSelectors.join(", ")}`,
+				`Requested model selectors not found: ${unresolvedSelectors.join(", ")}\n` +
+					`Available models:\n  ${availableByRuntime.join("\n  ") || "None found"}`,
 			);
 		}
 	}
@@ -255,22 +262,24 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	// Validate at least one model exists
 	const allModels = [...runtimeModels.values()].flat();
 	if (allModels.length === 0) {
+		if (discoveredModelCount > 0 && modelExclusions.length > 0) {
+			const exclusionSummary = modelExclusions
+				.map(
+					(exclusion) =>
+						`${exclusion.runtime}:${exclusion.model} (${exclusion.reason})`,
+				)
+				.join(", ");
+			throw new Error(
+				`Models were discovered but all were excluded by filterGenerativeModels() before matrix expansion. Excluded models: ${exclusionSummary}. modelExclusions=${JSON.stringify(modelExclusions)}. Remove exclusions or use embedding-capable models only with a benchmark mode that supports embeddings.`,
+			);
+		}
 		// Provide helpful error message
 		if (config.models.length > 0) {
 			// User specified models but none matched - show what's available
-			const availableByRuntime: string[] = [];
-			for (const runtimeName of runtimes) {
-				const runtime = createRuntime(runtimeName, {
-					ollamaBaseUrl: config.ollamaBaseUrl,
-					defaultTimeoutMs: config.generateTimeoutMs,
-				});
-				const available = await runtime.listModels();
-				if (available.length > 0) {
-					availableByRuntime.push(
-						`${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`,
-					);
-				}
-			}
+			const availableByRuntime = await listAvailableModelsByRuntime(
+				runtimes,
+				config,
+			);
 			throw new Error(
 				`No models matched filter: ${config.models.join(", ")}\n` +
 					`Available models:\n  ${availableByRuntime.join("\n  ") || "None found"}`,

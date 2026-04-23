@@ -120,6 +120,21 @@ function buildOpenCodeCommandError(
 	);
 }
 
+function logForceKillRejection(
+	log: pino.Logger,
+	error: unknown,
+	reason: string,
+): void {
+	log.error(
+		{
+			err: error,
+			reason,
+			stack: error instanceof Error ? error.stack : undefined,
+		},
+		"OpenCode force-kill rejection handler failed",
+	);
+}
+
 /**
  * Computes the no-output timeout threshold for OpenCode runs.
  *
@@ -218,10 +233,16 @@ export async function runOpenCodeCommand(
 				killAttempted = true;
 				timedOut = true;
 				if (staleCheckId) clearInterval(staleCheckId);
-				void forceKillAndReject(
+				forceKillAndReject(
 					reject,
 					`timeout after ${config.timeoutMs}ms`,
 					`OpenCode timed out after ${Math.round(config.timeoutMs / 1000)}s. Try increasing --timeout.`,
+				).catch((error) =>
+					logForceKillRejection(
+						config.log,
+						error,
+						`timeout after ${config.timeoutMs}ms`,
+					),
 				);
 			}, config.timeoutMs);
 		});
@@ -235,10 +256,16 @@ export async function runOpenCodeCommand(
 				killAttempted = true;
 				staleKilled = true;
 				if (timeoutId) clearTimeout(timeoutId);
-				void forceKillAndReject(
+				forceKillAndReject(
 					reject,
 					`no output for ${staleDuration}ms`,
 					`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
+				).catch((error) =>
+					logForceKillRejection(
+						config.log,
+						error,
+						`no output for ${staleDuration}ms`,
+					),
 				);
 			}, STALE_CHECK_INTERVAL_MS);
 		});

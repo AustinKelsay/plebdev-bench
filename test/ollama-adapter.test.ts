@@ -122,6 +122,65 @@ describe("OllamaRuntime", () => {
 		});
 	});
 
+	describe("getModelInfo", () => {
+		it("marks unrecognized non-embedding models as unknown and not generative", async () => {
+			mockFetch.mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						details: {
+							parameter_size: "8B",
+							family: "llama",
+						},
+						model_info: {
+							"general.architecture": "llama",
+						},
+					}),
+					{ status: 200 },
+				),
+			);
+
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const info = await runtime.getModelInfo("llama3.2:8b");
+
+			expect(info.modelKind).toBe("unknown");
+			expect(info.capabilities).toEqual({
+				generateText: false,
+				embedText: false,
+			});
+		});
+
+		it("still identifies embedding models from metadata", async () => {
+			mockFetch.mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						details: {
+							parameter_size: "300M",
+						},
+						model_info: {
+							"general.architecture": "nomic-bert",
+						},
+					}),
+					{ status: 200 },
+				),
+			);
+
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const info = await runtime.getModelInfo("nomic-embed-text:latest");
+
+			expect(info.modelKind).toBe("embedding");
+			expect(info.capabilities).toEqual({
+				generateText: false,
+				embedText: true,
+			});
+		});
+	});
+
 	describe("runtime interface", () => {
 		it("should have correct name and baseUrl", () => {
 			const runtime = createOllamaRuntime({

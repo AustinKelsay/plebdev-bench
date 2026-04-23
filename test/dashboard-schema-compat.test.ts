@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import {
 	DashboardIndexLegacyOrCurrentSchema,
 	LeaderboardAggregateSchema,
+	RunPlanSchema,
 	RunResultSchema,
 } from "../apps/dashboard/src/lib/schemas.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
@@ -283,5 +284,31 @@ describe("RunResultSchema", () => {
 			"internal_tool_transcript",
 			"agent_requested_input",
 		]);
+	});
+});
+
+describe("RunPlanSchema", () => {
+	it("preserves legacy vllmBaseUrl config fields for older plan display", () => {
+		const parsed = RunPlanSchema.parse({
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-legacy-plan",
+			createdAt: "2026-03-25T12:00:00.000Z",
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
+				generateTimeoutMs: 300_000,
+				passTypes: ["blind"],
+			},
+			items: [],
+			summary: {
+				totalItems: 0,
+				runtimes: 0,
+				models: 0,
+				harnesses: 0,
+				tests: 0,
+			},
+		});
+
+		expect(parsed.config.vllmBaseUrl).toBe("http://localhost:8000");
 	});
 });

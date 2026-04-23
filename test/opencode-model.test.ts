@@ -77,4 +77,18 @@ describe("buildOpenCodeProviderSpec", () => {
 			modelArg: "ollama/Qwen%2FQwen2.5-14B-Instruct",
 		});
 	});
+
+	it("trims model names before deriving config and CLI identifiers", () => {
+		expect(
+			buildOpenCodeProviderSpec({
+				runtimeName: "ollama",
+				runtimeBaseUrl: "http://localhost:11434",
+				model: "  Qwen/Qwen2.5-14B-Instruct  ",
+			}),
+		).toMatchObject({
+			runtimeModelName: "Qwen/Qwen2.5-14B-Instruct",
+			transportModelKey: "Qwen%2FQwen2.5-14B-Instruct",
+			modelArg: "ollama/Qwen%2FQwen2.5-14B-Instruct",
+		});
+	});
 });

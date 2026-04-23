@@ -269,8 +269,28 @@ describe("runBenchmark Ollama residency guard", () => {
 		);
 		const { runBenchmark } = await import("../src/runner/index.js");
 
-		await expect(runBenchmark(CONFIG)).rejects.toThrow("residency failed");
+		await expect(runBenchmark(CONFIG)).resolves.toBeUndefined();
 		expect(mocks.executeItem).not.toHaveBeenCalled();
+		expect(mocks.writeResult).toHaveBeenCalledTimes(1);
+		const [, runResult] = mocks.writeResult.mock.calls[0] as [
+			string,
+			{ items: MatrixItemResult[] },
+		];
+		expect(runResult.items).toHaveLength(1);
+		expect(runResult.items[0]).toMatchObject({
+			id: item.id,
+			status: "failed",
+			generation: {
+				success: false,
+				error: expect.stringContaining("residency failed"),
+				failureType: "api_error",
+				durationMs: 0,
+			},
+			generationFailure: {
+				type: "api_error",
+				message: expect.stringContaining("residency failed"),
+			},
+		});
 	});
 
 	afterEach(() => {

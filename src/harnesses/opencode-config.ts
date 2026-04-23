@@ -24,7 +24,7 @@ const RuntimeNameSchema = z.literal("ollama");
 const BuildOpenCodeConfigOptsSchema = z.object({
 	runtimeName: RuntimeNameSchema,
 	runtimeBaseUrl: z.string().min(1),
-	model: z.string().min(1),
+	model: z.string().trim().min(1),
 });
 
 export type BuildOpenCodeConfigOpts = z.infer<
@@ -113,7 +113,8 @@ export function buildOpenCodeEnv(opts: {
 		.parse(opts);
 	const safeEnv = Object.fromEntries(
 		Object.entries(process.env).filter(
-			(entry): entry is [string, string] => entry[1] !== undefined,
+			(entry): entry is [string, string] =>
+				entry[1] !== undefined && !entry[0].startsWith("OPENCODE_"),
 		),
 	);
 
