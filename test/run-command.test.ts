@@ -55,6 +55,7 @@ describe("runCommand", () => {
 			),
 		).rejects.toThrow("process.exit(1)");
 
+		expect(exitSpy).toHaveBeenCalledWith(1);
 		expect(mocks.runBenchmark).not.toHaveBeenCalled();
 		expect(mocks.loggerError).toHaveBeenCalledWith(
 			{ error: expect.any(Error) },

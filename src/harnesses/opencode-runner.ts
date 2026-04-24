@@ -161,7 +161,18 @@ async function forceKillProcess(
 	const pid = proc.pid;
 	log.warn({ pid, reason }, "Force killing OpenCode process");
 	killOpenCodeProcess(proc, "SIGTERM", log);
-	await new Promise((resolve) => setTimeout(resolve, FORCE_KILL_DELAY_MS));
+	const outcome = await Promise.race([
+		new Promise<"delay">((resolve) =>
+			setTimeout(() => resolve("delay"), FORCE_KILL_DELAY_MS),
+		),
+		proc.then(
+			() => "settled" as const,
+			() => "settled" as const,
+		),
+	]);
+	if (outcome === "settled") {
+		return;
+	}
 	log.warn({ pid }, "Escalating OpenCode process kill");
 	killOpenCodeProcess(proc, "SIGKILL", log);
 }

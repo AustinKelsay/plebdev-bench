@@ -455,9 +455,6 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					// Goose doesn't provide token counts
 				};
 			} catch (error) {
-				const isTimeoutError =
-					error instanceof Error && error.message.includes("timed out");
-
 				if (
 					error &&
 					typeof error === "object" &&
@@ -467,7 +464,9 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 						stdout?: string;
 						stderr?: string;
 						message: string;
+						timedOut?: boolean;
 					};
+					const isTimeoutError = execaError.timedOut === true;
 					const trimmedCombined =
 						`${execaError.stdout ?? ""}\n${execaError.stderr ?? ""}`.trim();
 					const effectiveOutput = trimmedCombined || execaError.message;
@@ -485,6 +484,11 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					});
 				}
 
+				const isTimeoutError =
+					typeof error === "object" &&
+					error !== null &&
+					"timedOut" in error &&
+					(error as { timedOut?: boolean }).timedOut === true;
 				if (isTimeoutError) {
 					throw new Error(
 						`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,

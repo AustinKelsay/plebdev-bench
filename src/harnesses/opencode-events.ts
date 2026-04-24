@@ -124,11 +124,12 @@ function extractFromToolCallObject(obj: unknown): string | null {
 	const visit = (value: unknown, depth: number): string | null => {
 		if (depth > maxDepth || !value) return null;
 		if (Array.isArray(value)) {
+			let latest: string | null = null;
 			for (const item of value) {
 				const found = visit(item, depth + 1);
-				if (found) return found;
+				if (found) latest = found;
 			}
-			return null;
+			return latest;
 		}
 		if (typeof value !== "object") return null;
 
@@ -138,9 +139,17 @@ function extractFromToolCallObject(obj: unknown): string | null {
 				? record.name
 				: typeof record.toolName === "string"
 					? record.toolName
-					: undefined;
+					: typeof record.command === "string"
+						? record.command
+						: typeof record.tool === "string"
+							? record.tool
+							: undefined;
 		const argsValue =
-			record.arguments ?? record.args ?? record.parameters ?? record.input;
+			record.arguments ??
+			record.args ??
+			record.parameters ??
+			record.input ??
+			record.raw;
 
 		if (nameValue && argsValue) {
 			const toolName = nameValue.toLowerCase();

@@ -261,6 +261,7 @@ describe("createGooseAdapter", () => {
 				stdout: '{"sessionID":"abc","type":"step_start"}',
 				stderr:
 					"Would you like me to continue? I reached the maximum number of actions without user input.",
+				timedOut: true,
 			}),
 		);
 

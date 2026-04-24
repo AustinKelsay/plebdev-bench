@@ -438,7 +438,7 @@ describe("createOpenCodeAdapter", () => {
 		expect(caught).toBeInstanceOf(Error);
 		expect((caught as Error).message).toContain("OpenCode exited with code 2");
 		expect(caught).toMatchObject({
-			output: "partial stdout",
+			output: "stdout:\npartial stdout\n\nstderr:\nprovider failed",
 			durationMs: expect.any(Number),
 		});
 	});
@@ -472,7 +472,7 @@ describe("createOpenCodeAdapter", () => {
 			"process terminated by signal or timed out",
 		);
 		expect(caught).toMatchObject({
-			output: "partial stdout",
+			output: "stdout:\npartial stdout\n\nstderr:\nterminated",
 			durationMs: expect.any(Number),
 		});
 	});

@@ -359,6 +359,16 @@ export function createOpenCodeAdapter(): Harness {
 				if (processResult.exitCode !== 0) {
 					const stderrPreview = processResult.stderr.trim().slice(0, 800);
 					const stdoutPreview = processResult.stdout.trim().slice(0, 800);
+					const failureOutput = [
+						processResult.stdout.trim()
+							? `stdout:\n${processResult.stdout.trim()}`
+							: "",
+						processResult.stderr.trim()
+							? `stderr:\n${processResult.stderr.trim()}`
+							: "",
+					]
+						.filter(Boolean)
+						.join("\n\n");
 					const exitDescription =
 						processResult.exitCode === null
 							? "process terminated by signal or timed out"
@@ -366,7 +376,7 @@ export function createOpenCodeAdapter(): Harness {
 					throw buildOpenCodeFailure(
 						`OpenCode exited with ${exitDescription}: ${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
 						durationMs,
-						rawOutput,
+						failureOutput || rawOutput,
 						buildFailureSignalAssessment(
 							processResult.stdout,
 							processResult.stderr,

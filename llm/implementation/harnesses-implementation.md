@@ -258,8 +258,8 @@ OpenCode now runs directly in a unique work directory per generation, using tool
    ```
    - `enabled_providers` prevents user-global provider bleed
    - Slash-containing runtime model IDs use a slash-safe transport key while preserving the real runtime model name in `models`
-   - Top-level deprecated `tools` config is not emitted; tool access is controlled through `permission`
-   - `external_directory` is denied because OpenCode is already launched inside the benchmark workspace
+   - Top-level deprecated `tools` config is not emitted; tool access requires both the top-level `permission` policy and model-level `"tools": true` in the generated `models` provider entry
+   - `enabled_providers`, slash-safe transport keys for runtime model IDs, and the `external_directory` denial remain unchanged
 
 4. **Environment Variables** (headless optimization):
    - `OPENCODE_CONFIG_DIR=<per-run-config-dir>`

@@ -79,6 +79,11 @@ export function formatRunStats(
 	lines.push(`  Completed: ${completed}/${total}`);
 	lines.push(`  Failed: ${failed}`);
 	const generationFailureCount = stats.generationFailures?.total ?? 0;
+	if (generationFailureCount > failed) {
+		throw new Error(
+			`generation failure count (${generationFailureCount}) cannot exceed failed item count (${failed})`,
+		);
+	}
 	if (generationFailureCount > 0 || failed > generationFailureCount) {
 		lines.push("  Failure breakdown:");
 		for (const { type, count } of stats.generationFailures?.byType ?? []) {

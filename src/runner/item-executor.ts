@@ -147,6 +147,7 @@ function extractGenerationFailureDetails(error: unknown): {
  * @param timeoutMs - Generation timeout in milliseconds
  * @param unloadAfter - If true, unload model after generation (Ollama-specific)
  * @returns The execution result
+ * @throws {Error} If runtime-name validation rejects an unsupported runtime label
  *
  * Note: This function does NOT throw on generation failures.
  * Instead, failures are recorded in the result.

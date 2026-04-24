@@ -36,6 +36,7 @@ const PERMISSION_DENIAL_PATTERN =
  *
  * @param text - Raw OpenCode output or tool-error text
  * @returns True when text indicates a permission denial
+ * @throws {never} Never throws; string input is matched without parsing
  */
 export function isOpenCodePermissionDeniedText(text: string): boolean {
 	return PERMISSION_DENIAL_PATTERN.test(text);
@@ -45,6 +46,7 @@ export function isOpenCodePermissionDeniedText(text: string): boolean {
  * Returns a fresh OpenCode permission policy for generated config.
  *
  * @returns Permission policy object safe to serialize into `opencode.json`
+ * @throws {never} Never throws; the policy is cloned from a static literal
  */
 export function createOpenCodePermissionPolicy(): OpenCodePermissionPolicy {
 	return { ...OPENCODE_PERMISSION_POLICY };
@@ -55,6 +57,7 @@ export function createOpenCodePermissionPolicy(): OpenCodePermissionPolicy {
  *
  * @param texts - Raw stdout/stderr/tool-error payloads to inspect
  * @returns Signal assessment reasons for permission-originated taint
+ * @throws {never} Never throws; inputs are scanned as strings without parsing
  */
 export function getOpenCodePermissionTaintReasons(
 	...texts: readonly string[]

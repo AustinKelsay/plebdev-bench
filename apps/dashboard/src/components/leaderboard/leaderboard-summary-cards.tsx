@@ -28,7 +28,7 @@ const CARD_ACCENT_COLORS = [
 	"hsl(156, 67%, 55%)", // success green — pass rate
 	"hsl(270, 60%, 60%)", // purple — frontier coverage
 	"hsl(210, 85%, 60%)", // blue — median duration
-];
+] as const;
 
 /**
  * Renders top-level leaderboard KPI cards.

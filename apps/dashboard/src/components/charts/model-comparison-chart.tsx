@@ -33,10 +33,15 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { z } from "zod";
 
 interface ModelComparisonChartProps {
 	items: MatrixItemResult[];
 }
+
+const ModelComparisonChartPropsSchema = z.object({
+	items: z.array(z.custom<MatrixItemResult>()),
+});
 
 /**
  * Renders the head-to-head tooltip for a single test row.
@@ -84,7 +89,8 @@ function ComparisonTooltip({
  * @param props.items - Filtered matrix items
  * @returns Card with model selectors and diverging bar chart
  */
-export function ModelComparisonChart({ items }: ModelComparisonChartProps) {
+export function ModelComparisonChart(props: ModelComparisonChartProps) {
+	const { items } = ModelComparisonChartPropsSchema.parse(props);
 	const allModels = useMemo(() => {
 		const groups = groupByModel(items);
 		return [...groups.keys()].sort();

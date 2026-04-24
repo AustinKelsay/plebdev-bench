@@ -3,7 +3,10 @@
  * Exports: MatrixItemSchema, MatrixItem, ModelExclusionSchema,
  *          ModelExclusion, RunPlanSchema, RunPlan
  *
- * The plan is written to results/<runId>/plan.json for reproducibility.
+ * Invariants:
+ * - Plans serialize the exact expanded benchmark matrix for reproducibility.
+ * - Runtime, harness, test, category, and pass-type values are schema-limited.
+ * - Additive metadata must be represented explicitly before becoming required.
  */
 
 import { z } from "zod";

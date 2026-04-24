@@ -35,6 +35,13 @@ const HARNESS_COLORS = {
 	opencode: "hsl(38, 80%, 58%)", // warm amber
 } as const;
 
+function readHarnessColor(harness: string): string {
+	return (
+		HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS] ||
+		"hsl(210, 12%, 63%)"
+	);
+}
+
 function TokenTooltip({
 	active,
 	payload,
@@ -100,9 +107,7 @@ export function TokenEfficiencyChart({ items }: TokenEfficiencyChartProps) {
 	const dataByHarness = harnesses.map((harness) => ({
 		harness,
 		points: data.filter((d) => d.harness === harness),
-		color:
-			HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS] ||
-			"hsl(210, 12%, 63%)",
+		color: readHarnessColor(harness),
 	}));
 
 	return (

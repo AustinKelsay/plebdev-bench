@@ -97,6 +97,13 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 		const normalizedSelectedModels = selectedModels.filter((selected) =>
 			modelSet.has(selected),
 		);
+		const normalizedSelectedModelSet = new Set(normalizedSelectedModels);
+		const allSelected =
+			selectedModels.length === 0 ||
+			(models.length > 0 &&
+				models.every((availableModel) =>
+					normalizedSelectedModelSet.has(availableModel),
+				));
 
 		if (normalizedSelectedModels.includes(model)) {
 			onSelectionChange(
@@ -107,7 +114,7 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 			return;
 		}
 
-		if (normalizedSelectedModels.length === 0) {
+		if (allSelected) {
 			onSelectionChange(
 				models
 					.filter((availableModel) => availableModel !== model)

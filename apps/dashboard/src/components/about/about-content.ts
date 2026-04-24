@@ -96,7 +96,7 @@ export const benchmarkDimensions: BenchmarkDimension[] = [
 			"Task under `src/tests/<slug>` with prompts, scoring spec, and optional rubric.",
 	},
 	{
-		name: "passType",
+		name: "prompt mode",
 		description:
 			"`blind` (task contract only) or `informed` (includes benchmark framing).",
 	},

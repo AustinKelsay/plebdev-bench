@@ -85,6 +85,26 @@ describe("parseOpenCodeEvents", () => {
 		expect(parsed.method).toBe("tool_call");
 	});
 
+	it("extracts the latest batched write from alternate tool-call shapes", () => {
+		const parsed = parseOpenCodeEvents(
+			JSON.stringify({
+				toolCalls: [
+					{
+						tool: "write",
+						input: { content: "export const first = 1;" },
+					},
+					{
+						command: "edit",
+						raw: { content: "export const second = 2;" },
+					},
+				],
+			}),
+		);
+
+		expect(parsed.output).toBe("export const second = 2;");
+		expect(parsed.method).toBe("tool_call");
+	});
+
 	it("returns empty parsed output for protocol-only JSONL", () => {
 		const parsed = parseOpenCodeEvents(
 			[

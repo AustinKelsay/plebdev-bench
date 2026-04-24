@@ -256,6 +256,23 @@ describe("DirectAdapter", () => {
 	});
 
 	describe("generate", () => {
+		it("throws when direct adapter receives a non-Ollama runtime", async () => {
+			const adapter = createDirectAdapter();
+
+			await expect(
+				adapter.generate({
+					model: "llama3.2:3b",
+					prompt: "Write an add function",
+					timeoutMs,
+					runtime: {
+						...mockRuntime,
+						name: "ollama",
+						apiFormat: "openai-compatible" as never,
+					},
+				}),
+			).rejects.toThrow("Direct adapter requires an Ollama runtime");
+		});
+
 		it("should generate completion using runtime baseUrl", async () => {
 			// Ollama uses NDJSON streaming format - multiple JSON lines
 			const mockNdjson = [

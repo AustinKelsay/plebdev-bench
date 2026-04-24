@@ -56,7 +56,7 @@ function getBunVersion(): string {
  * @param config - Benchmark configuration
  * @returns The complete run plan ready for execution
  *
- * @throws {Error} If Ollama is unavailable or no models/tests found
+ * @throws {Error} If Ollama is unreachable, no models/tests are found, requested model selectors are missing, requested harnesses are unavailable, discovered models are all excluded, or matrix expansion yields zero items
  */
 export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const runId = generateRunId();

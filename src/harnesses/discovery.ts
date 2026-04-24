@@ -43,7 +43,7 @@ async function isOpenCodeAvailable(): Promise<boolean> {
 		const features = await getOpenCodeRunFeatures();
 		return isOpenCodeRunCompatible(features);
 	} catch (error) {
-		logger.error(
+		logger.warn(
 			{ err: error, probe: "opencode", functionName: "isOpenCodeAvailable" },
 			"OpenCode probe failed",
 		);

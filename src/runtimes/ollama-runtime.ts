@@ -67,8 +67,11 @@ const EMBEDDING_NAME_PATTERNS = [
  *
  * These heuristics cover current benchmark families such as Llama, Qwen,
  * Mistral, Gemma, DeepSeek, and GPT-OSS. They are derived from vendor naming
- * conventions and observed Ollama metadata rather than a formal registry, so
- * unknown or novel architectures still fall back to `"unknown"`.
+ * conventions and observed Ollama metadata rather than a formal registry.
+ * Update TEXT_GENERATION_ARCHITECTURES and TEXT_GENERATION_NAME_PATTERNS when
+ * new benchmarked model families appear; add entries only for families with
+ * confirmed text-generation behavior so novel architectures still fall back to
+ * `"unknown"`.
  */
 const TEXT_GENERATION_ARCHITECTURES = new Set([
 	"llama",

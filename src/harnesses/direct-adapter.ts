@@ -52,6 +52,12 @@ export function createDirectAdapter(): Harness {
 				isRetryAttempt,
 			);
 
+			if (runtime.name !== "ollama" || runtime.apiFormat !== "ollama") {
+				throw new Error(
+					`Direct adapter requires an Ollama runtime; received runtime="${runtime.name}" apiFormat="${runtime.apiFormat}"`,
+				);
+			}
+
 			const response = await generateOllama({
 				baseUrl: runtime.baseUrl,
 				model,

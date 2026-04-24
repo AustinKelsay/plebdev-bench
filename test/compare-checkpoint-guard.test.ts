@@ -17,6 +17,7 @@ import {
 	formatTimestamp,
 	readPlanBestEffort,
 	resolveCheckpointId,
+	truncate,
 } from "../src/cli/compare-utils.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 import type { RunPlan, RunResult } from "../src/schemas/index.js";
@@ -75,6 +76,13 @@ describe("formatTimestamp", () => {
 		expect(() => formatTimestamp("not-a-date")).toThrow(
 			"Invalid timestamp: not-a-date",
 		);
+	});
+});
+
+describe("truncate", () => {
+	it("returns an empty string for non-positive display widths", () => {
+		expect(truncate("abcdef", 0)).toBe("");
+		expect(truncate("abcdef", -1)).toBe("");
 	});
 });
 
