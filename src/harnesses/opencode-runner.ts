@@ -175,6 +175,23 @@ async function forceKillProcess(
 	}
 	log.warn({ pid }, "Escalating OpenCode process kill");
 	killOpenCodeProcess(proc, "SIGKILL", log);
+	const killOutcome = await Promise.race([
+		new Promise<"delay">((resolve) =>
+			setTimeout(() => resolve("delay"), FORCE_KILL_DELAY_MS),
+		),
+		proc.then(
+			() => "settled" as const,
+			() => "settled" as const,
+		),
+	]);
+	if (killOutcome === "settled") {
+		log.debug({ pid }, "OpenCode process settled after SIGKILL");
+		return;
+	}
+	log.warn(
+		{ pid },
+		"OpenCode process did not settle after SIGKILL grace period",
+	);
 }
 
 /**

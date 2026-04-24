@@ -78,6 +78,11 @@ interface RunProfileOverrides {
 
 /**
  * Creates a matrix item for aggregation tests.
+ *
+ * @param id - Matrix item identifier
+ * @param completedAt - ISO timestamp used for item start and completion
+ * @param overrides - Optional MatrixItemResult fields that replace defaults
+ * @returns MatrixItemResult with deterministic defaults for aggregation tests
  */
 function createItem(
 	id: string,
@@ -110,6 +115,18 @@ function createItem(
 
 /**
  * Creates a run result for aggregation tests.
+ *
+ * @param runId - RunResult identifier
+ * @param checkpointId - Benchmark checkpoint and manifest hash identifier
+ * @param machineProfileKey - Normalized machine profile key for grouping
+ * @param instanceId - Machine instance identifier for grouping
+ * @param items - Matrix items included in the returned run
+ * @param profile - Optional RunProfileOverrides for profile label, normalized profile, and observed hardware
+ * @returns RunResult containing summary, machine, benchmarkCheckpoint, provenance, timestamps, and items
+ *
+ * Defaults use TEST_PROFILE_LABEL, TEST_NORMALIZED_PROFILE, TEST_HARDWARE,
+ * startedAt/completedAt from item timestamps or fixed ISO timestamps, and
+ * durationMs of 60 seconds.
  */
 function createRun(
 	runId: string,

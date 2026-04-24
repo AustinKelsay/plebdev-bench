@@ -37,7 +37,11 @@ function buildTriggerLabel(
 	const hasAllCurrentModels =
 		currentModels.length > 0 &&
 		selectedCurrentModels.length === currentModels.length;
-	if (selectedModels.length === 0 || hasAllCurrentModels) {
+	if (
+		selectedModels.length === 0 ||
+		selectedCurrentModels.length === 0 ||
+		hasAllCurrentModels
+	) {
 		return "All models";
 	}
 	if (selectedCurrentModels.length === 1) {
@@ -62,6 +66,10 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 	const { models, selectedModels, onSelectionChange } = props;
 	const [isOpen, setIsOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	const normalizedSelectedIds = useMemo(() => {
+		const modelSet = new Set(models);
+		return new Set(selectedModels.filter((selected) => modelSet.has(selected)));
+	}, [models, selectedModels]);
 	const triggerLabel = useMemo(
 		() => buildTriggerLabel(selectedModels, models),
 		[selectedModels, models],
@@ -185,7 +193,11 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 							variant="ghost"
 							size="sm"
 							className="h-7 px-2"
-							onClick={() => onSelectionChange([...models])}
+							onClick={() =>
+								onSelectionChange(
+									[...models].sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b)),
+								)
+							}
 						>
 							Select all
 						</Button>
@@ -194,7 +206,7 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 					<div className="max-h-80 overflow-y-auto p-1">
 						{models.map((model) => {
 							const isSelected =
-								selectedModels.length === 0 || selectedModels.includes(model);
+								selectedModels.length === 0 || normalizedSelectedIds.has(model);
 
 							return (
 								<button

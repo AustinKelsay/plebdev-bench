@@ -111,7 +111,16 @@ export function printModelGuardReport(
  * @throws {never} This helper only stringifies thrown values
  */
 export function readErrorMessage(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
+	if (error instanceof Error) return error.message;
+	try {
+		return String(error);
+	} catch {
+		try {
+			return Object.prototype.toString.call(error);
+		} catch {
+			return "<unserializable error>";
+		}
+	}
 }
 
 /**

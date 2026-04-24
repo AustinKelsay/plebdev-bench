@@ -76,6 +76,7 @@ describe("schema regressions", () => {
 				retryReason: "compile failed",
 				retryAttempted: true,
 				retryPromoted: false,
+				retryGenerationDurationMs: 5,
 			},
 		});
 

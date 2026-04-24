@@ -80,9 +80,13 @@ describe("formatTimestamp", () => {
 });
 
 describe("truncate", () => {
-	it("returns an empty string for non-positive display widths", () => {
-		expect(truncate("abcdef", 0)).toBe("");
-		expect(truncate("abcdef", -1)).toBe("");
+	it("throws for non-positive display widths", () => {
+		expect(() => truncate("abcdef", 0)).toThrow(
+			"maxLen must be a positive integer",
+		);
+		expect(() => truncate("abcdef", -1)).toThrow(
+			"maxLen must be a positive integer",
+		);
 	});
 });
 

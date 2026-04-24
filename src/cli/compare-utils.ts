@@ -151,10 +151,12 @@ export function resolveCheckpointId(
  * @param str - Input string
  * @param maxLen - Maximum output length
  * @returns Original string or truncated display string
- * @throws {never} This helper only slices the provided string
+ * @throws {RangeError} If maxLen is not a positive integer
  */
 export function truncate(str: string, maxLen: number): string {
-	if (maxLen <= 0) return "";
+	if (!Number.isInteger(maxLen) || maxLen <= 0) {
+		throw new RangeError("maxLen must be a positive integer");
+	}
 	if (str.length <= maxLen) return str;
 	return `${str.slice(0, Math.max(0, maxLen - 1))}…`;
 }

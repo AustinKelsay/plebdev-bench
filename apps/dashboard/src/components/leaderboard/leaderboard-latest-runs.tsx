@@ -37,6 +37,13 @@ function getRunMachineBadgeLabel(run: RunListItem): string | undefined {
 	);
 }
 
+/**
+ * Computes the aggregate badge label and variant for a latest-run card.
+ *
+ * @param run - Published run summary item
+ * @param latestCheckpointId - Checkpoint currently powering the leaderboard
+ * @returns Badge label and variant for aggregate status
+ */
 function getRunAggregateBadge(
 	run: RunListItem,
 	latestCheckpointId: string | null,

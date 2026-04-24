@@ -256,7 +256,7 @@ describe("DirectAdapter", () => {
 	});
 
 	describe("generate", () => {
-		it("throws when direct adapter receives a non-Ollama runtime", async () => {
+		it("throws when runtime is named 'ollama' but apiFormat is not 'ollama' (non-Ollama apiFormat)", async () => {
 			const adapter = createDirectAdapter();
 
 			await expect(

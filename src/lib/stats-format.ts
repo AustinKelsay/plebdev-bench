@@ -62,6 +62,7 @@ function pad(
  * @param durationMs - Total run duration
  * @param outputDir - Output directory path
  * @returns Formatted string for terminal output
+ * @throws {Error} If generation failure count is greater than failed item count
  */
 export function formatRunStats(
 	stats: RunStats,

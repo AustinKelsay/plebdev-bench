@@ -120,7 +120,8 @@ export const ScoringMetricsSchema = z
 				metrics.retryKind !== undefined ||
 				metrics.retryReason !== undefined ||
 				metrics.retryAttempted !== undefined ||
-				metrics.retryPromoted !== undefined;
+				metrics.retryPromoted !== undefined ||
+				metrics.retryGenerationDurationMs !== undefined;
 			if (!hasAnyRetryField) {
 				return true;
 			}
@@ -129,21 +130,24 @@ export const ScoringMetricsSchema = z
 					metrics.retryKind !== undefined &&
 					typeof metrics.retryReason === "string" &&
 					metrics.retryReason.trim().length > 0 &&
-					typeof metrics.retryPromoted === "boolean"
+					typeof metrics.retryPromoted === "boolean" &&
+					typeof metrics.retryGenerationDurationMs === "number" &&
+					metrics.retryGenerationDurationMs >= 0
 				);
 			}
 			if (metrics.retryAttempted === false) {
 				return (
 					metrics.retryKind === undefined &&
 					metrics.retryReason === undefined &&
-					metrics.retryPromoted === undefined
+					metrics.retryPromoted === undefined &&
+					metrics.retryGenerationDurationMs === undefined
 				);
 			}
 			return false;
 		},
 		{
 			message:
-				"retry metrics must be fully absent, or when retryAttempted is true include retryKind, non-empty retryReason, and retryPromoted; when retryAttempted is false the other retry fields must be absent",
+				"retry metrics must be fully absent, or when retryAttempted is true include retryKind, non-empty retryReason, retryPromoted, and non-negative retryGenerationDurationMs; when retryAttempted is false the other retry fields must be absent",
 			path: ["retryKind"],
 		},
 	);

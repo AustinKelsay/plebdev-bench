@@ -102,8 +102,7 @@ function extractContentFromArgs(args: Record<string, unknown>): string | null {
 		args.text ??
 		args.code ??
 		args.file_text ??
-		args.fileText ??
-		args.file;
+		args.fileText;
 
 	return typeof content === "string" && content.trim().length > 0
 		? content

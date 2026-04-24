@@ -90,7 +90,11 @@ function ComparisonTooltip({
  * @returns Card with model selectors and diverging bar chart
  */
 export function ModelComparisonChart(props: ModelComparisonChartProps) {
-	const { items } = ModelComparisonChartPropsSchema.parse(props);
+	const parsedProps = ModelComparisonChartPropsSchema.safeParse(props);
+	if (!parsedProps.success) {
+		console.error("Invalid ModelComparisonChart props", parsedProps.error);
+	}
+	const items = parsedProps.success ? parsedProps.data.items : [];
 	const allModels = useMemo(() => {
 		const groups = groupByModel(items);
 		return [...groups.keys()].sort();
@@ -103,6 +107,25 @@ export function ModelComparisonChart(props: ModelComparisonChartProps) {
 		if (!modelA || !modelB || modelA === modelB) return [];
 		return computeHeadToHeadData(items, modelA, modelB);
 	}, [items, modelA, modelB]);
+
+	if (!parsedProps.success) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-base">
+						<WithInfoTooltip tooltip={h2hTooltips.title}>
+							Head-to-Head Comparison
+						</WithInfoTooltip>
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<p className="text-foreground-faint text-sm py-8 text-center">
+						Unable to render model comparison.
+					</p>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	if (allModels.length < 2) {
 		return (

@@ -375,7 +375,7 @@ export function finalizeItemSignalAssessment(input: {
 	}
 	reasons.push(
 		...getTranscriptOrInputTaintReasons(input.output, {
-			source: input.outputSource ?? "artifact",
+			source: input.outputSource,
 		}),
 	);
 

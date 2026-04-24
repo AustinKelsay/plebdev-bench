@@ -194,6 +194,7 @@ describe("finalizeItemSignalAssessment", () => {
 		const assessment = finalizeItemSignalAssessment({
 			existing: undefined,
 			automatedScore: { passed: 0, failed: 5, total: 5 },
+			outputSource: "artifact",
 			output:
 				"Would you like me to continue? I reached the maximum number of actions without user input.",
 		});

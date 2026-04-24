@@ -53,7 +53,7 @@ export interface AboutTestDefinition {
 export const aboutFacts: AboutFact[] = [
 	{
 		label: "Matrix",
-		value: "runtime x harness x model x test x passType",
+		value: "runtime x harness x model x test x prompt mode",
 		detail: "Reproducible Cartesian product so results are comparable.",
 	},
 	{

@@ -11,6 +11,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { computeTokenEfficiencyData } from "@/lib/aggregations";
+import { CHART_COLORS } from "@/lib/chart-colors";
 import { tokenEfficiency as tokenTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import { useMemo } from "react";
@@ -37,8 +38,7 @@ const HARNESS_COLORS = {
 
 function readHarnessColor(harness: string): string {
 	return (
-		HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS] ||
-		"hsl(210, 12%, 63%)"
+		HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS] || CHART_COLORS.muted
 	);
 }
 
