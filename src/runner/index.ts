@@ -179,6 +179,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			failureType?: GenerationFailureType;
 		}
 	>();
+	const executedModelGroups = new Set<string>();
 	let lastCheckpointItemCount = 0;
 
 	if (!plan.items.some((item) => isPreflightTest(item.tags))) {
@@ -211,12 +212,12 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			!nextItem ||
 			nextItem.model !== item.model ||
 			nextItem.runtime !== item.runtime;
+		const modelGroupKey = `${item.runtime}::${item.model}`;
 		const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
 		const isToolHarness = toolCallingHarnesses.has(
 			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
 		);
 		const isPreflight = isPreflightTest(item.tags);
-		let didRun = false;
 
 		if (isToolHarness) {
 			const status = preflightStatus.get(preflightKey);
@@ -251,7 +252,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 						lastCheckpointItemCount = itemCount;
 					}
 				} finally {
-					if (isLastForModel && didRun) {
+					if (isLastForModel && executedModelGroups.has(modelGroupKey)) {
 						await runPostItemResidencyTeardown(item);
 					}
 				}
@@ -314,7 +315,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 		);
 
-		didRun = true;
+		executedModelGroups.add(modelGroupKey);
 		const result = await executeItem(
 			item,
 			{

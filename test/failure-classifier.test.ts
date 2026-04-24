@@ -26,6 +26,9 @@ describe("classifyGenerationError", () => {
 		expect(classifyGenerationError("Prompt not found for test")).toBe(
 			"prompt_not_found",
 		);
+		expect(classifyGenerationError("Prompt missing for test smoke")).toBe(
+			"prompt_not_found",
+		);
 	});
 
 	it("should classify API errors", () => {

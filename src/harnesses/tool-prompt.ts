@@ -106,6 +106,11 @@ export function buildWorkspaceToolPrompt(
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
 	}
+	if (pathMode !== "absolute-anchor" && pathMode !== "relative-only") {
+		throw new Error(
+			'pathMode must be either "absolute-anchor" or "relative-only"',
+		);
+	}
 	if (
 		pathMode === "absolute-anchor" &&
 		(trimmedWorkspaceRootPath === undefined ||

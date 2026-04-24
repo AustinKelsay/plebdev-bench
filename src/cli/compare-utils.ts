@@ -76,7 +76,7 @@ export function isBenignPlanReadError(error: unknown): boolean {
 		return false;
 	}
 
-	if (error && typeof error === "object" && "code" in error) {
+	if ("code" in error) {
 		const code = (error as { code?: unknown }).code;
 		if (code === "ENOENT" || code === "ENOTDIR") {
 			return true;

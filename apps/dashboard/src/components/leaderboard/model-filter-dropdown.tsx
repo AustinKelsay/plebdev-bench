@@ -108,6 +108,7 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 		const normalizedSelectedModelSet = new Set(normalizedSelectedModels);
 		const allSelected =
 			selectedModels.length === 0 ||
+			normalizedSelectedModelSet.size === 0 ||
 			(models.length > 0 &&
 				models.every((availableModel) =>
 					normalizedSelectedModelSet.has(availableModel),

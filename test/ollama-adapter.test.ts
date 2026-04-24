@@ -147,7 +147,7 @@ describe("OllamaRuntime", () => {
 
 			expect(info.modelKind).toBe("unknown");
 			expect(info.capabilities).toEqual({
-				generateText: false,
+				generateText: true,
 				embedText: false,
 			});
 		});

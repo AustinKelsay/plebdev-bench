@@ -1,6 +1,6 @@
 /**
  * Purpose: Zod schemas for dashboard API boundary validation.
- * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema, RunListSchema, DashboardCheckpointSummarySchema, DashboardIndexSchema, DashboardIndexLegacyOrCurrentSchema, LeaderboardAggregateSchema
+ * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema, RunListSchema, MatrixItemResultSchema, DashboardCheckpointSummarySchema, DashboardIndexSchema, DashboardIndexLegacyOrCurrentSchema, LeaderboardAggregateSchema
  *
  * These schemas validate JSON fetched from the results directory.
  * They mirror the CLI schemas but are kept local to avoid cross-package imports.
@@ -360,9 +360,9 @@ const FrontierEvalFailureSchema = z.object({
 });
 
 /** Matrix item result schema. */
-const MatrixItemResultSchema = z.object({
+export const MatrixItemResultSchema = z.object({
 	id: z.string(),
-	runtime: z.string(),
+	runtime: RuntimeNameSchema,
 	model: z.string(),
 	modelAlias: z.string().optional(),
 	modelProfile: ModelProfileSchema.optional(),

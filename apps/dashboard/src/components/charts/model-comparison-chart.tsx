@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { computeHeadToHeadData, groupByModel } from "@/lib/aggregations";
 import { CHART_COLORS } from "@/lib/chart-colors";
+import { MatrixItemResultSchema } from "@/lib/schemas";
 import { headToHead as h2hTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import { useMemo, useState } from "react";
@@ -40,7 +41,7 @@ interface ModelComparisonChartProps {
 }
 
 const ModelComparisonChartPropsSchema = z.object({
-	items: z.array(z.custom<MatrixItemResult>()),
+	items: z.array(MatrixItemResultSchema),
 });
 
 /**
@@ -88,6 +89,8 @@ function ComparisonTooltip({
  * @param props - Component props
  * @param props.items - Filtered matrix items
  * @returns Card with model selectors and diverging bar chart
+ * @throws {Error} If validated props.items contain a shape accepted by the schema
+ * but unsupported by downstream chart aggregation or rendering.
  */
 export function ModelComparisonChart(props: ModelComparisonChartProps) {
 	const parsedProps = ModelComparisonChartPropsSchema.safeParse(props);

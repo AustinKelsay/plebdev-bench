@@ -299,7 +299,8 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 				parametersBillions,
 				modelKind,
 				capabilities: {
-					generateText: modelKind === "text-generation",
+					generateText:
+						modelKind === "text-generation" || modelKind === "unknown",
 					embedText: modelKind === "embedding",
 				},
 				metadata: {

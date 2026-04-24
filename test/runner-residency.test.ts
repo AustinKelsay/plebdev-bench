@@ -294,7 +294,10 @@ describe("runBenchmark Ollama residency guard", () => {
 		expect(mocks.writePartialResult).toHaveBeenCalledTimes(1);
 		expect(
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
-		).toEqual([{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" }]);
+		).toEqual([
+			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
+			{ baseUrl: CONFIG.ollamaBaseUrl },
+		]);
 		const [, runResult] = mocks.writeResult.mock.calls[0] as [
 			string,
 			{ items: MatrixItemResult[] },

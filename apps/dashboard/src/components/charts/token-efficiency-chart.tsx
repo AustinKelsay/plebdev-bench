@@ -11,7 +11,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { computeTokenEfficiencyData } from "@/lib/aggregations";
-import { CHART_COLORS } from "@/lib/chart-colors";
+import { getHarnessColor } from "@/lib/chart-colors";
 import { tokenEfficiency as tokenTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import { useMemo } from "react";
@@ -28,19 +28,6 @@ import {
 
 interface TokenEfficiencyChartProps {
 	items: MatrixItemResult[];
-}
-
-const HARNESS_COLORS = {
-	direct: "hsl(215, 70%, 62%)", // steel blue
-	goose: "hsl(142, 60%, 49%)", // brand green
-	opencode: "hsl(38, 80%, 58%)", // warm amber
-} as const;
-
-function readHarnessColor(harness: string): string {
-	if (Object.prototype.hasOwnProperty.call(HARNESS_COLORS, harness)) {
-		return HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS];
-	}
-	return CHART_COLORS.muted;
 }
 
 function TokenTooltip({
@@ -108,7 +95,7 @@ export function TokenEfficiencyChart({ items }: TokenEfficiencyChartProps) {
 	const dataByHarness = harnesses.map((harness) => ({
 		harness,
 		points: data.filter((d) => d.harness === harness),
-		color: readHarnessColor(harness),
+		color: getHarnessColor(harness),
 	}));
 
 	return (

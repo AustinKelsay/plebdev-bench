@@ -16,6 +16,7 @@ import {
 	groupByHarness,
 	groupByModel,
 } from "@/lib/aggregations";
+import { MatrixItemResultSchema } from "@/lib/schemas";
 import { blindInformed as blindInformedTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import {
@@ -29,10 +30,15 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { z } from "zod";
 
 interface BlindVsInformedChartProps {
 	items: MatrixItemResult[];
 }
+
+const BlindVsInformedChartPropsSchema = z.object({
+	items: z.array(MatrixItemResultSchema),
+});
 
 // Chart colors — toned for dark background consistency
 const COLORS = {
@@ -277,9 +283,10 @@ function DeltaSummary({ data }: { data: ChartData[] }) {
  *
  * @param items - Benchmark rows used to compute model and harness breakdowns.
  * @returns React element containing chart tabs for model and harness breakdowns.
- * @throws Never throws.
+ * @throws {z.ZodError} If props.items do not match MatrixItemResultSchema.
  */
-export function BlindVsInformedChart({ items }: BlindVsInformedChartProps) {
+export function BlindVsInformedChart(props: BlindVsInformedChartProps) {
+	const { items } = BlindVsInformedChartPropsSchema.parse(props);
 	const byModel = computeBlindInformedBreakdown(items, groupByModel);
 	const byHarness = computeBlindInformedBreakdown(items, groupByHarness);
 

@@ -1,7 +1,7 @@
 /**
  * Purpose: Centralized chart color constants for all dashboard visualizations.
  * Exports: CHART_COLORS, MODEL_PALETTE, FAILURE_COLORS, TEST_TYPE_COLORS,
- *          getTestTypeColor, heatmapColor
+ *          HARNESS_COLORS, getHarnessColor, getTestTypeColor, heatmapColor
  *
  * Invariants:
  * - All charts import colors from this file for consistency
@@ -26,6 +26,30 @@ export const CHART_COLORS = {
 	text: "hsl(210, 12%, 63%)",
 	foreground: "hsl(210, 30%, 92%)",
 } as const;
+
+/** Preferred colors for harness-specific scatter/bar series. */
+export const HARNESS_COLORS = {
+	direct: "hsl(215, 70%, 62%)", // steel blue
+	goose: "hsl(142, 60%, 49%)", // brand green
+	opencode: "hsl(38, 80%, 58%)", // warm amber
+} as const;
+
+/** Known harness keys with assigned chart colors. */
+export type KnownHarnessName = keyof typeof HARNESS_COLORS;
+
+/**
+ * Resolves a chart color for a benchmark harness.
+ *
+ * @param harness - Harness name from a matrix item or aggregate point
+ * @returns Harness-specific color, or the shared muted color for unknown names
+ * @throws {never} This helper only reads static color maps
+ */
+export function getHarnessColor(harness: string): string {
+	if (Object.prototype.hasOwnProperty.call(HARNESS_COLORS, harness)) {
+		return HARNESS_COLORS[harness as KnownHarnessName];
+	}
+	return CHART_COLORS.muted;
+}
 
 /** 8-color palette for distinguishing models in multi-series charts. */
 export const MODEL_PALETTE = [
