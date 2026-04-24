@@ -80,9 +80,7 @@ export function isHarnessCompatibleWithRuntime(
 	runtime: string,
 ): boolean {
 	const compatibleRuntimes = HARNESS_RUNTIME_COMPATIBILITY[harness];
-	return compatibleRuntimes.some(
-		(compatibleRuntime) => compatibleRuntime === runtime,
-	);
+	return compatibleRuntimes.includes(runtime as SupportedRuntimeName);
 }
 
 /**

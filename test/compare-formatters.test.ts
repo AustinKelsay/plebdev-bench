@@ -252,6 +252,22 @@ describe("compare formatters", () => {
 		expect(output).toContain("Δ +40.0%");
 	});
 
+	it("breaks equal scoring delta ties by display row order", () => {
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const fixture = buildCompareFixture();
+		fixture.matched[0].deltas.automatedScore!.passRateDelta = 10;
+		fixture.matched[0].model = "zzzz-tie-model";
+		fixture.matched[1].deltas.automatedScore!.passRateDelta = 10;
+		fixture.matched[1].model = "aaaa-tie-model";
+
+		printScoringDeltas(fixture);
+
+		const output = readLoggedOutput(logSpy);
+		expect(output.indexOf("aaaa-tie-model")).toBeLessThan(
+			output.indexOf("zzzz-tie-model"),
+		);
+	});
+
 	it("prints regressions with deterministic table columns and truncation", () => {
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 		const fixture = buildCompareFixture();

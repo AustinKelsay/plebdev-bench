@@ -183,11 +183,13 @@ export function pad(
  *
  * @param iso - ISO timestamp string
  * @returns UTC-based locale-stable display timestamp
- * @throws {never} Invalid dates are rendered as `Invalid Date`
+ * @throws {TypeError} If `iso` is not a valid date string
  */
 export function formatTimestamp(iso: string): string {
 	const date = new Date(iso);
-	if (Number.isNaN(date.getTime())) return "Invalid Date";
+	if (Number.isNaN(date.getTime())) {
+		throw new TypeError(`Invalid timestamp: ${iso}`);
+	}
 	const parts = new Intl.DateTimeFormat("en-US", {
 		month: "short",
 		day: "2-digit",

@@ -125,12 +125,8 @@ export function buildWorkspaceToolPrompt(
 					'- Do not inspect "/" or parent directories.',
 				]
 			: [
-					...(trimmedWorkspaceRootPath
-						? [
-								`- Workspace root: "${trimmedWorkspaceRootPath}". Treat that directory as the only allowed project root.`,
-								'- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect "/" or parent directories.',
-							]
-						: []),
+					`- Workspace root: "${trimmedWorkspaceRootPath}". Treat that directory as the only allowed project root.`,
+					'- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect "/" or parent directories.',
 				];
 	const lines = [
 		"IMPORTANT: Workspace benchmark mode.",

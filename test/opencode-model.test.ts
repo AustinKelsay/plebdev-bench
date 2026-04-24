@@ -38,6 +38,15 @@ describe("toOpenAiCompatBaseUrl", () => {
 			"OpenCode base URL must be a valid URL",
 		);
 	});
+
+	it("throws for URLs with query or fragment components", () => {
+		expect(() => toOpenAiCompatBaseUrl("http://localhost:11434?x=1")).toThrow(
+			"must not include query or fragment",
+		);
+		expect(() => toOpenAiCompatBaseUrl("http://localhost:11434#local")).toThrow(
+			"must not include query or fragment",
+		);
+	});
 });
 
 describe("toOpenCodeModelKey", () => {

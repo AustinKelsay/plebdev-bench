@@ -110,6 +110,15 @@ function extractContentFromArgs(args: Record<string, unknown>): string | null {
 		: null;
 }
 
+function hasWriteToolNameInText(text: string): boolean {
+	const toolNameMatch = text.match(
+		/"(?:name|tool|toolName|tool_name|command)":\s*"([^"]+)"/,
+	);
+	return toolNameMatch?.[1]
+		? WRITE_TOOL_NAMES.has(toolNameMatch[1].toLowerCase())
+		: false;
+}
+
 function extractFromToolCallObject(obj: unknown): string | null {
 	const maxDepth = 4;
 	const visit = (value: unknown, depth: number): string | null => {
@@ -183,6 +192,7 @@ function extractFromToolCallText(text: string): string | null {
 	try {
 		return extractFromToolCallObject(JSON.parse(jsonText) as unknown);
 	} catch {
+		if (!hasWriteToolNameInText(jsonText)) return null;
 		const contentMatch = jsonText.match(
 			/"(?:content|contents|text|code)":\s*"([\s\S]*?)"\s*[,}]/,
 		);
@@ -220,6 +230,7 @@ function readEventText(
  *
  * @param raw - Raw stdout/stderr payload from `opencode run`
  * @returns Parsed output and protocol diagnostics
+ * @throws {never} Malformed event data falls back to raw text instead of throwing
  */
 export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 	const trimmed = raw.trim();

@@ -11,6 +11,7 @@
  */
 
 import { Command } from "commander";
+import { z } from "zod";
 import { compareRuns } from "../results/compare.js";
 import { findRunDir, readResult } from "../results/reader.js";
 import {
@@ -29,6 +30,16 @@ import {
 
 /** Default output directory for results. */
 const DEFAULT_OUTPUT_DIR = "results";
+
+const RunCompareSchema = z.object({
+	runA: z.string().min(1),
+	runB: z.string().min(1),
+	options: z.object({
+		output: z.string().min(1),
+		json: z.boolean().optional(),
+		allowCrossCheckpoint: z.boolean().optional(),
+	}),
+});
 
 /** CLI compare command. */
 export const compareCommand = new Command("compare")
@@ -57,17 +68,19 @@ export const compareCommand = new Command("compare")
 			},
 		) => {
 			try {
-				const dirA = findRunDir(options.output, runA);
+				const parsed = RunCompareSchema.parse({ runA, runB, options });
+				const dirA = findRunDir(parsed.options.output, parsed.runA);
 				const resultA = readResult(dirA);
 				const planA = readPlanBestEffort(dirA);
 
-				const dirB = findRunDir(options.output, runB);
+				const dirB = findRunDir(parsed.options.output, parsed.runB);
 				const resultB = readResult(dirB);
 				const planB = readPlanBestEffort(dirB);
 
 				const checkpointA = resolveCheckpointId(resultA, planA);
 				const checkpointB = resolveCheckpointId(resultB, planB);
-				const allowCrossCheckpoint = options.allowCrossCheckpoint === true;
+				const allowCrossCheckpoint =
+					parsed.options.allowCrossCheckpoint === true;
 				const checkpointGuardMessage = getCheckpointGuardMessage(
 					checkpointA,
 					checkpointB,
@@ -80,7 +93,7 @@ export const compareCommand = new Command("compare")
 
 				const comparison = compareRuns(resultA, resultB);
 
-				if (options.json) {
+				if (parsed.options.json) {
 					console.log(JSON.stringify(comparison, null, 2));
 					return;
 				}

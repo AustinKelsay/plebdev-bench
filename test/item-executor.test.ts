@@ -95,6 +95,7 @@ vi.mock("../src/runtimes/index.js", () => ({
 vi.mock("../src/lib/logger.js", () => ({
 	logger: {
 		child: (...args: unknown[]) => mocks.loggerFactory(...args),
+		warn: (...args: unknown[]) => mocks.loggerChild.warn(...args),
 	},
 }));
 

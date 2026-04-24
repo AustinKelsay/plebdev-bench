@@ -270,7 +270,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				)
 				.join(", ");
 			throw new Error(
-				`Models were discovered but all were excluded by filterGenerativeModels() before matrix expansion. Excluded models: ${exclusionSummary}. modelExclusions=${JSON.stringify(modelExclusions)}. Remove exclusions or use embedding-capable models only with a benchmark mode that supports embeddings.`,
+				`Models were discovered but all were excluded by filterGenerativeModels() before matrix expansion. Excluded models: ${exclusionSummary}. modelExclusions=${JSON.stringify(modelExclusions)}. Remove exclusions or choose text-generation-capable models for text-generation benchmarks, or run an embeddings benchmark if you only want embedding-capable models.`,
 			);
 		}
 		// Provide helpful error message

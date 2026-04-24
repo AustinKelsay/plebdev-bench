@@ -11,6 +11,7 @@
  */
 
 import * as fs from "node:fs";
+import { z } from "zod";
 import { createHarness } from "../harnesses/index.js";
 import { extractCode } from "../lib/code-extractor.js";
 import {
@@ -56,6 +57,18 @@ interface RuntimeUrls {
 }
 
 const GENERATION_FAILURE_TYPE_SET = new Set(generationFailureTypes);
+
+const GenerationFailurePayloadSchema = z
+	.object({
+		message: z.string().optional(),
+		failureType: z
+			.custom<GenerationFailureType>((value) => isGenerationFailureType(value))
+			.optional(),
+		durationMs: z.number().finite().nonnegative().optional().catch(undefined),
+		output: z.string().optional(),
+		signalAssessment: z.unknown().optional(),
+	})
+	.passthrough();
 
 /**
  * Narrows artifact runtime values to the runtime set supported by live execution.
@@ -106,36 +119,23 @@ function extractGenerationFailureDetails(error: unknown): {
 	output: string | undefined;
 	signalAssessment: SignalAssessment | undefined;
 } {
-	const errorRecord =
-		typeof error === "object" && error !== null
-			? (error as Record<string, unknown>)
-			: undefined;
+	const parsed = GenerationFailurePayloadSchema.safeParse(error);
 	const errorMessage =
-		error instanceof Error
-			? error.message
-			: typeof errorRecord?.message === "string"
-				? errorRecord.message
-				: String(error);
-	const failureType = isGenerationFailureType(errorRecord?.failureType)
-		? errorRecord.failureType
-		: classifyGenerationError(errorMessage);
-	const signalAssessmentParse = SignalAssessmentSchema.safeParse(
-		errorRecord?.signalAssessment,
-	);
+		parsed.success && parsed.data.message ? parsed.data.message : String(error);
+	const failureType =
+		parsed.success && parsed.data.failureType
+			? parsed.data.failureType
+			: classifyGenerationError(errorMessage);
 	return {
 		errorMessage,
 		failureType,
-		durationMs:
-			typeof errorRecord?.durationMs === "number" &&
-			Number.isFinite(errorRecord.durationMs) &&
-			errorRecord.durationMs >= 0
-				? errorRecord.durationMs
-				: 0,
-		output:
-			typeof errorRecord?.output === "string" ? errorRecord.output : undefined,
-		signalAssessment: signalAssessmentParse.success
-			? signalAssessmentParse.data
-			: undefined,
+		durationMs: parsed.success ? (parsed.data.durationMs ?? 0) : 0,
+		output: parsed.success ? parsed.data.output : undefined,
+		signalAssessment:
+			parsed.success &&
+			SignalAssessmentSchema.safeParse(parsed.data.signalAssessment).success
+				? SignalAssessmentSchema.parse(parsed.data.signalAssessment)
+				: undefined,
 	};
 }
 
@@ -246,6 +246,7 @@ export async function executeItem(
 				automatedScore: undefined,
 				rowFailed: true,
 				output: generation.output,
+				outputSource: "harness",
 			});
 			log.warn(
 				{ error: errorMessage, failureType, harness: item.harness },
@@ -400,6 +401,7 @@ export async function executeItem(
 				(automatedScore?.failed ?? 0) > 0 ||
 				scoringFailure !== undefined,
 			output: generation.output,
+			outputSource: "artifact",
 		});
 
 		return {
@@ -468,6 +470,7 @@ export async function executeItem(
 				automatedScore: undefined,
 				rowFailed: true,
 				output,
+				outputSource: "harness",
 			}),
 		};
 	} finally {

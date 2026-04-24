@@ -1,6 +1,7 @@
 /**
  * Purpose: RunPlan schema capturing the expanded matrix before execution.
- * Exports: MatrixItemSchema, MatrixItem, RunPlanSchema, RunPlan
+ * Exports: MatrixItemSchema, MatrixItem, ModelExclusionSchema,
+ *          ModelExclusion, RunPlanSchema, RunPlan
  *
  * The plan is written to results/<runId>/plan.json for reproducibility.
  */

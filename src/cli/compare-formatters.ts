@@ -268,11 +268,12 @@ export function printScoringDeltas(result: CompareResult): void {
 
 	if (withScoreDeltas.length === 0) return;
 
-	withScoreDeltas.sort(
-		(a, b) =>
+	withScoreDeltas.sort((a, b) => {
+		const deltaCompare =
 			(a.deltas.automatedScore?.passRateDelta ?? 0) -
-			(b.deltas.automatedScore?.passRateDelta ?? 0),
-	);
+			(b.deltas.automatedScore?.passRateDelta ?? 0);
+		return deltaCompare !== 0 ? deltaCompare : compareDisplayRows(a, b);
+	});
 
 	console.log("Scoring Deltas (≥1% change)");
 	console.log("-".repeat(70));

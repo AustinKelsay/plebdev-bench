@@ -93,16 +93,21 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 	}, [isOpen]);
 
 	function handleModelToggle(model: string) {
-		if (selectedModels.includes(model)) {
+		const modelSet = new Set(models);
+		const normalizedSelectedModels = selectedModels.filter((selected) =>
+			modelSet.has(selected),
+		);
+
+		if (normalizedSelectedModels.includes(model)) {
 			onSelectionChange(
-				selectedModels
+				normalizedSelectedModels
 					.filter((selected) => selected !== model)
 					.sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b)),
 			);
 			return;
 		}
 
-		if (selectedModels.length === 0) {
+		if (normalizedSelectedModels.length === 0) {
 			onSelectionChange(
 				models
 					.filter((availableModel) => availableModel !== model)
@@ -112,7 +117,7 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 		}
 
 		onSelectionChange(
-			[...selectedModels, model].sort((a, b) =>
+			[...normalizedSelectedModels, model].sort((a, b) =>
 				MODEL_SORT_COLLATOR.compare(a, b),
 			),
 		);

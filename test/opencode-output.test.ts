@@ -198,6 +198,16 @@ describe("parseOpenCodeEvents", () => {
 		expect(parsed.method).toBe("tool_call");
 	});
 
+	it("does not salvage content from non-write raw fallback payloads", () => {
+		const raw =
+			'{"toolCall":{"name":"read","arguments":{"content":"not generated code"}}';
+
+		expect(parseOpenCodeEvents(raw)).toMatchObject({
+			output: raw,
+			method: "raw",
+		});
+	});
+
 	it("marks direct tool-call fallback permission denied from raw sibling text", () => {
 		const parsed = parseOpenCodeEvents(
 			'{"toolCall":{"name":"write","arguments":{"content":"export const answer = 42;"}},"error":"permission denied: external_directory"',

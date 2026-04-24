@@ -29,11 +29,11 @@ interface TokenEfficiencyChartProps {
 	items: MatrixItemResult[];
 }
 
-const HARNESS_COLORS: Record<string, string> = {
+const HARNESS_COLORS = {
 	direct: "hsl(215, 70%, 62%)", // steel blue
 	goose: "hsl(142, 60%, 49%)", // brand green
 	opencode: "hsl(38, 80%, 58%)", // warm amber
-};
+} as const;
 
 function TokenTooltip({
 	active,
@@ -100,7 +100,9 @@ export function TokenEfficiencyChart({ items }: TokenEfficiencyChartProps) {
 	const dataByHarness = harnesses.map((harness) => ({
 		harness,
 		points: data.filter((d) => d.harness === harness),
-		color: HARNESS_COLORS[harness] || "hsl(210, 12%, 63%)",
+		color:
+			HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS] ||
+			"hsl(210, 12%, 63%)",
 	}));
 
 	return (

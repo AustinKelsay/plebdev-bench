@@ -162,6 +162,7 @@ export function buildResidencyGuardFailureResult(
  * @param message - Preflight failure reason that caused the skip
  * @param failureType - Stable failure type inherited from the preflight failure
  * @returns Matrix item result using the standard generation failure shape
+ * @throws {never} This helper only assembles an in-memory result object
  */
 export function buildPreflightSkipResult(
 	item: MatrixItem,

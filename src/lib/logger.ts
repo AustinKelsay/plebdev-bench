@@ -64,6 +64,7 @@ export const logger = pino(
  *
  * @param bindings - Key-value pairs to include in all log entries
  * @returns A child logger instance
+ * @throws {Error} If Pino cannot create a child logger for the provided bindings
  *
  * @example
  * const runLogger = createLogger({ runId: '20260114-143052' });

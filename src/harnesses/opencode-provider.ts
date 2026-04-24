@@ -44,19 +44,29 @@ export interface OpenCodeProviderSpec {
  *
  * @param baseUrl - Runtime base URL, for example `http://localhost:11434`
  * @returns Normalized URL ending in `/v1`
- * @throws {Error} If the URL is empty after trimming
+ * @throws {Error} If the URL is empty, malformed, or includes search/hash components
  */
 export function toOpenAiCompatBaseUrl(baseUrl: string): string {
-	const trimmed = baseUrl.trim().replace(/\/+$/, "");
+	const trimmed = baseUrl.trim();
 	if (!trimmed) {
 		throw new Error("OpenCode base URL must be non-empty");
 	}
+	let url: URL;
 	try {
-		new URL(trimmed);
+		url = new URL(trimmed);
 	} catch {
 		throw new Error(`OpenCode base URL must be a valid URL: ${baseUrl}`);
 	}
-	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
+	if (url.search || url.hash) {
+		throw new Error(
+			`OpenCode base URL must not include query or fragment components: ${baseUrl}`,
+		);
+	}
+	const normalizedPath = url.pathname.replace(/\/+$/, "");
+	url.pathname = normalizedPath.endsWith("/v1")
+		? normalizedPath
+		: `${normalizedPath || ""}/v1`;
+	return url.toString();
 }
 
 /**

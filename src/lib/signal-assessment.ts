@@ -351,6 +351,7 @@ export function finalizeItemSignalAssessment(input: {
 	automatedScore: AutomatedScore | undefined;
 	rowFailed?: boolean;
 	output: string | undefined;
+	outputSource?: "harness" | "artifact";
 }): SignalAssessment {
 	let assessment = input.existing ?? createTrustworthySignalAssessment();
 	if (input.rowFailed === undefined && input.automatedScore === undefined) {
@@ -373,7 +374,9 @@ export function finalizeItemSignalAssessment(input: {
 		reasons.push("tool_call_not_executed");
 	}
 	reasons.push(
-		...getTranscriptOrInputTaintReasons(input.output, { source: "artifact" }),
+		...getTranscriptOrInputTaintReasons(input.output, {
+			source: input.outputSource ?? "artifact",
+		}),
 	);
 
 	assessment = appendSignalAssessmentReasons(assessment, reasons);

@@ -147,12 +147,12 @@ describe("discoverTestCatalog", () => {
 
 		expect(() => discoverTestCatalog(root)).toThrow("timeoutMultiplier");
 
-		const nanRoot = createTempRoot();
-		createTestDir(nanRoot, "nan-timeout-multiplier", {
+		const nullRoot = createTempRoot();
+		createTestDir(nullRoot, "null-timeout-multiplier", {
 			category: "coding",
-			timeoutMultiplier: Number.NaN,
+			timeoutMultiplier: null,
 		});
-		expect(() => discoverTestCatalog(nanRoot)).toThrow("timeoutMultiplier");
+		expect(() => discoverTestCatalog(nullRoot)).toThrow("timeoutMultiplier");
 
 		const infinityRoot = createTempRoot();
 		createTestDir(infinityRoot, "infinite-timeout-multiplier", {

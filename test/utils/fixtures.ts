@@ -34,6 +34,7 @@ interface FallbackMachineProfileOptions {
 		}>;
 		acceleratorDetection: {
 			status: "detected" | "none_detected" | "unavailable";
+			detail?: string;
 		};
 	};
 }

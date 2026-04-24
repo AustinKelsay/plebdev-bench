@@ -48,10 +48,10 @@ progress output, and generated artifacts on disk.
 ### State S2 — Catalog Browse (Tests / Fixed Runtime / Harnesses / Models)
 - **User sees**: Lists of available tests, the active runtime (`ollama`), harness adapters, and discoverable local models.
 - **Artifacts**: Optional cached discovery output.
+- **Note**: Runtime is fixed to `ollama` for the MVP.
 - **Decision points**:
   - Which test(s) to run?
   - Which category/categories to run (`coding`, `computer-use`)?
-  - Runtime is fixed to `ollama` for the MVP.
   - Which harness(es) to run through?
   - Which model(s) to benchmark?
 
