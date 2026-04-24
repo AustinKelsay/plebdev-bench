@@ -12,8 +12,9 @@ import { z } from "zod";
 /** Current schema version for all result/plan files. */
 export const SCHEMA_VERSION = "0.5.2";
 
+// TODO: Remove retired runtimes only with an explicit migration or breaking schema bump.
 /** Valid runtime names for active benchmark execution. */
-export const supportedRuntimeNames = ["ollama"] as const;
+export const supportedRuntimeNames = ["ollama", "vllm"] as const;
 
 /** Zod schema for runtimes accepted by current config and execution flows. */
 export const SupportedRuntimeNameSchema = z.enum(supportedRuntimeNames);
@@ -22,7 +23,7 @@ export const SupportedRuntimeNameSchema = z.enum(supportedRuntimeNames);
 export type SupportedRuntimeName = z.infer<typeof SupportedRuntimeNameSchema>;
 
 /** Valid runtime names allowed when reading historical plan/result artifacts. */
-export const artifactRuntimeNames = [...supportedRuntimeNames, "vllm"] as const;
+export const artifactRuntimeNames = supportedRuntimeNames;
 
 /** Zod schema for runtimes allowed in stored artifacts. */
 export const ArtifactRuntimeNameSchema = z.enum(artifactRuntimeNames);

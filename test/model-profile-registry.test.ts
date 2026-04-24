@@ -84,7 +84,7 @@ describe("model-profile registry provenance", () => {
 		expect(selection.resolutionSource).toBe("configured_profile");
 	});
 
-	it("loads legacy profile files by ignoring unsupported variants when supported variants remain", () => {
+	it("loads legacy profile files while preserving supported legacy runtime variants", () => {
 		const tempDir = fs.mkdtempSync(
 			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
 		);
@@ -113,18 +113,15 @@ describe("model-profile registry provenance", () => {
 
 			const registry = loadModelProfiles(profilePath);
 			expect(registry["qwen3-27b-instruct"]?.variants.ollama).toBe("qwen3:27b");
-			expect(
-				Object.prototype.hasOwnProperty.call(
-					registry["qwen3-27b-instruct"]?.variants ?? {},
-					"vllm",
-				),
-			).toBe(false);
+			expect(registry["qwen3-27b-instruct"]?.variants.vllm).toBe(
+				"Qwen/Qwen3-27B-Instruct",
+			);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
 	});
 
-	it("rejects legacy profiles with no supported runtime variants", () => {
+	it("accepts legacy profiles with vllm-only runtime variants", () => {
 		const tempDir = fs.mkdtempSync(
 			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
 		);
@@ -150,8 +147,9 @@ describe("model-profile registry provenance", () => {
 				),
 			);
 
-			expect(() => loadModelProfiles(profilePath)).toThrow(
-				"legacy-vllm-only (original runtimes: vllm)",
+			const registry = loadModelProfiles(profilePath);
+			expect(registry["legacy-vllm-only"]?.variants.vllm).toBe(
+				"Qwen/Qwen3-32B-Instruct",
 			);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
@@ -195,18 +193,11 @@ describe("ModelProfileFileSchema", () => {
 		).toBe(false);
 	});
 
-	it("rejects invalid runtime keys in configured variants", () => {
+	it("rejects unknown runtime keys in configured variants", () => {
 		expect(
 			ConfiguredModelProfileSchema.safeParse({
 				variants: {
 					mlx: "Qwen/Qwen3-27B-Instruct-MLX",
-				},
-			}).success,
-		).toBe(false);
-		expect(
-			ConfiguredModelProfileSchema.safeParse({
-				variants: {
-					vllm: "Qwen/Qwen3-27B-Instruct",
 				},
 			}).success,
 		).toBe(false);

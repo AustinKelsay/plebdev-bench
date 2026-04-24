@@ -170,6 +170,7 @@ describe("finalizeItemSignalAssessment", () => {
 		expect(
 			getTranscriptOrInputTaintReasons(
 				"Would you like me to continue? I reached the maximum number of actions without user input.",
+				{ source: "harness" },
 			),
 		).toEqual(["agent_requested_input"]);
 	});
@@ -178,6 +179,7 @@ describe("finalizeItemSignalAssessment", () => {
 		expect(
 			getTranscriptOrInputTaintReasons(
 				"OpenCode agent is awaiting user input to continue.",
+				{ source: "harness" },
 			),
 		).toEqual(["agent_requested_input"]);
 	});

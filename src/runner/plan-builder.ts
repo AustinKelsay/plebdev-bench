@@ -50,6 +50,10 @@ function getBunVersion(): string {
 	return typeof Bun !== "undefined" ? Bun.version : "unknown";
 }
 
+function isExecutableRuntimeName(runtime: string): runtime is RuntimeName {
+	return (RUNTIME_NAMES as readonly string[]).includes(runtime);
+}
+
 /**
  * Builds a RunPlan from the given configuration.
  *
@@ -95,8 +99,16 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		"Computed benchmark checkpoint",
 	);
 
-	const runtimes =
+	const configuredRuntimes =
 		config.runtimes.length > 0 ? config.runtimes : [...RUNTIME_NAMES];
+	const runtimes = configuredRuntimes.filter(
+		isExecutableRuntimeName,
+	) as RuntimeName[];
+	if (runtimes.length === 0) {
+		throw new Error(
+			`No executable runtimes selected. Active runtime support is limited to: ${RUNTIME_NAMES.join(", ")}`,
+		);
+	}
 	log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 
 	// Discover models per runtime

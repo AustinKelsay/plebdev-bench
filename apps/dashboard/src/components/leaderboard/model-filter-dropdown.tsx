@@ -26,6 +26,10 @@ interface ModelFilterDropdownProps {
 
 const MODEL_SORT_COLLATOR = new Intl.Collator("en", { sensitivity: "variant" });
 
+function dedupeAndSortModels(models: string[]): string[] {
+	return [...new Set(models)].sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b));
+}
+
 function buildTriggerLabel(
 	selectedModels: string[],
 	currentModels: string[],
@@ -116,26 +120,24 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 
 		if (normalizedSelectedModelSet.has(model)) {
 			onSelectionChange(
-				normalizedSelectedModels
-					.filter((selected) => selected !== model)
-					.sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b)),
+				dedupeAndSortModels(
+					normalizedSelectedModels.filter((selected) => selected !== model),
+				),
 			);
 			return;
 		}
 
 		if (allSelected) {
 			onSelectionChange(
-				models
-					.filter((availableModel) => availableModel !== model)
-					.sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b)),
+				dedupeAndSortModels(
+					models.filter((availableModel) => availableModel !== model),
+				),
 			);
 			return;
 		}
 
 		onSelectionChange(
-			[...normalizedSelectedModels, model].sort((a, b) =>
-				MODEL_SORT_COLLATOR.compare(a, b),
-			),
+			dedupeAndSortModels([...normalizedSelectedModels, model]),
 		);
 	}
 

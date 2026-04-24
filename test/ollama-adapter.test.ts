@@ -123,7 +123,7 @@ describe("OllamaRuntime", () => {
 	});
 
 	describe("getModelInfo", () => {
-		it("marks unrecognized non-embedding models as unknown and not generative", async () => {
+		it("marks unrecognized non-embedding models as unknown and generative-capable", async () => {
 			mockFetch.mockResolvedValue(
 				new Response(
 					JSON.stringify({

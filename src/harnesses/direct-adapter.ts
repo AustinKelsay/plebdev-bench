@@ -100,7 +100,8 @@ export function createDirectAdapter(): Harness {
 								}
 							: {}),
 						durationMs: Math.round(performance.now() - startTime),
-						...(decision.taintReasons.length > 0
+						...(decision.taintReasons.length > 0 ||
+						retryResult.signalAssessment !== undefined
 							? {
 									signalAssessment: appendSignalAssessmentReasons(
 										retryResult.signalAssessment,

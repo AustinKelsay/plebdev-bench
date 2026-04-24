@@ -50,10 +50,10 @@ progress output, and generated artifacts on disk.
 - **Artifacts**: Optional cached discovery output.
 - **Note**: Runtime is fixed to `ollama` for the MVP.
 - **Decision points**:
-  - Which test(s) to run?
-  - Which category/categories to run (`coding`, `computer-use`)?
-  - Which harness(es) to run through?
-  - Which model(s) to benchmark?
+  - Select test(s) to run.
+  - Choose category/categories (`coding`, `computer-use`).
+  - Pick harness(es) to execute.
+  - Select model(s) to benchmark.
 
 ### State S3 — Run Plan (Matrix + Pass Types)
 - **User sees**: A concrete execution plan before running:

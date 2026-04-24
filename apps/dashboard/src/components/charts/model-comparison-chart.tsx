@@ -89,8 +89,9 @@ function ComparisonTooltip({
  * @param props - Component props
  * @param props.items - Filtered matrix items
  * @returns Card with model selectors and diverging bar chart
- * @throws {Error} If validated props.items contain a shape accepted by the schema
- * but unsupported by downstream chart aggregation or rendering.
+ * @throws {Error} Prop validation uses safeParse and renders a fallback instead
+ * of throwing; downstream aggregation or chart rendering may still throw for
+ * unexpected validated data.
  */
 export function ModelComparisonChart(props: ModelComparisonChartProps) {
 	const parsedProps = ModelComparisonChartPropsSchema.safeParse(props);

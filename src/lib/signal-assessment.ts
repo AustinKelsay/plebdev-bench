@@ -309,7 +309,7 @@ export function isAgentRequestedInputOutput(
 	if (trimmed.length === 0) {
 		return false;
 	}
-	if ((options.source ?? "harness") !== "harness") {
+	if (options.source !== "harness") {
 		return false;
 	}
 	return AGENT_REQUESTED_INPUT_PATTERNS.some((pattern) =>

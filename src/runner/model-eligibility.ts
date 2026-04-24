@@ -92,8 +92,10 @@ export async function filterGenerativeModels(
 		};
 
 		if (input.mode === "throw") {
+			const runtime = input.runtimeName;
+			const detectedModelKind = info.modelKind ?? "unknown";
 			throw new Error(
-				`Requested model is not supported for generative benchmarks: ${model} (embedding-only)`,
+				`Requested model is not supported for generative benchmarks: ${model} (embedding-only); runtime=${runtime}; detectedKind=${detectedModelKind}`,
 			);
 		}
 

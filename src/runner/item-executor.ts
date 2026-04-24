@@ -402,7 +402,7 @@ export async function executeItem(
 				(automatedScore?.failed ?? 0) > 0 ||
 				scoringFailure !== undefined,
 			output: generation.output,
-			outputSource: "artifact",
+			outputSource: generation.success ? "artifact" : "harness",
 		});
 
 		return {

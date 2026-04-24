@@ -307,10 +307,12 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				const transcriptOrInputReasons = Array.from(
 					new Set([
 						...rawOutputParts.flatMap((part) =>
-							getTranscriptOrInputTaintReasons(part),
+							getTranscriptOrInputTaintReasons(part, { source: "harness" }),
 						),
-						...getTranscriptOrInputTaintReasons(rawOutput),
-						...getTranscriptOrInputTaintReasons(output),
+						...getTranscriptOrInputTaintReasons(rawOutput, {
+							source: "harness",
+						}),
+						...getTranscriptOrInputTaintReasons(output, { source: "harness" }),
 					]),
 				);
 				const signalAssessment =
@@ -470,8 +472,10 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					const trimmedCombined =
 						`${execaError.stdout ?? ""}\n${execaError.stderr ?? ""}`.trim();
 					const effectiveOutput = trimmedCombined || execaError.message;
-					const errorReasons =
-						getTranscriptOrInputTaintReasons(effectiveOutput);
+					const errorReasons = getTranscriptOrInputTaintReasons(
+						effectiveOutput,
+						{ source: "harness" },
+					);
 					const message = isTimeoutError
 						? `Goose timed out after ${Math.round(timeoutMs / 1000)}s: ${effectiveOutput}`
 						: `Goose failed: ${effectiveOutput}`;

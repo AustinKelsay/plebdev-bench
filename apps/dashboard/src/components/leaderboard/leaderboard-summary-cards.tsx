@@ -20,16 +20,6 @@ interface LeaderboardSummaryCardsProps {
 	passRate: PassRateResult;
 }
 
-/** Border accent colors — brand green for primary, semantic colors for specific KPIs. */
-const CARD_ACCENT_COLORS = [
-	"#34c759", // brand green — matched runs
-	"#34c759", // brand green — profiles
-	"hsl(212, 100%, 67%)", // info blue — deduped items
-	"hsl(156, 67%, 55%)", // success green — pass rate
-	"hsl(270, 60%, 60%)", // purple — frontier coverage
-	"hsl(210, 85%, 60%)", // blue — median duration
-] as const;
-
 /**
  * Renders top-level leaderboard KPI cards.
  *
@@ -70,6 +60,7 @@ export function LeaderboardSummaryCards({
 			title: "Matched Runs",
 			value: String(aggregate?.summary.runsMatched ?? 0),
 			sub: null,
+			color: "#34c759",
 		},
 		{
 			title: "Profiles",
@@ -80,26 +71,31 @@ export function LeaderboardSummaryCards({
 							aggregate.summary.instances === 1 ? "instance" : "instances"
 						}`
 					: null,
+			color: "#34c759",
 		},
 		{
 			title: "Deduped Items",
 			value: String(filteredItemCount),
 			sub: `of ${aggregate?.summary.dedupedItems ?? 0} total`,
+			color: "hsl(212, 100%, 67%)",
 		},
 		{
 			title: "Pass Rate",
 			value: formatPercent(passRate.passRate),
 			sub: `${passRate.passed}/${passRate.total} tests`,
+			color: "hsl(156, 67%, 55%)",
 		},
 		{
 			title: "Frontier Coverage",
 			value: formatPercent(frontierCoverage),
 			sub: `${frontierCount} of ${filteredItemCount} items`,
+			color: "hsl(270, 60%, 60%)",
 		},
 		{
 			title: "Median Duration",
 			value: medianDuration !== null ? formatDuration(medianDuration) : "—",
 			sub: durations.length > 0 ? `${durations.length} items` : "no data",
+			color: "hsl(210, 85%, 60%)",
 		},
 	];
 
@@ -110,7 +106,7 @@ export function LeaderboardSummaryCards({
 					key={card.title}
 					glow
 					className={`border-l-2 animate-fade-slide-up animate-stagger-${i + 1}`}
-					style={{ borderLeftColor: CARD_ACCENT_COLORS[i] }}
+					style={{ borderLeftColor: card.color }}
 				>
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm text-foreground-muted">

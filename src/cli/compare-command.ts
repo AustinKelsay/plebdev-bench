@@ -36,8 +36,8 @@ const RunCompareSchema = z.object({
 	runB: z.string().min(1),
 	options: z.object({
 		output: z.string().min(1),
-		json: z.boolean().optional(),
-		allowCrossCheckpoint: z.boolean().optional(),
+		json: z.boolean().default(false),
+		allowCrossCheckpoint: z.boolean().default(false),
 	}),
 });
 
@@ -79,8 +79,7 @@ export const compareCommand = new Command("compare")
 
 				const checkpointA = resolveCheckpointId(resultA, planA);
 				const checkpointB = resolveCheckpointId(resultB, planB);
-				const allowCrossCheckpoint =
-					parsed.options.allowCrossCheckpoint === true;
+				const allowCrossCheckpoint = parsed.options.allowCrossCheckpoint;
 				const checkpointGuardMessage = getCheckpointGuardMessage(
 					checkpointA,
 					checkpointB,

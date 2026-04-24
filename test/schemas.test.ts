@@ -68,7 +68,7 @@ describe("common schemas", () => {
 
 	it("should validate supported and artifact runtime names separately", () => {
 		expect(SupportedRuntimeNameSchema.parse("ollama")).toBe("ollama");
-		expect(() => SupportedRuntimeNameSchema.parse("vllm")).toThrow();
+		expect(SupportedRuntimeNameSchema.parse("vllm")).toBe("vllm");
 		expect(ArtifactRuntimeNameSchema.parse("ollama")).toBe("ollama");
 		expect(ArtifactRuntimeNameSchema.parse("vllm")).toBe("vllm");
 		expect(() => ArtifactRuntimeNameSchema.parse("unknown")).toThrow();
@@ -220,18 +220,16 @@ describe("BenchConfigSchema", () => {
 		expect("modelAliases" in config).toBe(false);
 	});
 
-	it("should reject removed vllm config fields and runtime values", () => {
+	it("should reject removed vllm config fields while accepting legacy runtime values", () => {
 		expect(() =>
 			BenchConfigSchema.parse({
 				vllmBaseUrl: "http://localhost:8000",
 			}),
 		).toThrow(/vllmBaseUrl/);
-		expect(() =>
-			BenchConfigSchema.parse({
-				runtimes: ["vllm"],
-			}),
-		).toThrow();
-		expect(() =>
+		expect(BenchConfigSchema.parse({ runtimes: ["vllm"] }).runtimes).toEqual([
+			"vllm",
+		]);
+		expect(
 			BenchConfigSchema.parse({
 				modelProfiles: {
 					"qwen3-8b-instruct": {
@@ -241,8 +239,8 @@ describe("BenchConfigSchema", () => {
 						},
 					},
 				},
-			}),
-		).toThrow();
+			}).modelProfiles?.["qwen3-8b-instruct"]?.variants.vllm,
+		).toBe("Qwen/Qwen3-8B-Instruct");
 	});
 
 	it("should reject simultaneous modelProfiles and modelAliases", () => {
