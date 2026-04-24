@@ -146,7 +146,10 @@ describe("OllamaRuntime", () => {
 			const info = await runtime.getModelInfo("mystery-model:8b");
 
 			expect(info.modelKind).toBe("unknown");
-			expect(info.capabilities).toEqual({});
+			expect(info.capabilities).toEqual({
+				generateText: false,
+				embedText: false,
+			});
 		});
 
 		it("marks known text-generation architectures as generative", async () => {
@@ -172,7 +175,10 @@ describe("OllamaRuntime", () => {
 			const info = await runtime.getModelInfo("llama3.2:8b");
 
 			expect(info.modelKind).toBe("text-generation");
-			expect(info.capabilities).toEqual({ generateText: true });
+			expect(info.capabilities).toEqual({
+				generateText: true,
+				embedText: false,
+			});
 		});
 
 		it("still identifies embedding models from metadata", async () => {
@@ -197,7 +203,10 @@ describe("OllamaRuntime", () => {
 			const info = await runtime.getModelInfo("nomic-embed-text:latest");
 
 			expect(info.modelKind).toBe("embedding");
-			expect(info.capabilities).toEqual({ embedText: true });
+			expect(info.capabilities).toEqual({
+				generateText: false,
+				embedText: true,
+			});
 		});
 	});
 

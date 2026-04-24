@@ -373,7 +373,7 @@ describe("migrate-machine-profiles command", () => {
 		);
 
 		expect(completed.status).toBe(1);
-		expect(completed.stderr).toContain("--dashboard-output-dir");
+		expect(completed.stdout).toContain("--dashboard-output-dir");
 	});
 
 	it("rejects dashboard output directories that overlap the source results tree", () => {
@@ -401,7 +401,7 @@ describe("migrate-machine-profiles command", () => {
 		);
 
 		expect(completed.status).toBe(1);
-		expect(completed.stderr).toContain("--dashboard-output-dir");
+		expect(completed.stdout).toContain("--dashboard-output-dir");
 	});
 });
 

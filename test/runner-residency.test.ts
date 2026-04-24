@@ -294,10 +294,7 @@ describe("runBenchmark Ollama residency guard", () => {
 		expect(mocks.writePartialResult).toHaveBeenCalledTimes(1);
 		expect(
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
-		).toEqual([
-			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
-			{ baseUrl: CONFIG.ollamaBaseUrl },
-		]);
+		).toEqual([{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" }]);
 		const [, runResult] = mocks.writeResult.mock.calls[0] as [
 			string,
 			{ items: MatrixItemResult[] },
@@ -375,10 +372,7 @@ describe("runBenchmark Ollama residency guard", () => {
 		expect(mocks.writePartialResult).toHaveBeenCalledTimes(1);
 		expect(
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
-		).toEqual([
-			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
-			{ baseUrl: CONFIG.ollamaBaseUrl },
-		]);
+		).toEqual([{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" }]);
 		expect(mocks.executeItem).not.toHaveBeenCalled();
 		const [, runResult] = mocks.writeResult.mock.calls[0] as [
 			string,

@@ -209,7 +209,7 @@ export function printRegressions(result: CompareResult): void {
 	for (const item of regressions) {
 		console.log(
 			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
-				`${pad(item.harness, columnWidths.harness)} ` +
+				`${pad(truncate(item.harness, columnWidths.harness), columnWidths.harness)} ` +
 				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
 				`${pad(item.passType, columnWidths.pass)}`,
 		);
@@ -244,7 +244,7 @@ export function printImprovements(result: CompareResult): void {
 	for (const item of improvements) {
 		console.log(
 			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
-				`${pad(item.harness, columnWidths.harness)} ` +
+				`${pad(truncate(item.harness, columnWidths.harness), columnWidths.harness)} ` +
 				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
 				`${pad(item.passType, columnWidths.pass)}`,
 		);
@@ -294,7 +294,7 @@ export function printScoringDeltas(result: CompareResult): void {
 
 		console.log(
 			`${pad(truncate(item.model, modelW), modelW)} ` +
-				`${pad(item.harness, harnessW)} ` +
+				`${pad(truncate(item.harness, harnessW), harnessW)} ` +
 				`${pad(truncate(item.test, testW), testW)} ` +
 				`${pad(item.passType, passW)} ` +
 				`${pad(deltaStr, deltaW, "right")}`,

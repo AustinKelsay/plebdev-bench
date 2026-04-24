@@ -117,6 +117,7 @@ describe("buildOpenCodeEnv", () => {
 		expect(env.OPENCODE_DISABLE_AUTOUPDATE).toBe("true");
 		expect(env.OPENCODE_DISABLE_DEFAULT_PLUGINS).toBe("true");
 		expect(env.OPENCODE_DISABLE_WEBSEARCH).toBe("true");
+		expect(env.OPENCODE_DISABLE_WEBFETCH).toBe("true");
 		expect(env.OPENCODE_USER_SETTING).toBeUndefined();
 	});
 });

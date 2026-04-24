@@ -156,12 +156,21 @@ describe("executeItem", () => {
 		expect(mocks.runGenerationWithInfraRetry).not.toHaveBeenCalled();
 	});
 
-	it("throws prompt loading failures before recoverable generation handling", async () => {
+	it("records prompt loading failures as per-item generation failures", async () => {
 		mocks.loadPrompt.mockRejectedValueOnce(new Error("prompt missing"));
 
-		await expect(
-			executeItem(CODE_OUTPUT_ITEM, RUNTIME_CONFIG, 5_000),
-		).rejects.toThrow("prompt missing");
+		const result = await executeItem(CODE_OUTPUT_ITEM, RUNTIME_CONFIG, 5_000);
+
+		expect(result.status).toBe("failed");
+		expect(result.generation).toMatchObject({
+			success: false,
+			error: "prompt missing",
+			failureType: "prompt_not_found",
+		});
+		expect(result.generationFailure).toEqual({
+			type: "prompt_not_found",
+			message: "prompt missing",
+		});
 		expect(mocks.runGenerationWithInfraRetry).not.toHaveBeenCalled();
 	});
 

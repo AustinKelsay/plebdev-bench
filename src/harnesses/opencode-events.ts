@@ -233,6 +233,22 @@ function readEventText(
 				: undefined;
 }
 
+type OrderedOutputPart =
+	| { type: "text"; content: string }
+	| { type: "raw"; content: string };
+
+function joinOrderedOutputParts(parts: OrderedOutputPart[]): string {
+	let output = "";
+	for (const part of parts) {
+		if (part.type === "text") {
+			output += part.content;
+			continue;
+		}
+		output += output.length > 0 ? `\n${part.content}` : part.content;
+	}
+	return output;
+}
+
 /**
  * Parses OpenCode process output into assistant text or tool-call content.
  *
@@ -246,8 +262,7 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 		return buildParsedEvents(raw, "raw", { hasProtocolEvents: false });
 	}
 
-	const textParts: string[] = [];
-	const unparsedLines: string[] = [];
+	const orderedOutputParts: OrderedOutputPart[] = [];
 	let parsedLines = 0;
 	let hasToolUse = false;
 	let hasToolError = false;
@@ -265,13 +280,13 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			parsedLine = JSON.parse(line) as unknown;
 		} catch {
 			permissionDenied ||= isOpenCodePermissionDeniedText(line);
-			unparsedLines.push(line);
+			orderedOutputParts.push({ type: "raw", content: line });
 			continue;
 		}
 
 		const eventParse = OpenCodeEventSchema.safeParse(parsedLine);
 		if (!eventParse.success) {
-			unparsedLines.push(line);
+			orderedOutputParts.push({ type: "raw", content: line });
 			continue;
 		}
 		const event = eventParse.data;
@@ -316,7 +331,7 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 		const text = readEventText(event);
 		if (text) {
 			permissionDenied ||= isOpenCodePermissionDeniedText(text);
-			textParts.push(text);
+			orderedOutputParts.push({ type: "text", content: text });
 		}
 	}
 
@@ -332,17 +347,15 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 	if (toolCallOutput) {
 		return buildParsedEvents(toolCallOutput, "tool_call", diagnostics);
 	}
-	if (parsedLines > 0 && textParts.length > 0) {
-		const combined = textParts.join("");
-		const mixedOutput =
-			unparsedLines.length > 0
-				? [combined, ...unparsedLines].join("\n")
-				: combined;
+	const hasTextParts = orderedOutputParts.some((part) => part.type === "text");
+	const hasRawParts = orderedOutputParts.some((part) => part.type === "raw");
+	if (parsedLines > 0 && hasTextParts) {
+		const mixedOutput = joinOrderedOutputParts(orderedOutputParts);
 		const mixedPermissionDenied = isOpenCodePermissionDeniedText(mixedOutput);
 		const toolCallCode = extractFromToolCallText(mixedOutput);
 		return buildParsedEvents(
 			toolCallCode ?? mixedOutput,
-			toolCallCode ? "tool_call" : unparsedLines.length > 0 ? "raw" : "json",
+			toolCallCode ? "tool_call" : hasRawParts ? "raw" : "json",
 			{
 				...diagnostics,
 				permissionDenied: diagnostics.permissionDenied || mixedPermissionDenied,

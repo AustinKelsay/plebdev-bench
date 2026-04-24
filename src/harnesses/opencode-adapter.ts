@@ -484,17 +484,41 @@ export function createOpenCodeAdapter(): Harness {
 							const totalDurationMs = Math.round(performance.now() - startTime);
 							if (error !== null && typeof error === "object") {
 								Object.assign(error, { durationMs: totalDurationMs });
+								if (firstAttemptAssessment?.classification === "tainted") {
+									const existingAssessment =
+										"signalAssessment" in error
+											? (error.signalAssessment as SignalAssessment | undefined)
+											: undefined;
+									Object.assign(error, {
+										signalAssessment: appendSignalAssessmentReasons(
+											existingAssessment,
+											firstAttemptAssessment.reasons,
+										),
+									});
+								}
 							}
 							throw error;
 						}
 					}
 				}
 
+				const failureAssessment = buildSignalAssessment(
+					parsed,
+					processResult.stdout,
+					processResult.stderr,
+					[
+						"output_contract_violation",
+						...decision.taintReasons,
+						...(parsed.method === "tool_call"
+							? (["tool_call_not_executed"] as const)
+							: []),
+					],
+				);
 				throw buildOpenCodeFailure(
 					`OpenCode did not write ${SOLUTION_FILENAME} and no usable code output was produced`,
 					durationMs,
 					parsed.output,
-					signalAssessment,
+					failureAssessment,
 				);
 			} finally {
 				await cleanupOpenCodeArtifacts(artifacts, {

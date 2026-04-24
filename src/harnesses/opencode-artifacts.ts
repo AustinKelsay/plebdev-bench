@@ -167,12 +167,19 @@ export async function prepareOpenCodeArtifacts(opts: {
  * @param solutionPath - Expected solution file path
  * @param minOutputLength - Minimum non-whitespace content length
  * @returns Code file path/content when present and usable, otherwise undefined
+ * @throws {RangeError} If minOutputLength is not finite or is negative
  * @throws {Error} If the solution file exists but cannot be read
  */
 export async function readUsableOpenCodeSolution(
 	solutionPath: string,
 	minOutputLength: number,
 ): Promise<{ codeFilePath: string; code: string } | undefined> {
+	if (!Number.isFinite(minOutputLength) || minOutputLength < 0) {
+		throw new RangeError(
+			"readUsableOpenCodeSolution minOutputLength must be a finite non-negative number",
+		);
+	}
+
 	let code: string;
 	try {
 		code = await fs.promises.readFile(solutionPath, "utf-8");

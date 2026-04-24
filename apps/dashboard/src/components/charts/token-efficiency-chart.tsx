@@ -37,9 +37,10 @@ const HARNESS_COLORS = {
 } as const;
 
 function readHarnessColor(harness: string): string {
-	return (
-		HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS] || CHART_COLORS.muted
-	);
+	if (Object.prototype.hasOwnProperty.call(HARNESS_COLORS, harness)) {
+		return HARNESS_COLORS[harness as keyof typeof HARNESS_COLORS];
+	}
+	return CHART_COLORS.muted;
 }
 
 function TokenTooltip({

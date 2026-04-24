@@ -251,7 +251,7 @@ export interface RunProvenance {
 /** Single matrix item in plan */
 export interface MatrixItem {
 	id: string;
-	runtime: string;
+	runtime: ArtifactRuntimeName;
 	model: string;
 	modelAlias?: string;
 	modelProfile?: ModelProfile;
@@ -456,7 +456,7 @@ export interface ItemDeltas {
 /** Matched item in compare result */
 export interface MatchedItem {
 	key: string;
-	runtime: string;
+	runtime: ArtifactRuntimeName;
 	model: string;
 	harness: string;
 	test: string;

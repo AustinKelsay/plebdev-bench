@@ -216,6 +216,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
 		);
 		const isPreflight = isPreflightTest(item.tags);
+		let didRun = false;
 
 		if (isToolHarness) {
 			const status = preflightStatus.get(preflightKey);
@@ -250,7 +251,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 						lastCheckpointItemCount = itemCount;
 					}
 				} finally {
-					if (isLastForModel) {
+					if (isLastForModel && didRun) {
 						await runPostItemResidencyTeardown(item);
 					}
 				}
@@ -313,6 +314,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 		);
 
+		didRun = true;
 		const result = await executeItem(
 			item,
 			{

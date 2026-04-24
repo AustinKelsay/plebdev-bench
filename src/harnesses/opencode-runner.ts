@@ -245,13 +245,15 @@ export async function runOpenCodeCommand(
 		);
 	}
 
-	proc.stdout?.on("data", (chunk: Buffer) => {
+	proc.stdout?.setEncoding("utf8");
+	proc.stdout?.on("data", (chunk: string) => {
 		lastOutputTime = Date.now();
-		stdoutChunks.push(chunk.toString());
+		stdoutChunks.push(chunk);
 	});
-	proc.stderr?.on("data", (chunk: Buffer) => {
+	proc.stderr?.setEncoding("utf8");
+	proc.stderr?.on("data", (chunk: string) => {
 		lastOutputTime = Date.now();
-		stderrChunks.push(chunk.toString());
+		stderrChunks.push(chunk);
 	});
 
 	try {

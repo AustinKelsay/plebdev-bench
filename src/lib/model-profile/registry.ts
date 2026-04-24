@@ -204,22 +204,28 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 
 	const aliasWrapper = ModelAliasFileSchema.safeParse(parsed);
 	if (aliasWrapper.success) {
-		const normalized = normalizeLegacyAliasMap(aliasWrapper.data.aliases);
+		const normalized = normalizeLoadedModelProfileRegistry(
+			normalizeLegacyAliasMap(aliasWrapper.data.aliases),
+			log,
+		);
 		log.debug(
 			{ profileCount: Object.keys(normalized).length },
 			"Loaded legacy alias wrapper as model profiles",
 		);
-		return normalized;
+		return withRegistryProvenance(normalized, "legacy_alias");
 	}
 
 	const rawAliases = ModelAliasMapSchema.safeParse(parsed);
 	if (rawAliases.success) {
-		const normalized = normalizeLegacyAliasMap(rawAliases.data);
+		const normalized = normalizeLoadedModelProfileRegistry(
+			normalizeLegacyAliasMap(rawAliases.data),
+			log,
+		);
 		log.debug(
 			{ profileCount: Object.keys(normalized).length },
 			"Loaded legacy alias map as model profiles",
 		);
-		return normalized;
+		return withRegistryProvenance(normalized, "legacy_alias");
 	}
 
 	throw new Error(`Invalid model profile format in ${filePath}`);

@@ -553,7 +553,10 @@ describe("createOpenCodeAdapter", () => {
 		expect(caught).toMatchObject({
 			signalAssessment: {
 				classification: "tainted",
-				reasons: ["internal_tool_transcript"],
+				reasons: expect.arrayContaining([
+					"internal_tool_transcript",
+					"output_contract_violation",
+				]),
 			},
 		});
 		expect(

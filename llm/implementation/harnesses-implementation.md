@@ -341,7 +341,7 @@ Unlike Goose, OpenCode uses generated provider config plus `permission` rules ra
 
 | Harness | Tool Enabling Method |
 |---------|---------------------|
-| Goose | CLI flag: `--with-builtin developer` |
+| Goose | Per-item provider config + permission rules via `goose run` |
 | OpenCode | Generated per-item provider config + `permission` policy |
 
 The benchmark no longer requires users to add benchmark models to `~/.config/opencode/opencode.json`. The adapter generates the model entry inline for each item:

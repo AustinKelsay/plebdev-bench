@@ -45,7 +45,8 @@ export function classifyGenerationError(
 	// Prompt file not found
 	if (
 		lower.includes("prompt file not found") ||
-		lower.includes("prompt not found")
+		lower.includes("prompt not found") ||
+		lower.includes("prompt missing")
 	) {
 		return "prompt_not_found";
 	}

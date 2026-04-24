@@ -113,7 +113,7 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 					normalizedSelectedModelSet.has(availableModel),
 				));
 
-		if (normalizedSelectedModels.includes(model)) {
+		if (normalizedSelectedModelSet.has(model)) {
 			onSelectionChange(
 				normalizedSelectedModels
 					.filter((selected) => selected !== model)
@@ -206,7 +206,9 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 					<div className="max-h-80 overflow-y-auto p-1">
 						{models.map((model) => {
 							const isSelected =
-								selectedModels.length === 0 || normalizedSelectedIds.has(model);
+								selectedModels.length === 0 ||
+								normalizedSelectedIds.size === 0 ||
+								normalizedSelectedIds.has(model);
 
 							return (
 								<button

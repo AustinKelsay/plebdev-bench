@@ -174,8 +174,6 @@ export async function executeItem(
 		ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
 		defaultTimeoutMs: timeoutMs,
 	});
-	log.debug("Loading prompt...");
-	const prompt = await loadPrompt(item.test, item.passType);
 	log.debug({ harness: item.harness }, "Creating harness...");
 	const harness = createHarness(item.harness, {
 		goose: {
@@ -188,6 +186,8 @@ export async function executeItem(
 	let workspace: Awaited<ReturnType<typeof prepareTestWorkspace>> | undefined;
 	let generationAttempts = 0;
 	try {
+		log.debug("Loading prompt...");
+		const prompt = await loadPrompt(item.test, item.passType);
 		if (item.scoringMode === "workspace") {
 			workspace = await prepareTestWorkspace(item.test);
 		}

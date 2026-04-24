@@ -2,7 +2,7 @@
  * Purpose: Detect OpenCode CLI run capabilities and build compatible argv.
  * Exports: OpenCodeRunFeatures, OpenCodeRunArgsOpts, buildOpenCodeRunArgs,
  *          detectOpenCodeRunFeatures, getOpenCodeRunFeatures,
- *          isOpenCodeRunCompatible
+ *          parseOpenCodeRunFeatures, isOpenCodeRunCompatible
  *
  * Invariants:
  * - Required flags are checked from `opencode run --help`.
@@ -48,6 +48,7 @@ let cachedFeaturesPromise: Promise<OpenCodeRunFeatures> | undefined;
  *
  * @param helpText - Combined stdout/stderr help text from OpenCode
  * @returns Parsed run feature support flags
+ * @throws {never} This helper only parses a string with deterministic regexes
  */
 export function parseOpenCodeRunFeatures(
 	helpText: string,
@@ -67,6 +68,7 @@ export function parseOpenCodeRunFeatures(
  *
  * @param features - Parsed OpenCode run feature flags
  * @returns True when all required benchmark run flags are available
+ * @throws {never} This helper only checks boolean feature flags
  */
 export function isOpenCodeRunCompatible(
 	features: OpenCodeRunFeatures,
