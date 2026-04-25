@@ -302,6 +302,7 @@ export function parseInlineModelProfile(inline: string): ModelProfileRegistry {
  *
  * @param inlines - Inline definitions
  * @returns Combined model-profile registry
+ * @throws {Error} If any inline definition cannot be parsed
  */
 export function parseInlineModelProfiles(
 	inlines: string[],
@@ -316,6 +317,7 @@ export function parseInlineModelProfiles(
  *
  * @param registries - Registries to merge
  * @returns Combined registry
+ * @throws {never} This helper only merges in-memory registry objects
  */
 export function mergeModelProfiles(
 	...registries: ModelProfileRegistry[]

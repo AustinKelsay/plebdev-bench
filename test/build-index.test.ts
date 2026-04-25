@@ -104,8 +104,10 @@ function createProjectRoot(): string {
 	fs.mkdirSync(libRoot, { recursive: true });
 	for (const filename of REQUIRED_LIB_ASSETS) {
 		const exportName = filename.replaceAll(/[^a-zA-Z0-9]+/g, "_");
+		const targetPath = path.join(libRoot, filename);
+		fs.mkdirSync(path.dirname(targetPath), { recursive: true });
 		fs.writeFileSync(
-			path.join(libRoot, filename),
+			targetPath,
 			`export const ${exportName} = ${JSON.stringify(filename)};\n`,
 		);
 	}

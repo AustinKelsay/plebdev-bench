@@ -13,6 +13,7 @@
  */
 
 import type { Runtime } from "../runtimes/index.js";
+import { SupportedRuntimeNameSchema } from "../schemas/index.js";
 import type {
 	HarnessCapability,
 	SignalAssessment,
@@ -74,13 +75,20 @@ export const HARNESS_RUNTIME_COMPATIBILITY: Record<
  * @param harness - Harness name
  * @param runtime - Runtime name
  * @returns true if the harness can be used with the runtime
+ * @throws {Error} If runtime is not a supported active runtime name
  */
 export function isHarnessCompatibleWithRuntime(
 	harness: HarnessName,
 	runtime: string,
 ): boolean {
+	const parsedRuntime = SupportedRuntimeNameSchema.safeParse(runtime);
+	if (!parsedRuntime.success) {
+		throw new Error(
+			`Unsupported runtime for harness compatibility: ${runtime}`,
+		);
+	}
 	const compatibleRuntimes = HARNESS_RUNTIME_COMPATIBILITY[harness];
-	return compatibleRuntimes.includes(runtime as SupportedRuntimeName);
+	return compatibleRuntimes.includes(parsedRuntime.data);
 }
 
 /**

@@ -83,14 +83,22 @@ describe("isHarnessCompatibleWithRuntime", () => {
 		expect(isHarnessCompatibleWithRuntime("opencode", "ollama")).toBe(true);
 	});
 
-	it("should return false for removed runtimes", () => {
-		expect(isHarnessCompatibleWithRuntime("direct", "vllm")).toBe(false);
-		expect(isHarnessCompatibleWithRuntime("goose", "vllm")).toBe(false);
-		expect(isHarnessCompatibleWithRuntime("opencode", "vllm")).toBe(false);
+	it("should throw for removed runtimes", () => {
+		expect(() => isHarnessCompatibleWithRuntime("direct", "vllm")).toThrow(
+			/Unsupported runtime/,
+		);
+		expect(() => isHarnessCompatibleWithRuntime("goose", "vllm")).toThrow(
+			/Unsupported runtime/,
+		);
+		expect(() => isHarnessCompatibleWithRuntime("opencode", "vllm")).toThrow(
+			/Unsupported runtime/,
+		);
 	});
 
-	it("should return false for unknown runtimes", () => {
-		expect(isHarnessCompatibleWithRuntime("direct", "unknown")).toBe(false);
+	it("should throw for unknown runtimes", () => {
+		expect(() => isHarnessCompatibleWithRuntime("direct", "unknown")).toThrow(
+			/Unsupported runtime/,
+		);
 	});
 });
 
@@ -103,13 +111,13 @@ describe("getCompatibleHarnesses", () => {
 		expect(harnesses.length).toBe(3);
 	});
 
-	it("should return empty array for removed runtimes", () => {
-		const harnesses = getCompatibleHarnesses("vllm");
-		expect(harnesses.length).toBe(0);
+	it("should throw for removed runtimes", () => {
+		expect(() => getCompatibleHarnesses("vllm")).toThrow(/Unsupported runtime/);
 	});
 
-	it("should return empty array for unknown runtimes", () => {
-		const harnesses = getCompatibleHarnesses("unknown");
-		expect(harnesses.length).toBe(0);
+	it("should throw for unknown runtimes", () => {
+		expect(() => getCompatibleHarnesses("unknown")).toThrow(
+			/Unsupported runtime/,
+		);
 	});
 });

@@ -27,6 +27,7 @@ import {
 	TestCategorySchema,
 	TestScoringModeSchema,
 	defaultConfig,
+	migrateLegacySupportedRuntimeNames,
 } from "../src/schemas/index.js";
 
 const TEST_HARDWARE = {
@@ -63,7 +64,7 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.5.2");
+		expect(SCHEMA_VERSION).toBe("0.5.3");
 	});
 
 	it("should validate supported and artifact runtime names separately", () => {
@@ -72,6 +73,13 @@ describe("common schemas", () => {
 		expect(ArtifactRuntimeNameSchema.parse("ollama")).toBe("ollama");
 		expect(ArtifactRuntimeNameSchema.parse("vllm")).toBe("vllm");
 		expect(() => ArtifactRuntimeNameSchema.parse("unknown")).toThrow();
+	});
+
+	it("should migrate legacy config runtime names to active runtimes", () => {
+		expect(migrateLegacySupportedRuntimeNames(["vllm"])).toEqual(["ollama"]);
+		expect(migrateLegacySupportedRuntimeNames(["ollama", "vllm"])).toEqual([
+			"ollama",
+		]);
 	});
 
 	it("should validate frontier eval failure types", () => {
@@ -220,15 +228,15 @@ describe("BenchConfigSchema", () => {
 		expect("modelAliases" in config).toBe(false);
 	});
 
-	it("should reject removed vllm config fields including legacy runtime values and profile variants", () => {
+	it("should reject removed vllm config fields and profile variants while migrating legacy runtime values", () => {
 		expect(() =>
 			BenchConfigSchema.parse({
 				vllmBaseUrl: "http://localhost:8000",
 			}),
 		).toThrow(/vllmBaseUrl/);
-		expect(() => BenchConfigSchema.parse({ runtimes: ["vllm"] })).toThrow(
-			/runtimes|vllm/,
-		);
+		expect(BenchConfigSchema.parse({ runtimes: ["vllm"] }).runtimes).toEqual([
+			"ollama",
+		]);
 		expect(() =>
 			BenchConfigSchema.parse({
 				modelProfiles: {

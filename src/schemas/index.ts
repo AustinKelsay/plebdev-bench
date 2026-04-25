@@ -8,6 +8,7 @@ export {
 	supportedRuntimeNames,
 	SupportedRuntimeNameSchema,
 	type SupportedRuntimeName,
+	migrateLegacySupportedRuntimeNames,
 	artifactRuntimeNames,
 	ArtifactRuntimeNameSchema,
 	type ArtifactRuntimeName,

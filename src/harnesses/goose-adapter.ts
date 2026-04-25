@@ -18,6 +18,7 @@ import { logger } from "../lib/logger.js";
 import {
 	appendSignalAssessmentReasons,
 	getTranscriptOrInputTaintReasons,
+	mergeSignalAssessments,
 } from "../lib/signal-assessment.js";
 import {
 	appendRetryMarker,
@@ -428,9 +429,17 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 								prompt: appendRetryMarker(promptWithoutMarker),
 								timeoutMs: remainingMs,
 							});
+							const firstAttemptAssessment = appendSignalAssessmentReasons(
+								signalAssessment,
+								decision.taintReasons,
+							);
 							return {
 								...retryResult,
 								durationMs: Math.round(performance.now() - startTime),
+								signalAssessment: mergeSignalAssessments(
+									firstAttemptAssessment,
+									retryResult.signalAssessment,
+								),
 							};
 						}
 
@@ -457,6 +466,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					// Goose doesn't provide token counts
 				};
 			} catch (error) {
+				const durationMs = Math.round(performance.now() - startTime);
 				if (
 					error &&
 					typeof error === "object" &&
@@ -485,6 +495,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 								? appendSignalAssessmentReasons(undefined, errorReasons)
 								: undefined,
 						output: effectiveOutput,
+						durationMs,
 					});
 				}
 
@@ -494,8 +505,11 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					"timedOut" in error &&
 					(error as { timedOut?: boolean }).timedOut === true;
 				if (isTimeoutError) {
-					throw new Error(
-						`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
+					throw Object.assign(
+						new Error(
+							`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
+						),
+						{ durationMs },
 					);
 				}
 

@@ -29,7 +29,7 @@ export const OPENCODE_PERMISSION_POLICY = {
 export type OpenCodePermissionPolicy = typeof OPENCODE_PERMISSION_POLICY;
 
 const PERMISSION_DENIAL_PATTERN =
-	/(?:\bpermission\b[^\r\n.;]{0,40}\b(?:denied|rejected)\b|\b(?:denied|rejected)\b[^\r\n.;]{0,40}\bpermission\b|\baccess\s+denied\b|\bauto-?reject(?:ing|ed)?\b|\bexternal_directory\b[^\r\n.;]{0,80}\b(?:denied|rejected|auto-?reject(?:ing|ed)?)\b)/i;
+	/(?:\bpermission\b[^\r\n.;]{0,40}\b(?:denied|rejected)\b|\b(?:denied|rejected)\b[^\r\n.;]{0,40}\bpermission\b|\bpermission\b[^\r\n]{0,120}\bauto-?reject(?:ing|ed)?\b|\baccess\s+denied\b|\bexternal_directory\b[^\r\n.;]{0,80}\b(?:denied|rejected|auto-?reject(?:ing|ed)?)\b|\bexternal_directory\b[^\r\n]{0,120}\bauto-?reject(?:ing|ed)?\b)/i;
 
 /**
  * Detects OpenCode permission-denial diagnostics in raw text.

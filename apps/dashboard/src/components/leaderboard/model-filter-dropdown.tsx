@@ -25,7 +25,7 @@ interface ModelFilterDropdownProps {
 	onSelectionChange: (selectedModels: string[]) => void;
 }
 
-const ModelFilterDropdownPropsSchema = z.object({
+const ModelFilterDropdownPropsSchema = z.strictObject({
 	models: z.array(z.string()),
 	selectedModels: z.array(z.string()),
 	onSelectionChange: z.function().args(z.array(z.string())).returns(z.void()),

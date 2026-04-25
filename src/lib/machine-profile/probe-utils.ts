@@ -48,8 +48,7 @@ export async function runProbe(
  * Parses a numeric probe result into a positive integer.
  *
  * @param value - Raw probe stdout
- * @returns Positive integer when valid
- * @throws {never} Invalid or unparsable input returns undefined
+ * @returns Positive integer when valid; undefined for invalid or unparsable input
  */
 export function parsePositiveInt(
 	value: string | undefined,
@@ -63,8 +62,7 @@ export function parsePositiveInt(
  * Parses a memory string such as `8 GB` or `8192 MB`.
  *
  * @param value - Raw memory string
- * @returns Memory in bytes when parsable
- * @throws {never} Invalid or unparsable input returns undefined
+ * @returns Memory in bytes when parsable; undefined for invalid or unparsable input
  */
 export function parseMemoryBytes(
 	value: string | undefined,

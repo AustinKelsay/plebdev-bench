@@ -10,6 +10,7 @@
  * - Preflight skips are deterministic failed item rows with zero runtime duration.
  */
 
+import * as path from "node:path";
 import type { Logger } from "pino";
 import { createTrustworthySignalAssessment } from "../lib/signal-assessment.js";
 import { writePartialResult } from "../results/writer.js";
@@ -255,7 +256,11 @@ export async function writeProgressCheckpoint(input: {
 		{
 			completedItems: input.results.length,
 			totalItems: input.total,
-			checkpointPath: `${input.config.outputDir}/${input.plan.runId}/run.partial.json`,
+			checkpointPath: path.join(
+				input.config.outputDir,
+				input.plan.runId,
+				"run.partial.json",
+			),
 		},
 		"Wrote run checkpoint",
 	);
