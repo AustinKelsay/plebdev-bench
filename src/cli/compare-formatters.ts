@@ -58,6 +58,21 @@ function compareDisplayRows(
 	);
 }
 
+function renderFixedWidthTable(items: readonly ComparableDisplayRow[]): void {
+	const columnWidths = STATUS_CHANGE_COLUMN_WIDTHS;
+	console.log(
+		`${pad("MODEL", columnWidths.model)} ${pad("HARNESS", columnWidths.harness)} ${pad("TEST", columnWidths.test)} ${pad("PASS", columnWidths.pass)}`,
+	);
+	for (const item of items) {
+		console.log(
+			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
+				`${pad(truncate(item.harness, columnWidths.harness), columnWidths.harness)} ` +
+				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
+				`${pad(item.passType, columnWidths.pass)}`,
+		);
+	}
+}
+
 /**
  * Prints the header section with run identifiers and timestamps.
  *
@@ -222,20 +237,7 @@ export function printRegressions(result: CompareResult): void {
 
 	console.log("Regressions (completed → failed)");
 	console.log("-".repeat(60));
-	const columnWidths = STATUS_CHANGE_COLUMN_WIDTHS;
-
-	console.log(
-		`${pad("MODEL", columnWidths.model)} ${pad("HARNESS", columnWidths.harness)} ${pad("TEST", columnWidths.test)} ${pad("PASS", columnWidths.pass)}`,
-	);
-
-	for (const item of regressions) {
-		console.log(
-			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
-				`${pad(truncate(item.harness, columnWidths.harness), columnWidths.harness)} ` +
-				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
-				`${pad(item.passType, columnWidths.pass)}`,
-		);
-	}
+	renderFixedWidthTable(regressions);
 	console.log("");
 }
 
@@ -257,20 +259,7 @@ export function printImprovements(result: CompareResult): void {
 
 	console.log("Improvements (failed → completed)");
 	console.log("-".repeat(60));
-	const columnWidths = STATUS_CHANGE_COLUMN_WIDTHS;
-
-	console.log(
-		`${pad("MODEL", columnWidths.model)} ${pad("HARNESS", columnWidths.harness)} ${pad("TEST", columnWidths.test)} ${pad("PASS", columnWidths.pass)}`,
-	);
-
-	for (const item of improvements) {
-		console.log(
-			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
-				`${pad(truncate(item.harness, columnWidths.harness), columnWidths.harness)} ` +
-				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
-				`${pad(item.passType, columnWidths.pass)}`,
-		);
-	}
+	renderFixedWidthTable(improvements);
 	console.log("");
 }
 
@@ -339,17 +328,7 @@ export function printExclusiveItems(result: CompareResult): void {
 	if (onlyInA.length > 0) {
 		console.log(`Items only in Run A (${onlyInA.length})`);
 		console.log("-".repeat(60));
-		console.log(
-			`${pad("MODEL", STATUS_CHANGE_COLUMN_WIDTHS.model)} ${pad("HARNESS", STATUS_CHANGE_COLUMN_WIDTHS.harness)} ${pad("TEST", STATUS_CHANGE_COLUMN_WIDTHS.test)} ${pad("PASS", STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
-		);
-		for (const item of onlyInA.slice(0, 10)) {
-			console.log(
-				`${pad(truncate(item.model, STATUS_CHANGE_COLUMN_WIDTHS.model), STATUS_CHANGE_COLUMN_WIDTHS.model)} ` +
-					`${pad(truncate(item.harness, STATUS_CHANGE_COLUMN_WIDTHS.harness), STATUS_CHANGE_COLUMN_WIDTHS.harness)} ` +
-					`${pad(truncate(item.test, STATUS_CHANGE_COLUMN_WIDTHS.test), STATUS_CHANGE_COLUMN_WIDTHS.test)} ` +
-					`${pad(item.passType, STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
-			);
-		}
+		renderFixedWidthTable(onlyInA.slice(0, 10));
 		if (onlyInA.length > 10) {
 			console.log(`  ... and ${onlyInA.length - 10} more`);
 		}
@@ -359,17 +338,7 @@ export function printExclusiveItems(result: CompareResult): void {
 	if (onlyInB.length > 0) {
 		console.log(`Items only in Run B (${onlyInB.length})`);
 		console.log("-".repeat(60));
-		console.log(
-			`${pad("MODEL", STATUS_CHANGE_COLUMN_WIDTHS.model)} ${pad("HARNESS", STATUS_CHANGE_COLUMN_WIDTHS.harness)} ${pad("TEST", STATUS_CHANGE_COLUMN_WIDTHS.test)} ${pad("PASS", STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
-		);
-		for (const item of onlyInB.slice(0, 10)) {
-			console.log(
-				`${pad(truncate(item.model, STATUS_CHANGE_COLUMN_WIDTHS.model), STATUS_CHANGE_COLUMN_WIDTHS.model)} ` +
-					`${pad(truncate(item.harness, STATUS_CHANGE_COLUMN_WIDTHS.harness), STATUS_CHANGE_COLUMN_WIDTHS.harness)} ` +
-					`${pad(truncate(item.test, STATUS_CHANGE_COLUMN_WIDTHS.test), STATUS_CHANGE_COLUMN_WIDTHS.test)} ` +
-					`${pad(item.passType, STATUS_CHANGE_COLUMN_WIDTHS.pass)}`,
-			);
-		}
+		renderFixedWidthTable(onlyInB.slice(0, 10));
 		if (onlyInB.length > 10) {
 			console.log(`  ... and ${onlyInB.length - 10} more`);
 		}

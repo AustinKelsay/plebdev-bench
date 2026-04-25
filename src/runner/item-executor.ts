@@ -298,8 +298,13 @@ export async function executeItem(
 				scoringMetrics = {
 					durationMs: scoringDurationMs,
 					scoringDurationMs: scoringOnlyDurationMsRounded,
-					...(scoringOutcome.retryGenerationDurationMs > 0
+					...(scoringOutcome.retryAttempted &&
+					scoringOutcome.retryGenerationDurationMs > 0
 						? {
+								retryAttempted: scoringOutcome.retryAttempted,
+								retryKind: scoringOutcome.retryKind,
+								retryReason: scoringOutcome.retryReason,
+								retryPromoted: scoringOutcome.retryPromoted,
 								retryGenerationDurationMs:
 									scoringOutcome.retryGenerationDurationMs,
 							}

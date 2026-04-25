@@ -1,6 +1,10 @@
 /**
  * Purpose: Shared section heading with left-border accent.
  * Exports: SectionHeading
+ *
+ * Invariants:
+ * - SectionHeading is presentational and has no import-time side effects.
+ * - Layout and accent classes remain stable across dashboard sections.
  */
 
 /**

@@ -228,15 +228,15 @@ describe("BenchConfigSchema", () => {
 		expect("modelAliases" in config).toBe(false);
 	});
 
-	it("should reject removed vllm config fields and profile variants while migrating legacy runtime values", () => {
+	it("should reject removed vllm config fields including legacy runtime values and profile variants", () => {
 		expect(() =>
 			BenchConfigSchema.parse({
 				vllmBaseUrl: "http://localhost:8000",
 			}),
 		).toThrow(/vllmBaseUrl/);
-		expect(BenchConfigSchema.parse({ runtimes: ["vllm"] }).runtimes).toEqual([
-			"ollama",
-		]);
+		expect(() => BenchConfigSchema.parse({ runtimes: ["vllm"] })).toThrow(
+			/runtimes|vllm/,
+		);
 		expect(() =>
 			BenchConfigSchema.parse({
 				modelProfiles: {

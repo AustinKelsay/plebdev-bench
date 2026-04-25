@@ -32,10 +32,10 @@ import {
 const DEFAULT_OUTPUT_DIR = "results";
 
 const RunCompareSchema = z.object({
-	runA: z.string().min(1),
-	runB: z.string().min(1),
+	runA: z.string().trim().min(1),
+	runB: z.string().trim().min(1),
 	options: z.object({
-		output: z.string().min(1),
+		output: z.string().trim().min(1),
 		json: z.boolean().default(false),
 		allowCrossCheckpoint: z.boolean().default(false),
 	}),

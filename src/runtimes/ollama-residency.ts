@@ -1,6 +1,9 @@
 /**
  * Purpose: Enforce Ollama model residency invariants around benchmark execution.
- * Exports: LoadedOllamaModel, OllamaResidencyReport,
+ * Exports: LoadedOllamaModel, OllamaResidencyBaseConfig residency base options,
+ *          UnloadOllamaModelConfig unload options,
+ *          EnsureOnlyOllamaModelLoadedConfig ensure-only-loaded options,
+ *          OllamaResidencyReport,
  *          listRunningOllamaModels, unloadOllamaModel,
  *          ensureOnlyOllamaModelLoaded
  *

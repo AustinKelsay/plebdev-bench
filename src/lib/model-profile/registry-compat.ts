@@ -36,7 +36,7 @@ export const LegacyCompatibleModelProfileRegistrySchema = z.record(
 );
 
 /** Schema accepting current and prior-current profile wrappers for compatibility. */
-export const LegacyCompatibleModelProfileFileSchema = z.object({
+export const LegacyCompatibleModelProfileFileSchema = z.strictObject({
 	schemaVersion: z.union([
 		ModelProfileFileSchema.shape.schemaVersion,
 		z.literal("0.5.1"),

@@ -28,9 +28,15 @@ import {
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const tempRoots: string[] = [];
-const REQUIRED_LIB_ASSETS = CORE_BENCHMARK_LIB_ASSETS.map((assetPath) =>
-	path.relative("src/lib", assetPath),
-);
+const REQUIRED_LIB_ASSET_PREFIX = "src/lib/";
+const REQUIRED_LIB_ASSETS = CORE_BENCHMARK_LIB_ASSETS.map((assetPath) => {
+	if (!assetPath.startsWith(REQUIRED_LIB_ASSET_PREFIX)) {
+		throw new Error(
+			`Core benchmark lib asset must live under src/lib: ${assetPath}`,
+		);
+	}
+	return assetPath.slice(REQUIRED_LIB_ASSET_PREFIX.length);
+});
 
 const REQUIRED_SOURCE_DIR_FIXTURES = [
 	["src/harnesses", "direct-adapter.ts", "export const directAdapter = 1;\n"],

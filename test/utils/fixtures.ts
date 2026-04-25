@@ -13,6 +13,8 @@ import {
 	normalizeMachineProfile,
 } from "../../src/lib/machine-profile/normalization.js";
 
+const PREFLIGHT_SCHEMA_VERSION = 1;
+
 interface FallbackMachineProfileOptions {
 	machineInstanceId?: string;
 	machineDisplayLabel?: string;
@@ -124,7 +126,7 @@ export function createWorkspaceCapabilityCatalog() {
 			requiresTools: false,
 			requiredHarnessCapabilities: [],
 			timeoutMultiplier: 1,
-			schemaVersion: 1,
+			schemaVersion: PREFLIGHT_SCHEMA_VERSION,
 		},
 		{
 			slug: "workspace-tool-smoke",
@@ -135,7 +137,7 @@ export function createWorkspaceCapabilityCatalog() {
 			requiresTools: true,
 			requiredHarnessCapabilities: ["workspace-read", "workspace-write"],
 			timeoutMultiplier: 1,
-			schemaVersion: 1,
+			schemaVersion: PREFLIGHT_SCHEMA_VERSION,
 		},
 		{
 			slug: "file-search-smoke",
@@ -151,7 +153,7 @@ export function createWorkspaceCapabilityCatalog() {
 				"workspace-search",
 			],
 			timeoutMultiplier: 1,
-			schemaVersion: 1,
+			schemaVersion: PREFLIGHT_SCHEMA_VERSION,
 		},
 		{
 			slug: "file-delete-smoke",
@@ -167,7 +169,7 @@ export function createWorkspaceCapabilityCatalog() {
 				"workspace-delete",
 			],
 			timeoutMultiplier: 1,
-			schemaVersion: 1,
+			schemaVersion: PREFLIGHT_SCHEMA_VERSION,
 		},
 		{
 			slug: "targeted-edit",
@@ -178,7 +180,7 @@ export function createWorkspaceCapabilityCatalog() {
 			requiresTools: true,
 			requiredHarnessCapabilities: ["workspace-read", "workspace-write"],
 			timeoutMultiplier: 1.2,
-			schemaVersion: 1,
+			schemaVersion: PREFLIGHT_SCHEMA_VERSION,
 		},
 		{
 			slug: "safe-cleanup",
@@ -194,7 +196,7 @@ export function createWorkspaceCapabilityCatalog() {
 				"workspace-delete",
 			],
 			timeoutMultiplier: 1.15,
-			schemaVersion: 1,
+			schemaVersion: PREFLIGHT_SCHEMA_VERSION,
 		},
 	];
 }

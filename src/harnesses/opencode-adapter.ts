@@ -15,14 +15,8 @@
 import * as fs from "node:fs";
 import { execa } from "execa";
 import { logger } from "../lib/logger.js";
-import {
-	appendSignalAssessmentReasons,
-	getTranscriptOrInputTaintReasons,
-} from "../lib/signal-assessment.js";
-import type {
-	SignalAssessment,
-	SignalAssessmentReason,
-} from "../schemas/index.js";
+import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
+import type { SignalAssessment } from "../schemas/index.js";
 import {
 	appendRetryMarker,
 	evaluateCodeOnlyOutput,
@@ -42,12 +36,14 @@ import {
 	isOpenCodeRunCompatible,
 } from "./opencode-cli.js";
 import { buildOpenCodeConfig, buildOpenCodeEnv } from "./opencode-config.js";
-import {
-	type OpenCodeParsedEvents,
-	parseOpenCodeEvents,
-} from "./opencode-events.js";
-import { getOpenCodePermissionTaintReasons } from "./opencode-permissions.js";
+import { parseOpenCodeEvents } from "./opencode-events.js";
 import { runOpenCodeCommand } from "./opencode-runner.js";
+import {
+	buildFailureSignalAssessment,
+	buildOpenCodeFailure,
+	buildSignalAssessment,
+	selectProcessOutput,
+} from "./opencode-signal.js";
 import { buildToolPrompt, buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
 const MIN_OUTPUT_LENGTH = 10;
@@ -100,153 +96,6 @@ function buildWorkspacePrompt(
 		pathMode: "relative-only",
 		toolUsageHint:
 			"Use read/glob/grep to inspect the workspace with relative paths, read any existing file before overwriting it, and use bash for mkdir/delete/move operations when required.",
-	});
-}
-
-/**
- * Chooses the best process output stream for downstream parsing.
- *
- * Prefers the stream that parses as OpenCode protocol output. Falls back to
- * stdout, then stderr only when stderr meets the `MIN_OUTPUT_LENGTH` threshold.
- *
- * @param stdout - Captured OpenCode stdout
- * @param stderr - Captured OpenCode stderr
- * @returns Selected process text for OpenCode event parsing
- * @throws {never} This helper only selects between provided strings
- */
-function selectProcessOutput(stdout: string, stderr: string): string {
-	const stdoutScore = scoreOpenCodeProcessStream(stdout);
-	const stderrScore = scoreOpenCodeProcessStream(stderr);
-	if (stderrScore > stdoutScore) {
-		return stderr;
-	}
-	if (stdoutScore > 0 || stdout.trim().length > 0) {
-		return stdout;
-	}
-	return stderr.trim().length >= MIN_OUTPUT_LENGTH ? stderr : stdout;
-}
-
-/** Scores whether process output contains parseable OpenCode event content. */
-function scoreOpenCodeProcessStream(stream: string): number {
-	const trimmed = stream.trim();
-	if (trimmed.length === 0) {
-		return 0;
-	}
-	const parsed = parseOpenCodeEvents(trimmed);
-	if (parsed.hasProtocolEvents && parsed.output.trim().length > 0) {
-		return 3;
-	}
-	if (parsed.hasProtocolEvents) {
-		return 2;
-	}
-	if (parsed.method === "tool_call" && parsed.output.trim().length > 0) {
-		return 1;
-	}
-	return 0;
-}
-
-/**
- * Builds taint evidence from parsed OpenCode output plus raw process streams.
- *
- * Collects transcript/input leakage, protocol-only transcript output,
- * permission-denial evidence, and any caller-provided extra reasons. Parsed
- * scorer-facing output is treated as an artifact so normal completion text does
- * not trigger harness-boundary `agent_requested_input` checks.
- *
- * @param parsed - Parsed OpenCode protocol output and diagnostics
- * @param stdout - Raw stdout captured from the OpenCode process
- * @param stderr - Raw stderr captured from the OpenCode process
- * @param extraReasons - Additional stable taint reasons to append
- * @returns Signal assessment when any taint reason is present, otherwise undefined
- * @throws {never} This helper only aggregates stable taint reasons
- */
-function buildSignalAssessment(
-	parsed: OpenCodeParsedEvents,
-	stdout: string,
-	stderr: string,
-	parsedStream: string,
-	extraReasons: readonly SignalAssessmentReason[] = [],
-): SignalAssessment | undefined {
-	const stderrReasons = getTranscriptOrInputTaintReasons(stderr).filter(
-		(reason) => reason !== "internal_tool_transcript",
-	);
-	const protocolOnlyReasons =
-		parsed.method === "json" && parsed.output.trim().length === 0
-			? getTranscriptOrInputTaintReasons(parsedStream)
-			: [];
-	const permissionReasons = [
-		...getOpenCodePermissionTaintReasons(
-			stdout,
-			stderr,
-			parsed.toolErrorText ?? "",
-		),
-		...(parsed.permissionDenied ? (["tool_permission_denied"] as const) : []),
-	];
-	const reasons = Array.from(
-		new Set([
-			...stderrReasons,
-			...getTranscriptOrInputTaintReasons(parsed.output, {
-				source: "artifact",
-			}),
-			...protocolOnlyReasons,
-			...permissionReasons,
-			...extraReasons,
-		]),
-	);
-	return reasons.length > 0
-		? appendSignalAssessmentReasons(undefined, reasons)
-		: undefined;
-}
-
-/**
- * Builds failure-path taint evidence from raw process output.
- *
- * Aggregates transcript leakage and permission-denial signals from stdout and
- * stderr. Failures always return a concrete signal assessment so downstream
- * serialization can preserve trusted-metric completeness.
- *
- * @param stdout - Raw stdout captured before failure
- * @param stderr - Raw stderr captured before failure
- * @returns Signal assessment summarizing failure-path taint evidence
- * @throws {never} This helper only aggregates stable taint reasons
- */
-function buildFailureSignalAssessment(
-	stdout: string,
-	stderr: string,
-): SignalAssessment {
-	const reasons = Array.from(
-		new Set([
-			...getTranscriptOrInputTaintReasons(stdout),
-			...getTranscriptOrInputTaintReasons(stderr),
-			...getOpenCodePermissionTaintReasons(stdout, stderr, ""),
-		]),
-	);
-	return appendSignalAssessmentReasons(undefined, reasons);
-}
-
-/**
- * Builds an Error carrying structured OpenCode failure evidence.
- *
- * The returned error includes `durationMs` plus optional `output` and
- * `signalAssessment` properties used by runner serialization.
- *
- * @param message - User-facing failure message
- * @param durationMs - Measured command duration in milliseconds
- * @param output - Raw or parsed output payload to attach when present
- * @param signalAssessment - Optional taint evidence to attach
- * @returns Error instance enriched with runner-facing metadata
- * @throws {never} This helper only constructs an Error object
- */
-function buildOpenCodeFailure(
-	message: string,
-	durationMs: number,
-	output: string,
-	signalAssessment: SignalAssessment | undefined,
-): Error {
-	return Object.assign(new Error(message), {
-		durationMs,
-		...(output.trim().length > 0 ? { output } : {}),
-		...(signalAssessment ? { signalAssessment } : {}),
 	});
 }
 

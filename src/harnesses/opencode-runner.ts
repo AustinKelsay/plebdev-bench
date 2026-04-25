@@ -9,6 +9,8 @@
  * - Timeout and hang errors have deterministic messages for failure classification.
  */
 
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { type ResultPromise, execa } from "execa";
 import type pino from "pino";
 
@@ -16,6 +18,7 @@ const STALE_CHECK_INTERVAL_MS = 30_000;
 const MIN_STALE_OUTPUT_TIMEOUT_MS = 120_000;
 const MAX_STALE_OUTPUT_TIMEOUT_MS = 300_000;
 const FORCE_KILL_DELAY_MS = 2_000;
+const execFileAsync = promisify(execFile);
 
 function killOpenCodeProcess(
 	proc: ResultPromise,
@@ -33,6 +36,89 @@ function killOpenCodeProcess(
 			},
 			"Failed to signal OpenCode process",
 		);
+	}
+}
+
+async function listDescendantPids(
+	pid: number,
+	log: pino.Logger,
+): Promise<number[]> {
+	if (process.platform === "win32") {
+		return [];
+	}
+	const descendants = new Set<number>();
+	const pending = [pid];
+	while (pending.length > 0) {
+		const parentPid = pending.pop();
+		if (parentPid === undefined) continue;
+		try {
+			const { stdout } = await execFileAsync("pgrep", [
+				"-P",
+				String(parentPid),
+			]);
+			for (const childPid of stdout
+				.split(/\s+/)
+				.map((value) => Number.parseInt(value, 10))
+				.filter((value) => Number.isInteger(value) && value > 0)) {
+				if (descendants.has(childPid)) continue;
+				descendants.add(childPid);
+				pending.push(childPid);
+			}
+		} catch (error) {
+			const code =
+				error && typeof error === "object" && "code" in error
+					? (error as { code?: unknown }).code
+					: undefined;
+			if (code !== 1) {
+				log.debug(
+					{ pid: parentPid, error },
+					"Unable to enumerate OpenCode child processes",
+				);
+			}
+		}
+	}
+	return [...descendants];
+}
+
+async function killOpenCodeProcessTree(
+	pid: number | undefined,
+	signal: NodeJS.Signals,
+	log: pino.Logger,
+): Promise<void> {
+	if (pid === undefined) return;
+	if (process.platform === "win32") {
+		try {
+			await execFileAsync(
+				"taskkill",
+				["/PID", String(pid), "/T", signal === "SIGKILL" ? "/F" : ""].filter(
+					(arg) => arg.length > 0,
+				),
+			);
+		} catch (error) {
+			log.warn(
+				{ pid, signal, error },
+				"Failed to taskkill OpenCode process tree",
+			);
+		}
+		return;
+	}
+	const childPids = await listDescendantPids(pid, log);
+	log.debug({ pid, childPids, signal }, "Signaling OpenCode process tree");
+	for (const childPid of childPids.reverse()) {
+		try {
+			process.kill(childPid, signal);
+		} catch (error) {
+			const code =
+				error && typeof error === "object" && "code" in error
+					? (error as { code?: unknown }).code
+					: undefined;
+			if (code !== "ESRCH") {
+				log.warn(
+					{ pid: childPid, parentPid: pid, signal, error },
+					"Failed to signal OpenCode child process",
+				);
+			}
+		}
 	}
 }
 
@@ -161,6 +247,7 @@ async function forceKillProcess(
 	const pid = proc.pid;
 	log.warn({ pid, reason }, "Force killing OpenCode process");
 	killOpenCodeProcess(proc, "SIGTERM", log);
+	await killOpenCodeProcessTree(pid, "SIGTERM", log);
 	const outcome = await Promise.race([
 		new Promise<"delay">((resolve) =>
 			setTimeout(() => resolve("delay"), FORCE_KILL_DELAY_MS),
@@ -174,6 +261,7 @@ async function forceKillProcess(
 		return;
 	}
 	log.warn({ pid }, "Escalating OpenCode process kill");
+	await killOpenCodeProcessTree(pid, "SIGKILL", log);
 	killOpenCodeProcess(proc, "SIGKILL", log);
 	const killOutcome = await Promise.race([
 		new Promise<"delay">((resolve) =>

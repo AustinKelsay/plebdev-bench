@@ -2,7 +2,9 @@
  * Purpose: Application header with navigation, gradient accent bar, and brand styling.
  * Exports: Header
  *
- * Provides links to the main dashboard views.
+ * Invariants:
+ * - Importing this module has no side effects.
+ * - Header navigation is derived from the current router location.
  */
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";

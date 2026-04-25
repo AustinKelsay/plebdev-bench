@@ -59,15 +59,9 @@ export function buildRunResultSnapshot(
 			? { benchmarkCheckpoint: plan.benchmarkCheckpoint }
 			: {}),
 		provenance: {
+			...plan.provenance,
 			verificationStatus: "self_reported",
 			source: plan.provenance?.source ?? "local_cli",
-			...(plan.provenance?.submittedBy
-				? { submittedBy: plan.provenance.submittedBy }
-				: {}),
-			...(plan.provenance?.submittedAt
-				? { submittedAt: plan.provenance.submittedAt }
-				: {}),
-			...(plan.provenance?.notes ? { notes: plan.provenance.notes } : {}),
 		},
 		startedAt,
 		completedAt,

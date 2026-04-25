@@ -206,10 +206,17 @@ export async function runScoringWithCompileRetry(
 	scoringOnlyDurationMs: number;
 	retryGenerationDurationMs: number;
 	compileRetryUsed: boolean;
+	retryAttempted: boolean;
+	retryKind?: "compile-feedback";
+	retryReason?: string;
+	retryPromoted?: boolean;
 	signalAssessment?: MatrixItemResult["signalAssessment"];
 }> {
 	let generation = context.generation;
 	let compileRetryUsed = false;
+	let retryAttempted = false;
+	let retryReason: string | undefined;
+	let retryPromoted: boolean | undefined;
 	let scoringOnlyDurationMs = 0;
 	let retryGenerationDurationMs = 0;
 	let signalAssessment: MatrixItemResult["signalAssessment"];
@@ -238,6 +245,8 @@ export async function runScoringWithCompileRetry(
 			context.runtimeForRetry &&
 			context.promptForRetry.length > 0
 		) {
+			retryAttempted = true;
+			retryReason = scoringErrorMessage;
 			const retryFromException = await runCompileFeedbackRetry({
 				item: context.item,
 				harness: context.harnessForRetry,
@@ -251,6 +260,7 @@ export async function runScoringWithCompileRetry(
 			});
 			if (retryFromException) {
 				compileRetryUsed = true;
+				retryPromoted = true;
 				generation = retryFromException.generation;
 				scoringResult = retryFromException.scoringResult;
 				scoringOnlyDurationMs += retryFromException.scoringDurationMs;
@@ -277,6 +287,8 @@ export async function runScoringWithCompileRetry(
 		context.runtimeForRetry &&
 		context.promptForRetry.length > 0
 	) {
+		retryAttempted = true;
+		retryReason = compileError;
 		const retryAttempt = await runCompileFeedbackRetry({
 			item: context.item,
 			harness: context.harnessForRetry,
@@ -299,6 +311,7 @@ export async function runScoringWithCompileRetry(
 					scoringResult.failureType === "import" &&
 					retryAttempt.scoringResult.failureType !== "import");
 			if (shouldPromoteRetry) {
+				retryPromoted = true;
 				generation = retryAttempt.generation;
 				scoringResult = retryAttempt.scoringResult;
 				signalAssessment = retryAttempt.signalAssessment;
@@ -313,6 +326,7 @@ export async function runScoringWithCompileRetry(
 					"Compile-feedback retry promoted as best attempt",
 				);
 			} else {
+				retryPromoted = false;
 				context.log.warn(
 					{
 						harness: context.item.harness,
@@ -333,6 +347,14 @@ export async function runScoringWithCompileRetry(
 		scoringOnlyDurationMs,
 		retryGenerationDurationMs,
 		compileRetryUsed,
+		retryAttempted,
+		...(retryAttempted
+			? {
+					retryKind: "compile-feedback" as const,
+					retryReason: retryReason ?? "compile feedback retry",
+					retryPromoted: retryPromoted ?? false,
+				}
+			: {}),
 		signalAssessment,
 	};
 }

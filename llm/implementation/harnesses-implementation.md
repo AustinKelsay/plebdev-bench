@@ -108,13 +108,12 @@ Note: `listModels()` and `getModelInfo()` have moved from Harness to Runtime.
 
 - **CLI Command**:
   ```bash
-  goose run --no-session --provider ollama --model <model> -q --output-format json -i -
+  goose run --no-session -q --output-format json -i -
   # Prompt piped via stdin
   ```
 
-- **Critical CLI Flags** (override config file):
-  - `--provider ollama` - Force Ollama provider (ignores `~/.config/goose/config.yaml`)
-  - `--model <model>` - Specify exact model (e.g., `llama3.2:3b`)
+- **Critical CLI Flags**:
+  - `--provider` / `--model` - Deprecated for benchmark rows; provider and model are selected by generated per-item provider config instead of CLI flags
   - `-q` - Quiet mode (faster output, less overhead)
   - `--output-format json` - Structured output for reliable parsing
   - `--no-session` - Don't persist session state
@@ -136,11 +135,11 @@ Note: `listModels()` and `getModelInfo()` have moved from Harness to Runtime.
 - **Debug logging**: logs command execution, completion, and stderr
 - **Timeout**: via execa with 1 minute overhead for CLI startup
 
-**Why per-item provider config is critical**: Without generated per-item config, Goose may read global settings (`~/.config/goose/config.yaml`) that point at a different provider (e.g., OpenAI). The adapter invokes `goose run` with isolated benchmark configuration so Ollama is always used.
+**Why per-item provider config is critical**: Without generated per-item config, Goose may read global settings (`~/.config/goose/config.yaml`) that point at a different provider (e.g., OpenAI). The adapter invokes `goose run` with isolated benchmark configuration so Ollama is always used. Per-item provider config is the authoritative control path for benchmark runs; do not pass `--provider` or `--model` for normal benchmark execution.
 
 ### Tool-Calling Mode (Goose)
 
-Goose tool mode uses `goose run` with per-item provider configuration and permission rules so it can write code directly to files instead of only outputting text.
+Goose tool mode uses `goose run` with per-item provider config and permission rules so it can write code directly to files instead of only outputting text. The generated per-item config selects the provider/model; `--provider` and `--model` are intentionally omitted so CLI flags do not drift from the benchmark plan.
 
 **File-Based Code Extraction:**
 

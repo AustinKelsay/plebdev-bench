@@ -8,7 +8,7 @@
  * - Tool output is optional; plain assistant output is still scored.
  */
 
-import * as crypto from "node:crypto";
+import { randomBytes } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -28,6 +28,11 @@ import {
 	stripRetryMarker,
 } from "./code-output-policy.js";
 import { normalizeGooseOutput } from "./goose-output.js";
+import {
+	fingerprintText,
+	normalizeTurnLimit,
+	sanitizeRuntimeBaseUrl,
+} from "./goose-utils.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
@@ -69,55 +74,6 @@ const GooseAdapterOptionsSchema = z
 		workspaceRetryMaxTurns: z.number().optional(),
 	})
 	.strict();
-
-/**
- * Normalizes turn limits to safe positive integers.
- *
- * @param paramName - Option name for error context
- * @param value - User-supplied turn limit
- * @param fallback - Fallback turn limit when input is undefined
- * @returns Positive integer turn limit
- * @throws {TypeError} If value is provided but is not a positive integer
- */
-function normalizeTurnLimit(
-	paramName: string,
-	value: number | undefined,
-	fallback: number,
-): number {
-	if (value === undefined) {
-		return fallback;
-	}
-	if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
-		throw new TypeError(
-			`${paramName} must be a positive integer, received ${String(value)}`,
-		);
-	}
-	return value;
-}
-
-/**
- * Produces a redaction-safe fingerprint for logs.
- *
- * @param text - Arbitrary text payload
- * @returns Short SHA-256 fingerprint prefix
- */
-function fingerprintText(text: string): string {
-	return crypto.createHash("sha256").update(text).digest("hex").slice(0, 12);
-}
-
-/**
- * Sanitizes runtime base URL for logs by retaining origin only.
- *
- * @param baseUrl - Runtime base URL
- * @returns Safe origin string or redacted fallback
- */
-function sanitizeRuntimeBaseUrl(baseUrl: string): string {
-	try {
-		return new URL(baseUrl).origin;
-	} catch {
-		return "REDACTED";
-	}
-}
 
 /**
  * Creates a Goose harness adapter.
@@ -198,7 +154,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			}
 
 			// Create unique temp directory for this generation
-			const runId = crypto.randomBytes(8).toString("hex");
+			const runId = randomBytes(8).toString("hex");
 			const workDir =
 				opts.workingDirectory ??
 				path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);

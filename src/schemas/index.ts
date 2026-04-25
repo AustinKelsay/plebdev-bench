@@ -86,21 +86,21 @@ export {
  * `supportedRuntimeNames` for active execution config. Migration: import the
  * explicit runtime set you need. Remove after the next release.
  */
-export { artifactRuntimeNames as runtimeNames } from "./common.schema.js";
+export { supportedRuntimeNames as runtimeNames } from "./common.schema.js";
 
 /**
  * @deprecated Use `ArtifactRuntimeNameSchema` for persisted artifacts or
  * `SupportedRuntimeNameSchema` for active execution config. Migration: import
  * the explicit schema you need. Remove after the next release.
  */
-export { ArtifactRuntimeNameSchema as RuntimeNameSchema } from "./common.schema.js";
+export { SupportedRuntimeNameSchema as RuntimeNameSchema } from "./common.schema.js";
 
 /**
  * @deprecated Use `ArtifactRuntimeName` for persisted artifacts or
  * `SupportedRuntimeName` for active execution config. Migration: import the
  * explicit type you need. Remove after the next release.
  */
-export type { ArtifactRuntimeName as RuntimeName } from "./common.schema.js";
+export type { SupportedRuntimeName as RuntimeName } from "./common.schema.js";
 
 export {
 	BenchConfigSchema,

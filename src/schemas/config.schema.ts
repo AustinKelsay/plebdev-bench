@@ -14,7 +14,6 @@ import {
 	SCHEMA_VERSION,
 	SupportedRuntimeNameSchema,
 	TestCategorySchema,
-	migrateLegacySupportedRuntimeNames,
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
 import { ModelProfileRegistrySchema } from "./model-profile.schema.js";
@@ -67,9 +66,6 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 
 	const config = { ...(raw as Record<string, unknown>) };
-	if (Object.prototype.hasOwnProperty.call(config, "runtimes")) {
-		config.runtimes = migrateLegacySupportedRuntimeNames(config.runtimes);
-	}
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
 	const machineLabel = readNonEmptyString(config.machineLabel);
 

@@ -95,6 +95,7 @@ export function isHarnessCompatibleWithRuntime(
  * Gets harnesses compatible with a given runtime.
  * @param runtime - Runtime name
  * @returns Array of compatible harness names
+ * @throws {Error} If runtime is not a supported active runtime name
  */
 export function getCompatibleHarnesses(runtime: string): HarnessName[] {
 	return HARNESS_NAMES.filter((harness) =>
