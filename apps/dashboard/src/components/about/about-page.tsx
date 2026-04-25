@@ -56,6 +56,17 @@ const FACT_ACCENTS = [
 	"hsl(265, 50%, 62%)", // soft purple — Failures
 ];
 
+const STAGGER_CLASSES = [
+	"animate-stagger-1",
+	"animate-stagger-2",
+	"animate-stagger-3",
+	"animate-stagger-4",
+	"animate-stagger-5",
+	"animate-stagger-6",
+	"animate-stagger-7",
+	"animate-stagger-8",
+] as const;
+
 /**
  * Renders the benchmark about page.
  *
@@ -89,16 +100,16 @@ export function AboutPage() {
 					</CardTitle>
 					<CardDescription className="max-w-3xl text-sm leading-6">
 						Each run expands a matrix of runtime × harness × model × test ×
-						passType, then saves results as JSON artifacts and exits. The
-						dashboard reads those artifacts — it never runs the benchmark
-						itself.
+						passType (prompt mode), then saves results as JSON artifacts and
+						exits. The dashboard reads those artifacts — it never runs the
+						benchmark itself.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
 					{aboutFacts.map((fact, i) => (
 						<div
 							key={fact.label}
-							className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up animate-stagger-${i + 1}`}
+							className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 							style={{ borderLeftColor: FACT_ACCENTS[i] }}
 						>
 							<p className="text-xs uppercase tracking-[0.18em] text-foreground-faint">
@@ -158,7 +169,7 @@ export function AboutPage() {
 						<Card
 							key={ws.step}
 							glow
-							className={`h-full border-l-2 animate-fade-slide-up animate-stagger-${i + 1}`}
+							className={`h-full border-l-2 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 							style={{ borderLeftColor: STEP_ACCENTS[i] }}
 						>
 							<CardHeader className="pb-2">
@@ -231,7 +242,7 @@ export function AboutPage() {
 							{checkpointNotes.map((note, i) => (
 								<div
 									key={note}
-									className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up animate-stagger-${i + 1}`}
+									className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 								>
 									{note}
 								</div>
@@ -286,7 +297,7 @@ export function AboutPage() {
 						<Card
 							key={test.slug}
 							glow
-							className={`h-full border-l-2 border-l-success/50 animate-fade-slide-up animate-stagger-${(i % 8) + 1}`}
+							className={`h-full border-l-2 border-l-success/50 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 						>
 							<CardHeader className="pb-2">
 								<div className="flex flex-wrap items-center gap-2">

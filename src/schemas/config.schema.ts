@@ -14,6 +14,7 @@ import {
 	SCHEMA_VERSION,
 	SupportedRuntimeNameSchema,
 	TestCategorySchema,
+	migrateLegacySupportedRuntimeNames,
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
 import { ModelProfileRegistrySchema } from "./model-profile.schema.js";
@@ -66,6 +67,13 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 
 	const config = { ...(raw as Record<string, unknown>) };
+	if (
+		config.schemaVersion !== undefined &&
+		config.schemaVersion !== SCHEMA_VERSION &&
+		Array.isArray(config.runtimes)
+	) {
+		config.runtimes = migrateLegacySupportedRuntimeNames(config.runtimes);
+	}
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
 	const machineLabel = readNonEmptyString(config.machineLabel);
 
@@ -125,7 +133,7 @@ const BenchConfigObjectSchema = z
 		/** Removed runtime configuration retained only to emit a targeted validation error. */
 		vllmBaseUrl: z.preprocess(
 			(value) => (typeof value === "string" ? value.trim() : value),
-			z.string().optional(),
+			z.unknown().optional(),
 		),
 
 		/** Generation timeout in milliseconds (5 min default for large models). */

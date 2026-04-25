@@ -55,6 +55,10 @@ describe("workspace prompt parity", () => {
 				"   verify-inputs",
 				"   archive-results",
 				"   ```",
+			].join("\n"),
+		);
+		expect(prompt).toContain(
+			[
 				"3. Create `artifacts/summary.json` so its exact contents are the JSON below, with no additional whitespace or fields:",
 				'   `{"status":"ready","createdBy":"workspace-smoke","steps":3}`',
 			].join("\n"),

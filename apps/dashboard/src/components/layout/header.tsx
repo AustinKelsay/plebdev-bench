@@ -13,6 +13,8 @@ import { Link, useLocation } from "react-router-dom";
  * Renders the persistent dashboard header navigation.
  *
  * @returns React element containing brand and primary navigation
+ * @throws {Error} If rendered outside a Router context because `useLocation`
+ * requires routing context
  */
 export function Header() {
 	const location = useLocation();

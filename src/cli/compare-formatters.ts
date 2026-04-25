@@ -68,7 +68,7 @@ function renderFixedWidthTable(items: readonly ComparableDisplayRow[]): void {
 			`${pad(truncate(item.model, columnWidths.model), columnWidths.model)} ` +
 				`${pad(truncate(item.harness, columnWidths.harness), columnWidths.harness)} ` +
 				`${pad(truncate(item.test, columnWidths.test), columnWidths.test)} ` +
-				`${pad(item.passType, columnWidths.pass)}`,
+				`${pad(truncate(item.passType, columnWidths.pass), columnWidths.pass)}`,
 		);
 	}
 }
@@ -307,7 +307,7 @@ export function printScoringDeltas(result: CompareResult): void {
 			`${pad(truncate(item.model, modelW), modelW)} ` +
 				`${pad(truncate(item.harness, harnessW), harnessW)} ` +
 				`${pad(truncate(item.test, testW), testW)} ` +
-				`${pad(item.passType, passW)} ` +
+				`${pad(truncate(item.passType, passW), passW)} ` +
 				`${pad(deltaStr, deltaW, "right")}`,
 		);
 	}

@@ -13,6 +13,17 @@ import type { PassRateResult } from "@/lib/aggregations";
 import type { LeaderboardAggregate, MatrixItemResult } from "@/lib/types";
 import { formatDuration, formatPercent } from "@/lib/utils";
 
+const STAGGER_CLASSES = [
+	"animate-stagger-1",
+	"animate-stagger-2",
+	"animate-stagger-3",
+	"animate-stagger-4",
+	"animate-stagger-5",
+	"animate-stagger-6",
+	"animate-stagger-7",
+	"animate-stagger-8",
+] as const;
+
 interface LeaderboardSummaryCardsProps {
 	aggregate: LeaderboardAggregate | null;
 	filteredItemCount: number;
@@ -60,7 +71,7 @@ export function LeaderboardSummaryCards({
 			title: "Matched Runs",
 			value: String(aggregate?.summary.runsMatched ?? 0),
 			sub: null,
-			color: "hsl(var(--success))",
+			color: "hsl(var(--accent))",
 		},
 		{
 			title: "Profiles",
@@ -71,7 +82,7 @@ export function LeaderboardSummaryCards({
 							aggregate.summary.instances === 1 ? "instance" : "instances"
 						}`
 					: null,
-			color: "hsl(var(--success))",
+			color: "hsl(var(--primary))",
 		},
 		{
 			title: "Deduped Items",
@@ -105,7 +116,7 @@ export function LeaderboardSummaryCards({
 				<Card
 					key={card.title}
 					glow
-					className={`border-l-2 animate-fade-slide-up animate-stagger-${i + 1}`}
+					className={`border-l-2 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 					style={{ borderLeftColor: card.color }}
 				>
 					<CardHeader className="pb-2">

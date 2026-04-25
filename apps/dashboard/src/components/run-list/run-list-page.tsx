@@ -29,6 +29,17 @@ const STAT_ACCENTS = [
 	"hsl(265, 50%, 62%)", // purple — Last Published
 ];
 
+const STAGGER_CLASSES = [
+	"animate-stagger-1",
+	"animate-stagger-2",
+	"animate-stagger-3",
+	"animate-stagger-4",
+	"animate-stagger-5",
+	"animate-stagger-6",
+	"animate-stagger-7",
+	"animate-stagger-8",
+] as const;
+
 /** Left-border accent color per group type. */
 function groupBorderColor(group: { isLatest: boolean; isLegacy: boolean }) {
 	if (group.isLatest) return "border-l-success";
@@ -139,16 +150,19 @@ export function RunListPage() {
 										label: "Live Runs",
 										value: formatNumber(liveGroup?.runCount ?? 0),
 										large: true,
+										accent: STAT_ACCENTS[0],
 									},
 									{
 										label: "Profiles",
 										value: formatNumber(liveGroup?.machineCount ?? 0),
 										large: true,
+										accent: STAT_ACCENTS[1],
 									},
 									{
 										label: "Instances",
 										value: formatNumber(liveGroup?.instanceCount ?? 0),
 										large: true,
+										accent: STAT_ACCENTS[2],
 									},
 									{
 										label: "Last Published",
@@ -156,12 +170,13 @@ export function RunListPage() {
 											? formatDate(liveGroup.latestRunAt)
 											: "n/a",
 										large: false,
+										accent: STAT_ACCENTS[3],
 									},
 								].map((stat, i) => (
 									<div
 										key={stat.label}
-										className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up animate-stagger-${i + 1}`}
-										style={{ borderLeftColor: STAT_ACCENTS[i] }}
+										className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
+										style={{ borderLeftColor: stat.accent ?? STAT_ACCENTS[i] }}
 									>
 										<p className="text-xs uppercase tracking-[0.16em] text-foreground-faint">
 											{stat.label}
@@ -185,7 +200,7 @@ export function RunListPage() {
 								].map((note, i) => (
 									<div
 										key={note}
-										className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up animate-stagger-${i + 1}`}
+										className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 									>
 										{note}
 									</div>
@@ -200,7 +215,7 @@ export function RunListPage() {
 							<Card
 								key={`${group.key}-summary`}
 								glow
-								className={`border-l-2 ${groupBorderColor(group)} animate-fade-slide-up animate-stagger-${i + 1} ${
+								className={`border-l-2 ${groupBorderColor(group)} animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]} ${
 									group.isLatest
 										? "border-success/20 bg-success/5"
 										: group.isLegacy
@@ -301,7 +316,7 @@ export function RunListPage() {
 									{group.runs.map((run, i) => (
 										<div
 											key={run.runId}
-											className={`animate-fade-slide-up animate-stagger-${(i % 8) + 1}`}
+											className={`animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 										>
 											<RunCard
 												run={run}

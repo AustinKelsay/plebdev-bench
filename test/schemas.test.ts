@@ -80,6 +80,12 @@ describe("common schemas", () => {
 		expect(migrateLegacySupportedRuntimeNames(["ollama", "vllm"])).toEqual([
 			"ollama",
 		]);
+		expect(
+			BenchConfigSchema.parse({
+				schemaVersion: "0.5.2",
+				runtimes: ["vllm"],
+			}).runtimes,
+		).toEqual(["ollama"]);
 	});
 
 	it("should validate frontier eval failure types", () => {

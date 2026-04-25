@@ -98,16 +98,22 @@ export function ModelComparisonChart(props: ModelComparisonChartProps) {
 		() => ModelComparisonChartPropsSchema.safeParse(props),
 		[props],
 	);
+	const validationErrorMessage = parsedProps.success
+		? undefined
+		: parsedProps.error.message;
 	const lastLoggedValidationError = useRef<string | undefined>(undefined);
 	useEffect(() => {
 		if (
 			!parsedProps.success &&
-			parsedProps.error.message !== lastLoggedValidationError.current
+			validationErrorMessage !== lastLoggedValidationError.current
 		) {
-			lastLoggedValidationError.current = parsedProps.error.message;
-			console.error("Invalid ModelComparisonChart props", parsedProps.error);
+			lastLoggedValidationError.current = validationErrorMessage;
+			console.error(
+				"Invalid ModelComparisonChart props",
+				validationErrorMessage,
+			);
 		}
-	}, [parsedProps.success, parsedProps.error]);
+	}, [parsedProps.success, validationErrorMessage]);
 	const items = parsedProps.success ? parsedProps.data.items : [];
 	const allModels = useMemo(() => {
 		const groups = groupByModel(items);

@@ -23,15 +23,17 @@ export function normalizeTurnLimit(
 	value: number | undefined,
 	fallback: number,
 ): number {
-	if (value === undefined) {
-		return fallback;
-	}
-	if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
+	const candidate = value ?? fallback;
+	if (
+		typeof candidate !== "number" ||
+		!Number.isInteger(candidate) ||
+		candidate < 1
+	) {
 		throw new TypeError(
-			`${paramName} must be a positive integer, received ${String(value)}`,
+			`${paramName} must be a positive integer, received ${String(candidate)}`,
 		);
 	}
-	return value;
+	return candidate;
 }
 
 /**

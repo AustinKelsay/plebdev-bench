@@ -57,6 +57,10 @@ describe("runCommand", () => {
 
 		expect(exitSpy).toHaveBeenCalledWith(1);
 		expect(mocks.runBenchmark).not.toHaveBeenCalled();
+		const loggedError = mocks.loggerError.mock.calls[0]?.[0]?.error;
+		expect(loggedError).toBeInstanceOf(Error);
+		expect((loggedError as Error).message).toContain("--ollama-url");
+		expect((loggedError as Error).message).toContain("--vllm-url");
 		expect(mocks.loggerError).toHaveBeenCalledWith(
 			{ error: expect.any(Error) },
 			"Benchmark run crashed",

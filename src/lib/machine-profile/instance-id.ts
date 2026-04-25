@@ -183,7 +183,7 @@ export interface ResolveMachineInstanceIdOptions {
 const ResolveMachineInstanceIdOptionsSchema = z.object({
 	configuredInstanceId: z.string().optional(),
 	legacyConfiguredInstanceId: z.string().optional(),
-	env: z.record(z.string().optional()).optional(),
+	env: z.record(z.string(), z.string()).optional(),
 	instanceIdFilePath: z.string().optional(),
 });
 

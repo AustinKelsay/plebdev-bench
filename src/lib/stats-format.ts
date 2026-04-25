@@ -90,9 +90,9 @@ export function formatRunStats(
 		for (const { type, count } of stats.generationFailures?.byType ?? []) {
 			lines.push(`    ${type}: ${count}`);
 		}
-		const scoredRowFailures = failed - generationFailureCount;
-		if (scoredRowFailures > 0) {
-			lines.push(`    scored_row_failure: ${scoredRowFailures}`);
+		const residualFailures = failed - generationFailureCount;
+		if (residualFailures > 0) {
+			lines.push(`    residual_failures: ${residualFailures}`);
 		}
 	}
 	lines.push(`  Duration: ${formatDuration(durationMs)}`);

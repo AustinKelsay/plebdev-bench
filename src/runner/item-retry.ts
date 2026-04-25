@@ -308,8 +308,9 @@ export async function runScoringWithCompileRetry(
 			const shouldPromoteRetry =
 				retryAttempt.scoringResult.passed > previousPassed ||
 				(retryAttempt.scoringResult.passed === previousPassed &&
-					scoringResult.failureType === "import" &&
-					retryAttempt.scoringResult.failureType !== "import");
+					(scoringResult.failureType === "import" ||
+						scoringResult.failureType === "missing_export") &&
+					retryAttempt.scoringResult.failureType !== scoringResult.failureType);
 			if (shouldPromoteRetry) {
 				retryPromoted = true;
 				generation = retryAttempt.generation;

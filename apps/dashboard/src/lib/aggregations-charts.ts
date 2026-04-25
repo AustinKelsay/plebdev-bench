@@ -111,9 +111,15 @@ export function computeModelRadarData(
 	selectedModels: string[],
 ): RadarDataPoint[] {
 	const toolHarnesses = inferToolHarnesses(items);
-	const axes = ["Pass Rate", "Completion", "Tool Success", "Frontier", "Speed"];
-	const radarData: RadarDataPoint[] = axes.map((axis) => ({
-		axis,
+	const axisEntries = [
+		{ key: "passRate", axis: "Pass Rate" },
+		{ key: "completion", axis: "Completion" },
+		{ key: "toolSuccess", axis: "Tool Success" },
+		{ key: "frontier", axis: "Frontier" },
+		{ key: "speed", axis: "Speed" },
+	] as const;
+	const radarData: RadarDataPoint[] = axisEntries.map((entry) => ({
+		axis: entry.axis,
 		fullMark: 100,
 	}));
 
@@ -161,15 +167,16 @@ export function computeModelRadarData(
 		const speedScore =
 			avgDuration > 0 ? Math.max(0, 100 - (avgDuration / 300_000) * 100) : 50;
 
-		const values = [
-			pr.passRate * 100,
-			completionRate,
+		const valuesByAxis = {
+			passRate: pr.passRate * 100,
+			completion: completionRate,
 			toolSuccess,
-			frontierAvg,
-			speedScore,
-		];
-		for (let i = 0; i < axes.length; i++) {
-			radarData[i][model] = Math.round(values[i] * 10) / 10;
+			frontier: frontierAvg,
+			speed: speedScore,
+		} satisfies Record<(typeof axisEntries)[number]["key"], number>;
+		for (let i = 0; i < axisEntries.length; i++) {
+			const axis = axisEntries[i];
+			radarData[i][model] = Math.round(valuesByAxis[axis.key] * 10) / 10;
 		}
 	}
 

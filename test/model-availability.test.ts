@@ -7,6 +7,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { defaultConfig } from "../src/schemas/index.js";
 
 const createRuntimeMock = vi.hoisted(() => vi.fn());
 
@@ -25,12 +26,14 @@ describe("listAvailableModelsByRuntime", () => {
 		createRuntimeMock.mockReturnValueOnce({
 			listModels: vi.fn().mockRejectedValueOnce(new Error("connection down")),
 		});
+		const configFixture = {
+			...defaultConfig,
+			ollamaBaseUrl: "http://localhost:11434",
+			generateTimeoutMs: 300_000,
+		} satisfies Parameters<typeof listAvailableModelsByRuntime>[1];
 
 		await expect(
-			listAvailableModelsByRuntime(["ollama"], {
-				ollamaBaseUrl: "http://localhost:11434",
-				generateTimeoutMs: 300_000,
-			} as Parameters<typeof listAvailableModelsByRuntime>[1]),
+			listAvailableModelsByRuntime(["ollama"], configFixture),
 		).resolves.toEqual(["ollama: probe failed (connection down)"]);
 	});
 
@@ -38,12 +41,14 @@ describe("listAvailableModelsByRuntime", () => {
 		createRuntimeMock.mockReturnValueOnce({
 			listModels: vi.fn().mockResolvedValueOnce([]),
 		});
+		const configFixture = {
+			...defaultConfig,
+			ollamaBaseUrl: "http://localhost:11434",
+			generateTimeoutMs: 300_000,
+		} satisfies Parameters<typeof listAvailableModelsByRuntime>[1];
 
 		await expect(
-			listAvailableModelsByRuntime(["ollama"], {
-				ollamaBaseUrl: "http://localhost:11434",
-				generateTimeoutMs: 300_000,
-			} as Parameters<typeof listAvailableModelsByRuntime>[1]),
+			listAvailableModelsByRuntime(["ollama"], configFixture),
 		).resolves.toEqual(["ollama: (no models installed)"]);
 	});
 });
