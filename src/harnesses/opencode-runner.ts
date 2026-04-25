@@ -9,16 +9,14 @@
  * - Timeout and hang errors have deterministic messages for failure classification.
  */
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { type ResultPromise, execa } from "execa";
 import type pino from "pino";
+import { runExecFile } from "../lib/exec.js";
 
 const STALE_CHECK_INTERVAL_MS = 30_000;
 const MIN_STALE_OUTPUT_TIMEOUT_MS = 120_000;
 const MAX_STALE_OUTPUT_TIMEOUT_MS = 300_000;
 const FORCE_KILL_DELAY_MS = 2_000;
-const execFileAsync = promisify(execFile);
 
 function killOpenCodeProcess(
 	proc: ResultPromise,
@@ -52,10 +50,7 @@ async function listDescendantPids(
 		const parentPid = pending.pop();
 		if (parentPid === undefined) continue;
 		try {
-			const { stdout } = await execFileAsync("pgrep", [
-				"-P",
-				String(parentPid),
-			]);
+			const { stdout } = await runExecFile("pgrep", ["-P", String(parentPid)]);
 			for (const childPid of stdout
 				.split(/\s+/)
 				.map((value) => Number.parseInt(value, 10))
@@ -88,7 +83,7 @@ async function killOpenCodeProcessTree(
 	if (pid === undefined) return;
 	if (process.platform === "win32") {
 		try {
-			await execFileAsync(
+			await runExecFile(
 				"taskkill",
 				["/PID", String(pid), "/T", signal === "SIGKILL" ? "/F" : ""].filter(
 					(arg) => arg.length > 0,

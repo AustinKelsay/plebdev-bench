@@ -59,6 +59,14 @@ export const ArtifactRuntimeNameSchema = z.enum(artifactRuntimeNames);
 /** Runtime name type allowed in stored artifacts. */
 export type ArtifactRuntimeName = z.infer<typeof ArtifactRuntimeNameSchema>;
 
+/** Zod schema for persisted runtimes that remain executable by this version. */
+export const ExecutableArtifactRuntimeNameSchema = SupportedRuntimeNameSchema;
+
+/** Runtime name type for persisted rows this version can execute/replay. */
+export type ExecutableArtifactRuntimeName = z.infer<
+	typeof ExecutableArtifactRuntimeNameSchema
+>;
+
 /** Valid pass types for benchmark runs. */
 export const passTypes = ["blind", "informed"] as const;
 

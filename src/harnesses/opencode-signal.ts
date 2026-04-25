@@ -81,12 +81,12 @@ export function buildSignalAssessment(
 	parsedStream: string,
 	extraReasons: readonly SignalAssessmentReason[] = [],
 ): SignalAssessment | undefined {
-	const stderrReasons = getTranscriptOrInputTaintReasons(stderr).filter(
-		(reason) => reason !== "internal_tool_transcript",
-	);
+	const stderrReasons = getTranscriptOrInputTaintReasons(stderr, {
+		source: "harness",
+	}).filter((reason) => reason !== "internal_tool_transcript");
 	const protocolOnlyReasons =
 		parsed.method === "json" && parsed.output.trim().length === 0
-			? getTranscriptOrInputTaintReasons(parsedStream)
+			? getTranscriptOrInputTaintReasons(parsedStream, { source: "harness" })
 			: [];
 	const permissionReasons = [
 		...getOpenCodePermissionTaintReasons(
@@ -127,7 +127,7 @@ export function buildFailureSignalAssessment(
 	const reasons = Array.from(
 		new Set([
 			...getTranscriptOrInputTaintReasons(stdout),
-			...getTranscriptOrInputTaintReasons(stderr),
+			...getTranscriptOrInputTaintReasons(stderr, { source: "harness" }),
 			...getOpenCodePermissionTaintReasons(stdout, stderr, ""),
 		]),
 	);

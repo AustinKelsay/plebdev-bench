@@ -87,7 +87,7 @@ export const compareCommand = new Command("compare")
 				);
 				if (checkpointGuardMessage) {
 					console.error(`✗ FAIL: ${checkpointGuardMessage}`);
-					return;
+					process.exit(1);
 				}
 
 				const comparison = compareRuns(resultA, resultB);

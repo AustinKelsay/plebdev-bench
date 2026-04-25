@@ -72,7 +72,10 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 		config.schemaVersion !== SCHEMA_VERSION &&
 		Array.isArray(config.runtimes)
 	) {
-		config.runtimes = migrateLegacySupportedRuntimeNames(config.runtimes);
+		config.runtimes =
+			config.runtimes.length === 0
+				? ["ollama"]
+				: migrateLegacySupportedRuntimeNames(config.runtimes);
 	}
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
 	const machineLabel = readNonEmptyString(config.machineLabel);

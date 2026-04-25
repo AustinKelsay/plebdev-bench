@@ -145,7 +145,7 @@ describe("executeItem", () => {
 		const unsupportedRuntimeItem = {
 			...CODE_OUTPUT_ITEM,
 			runtime: "vllm",
-		} satisfies MatrixItem;
+		} as unknown as MatrixItem;
 
 		await expect(
 			executeItem(unsupportedRuntimeItem, RUNTIME_CONFIG, 5_000),

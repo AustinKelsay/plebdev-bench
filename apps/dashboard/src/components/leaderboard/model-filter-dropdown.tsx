@@ -19,17 +19,13 @@ import {
 } from "react";
 import { z } from "zod";
 
-interface ModelFilterDropdownProps {
-	models: string[];
-	selectedModels: string[];
-	onSelectionChange: (selectedModels: string[]) => void;
-}
-
 const ModelFilterDropdownPropsSchema = z.strictObject({
 	models: z.array(z.string()),
 	selectedModels: z.array(z.string()),
 	onSelectionChange: z.function().args(z.array(z.string())).returns(z.void()),
 });
+
+type ModelFilterDropdownProps = z.infer<typeof ModelFilterDropdownPropsSchema>;
 
 const MODEL_SORT_COLLATOR = new Intl.Collator("en", { sensitivity: "variant" });
 

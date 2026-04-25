@@ -362,6 +362,7 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			toolCallCode ? "tool_call" : hasRawParts ? "raw" : "json",
 			{
 				...diagnostics,
+				hasToolUse: diagnostics.hasToolUse || toolCallCode !== null,
 				permissionDenied: diagnostics.permissionDenied || mixedPermissionDenied,
 			},
 		);

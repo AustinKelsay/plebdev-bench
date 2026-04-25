@@ -97,7 +97,7 @@ export type ConfiguredModelVariantValue = z.infer<
 	typeof ConfiguredModelVariantValueSchema
 >;
 
-const ConfiguredModelProfileBaseSchema = z.object({
+const ConfiguredModelProfileBaseSchema = z.strictObject({
 	profileLabel: z.string().trim().min(1).optional(),
 	family: z.string().trim().min(1).optional(),
 	parametersBillions: z.number().positive().optional(),
@@ -155,7 +155,7 @@ export type ArtifactModelProfileRegistry = z.infer<
 >;
 
 /** Versioned model-profile file wrapper. */
-export const ModelProfileFileSchema = z.object({
+export const ModelProfileFileSchema = z.strictObject({
 	schemaVersion: z.literal(SCHEMA_VERSION),
 	models: ArtifactModelProfileRegistrySchema,
 });

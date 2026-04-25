@@ -11,8 +11,8 @@
 
 import { z } from "zod";
 import {
-	ArtifactRuntimeNameSchema,
 	BenchmarkCheckpointSchema,
+	ExecutableArtifactRuntimeNameSchema,
 	HarnessCapabilitySchema,
 	MachineProfileSchema,
 	PassTypeSchema,
@@ -39,7 +39,7 @@ const ModelExclusionEvidenceSchema = z
 /** Zod schema for models omitted from generative benchmark plans. */
 export const ModelExclusionSchema = z.object({
 	/** Runtime where the model was discovered. */
-	runtime: ArtifactRuntimeNameSchema,
+	runtime: ExecutableArtifactRuntimeNameSchema,
 
 	/** Runtime model name that was excluded. */
 	model: z.string(),
@@ -60,7 +60,7 @@ export const MatrixItemSchema = z.object({
 	id: z.string(),
 
 	/** Runtime name (e.g., 'ollama'). */
-	runtime: ArtifactRuntimeNameSchema,
+	runtime: ExecutableArtifactRuntimeNameSchema,
 
 	/** Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),

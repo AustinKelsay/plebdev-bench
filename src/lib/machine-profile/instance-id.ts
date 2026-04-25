@@ -180,12 +180,14 @@ export interface ResolveMachineInstanceIdOptions {
 	instanceIdFilePath?: string;
 }
 
-const ResolveMachineInstanceIdOptionsSchema = z.object({
-	configuredInstanceId: z.string().optional(),
-	legacyConfiguredInstanceId: z.string().optional(),
-	env: z.record(z.string(), z.string()).optional(),
-	instanceIdFilePath: z.string().optional(),
-});
+const ResolveMachineInstanceIdOptionsSchema = z
+	.object({
+		configuredInstanceId: z.string().optional(),
+		legacyConfiguredInstanceId: z.string().optional(),
+		env: z.record(z.string(), z.string()).optional(),
+		instanceIdFilePath: z.string().optional(),
+	})
+	.strict();
 
 /** Resolved machine instance ID plus its source. */
 export interface ResolvedMachineInstanceId {

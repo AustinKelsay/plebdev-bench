@@ -12,6 +12,8 @@ export {
 	artifactRuntimeNames,
 	ArtifactRuntimeNameSchema,
 	type ArtifactRuntimeName,
+	ExecutableArtifactRuntimeNameSchema,
+	type ExecutableArtifactRuntimeName,
 	passTypes,
 	PassTypeSchema,
 	type PassType,
