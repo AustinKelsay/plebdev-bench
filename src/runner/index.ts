@@ -307,6 +307,9 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				});
 				lastCheckpointItemCount = itemCount;
 			}
+			if (isLastForModel) {
+				await runPostItemResidencyTeardown(item);
+			}
 			continue;
 		}
 

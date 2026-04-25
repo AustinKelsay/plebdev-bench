@@ -94,7 +94,7 @@ describe("parseOpenCodeEvents", () => {
 						input: { content: "export const first = 1;" },
 					},
 					{
-						command: "edit",
+						tool: "write",
 						raw: { content: "export const second = 2;" },
 					},
 				],

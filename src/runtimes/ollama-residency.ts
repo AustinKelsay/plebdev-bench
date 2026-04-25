@@ -166,6 +166,33 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function normalizeBaseUrl(baseUrl: string): string {
+	const trimmed = baseUrl.trim();
+	if (trimmed.length === 0) {
+		throw new Error("Ollama residency baseUrl must not be empty");
+	}
+	return trimmed.replace(/\/+$/, "");
+}
+
+function normalizeRequiredModelName(model: string): string {
+	const trimmed = model.trim();
+	if (trimmed.length === 0) {
+		throw new Error("Ollama residency model must not be empty");
+	}
+	return trimmed;
+}
+
+function normalizeAllowedModel(
+	allowedModel: string | undefined,
+): string | undefined {
+	if (allowedModel === undefined) return undefined;
+	const trimmed = allowedModel.trim();
+	if (trimmed.length === 0) {
+		throw new Error("Ollama residency allowedModel must not be empty");
+	}
+	return trimmed;
+}
+
 function validateRequestTimeoutMs(requestTimeoutMs: number | undefined): void {
 	if (
 		requestTimeoutMs !== undefined &&
@@ -204,8 +231,9 @@ export async function listRunningOllamaModels(
 	config: OllamaResidencyBaseConfig,
 ): Promise<LoadedOllamaModel[]> {
 	validateRequestTimeoutMs(config.requestTimeoutMs);
+	const baseUrl = normalizeBaseUrl(config.baseUrl);
 	const timeoutMs = config.requestTimeoutMs ?? RESIDENCY_REQUEST_TIMEOUT_MS;
-	const endpoint = `${config.baseUrl}/api/ps`;
+	const endpoint = `${baseUrl}/api/ps`;
 	const json = await fetchJson(endpoint, { method: "GET" }, timeoutMs);
 	const parsed = RunningOllamaModelsResponseSchema.safeParse(json);
 	if (!parsed.success) {
@@ -227,15 +255,17 @@ export async function unloadOllamaModel(
 	config: UnloadOllamaModelConfig,
 ): Promise<void> {
 	validateRequestTimeoutMs(config.requestTimeoutMs);
+	const baseUrl = normalizeBaseUrl(config.baseUrl);
+	const model = normalizeRequiredModelName(config.model);
 	const timeoutMs = config.requestTimeoutMs ?? RESIDENCY_REQUEST_TIMEOUT_MS;
-	const endpoint = `${config.baseUrl}/api/generate`;
+	const endpoint = `${baseUrl}/api/generate`;
 	const json = await fetchJson(
 		endpoint,
 		{
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				model: config.model,
+				model,
 				prompt: "",
 				stream: false,
 				keep_alive: 0,
@@ -266,18 +296,21 @@ export async function ensureOnlyOllamaModelLoaded(
 	validateSettleTimeoutMs(config.settleTimeoutMs);
 	const settleTimeoutMs = config.settleTimeoutMs ?? RESIDENCY_SETTLE_TIMEOUT_MS;
 	const pollIntervalMs = config.pollIntervalMs ?? RESIDENCY_POLL_INTERVAL_MS;
+	const baseUrl = normalizeBaseUrl(config.baseUrl);
+	const allowedModel = normalizeAllowedModel(config.allowedModel);
 	let deadline: number | undefined;
 	const unloadedModels: string[] = [];
 	const requestedUnloadModels = new Set<string>();
-	let loadedModels = await listRunningOllamaModels(config);
+	let loadedModels = await listRunningOllamaModels({
+		baseUrl,
+		requestTimeoutMs: config.requestTimeoutMs,
+	});
 
 	while (true) {
-		const foreignModels = getForeignModels(loadedModels, config.allowedModel);
+		const foreignModels = getForeignModels(loadedModels, allowedModel);
 		if (foreignModels.length === 0) {
 			return {
-				...(config.allowedModel !== undefined
-					? { allowedModel: config.allowedModel }
-					: {}),
+				...(allowedModel !== undefined ? { allowedModel } : {}),
 				loadedModels: loadedModels.map((model) => model.name),
 				unloadedModels,
 			};
@@ -286,7 +319,7 @@ export async function ensureOnlyOllamaModelLoaded(
 		for (const model of foreignModels) {
 			if (requestedUnloadModels.has(model.name)) continue;
 			await unloadOllamaModel({
-				baseUrl: config.baseUrl,
+				baseUrl,
 				model: model.name,
 				requestTimeoutMs: config.requestTimeoutMs,
 			});
@@ -297,11 +330,14 @@ export async function ensureOnlyOllamaModelLoaded(
 
 		if (deadline !== undefined && performance.now() >= deadline) {
 			throw new Error(
-				`Timed out waiting for Ollama model residency; allowed=${formatAllowedModel(config.allowedModel)} stillLoaded=${foreignModels.map((model) => model.name).join(",") || "none"}`,
+				`Timed out waiting for Ollama model residency; allowed=${formatAllowedModel(allowedModel)} stillLoaded=${foreignModels.map((model) => model.name).join(",") || "none"}`,
 			);
 		}
 
 		await sleep(Math.max(0, pollIntervalMs));
-		loadedModels = await listRunningOllamaModels(config);
+		loadedModels = await listRunningOllamaModels({
+			baseUrl,
+			requestTimeoutMs: config.requestTimeoutMs,
+		});
 	}
 }

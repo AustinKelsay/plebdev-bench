@@ -189,6 +189,12 @@ const FrontierEvalSchema = z.object({
 /** Scoring metrics schema. */
 const ScoringMetricsSchema = z.object({
 	durationMs: z.number(),
+	scoringDurationMs: z.number().optional(),
+	retryGenerationDurationMs: z.number().optional(),
+	retryKind: z.enum(["compile-feedback", "opencode-workspace"]).optional(),
+	retryReason: z.string().optional(),
+	retryAttempted: z.boolean().optional(),
+	retryPromoted: z.boolean().optional(),
 });
 
 /** Benchmark checkpoint schema. */

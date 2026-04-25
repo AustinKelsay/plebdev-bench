@@ -60,6 +60,58 @@ function createHarness(generateMock: ReturnType<typeof vi.fn>): Harness {
 	};
 }
 
+interface CompileRetryScenario {
+	test: string;
+	initialOutput: string;
+	initialDurationMs: number;
+	retryOutput: string;
+	retryDurationMs: number;
+	firstScoringResult: {
+		passed: number;
+		failed: number;
+		total: number;
+		failureType: "import" | "missing_export";
+		error: string;
+	};
+	promptForRetry: string;
+}
+
+async function runCompileRetryScenario(scenario: CompileRetryScenario) {
+	const { runScoringWithCompileRetry } = await import(
+		"../src/runner/item-retry.js"
+	);
+	generateMock.mockResolvedValue({
+		output: scenario.retryOutput,
+		durationMs: scenario.retryDurationMs,
+	});
+	scoreGenerationMock
+		.mockResolvedValueOnce(scenario.firstScoringResult)
+		.mockResolvedValueOnce({
+			passed: 5,
+			failed: 0,
+			total: 5,
+		});
+
+	return runScoringWithCompileRetry({
+		item: createMatrixItem(scenario.test),
+		generation: {
+			success: true,
+			output: scenario.initialOutput,
+			durationMs: scenario.initialDurationMs,
+		},
+		harnessForRetry: createHarness(generateMock),
+		runtimeForRetry: createRuntime(),
+		promptForRetry: scenario.promptForRetry,
+		timeoutMs: 5_000,
+		unloadAfter: true,
+		log: {
+			info: vi.fn(),
+			warn: vi.fn(),
+		},
+		supportsCompileRetry: true,
+	});
+}
+
 describe("runScoringWithCompileRetry", () => {
 	beforeEach(() => {
 		scoreGenerationMock.mockReset();
@@ -67,45 +119,20 @@ describe("runScoringWithCompileRetry", () => {
 	});
 
 	it("retries direct-harness import failures and promotes the better retry result", async () => {
-		const { runScoringWithCompileRetry } = await import(
-			"../src/runner/item-retry.js"
-		);
-		generateMock.mockResolvedValue({
-			output: "export function createValue(): number { return 42; }",
-			durationMs: 1200,
-		});
-
-		scoreGenerationMock
-			.mockResolvedValueOnce({
+		const outcome = await runCompileRetryScenario({
+			test: "smoke",
+			initialOutput: "export const broken = ;",
+			initialDurationMs: 400,
+			retryOutput: "export function createValue(): number { return 42; }",
+			retryDurationMs: 1200,
+			firstScoringResult: {
 				passed: 0,
 				failed: 5,
 				total: 5,
 				failureType: "import",
 				error: "Import failed: unexpected token",
-			})
-			.mockResolvedValueOnce({
-				passed: 5,
-				failed: 0,
-				total: 5,
-			});
-
-		const outcome = await runScoringWithCompileRetry({
-			item: createMatrixItem("smoke"),
-			generation: {
-				success: true,
-				output: "export const broken = ;",
-				durationMs: 400,
 			},
-			harnessForRetry: createHarness(generateMock),
-			runtimeForRetry: createRuntime(),
 			promptForRetry: "Implement createValue().",
-			timeoutMs: 5_000,
-			unloadAfter: true,
-			log: {
-				info: vi.fn(),
-				warn: vi.fn(),
-			},
-			supportsCompileRetry: true,
 		});
 
 		expect(generateMock).toHaveBeenCalledTimes(1);
@@ -129,46 +156,21 @@ describe("runScoringWithCompileRetry", () => {
 	});
 
 	it("retries direct-harness missing-export failures and records retry duration", async () => {
-		const { runScoringWithCompileRetry } = await import(
-			"../src/runner/item-retry.js"
-		);
-		generateMock.mockResolvedValue({
-			output:
+		const outcome = await runCompileRetryScenario({
+			test: "todo-app",
+			initialOutput: "export const notTheRightThing = true;",
+			initialDurationMs: 300,
+			retryOutput:
 				"export function createTodoApp(): { ok: boolean } { return { ok: true }; }",
-			durationMs: 900,
-		});
-
-		scoreGenerationMock
-			.mockResolvedValueOnce({
+			retryDurationMs: 900,
+			firstScoringResult: {
 				passed: 2,
 				failed: 3,
 				total: 5,
 				failureType: "missing_export",
 				error: "Missing export: createTodoApp",
-			})
-			.mockResolvedValueOnce({
-				passed: 5,
-				failed: 0,
-				total: 5,
-			});
-
-		const outcome = await runScoringWithCompileRetry({
-			item: createMatrixItem("todo-app"),
-			generation: {
-				success: true,
-				output: "export const notTheRightThing = true;",
-				durationMs: 300,
 			},
-			harnessForRetry: createHarness(generateMock),
-			runtimeForRetry: createRuntime(),
 			promptForRetry: "Implement createTodoApp().",
-			timeoutMs: 5_000,
-			unloadAfter: true,
-			log: {
-				info: vi.fn(),
-				warn: vi.fn(),
-			},
-			supportsCompileRetry: true,
 		});
 
 		expect(generateMock).toHaveBeenCalledTimes(1);

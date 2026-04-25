@@ -244,7 +244,10 @@ function joinOrderedOutputParts(parts: OrderedOutputPart[]): string {
 			output += part.content;
 			continue;
 		}
-		output += output.length > 0 ? `\n${part.content}` : part.content;
+		output += part.content;
+		if (!output.endsWith("\n")) {
+			output += "\n";
+		}
 	}
 	return output;
 }
@@ -314,6 +317,7 @@ export function parseOpenCodeEvents(raw: string): OpenCodeParsedEvents {
 			extractedToolCallOutput.trim().length > 0
 		) {
 			toolCallOutput = extractedToolCallOutput;
+			hasToolUse = true;
 		}
 		permissionDenied ||=
 			typeof event.text === "string"

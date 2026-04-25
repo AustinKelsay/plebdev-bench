@@ -68,7 +68,7 @@ describe("common schemas", () => {
 
 	it("should validate supported and artifact runtime names separately", () => {
 		expect(SupportedRuntimeNameSchema.parse("ollama")).toBe("ollama");
-		expect(SupportedRuntimeNameSchema.parse("vllm")).toBe("vllm");
+		expect(() => SupportedRuntimeNameSchema.parse("vllm")).toThrow();
 		expect(ArtifactRuntimeNameSchema.parse("ollama")).toBe("ollama");
 		expect(ArtifactRuntimeNameSchema.parse("vllm")).toBe("vllm");
 		expect(() => ArtifactRuntimeNameSchema.parse("unknown")).toThrow();
@@ -226,10 +226,10 @@ describe("BenchConfigSchema", () => {
 				vllmBaseUrl: "http://localhost:8000",
 			}),
 		).toThrow(/vllmBaseUrl/);
-		expect(BenchConfigSchema.parse({ runtimes: ["vllm"] }).runtimes).toEqual([
-			"vllm",
-		]);
-		expect(
+		expect(() => BenchConfigSchema.parse({ runtimes: ["vllm"] })).toThrow(
+			/runtimes|vllm/,
+		);
+		expect(() =>
 			BenchConfigSchema.parse({
 				modelProfiles: {
 					"qwen3-8b-instruct": {
@@ -239,8 +239,8 @@ describe("BenchConfigSchema", () => {
 						},
 					},
 				},
-			}).modelProfiles?.["qwen3-8b-instruct"]?.variants.vllm,
-		).toBe("Qwen/Qwen3-8B-Instruct");
+			}),
+		).toThrow();
 	});
 
 	it("should reject simultaneous modelProfiles and modelAliases", () => {

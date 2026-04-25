@@ -359,6 +359,13 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 				);
 			}
 		} catch (error) {
+			if (error instanceof z.ZodError) {
+				logger.warn(
+					{ issues: error.issues },
+					"Machine-profile migration options failed validation",
+				);
+				return;
+			}
 			logger.error({ error }, "Machine-profile migration failed");
 			process.exit(1);
 		}

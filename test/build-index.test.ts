@@ -16,7 +16,10 @@ import {
 	buildDashboardIndexArtifacts,
 	resolveResultsDir,
 } from "../apps/dashboard/scripts/build-index.js";
-import { computeBenchmarkCheckpoint } from "../src/lib/benchmark-checkpoint.js";
+import {
+	CORE_BENCHMARK_LIB_ASSETS,
+	computeBenchmarkCheckpoint,
+} from "../src/lib/benchmark-checkpoint.js";
 import {
 	buildMachineProfileKey,
 	buildMachineProfileLabel,
@@ -25,27 +28,9 @@ import {
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const tempRoots: string[] = [];
-const REQUIRED_LIB_ASSETS = [
-	"benchmark-checkpoint.ts",
-	"scorer.ts",
-	"scorer-core.ts",
-	"code-module-scorer.ts",
-	"scorer-worker.ts",
-	"scoring-spec.ts",
-	"workspace-scorer.ts",
-	"workspace-manifest.ts",
-	"test-workspace.ts",
-	"signal-assessment.ts",
-	"code-extractor.ts",
-	"stdout-suppressor.ts",
-	"test-catalog.ts",
-	"timeout.ts",
-	"tool-smoke.ts",
-	"failure-classifier.ts",
-	"model-aliases.ts",
-	"ollama-client.ts",
-	"openrouter-client.ts",
-] as const;
+const REQUIRED_LIB_ASSETS = CORE_BENCHMARK_LIB_ASSETS.map((assetPath) =>
+	path.basename(assetPath),
+);
 
 const REQUIRED_SOURCE_DIR_FIXTURES = [
 	["src/harnesses", "direct-adapter.ts", "export const directAdapter = 1;\n"],

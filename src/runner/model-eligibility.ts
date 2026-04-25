@@ -94,8 +94,15 @@ export async function filterGenerativeModels(
 		if (input.mode === "throw") {
 			const runtime = input.runtimeName;
 			const detectedModelKind = info.modelKind ?? "unknown";
+			const generateTextCapability = info.capabilities?.generateText;
+			const reason =
+				detectedModelKind === "embedding"
+					? "embedding-only"
+					: generateTextCapability === false
+						? "does not support text generation"
+						: "not eligible for text generation";
 			throw new Error(
-				`Requested model is not supported for generative benchmarks: ${model} (embedding-only); runtime=${runtime}; detectedKind=${detectedModelKind}`,
+				`Requested model is not supported for generative benchmarks: ${model} (${reason}); runtime=${runtime}; detectedKind=${detectedModelKind}; generateText=${String(generateTextCapability)}`,
 			);
 		}
 

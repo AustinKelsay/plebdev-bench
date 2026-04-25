@@ -37,8 +37,8 @@ const ShowResponseSchema = z
 		details: z
 			.object({
 				parameter_size: z.string().optional(),
-				family: z.string().optional(),
-				families: z.array(z.string()).optional(),
+				family: z.string().trim().min(1).optional(),
+				families: z.array(z.string().trim().min(1)).optional(),
 			})
 			.passthrough()
 			.optional(),

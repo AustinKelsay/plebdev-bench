@@ -372,7 +372,7 @@ describe("migrate-machine-profiles command", () => {
 			},
 		);
 
-		expect(completed.status).toBe(1);
+		expect(completed.status).toBe(0);
 		expect(completed.stdout).toContain("--dashboard-output-dir");
 	});
 
@@ -400,7 +400,7 @@ describe("migrate-machine-profiles command", () => {
 			},
 		);
 
-		expect(completed.status).toBe(1);
+		expect(completed.status).toBe(0);
 		expect(completed.stdout).toContain("--dashboard-output-dir");
 	});
 });

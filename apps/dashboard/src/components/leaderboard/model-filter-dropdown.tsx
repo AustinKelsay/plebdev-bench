@@ -17,12 +17,19 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { z } from "zod";
 
 interface ModelFilterDropdownProps {
 	models: string[];
 	selectedModels: string[];
 	onSelectionChange: (selectedModels: string[]) => void;
 }
+
+const ModelFilterDropdownPropsSchema = z.object({
+	models: z.array(z.string()),
+	selectedModels: z.array(z.string()),
+	onSelectionChange: z.function().args(z.array(z.string())).returns(z.void()),
+});
 
 const MODEL_SORT_COLLATOR = new Intl.Collator("en", { sensitivity: "variant" });
 
@@ -67,7 +74,13 @@ function buildTriggerLabel(
  * `onSelectionChange`
  */
 export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
-	const { models, selectedModels, onSelectionChange } = props;
+	const parsedProps = ModelFilterDropdownPropsSchema.safeParse(props);
+	if (!parsedProps.success) {
+		throw new TypeError("Invalid ModelFilterDropdown props", {
+			cause: parsedProps.error,
+		});
+	}
+	const { models, selectedModels, onSelectionChange } = parsedProps.data;
 	const [isOpen, setIsOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const normalizedSelectedIds = useMemo(() => {
@@ -196,11 +209,7 @@ export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
 							variant="ghost"
 							size="sm"
 							className="h-7 px-2"
-							onClick={() =>
-								onSelectionChange(
-									[...models].sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b)),
-								)
-							}
+							onClick={() => onSelectionChange(dedupeAndSortModels(models))}
 						>
 							Select all
 						</Button>

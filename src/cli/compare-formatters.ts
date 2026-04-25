@@ -18,6 +18,12 @@ const STATUS_CHANGE_COLUMN_WIDTHS = {
 	pass: 8,
 } as const;
 
+const DISPLAY_SORT_LOCALE = "en";
+const DISPLAY_SORT_OPTIONS = {
+	numeric: true,
+	sensitivity: "variant",
+} as const satisfies Intl.CollatorOptions;
+
 type ComparableDisplayRow = Pick<
 	CompareResult["matched"][number],
 	"model" | "harness" | "test" | "passType"
@@ -27,13 +33,29 @@ function compareDisplayRows(
 	left: ComparableDisplayRow,
 	right: ComparableDisplayRow,
 ): number {
-	const modelCompare = left.model.localeCompare(right.model);
+	const modelCompare = left.model.localeCompare(
+		right.model,
+		DISPLAY_SORT_LOCALE,
+		DISPLAY_SORT_OPTIONS,
+	);
 	if (modelCompare !== 0) return modelCompare;
-	const harnessCompare = left.harness.localeCompare(right.harness);
+	const harnessCompare = left.harness.localeCompare(
+		right.harness,
+		DISPLAY_SORT_LOCALE,
+		DISPLAY_SORT_OPTIONS,
+	);
 	if (harnessCompare !== 0) return harnessCompare;
-	const testCompare = left.test.localeCompare(right.test);
+	const testCompare = left.test.localeCompare(
+		right.test,
+		DISPLAY_SORT_LOCALE,
+		DISPLAY_SORT_OPTIONS,
+	);
 	if (testCompare !== 0) return testCompare;
-	return left.passType.localeCompare(right.passType);
+	return left.passType.localeCompare(
+		right.passType,
+		DISPLAY_SORT_LOCALE,
+		DISPLAY_SORT_OPTIONS,
+	);
 }
 
 /**

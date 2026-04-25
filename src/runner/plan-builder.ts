@@ -101,14 +101,15 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 
 	const configuredRuntimes =
 		config.runtimes.length > 0 ? config.runtimes : [...RUNTIME_NAMES];
-	const runtimes = configuredRuntimes.filter(
-		isExecutableRuntimeName,
-	) as RuntimeName[];
-	if (runtimes.length === 0) {
+	const invalidRuntimes = configuredRuntimes.filter(
+		(runtime) => !isExecutableRuntimeName(runtime),
+	);
+	if (invalidRuntimes.length > 0) {
 		throw new Error(
-			`No executable runtimes selected. Active runtime support is limited to: ${RUNTIME_NAMES.join(", ")}`,
+			`Invalid runtime selection: ${invalidRuntimes.join(", ")}. Active runtime support is limited to: ${RUNTIME_NAMES.join(", ")}`,
 		);
 	}
+	const runtimes = configuredRuntimes as RuntimeName[];
 	log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 
 	// Discover models per runtime

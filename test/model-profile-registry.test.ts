@@ -84,7 +84,7 @@ describe("model-profile registry provenance", () => {
 		expect(selection.resolutionSource).toBe("configured_profile");
 	});
 
-	it("loads legacy profile files while preserving supported legacy runtime variants", () => {
+	it("loads legacy profile files by ignoring unsupported variants when supported variants remain", () => {
 		const tempDir = fs.mkdtempSync(
 			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
 		);
@@ -113,15 +113,18 @@ describe("model-profile registry provenance", () => {
 
 			const registry = loadModelProfiles(profilePath);
 			expect(registry["qwen3-27b-instruct"]?.variants.ollama).toBe("qwen3:27b");
-			expect(registry["qwen3-27b-instruct"]?.variants.vllm).toBe(
-				"Qwen/Qwen3-27B-Instruct",
-			);
+			expect(
+				Object.prototype.hasOwnProperty.call(
+					registry["qwen3-27b-instruct"]?.variants ?? {},
+					"vllm",
+				),
+			).toBe(false);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
 	});
 
-	it("accepts legacy profiles with vllm-only runtime variants", () => {
+	it("rejects legacy profiles with no supported runtime variants", () => {
 		const tempDir = fs.mkdtempSync(
 			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
 		);
@@ -147,9 +150,8 @@ describe("model-profile registry provenance", () => {
 				),
 			);
 
-			const registry = loadModelProfiles(profilePath);
-			expect(registry["legacy-vllm-only"]?.variants.vllm).toBe(
-				"Qwen/Qwen3-32B-Instruct",
+			expect(() => loadModelProfiles(profilePath)).toThrow(
+				"legacy-vllm-only (original runtimes: vllm)",
 			);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
@@ -198,6 +200,13 @@ describe("ModelProfileFileSchema", () => {
 			ConfiguredModelProfileSchema.safeParse({
 				variants: {
 					mlx: "Qwen/Qwen3-27B-Instruct-MLX",
+				},
+			}).success,
+		).toBe(false);
+		expect(
+			ConfiguredModelProfileSchema.safeParse({
+				variants: {
+					vllm: "Qwen/Qwen3-27B-Instruct",
 				},
 			}).success,
 		).toBe(false);

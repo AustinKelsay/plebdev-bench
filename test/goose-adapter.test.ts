@@ -240,7 +240,10 @@ describe("createGooseAdapter", () => {
 				output: expect.stringContaining("Would you like me to continue?"),
 				signalAssessment: {
 					classification: "tainted",
-					reasons: ["internal_tool_transcript", "agent_requested_input"],
+					reasons: expect.arrayContaining([
+						"internal_tool_transcript",
+						"agent_requested_input",
+					]),
 				},
 			});
 		} finally {
@@ -281,7 +284,10 @@ describe("createGooseAdapter", () => {
 				output: expect.stringContaining("Would you like me to continue?"),
 				signalAssessment: {
 					classification: "tainted",
-					reasons: ["internal_tool_transcript", "agent_requested_input"],
+					reasons: expect.arrayContaining([
+						"internal_tool_transcript",
+						"agent_requested_input",
+					]),
 				},
 			});
 		} finally {

@@ -1,6 +1,7 @@
 /**
  * Purpose: Compute deterministic benchmark checkpoint metadata from benchmark-defining assets.
- * Exports: computeBenchmarkCheckpoint, collectBenchmarkAssetPaths, buildBenchmarkManifest
+ * Exports: CORE_BENCHMARK_LIB_ASSETS, computeBenchmarkCheckpoint,
+ *          collectBenchmarkAssetPaths, buildBenchmarkManifest
  *
  * Invariants:
  * - Asset list is deterministic (sorted by normalized relative path)
@@ -26,7 +27,7 @@ const REQUIRED_TEST_ASSETS = [
 const OPTIONAL_TEST_ASSETS = ["rubric.md", "scoring.spec.ts"] as const;
 
 /** Benchmark-core library assets that affect execution, scoring, or evaluation semantics. */
-const CORE_BENCHMARK_LIB_ASSETS = [
+export const CORE_BENCHMARK_LIB_ASSETS = [
 	"src/lib/benchmark-checkpoint.ts",
 	"src/lib/scorer.ts",
 	"src/lib/scorer-core.ts",

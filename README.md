@@ -139,7 +139,7 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 # Install dependencies
 bun install
 
-# Run benchmarks (auto-discovers available runtimes, models, harnesses, and tests)
+# Run benchmarks (Ollama-only; auto-discovers models, harnesses, and tests)
 bun pb
 
 # Run with specific options

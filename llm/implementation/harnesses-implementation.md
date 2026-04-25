@@ -136,11 +136,11 @@ Note: `listModels()` and `getModelInfo()` have moved from Harness to Runtime.
 - **Debug logging**: logs command execution, completion, and stderr
 - **Timeout**: via execa with 1 minute overhead for CLI startup
 
-**Why `--provider` and `--model` flags are critical**: Without explicit CLI flags, Goose reads from its config file (`~/.config/goose/config.yaml`) which may specify a different provider (e.g., OpenAI). The CLI flags override the config file, ensuring Ollama is always used.
+**Why per-item provider config is critical**: Without generated per-item config, Goose may read global settings (`~/.config/goose/config.yaml`) that point at a different provider (e.g., OpenAI). The adapter invokes `goose run` with isolated benchmark configuration so Ollama is always used.
 
 ### Tool-Calling Mode (Goose)
 
-When running with `--with-builtin developer`, Goose can write code directly to files using the `text_editor` tool instead of outputting text.
+Goose tool mode uses `goose run` with per-item provider configuration and permission rules so it can write code directly to files instead of only outputting text.
 
 **File-Based Code Extraction:**
 

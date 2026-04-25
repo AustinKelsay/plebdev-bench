@@ -141,6 +141,7 @@ function buildSignalAssessment(
 	parsed: OpenCodeParsedEvents,
 	stdout: string,
 	stderr: string,
+	parsedStream: string,
 	extraReasons: readonly SignalAssessmentReason[] = [],
 ): SignalAssessment | undefined {
 	const stderrReasons = getTranscriptOrInputTaintReasons(stderr).filter(
@@ -148,7 +149,7 @@ function buildSignalAssessment(
 	);
 	const protocolOnlyReasons =
 		parsed.method === "json" && parsed.output.trim().length === 0
-			? getTranscriptOrInputTaintReasons(stdout)
+			? getTranscriptOrInputTaintReasons(parsedStream)
 			: [];
 	const permissionReasons = [
 		...getOpenCodePermissionTaintReasons(
@@ -389,6 +390,7 @@ export function createOpenCodeAdapter(): Harness {
 					parsed,
 					processResult.stdout,
 					processResult.stderr,
+					rawOutput,
 				);
 
 				if (processResult.stderr.trim().length > 0) {
@@ -437,6 +439,7 @@ export function createOpenCodeAdapter(): Harness {
 							parsed,
 							processResult.stdout,
 							processResult.stderr,
+							rawOutput,
 							[
 								"output_contract_violation",
 								...decision.taintReasons,
@@ -456,6 +459,7 @@ export function createOpenCodeAdapter(): Harness {
 							parsed,
 							processResult.stdout,
 							processResult.stderr,
+							rawOutput,
 							[
 								"output_contract_violation",
 								...decision.taintReasons,
@@ -506,6 +510,7 @@ export function createOpenCodeAdapter(): Harness {
 					parsed,
 					processResult.stdout,
 					processResult.stderr,
+					rawOutput,
 					[
 						"output_contract_violation",
 						...decision.taintReasons,
