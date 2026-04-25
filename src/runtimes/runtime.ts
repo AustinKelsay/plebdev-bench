@@ -2,6 +2,11 @@
  * Purpose: Runtime interface and types for inference backends.
  * Exports: Runtime, RuntimeName, RUNTIME_NAMES, ModelInfo
  *
+ * Invariants:
+ * - RUNTIME_NAMES contains stable active RuntimeName identifiers.
+ * - Runtime implementations provide ping, listModels, and getModelInfo.
+ * - ModelInfo values are serializable metadata snapshots.
+ *
  * A Runtime represents an inference backend for active benchmark execution.
  * Runtimes are responsible for:
  * - Health checks (ping)

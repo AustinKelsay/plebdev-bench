@@ -49,6 +49,7 @@ export async function runProbe(
  *
  * @param value - Raw probe stdout
  * @returns Positive integer when valid
+ * @throws {never} Invalid or unparsable input returns undefined
  */
 export function parsePositiveInt(
 	value: string | undefined,
@@ -63,6 +64,7 @@ export function parsePositiveInt(
  *
  * @param value - Raw memory string
  * @returns Memory in bytes when parsable
+ * @throws {never} Invalid or unparsable input returns undefined
  */
 export function parseMemoryBytes(
 	value: string | undefined,

@@ -29,7 +29,7 @@ import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 const tempRoots: string[] = [];
 const REQUIRED_LIB_ASSETS = CORE_BENCHMARK_LIB_ASSETS.map((assetPath) =>
-	path.basename(assetPath),
+	path.relative("src/lib", assetPath),
 );
 
 const REQUIRED_SOURCE_DIR_FIXTURES = [

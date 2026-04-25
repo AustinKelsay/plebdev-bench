@@ -521,7 +521,13 @@ export type ExtractionMethod =
 /** Test slug used for tool-smoke preflight tests */
 export const TOOL_SMOKE_TEST_SLUG = "tool-smoke";
 
-/** Checks if an item is a tool-smoke test */
+/**
+ * Checks whether an item targets the tool-smoke preflight test slug.
+ *
+ * @param item - Matrix-like item containing a `test` slug
+ * @returns True when `item.test` equals `TOOL_SMOKE_TEST_SLUG`
+ * @throws {never} This helper performs a pure string comparison
+ */
 export function isToolSmokeItem(item: { test: string }): boolean {
 	return item.test === TOOL_SMOKE_TEST_SLUG;
 }

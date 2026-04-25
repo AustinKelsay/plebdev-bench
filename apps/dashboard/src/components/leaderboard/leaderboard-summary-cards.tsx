@@ -60,7 +60,7 @@ export function LeaderboardSummaryCards({
 			title: "Matched Runs",
 			value: String(aggregate?.summary.runsMatched ?? 0),
 			sub: null,
-			color: "#34c759",
+			color: "hsl(var(--success))",
 		},
 		{
 			title: "Profiles",
@@ -71,31 +71,31 @@ export function LeaderboardSummaryCards({
 							aggregate.summary.instances === 1 ? "instance" : "instances"
 						}`
 					: null,
-			color: "#34c759",
+			color: "hsl(var(--success))",
 		},
 		{
 			title: "Deduped Items",
 			value: String(filteredItemCount),
 			sub: `of ${aggregate?.summary.dedupedItems ?? 0} total`,
-			color: "hsl(212, 100%, 67%)",
+			color: "hsl(var(--primary))",
 		},
 		{
 			title: "Pass Rate",
 			value: formatPercent(passRate.passRate),
 			sub: `${passRate.passed}/${passRate.total} tests`,
-			color: "hsl(156, 67%, 55%)",
+			color: "hsl(var(--success))",
 		},
 		{
 			title: "Frontier Coverage",
 			value: formatPercent(frontierCoverage),
 			sub: `${frontierCount} of ${filteredItemCount} items`,
-			color: "hsl(270, 60%, 60%)",
+			color: "hsl(var(--accent))",
 		},
 		{
 			title: "Median Duration",
 			value: medianDuration !== null ? formatDuration(medianDuration) : "—",
 			sub: durations.length > 0 ? `${durations.length} items` : "no data",
-			color: "hsl(210, 85%, 60%)",
+			color: "hsl(var(--info))",
 		},
 	];
 

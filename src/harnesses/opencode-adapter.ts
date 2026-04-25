@@ -106,9 +106,8 @@ function buildWorkspacePrompt(
 /**
  * Chooses the best process output stream for downstream parsing.
  *
- * Prefers stdout when it contains any non-whitespace content. Falls back to
- * stderr only when stderr meets the `MIN_OUTPUT_LENGTH` threshold, otherwise
- * preserves stdout so tiny stderr snippets do not replace structured output.
+ * Prefers the stream that parses as OpenCode protocol output. Falls back to
+ * stdout, then stderr only when stderr meets the `MIN_OUTPUT_LENGTH` threshold.
  *
  * @param stdout - Captured OpenCode stdout
  * @param stderr - Captured OpenCode stderr
@@ -116,10 +115,34 @@ function buildWorkspacePrompt(
  * @throws {never} This helper only selects between provided strings
  */
 function selectProcessOutput(stdout: string, stderr: string): string {
-	if (stdout.trim().length > 0) {
+	const stdoutScore = scoreOpenCodeProcessStream(stdout);
+	const stderrScore = scoreOpenCodeProcessStream(stderr);
+	if (stderrScore > stdoutScore) {
+		return stderr;
+	}
+	if (stdoutScore > 0 || stdout.trim().length > 0) {
 		return stdout;
 	}
 	return stderr.trim().length >= MIN_OUTPUT_LENGTH ? stderr : stdout;
+}
+
+/** Scores whether process output contains parseable OpenCode event content. */
+function scoreOpenCodeProcessStream(stream: string): number {
+	const trimmed = stream.trim();
+	if (trimmed.length === 0) {
+		return 0;
+	}
+	const parsed = parseOpenCodeEvents(trimmed);
+	if (parsed.hasProtocolEvents && parsed.output.trim().length > 0) {
+		return 3;
+	}
+	if (parsed.hasProtocolEvents) {
+		return 2;
+	}
+	if (parsed.method === "tool_call" && parsed.output.trim().length > 0) {
+		return 1;
+	}
+	return 0;
 }
 
 /**

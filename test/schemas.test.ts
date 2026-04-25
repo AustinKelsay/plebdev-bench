@@ -220,7 +220,7 @@ describe("BenchConfigSchema", () => {
 		expect("modelAliases" in config).toBe(false);
 	});
 
-	it("should reject removed vllm config fields while accepting legacy runtime values", () => {
+	it("should reject removed vllm config fields including legacy runtime values and profile variants", () => {
 		expect(() =>
 			BenchConfigSchema.parse({
 				vllmBaseUrl: "http://localhost:8000",

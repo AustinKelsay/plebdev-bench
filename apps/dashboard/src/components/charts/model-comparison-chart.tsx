@@ -22,7 +22,7 @@ import { CHART_COLORS } from "@/lib/chart-colors";
 import { MatrixItemResultSchema } from "@/lib/schemas";
 import { headToHead as h2hTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	Bar,
 	BarChart,
@@ -94,10 +94,15 @@ function ComparisonTooltip({
  * unexpected validated data.
  */
 export function ModelComparisonChart(props: ModelComparisonChartProps) {
-	const parsedProps = ModelComparisonChartPropsSchema.safeParse(props);
-	if (!parsedProps.success) {
-		console.error("Invalid ModelComparisonChart props", parsedProps.error);
-	}
+	const parsedProps = useMemo(
+		() => ModelComparisonChartPropsSchema.safeParse(props),
+		[props],
+	);
+	useEffect(() => {
+		if (!parsedProps.success) {
+			console.error("Invalid ModelComparisonChart props", parsedProps.error);
+		}
+	}, [parsedProps]);
 	const items = parsedProps.success ? parsedProps.data.items : [];
 	const allModels = useMemo(() => {
 		const groups = groupByModel(items);

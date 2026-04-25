@@ -89,6 +89,8 @@ export function buildToolPrompt(config: CodeOutputToolPromptConfig): string {
  * @returns Combined prompt with workspace safety instructions
  *
  * @throws {Error} If toolNames is empty
+ * @throws {Error} If pathMode is not "absolute-anchor" or "relative-only";
+ * message reports the invalid `pathMode` contract
  * @throws {Error} If pathMode is "absolute-anchor" and workspaceRootPath is
  * missing or blank; message is "absolute-anchor requires workspaceRootPath"
  */

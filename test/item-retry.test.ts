@@ -143,6 +143,7 @@ describe("runScoringWithCompileRetry", () => {
 		expect(generateMock.mock.calls[0]?.[0]?.prompt).toContain(
 			"Compiler/build error: Import failed: unexpected token",
 		);
+		expect(scoreGenerationMock).toHaveBeenCalledTimes(2);
 		expect(outcome.compileRetryUsed).toBe(true);
 		expect(outcome.retryGenerationDurationMs).toBe(1200);
 		expect(outcome.scoringResult).toMatchObject({
@@ -177,6 +178,7 @@ describe("runScoringWithCompileRetry", () => {
 		expect(generateMock.mock.calls[0]?.[0]?.prompt).toContain(
 			"Compiler/build error: Missing export: createTodoApp",
 		);
+		expect(scoreGenerationMock).toHaveBeenCalledTimes(2);
 		expect(outcome.compileRetryUsed).toBe(true);
 		expect(outcome.retryGenerationDurationMs).toBe(900);
 		expect(outcome.scoringResult).toMatchObject({

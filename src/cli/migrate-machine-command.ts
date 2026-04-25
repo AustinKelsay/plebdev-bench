@@ -332,18 +332,26 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 		"Output directory for rebuilt dashboard artifacts",
 	)
 	.action(async (options) => {
+		const parsedOptions = MigrateMachineCommandOptionsSchema.safeParse(options);
+		if (!parsedOptions.success) {
+			logger.warn(
+				{ issues: parsedOptions.error.issues },
+				"Machine-profile migration options failed validation",
+			);
+			return;
+		}
+
 		try {
-			const parsedOptions = MigrateMachineCommandOptionsSchema.parse(options);
-			const resultsDir = path.resolve(parsedOptions.dir);
+			const resultsDir = path.resolve(parsedOptions.data.dir);
 			const migrated = await migrateResultsDirectory(resultsDir);
 			logger.info(
 				{ resultsDir, ...migrated },
 				"Migrated machine-profile artifacts",
 			);
 
-			if (parsedOptions.rebuildDashboardIndex) {
+			if (parsedOptions.data.rebuildDashboardIndex) {
 				const dashboardOutputDir = path.resolve(
-					parsedOptions.dashboardOutputDir!,
+					parsedOptions.data.dashboardOutputDir!,
 				);
 				const result = await buildDashboardIndexArtifacts({
 					sourceResultsDir: resultsDir,
@@ -359,13 +367,6 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 				);
 			}
 		} catch (error) {
-			if (error instanceof z.ZodError) {
-				logger.warn(
-					{ issues: error.issues },
-					"Machine-profile migration options failed validation",
-				);
-				return;
-			}
 			logger.error({ error }, "Machine-profile migration failed");
 			process.exit(1);
 		}

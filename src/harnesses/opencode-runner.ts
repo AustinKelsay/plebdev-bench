@@ -225,6 +225,7 @@ export async function runOpenCodeCommand(
 		stderr: "pipe",
 		cancelSignal: controller.signal,
 		reject: false,
+		buffer: false,
 	});
 	const pid = proc.pid;
 	config.log.debug({ pid }, "OpenCode process started");

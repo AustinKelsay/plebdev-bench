@@ -1,5 +1,7 @@
 /**
  * Purpose: Application header with navigation, gradient accent bar, and brand styling.
+ * Exports: Header
+ *
  * Provides links to the main dashboard views.
  */
 import { cn } from "@/lib/utils";
@@ -51,8 +53,8 @@ export function Header() {
 										<span
 											className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
 											style={{
-												background: "#34c759",
-												boxShadow: "0 0 8px hsla(142, 60%, 49%, 0.4)",
+												background: "hsl(var(--success))",
+												boxShadow: "0 0 8px hsl(var(--success) / 0.4)",
 											}}
 										/>
 									)}

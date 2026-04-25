@@ -18,6 +18,26 @@ import {
 	isOpenCodeRunCompatible,
 } from "./opencode-cli.js";
 
+/** Returns true for expected command-not-found probe failures. */
+function isCommandMissingError(error: unknown): boolean {
+	const code =
+		error && typeof error === "object" && "code" in error
+			? (error as { code?: unknown }).code
+			: undefined;
+	if (code === "ENOENT") return true;
+	const message =
+		error instanceof Error
+			? error.message.toLowerCase()
+			: typeof error === "string"
+				? error.toLowerCase()
+				: "";
+	return (
+		message.includes("enoent") ||
+		message.includes("not found") ||
+		message.includes("command not found")
+	);
+}
+
 /**
  * Check if a specific CLI is available on the system.
  *
@@ -43,6 +63,13 @@ async function isOpenCodeAvailable(): Promise<boolean> {
 		const features = await getOpenCodeRunFeatures();
 		return isOpenCodeRunCompatible(features);
 	} catch (error) {
+		if (isCommandMissingError(error)) {
+			logger.debug(
+				{ err: error, probe: "opencode", functionName: "isOpenCodeAvailable" },
+				"OpenCode CLI not installed",
+			);
+			return false;
+		}
 		logger.warn(
 			{ err: error, probe: "opencode", functionName: "isOpenCodeAvailable" },
 			"OpenCode probe failed",

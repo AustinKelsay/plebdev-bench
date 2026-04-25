@@ -7,6 +7,9 @@
  * - Timers are fake and execa is fully mocked.
  */
 
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,6 +18,14 @@ const execaMock = vi.hoisted(() => vi.fn());
 vi.mock("execa", () => ({
 	execa: execaMock,
 }));
+
+const tempDirs: string[] = [];
+
+function createTempDir(): string {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), "opencode-"));
+	tempDirs.push(dir);
+	return dir;
+}
 
 function createResolvingProcess(resolveAfterMs: number) {
 	const stdout = new PassThrough();
@@ -45,6 +56,9 @@ describe("runOpenCodeCommand race handling", () => {
 	afterEach(async () => {
 		await vi.runOnlyPendingTimersAsync();
 		vi.useRealTimers();
+		for (const dir of tempDirs.splice(0)) {
+			fs.rmSync(dir, { recursive: true, force: true });
+		}
 	});
 
 	it("rejects if the process resolves after timeout handling has started", async () => {
@@ -57,7 +71,7 @@ describe("runOpenCodeCommand race handling", () => {
 		const runPromise = runOpenCodeCommand({
 			args: ["run"],
 			env: {},
-			cwd: "/tmp",
+			cwd: createTempDir(),
 			timeoutMs: 1_000,
 			log: {
 				debug: vi.fn(),
@@ -87,7 +101,7 @@ describe("runOpenCodeCommand race handling", () => {
 		const runPromise = runOpenCodeCommand({
 			args: ["run"],
 			env: {},
-			cwd: "/tmp",
+			cwd: createTempDir(),
 			timeoutMs: 300_000,
 			log: {
 				debug: vi.fn(),

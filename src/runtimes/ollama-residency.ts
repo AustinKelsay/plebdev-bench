@@ -334,7 +334,11 @@ export async function ensureOnlyOllamaModelLoaded(
 			);
 		}
 
-		await sleep(Math.max(0, pollIntervalMs));
+		const sleepMs =
+			deadline === undefined
+				? pollIntervalMs
+				: Math.max(0, Math.min(pollIntervalMs, deadline - performance.now()));
+		await sleep(sleepMs);
 		loadedModels = await listRunningOllamaModels({
 			baseUrl,
 			requestTimeoutMs: config.requestTimeoutMs,
