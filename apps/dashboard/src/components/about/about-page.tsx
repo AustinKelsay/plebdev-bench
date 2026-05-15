@@ -96,13 +96,13 @@ export function AboutPage() {
 						<Badge variant="outline">static dashboard</Badge>
 					</div>
 					<CardTitle className="text-xl">
-						Reproducible matrix runs for local LLMs
+						Reproducible Benchmark Runs for local LLMs
 					</CardTitle>
 					<CardDescription className="max-w-3xl text-sm leading-6">
-						Each run expands a matrix of runtime × harness × model × test ×
-						passType (prompt mode), then saves results as JSON artifacts and
-						exits. The dashboard reads those artifacts — it never runs the
-						benchmark itself.
+						Each Benchmark Run expands a Matrix of Runtime × Harness × Runtime
+						Model × Benchmark Test × Pass Type, then saves a Run Plan and Run
+						Result as JSON artifacts. The dashboard reads those artifacts — it
+						never runs the benchmark itself.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">

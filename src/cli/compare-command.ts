@@ -6,7 +6,7 @@
  * comparison to result helpers, and prints terminal-native output.
  *
  * Invariants:
- * - Checkpoint mismatches are user-facing validation messages in CLI flow.
+ * - Benchmark Checkpoint mismatches are user-facing validation messages in CLI flow.
  * - Invalid run or plan artifacts still fail the command.
  */
 

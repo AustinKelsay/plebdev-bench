@@ -15,6 +15,7 @@ import { describe, expect, it } from "vitest";
 import {
 	assertComparableCheckpoints,
 	formatTimestamp,
+	getCheckpointGuardMessage,
 	readPlanBestEffort,
 	resolveCheckpointId,
 	truncate,
@@ -64,6 +65,18 @@ describe("assertComparableCheckpoints", () => {
 				true,
 			),
 		).not.toThrow();
+	});
+
+	it("explains Benchmark Checkpoint compatibility in Run Comparison terms", () => {
+		expect(
+			getCheckpointGuardMessage(
+				"chk_sha256v1_aaaaaaaaaaaa",
+				"chk_sha256v1_bbbbbbbbbbbb",
+				false,
+			),
+		).toBe(
+			"Benchmark Checkpoint mismatch: chk_sha256v1_aaaaaaaaaaaa vs chk_sha256v1_bbbbbbbbbbbb. Re-run with --allow-cross-checkpoint to force a cross-checkpoint Run Comparison.",
+		);
 	});
 });
 

@@ -194,8 +194,8 @@ export function RunListPage() {
 									How seasons work
 								</p>
 								{[
-									"A new season starts when benchmark definitions change — prompts, specs, rubrics, or harness code. Each season is pinned to a checkpoint hash.",
-									"The leaderboard defaults to the live season so models are compared on identical ground — no moving targets.",
+									"A new Benchmark Checkpoint starts when benchmark definitions change — prompts, specs, rubrics, or harness code.",
+									"The leaderboard defaults to the live Benchmark Checkpoint so Model Profiles are compared on identical ground — no moving targets.",
 									"Older seasons are archived here for auditability. They stay browsable but are excluded from the leaderboard.",
 								].map((note, i) => (
 									<div

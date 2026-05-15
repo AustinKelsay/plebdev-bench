@@ -4,38 +4,38 @@ Local-first, CLI-driven benchmark runner for local LLMs.
 
 ## What it does
 
-For each benchmark run, `plebdev-bench` executes a matrix:
+For each **Benchmark Run**, `plebdev-bench` executes a **Matrix**:
 
-- **runtime × harness × model × test × passType**
-  - runtime: inference backend (e.g., Ollama)
-  - harness: interface adapter (direct HTTP, Goose CLI, OpenCode CLI)
-  - passType: **blind** + **informed**
+- **Runtime × Harness × Runtime Model × Benchmark Test × Pass Type**
+  - **Runtime**: inference backend that exposes models, currently Ollama
+  - **Harness**: interface adapter that asks a model to perform the benchmark, such as direct HTTP, Goose CLI, or OpenCode CLI
+  - **Pass Type**: **blind** or **informed**
 
-Test categories:
+Benchmark Categories:
 - `coding`
 - `computer-use`
 
 Scoring:
-- **Automated**: either imports generated code and runs scoring cases, or scores a seeded workspace against exact filesystem assertions.
-- **Optional frontier eval**: rubric scoring via **OpenRouter** for code-module tests when an API key is present.
+- **Automated Score**: either imports generated code and runs scoring cases, or scores a seeded workspace against exact filesystem assertions.
+- **Optional Frontier Eval**: rubric scoring via **OpenRouter** for code-module tests when an API key is present.
 
-Outputs (per run):
-- `results/<run-id>/plan.json` — resolved config + expanded matrix plan (reproducibility)
-- `results/<run-id>/run.json` — single run JSON with summary + per-item details
-- `results/<run-id>/run.partial.json` — periodic crash-safe snapshot during execution (removed on success)
+Outputs (per **Benchmark Run**):
+- `results/<run-id>/plan.json` — **Run Plan** with resolved config and expanded **Matrix**
+- `results/<run-id>/run.json` — **Run Result** with summary and **Matrix Item** details
+- `results/<run-id>/run.partial.json` — periodic crash-safe **Partial Run Result** during execution (removed on success)
 - each artifact now includes:
-  - benchmark checkpoint metadata (`checkpointId`, manifest hash, asset count)
-  - machine instance identity + canonical machine profile metadata
+  - **Benchmark Checkpoint** metadata (`checkpointId`, manifest hash, asset count)
+  - **Machine Instance** identity + canonical **Machine Profile** metadata
   - run provenance metadata (`verificationStatus`, source)
 
 Built-ins:
-- **compare**: diff two runs and print deltas (pass rate, frontier eval, duration, status changes, etc.)
-- **checkpointed aggregation**: `dashboard:index` builds latest-checkpoint leaderboard artifacts with machine-aware best-result selection
+- **compare**: produce a **Run Comparison** across compatible **Run Results**
+- **checkpointed aggregation**: `dashboard:index` builds latest **Benchmark Checkpoint** leaderboard artifacts with **Machine Profile**-aware best-result selection
 
 Model identity:
-- `model` in each matrix row remains the exact runtime-specific identifier that executed.
-- `modelProfile.canonical` groups equivalent variants under one logical benchmark model.
-- `modelProfile.variant` preserves format, quantization, runtime, and source-specific details for drill-down.
+- `model` in each **Matrix Item** remains the exact **Runtime Model** identifier that executed.
+- `modelProfile.canonical` is the **Model Profile** that groups equivalent variants.
+- `modelProfile.variant` is the **Model Variant** that preserves format, quantization, runtime, and source-specific details for drill-down.
 
 Current benchmark tests:
 - `smoke` — basic add function sanity check
@@ -57,13 +57,13 @@ Current benchmark tests:
 
 ## Status
 
-**MVP complete + hardening applied.** Multi-harness runs, automated scoring, frontier eval, compare, and dashboard are implemented.
-The active benchmark runtime is currently **Ollama only**. Historical artifacts that contain `runtime: "vllm"` remain readable for compare/debug flows, but new runs no longer execute or auto-discover non-Ollama runtimes.
+**MVP complete + hardening applied.** Multi-Harness Benchmark Runs, Automated Score, Frontier Eval, Run Comparison, and dashboard are implemented.
+The active **Runtime** is currently **Ollama only**. Historical artifacts that contain `runtime: "vllm"` remain readable for Run Comparison/debug flows, but new runs no longer execute or auto-discover non-Ollama Runtimes.
 Authoritative docs live in `llm/project/` and `llm/implementation/`.
 
 ### Computer-Use Hardening Checkpoint (2026-03-13)
 
-- Workspace tests now declare `requiredHarnessCapabilities`, and the plan builder skips invalid harness/test combinations instead of running impossible rows.
+- Workspace Benchmark Tests now declare `requiredHarnessCapabilities`, and the Run Plan builder skips invalid Harness/Test combinations instead of running impossible Matrix Items. See [ADR-0004](docs/adr/0004-exclude-incompatible-harness-test-combinations.md).
 - Capability modeling now distinguishes plain workspace write access from directory creation via `workspace-mkdir`.
 - Preflight coverage now includes `tool-smoke`, `workspace-tool-smoke`, `file-search-smoke`, and `file-delete-smoke`.
 - Goose has separate workspace turn budgets so computer-use tasks are no longer constrained by the old code-output defaults.
@@ -72,7 +72,7 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - OpenCode now runs with per-item generated config, `--pure`, explicit `--dir`, `enabled_providers`, denied `external_directory` access, and prompts use relative-only paths (no absolute workspace root) so benchmark rows do not depend on user-global OpenCode config.
 - Generation now retries a single `harness_error` once on a fresh workspace before the row is recorded as failed.
 - Tests can declare `timeoutMultiplier` in `test.meta.json`, and the longer coding tasks now ship with higher calibrated multipliers so valid slow generations are less likely to be recorded as timeouts.
-- Run summaries now distinguish semantic scored-check pass rate from full item success rate and scored-row coverage.
+- Run summaries now distinguish semantic scored-check pass rate from full Matrix Item success rate and scored-row coverage.
 - Validation run `20260313-090646-1a74da` confirmed that previously invalid OpenCode delete/search tasks now execute as normal scored items; one transient `harness_error` was isolated to a single `workspace-smoke` blind run and did not reproduce in rerun `20260313-092934-851223`.
 
 ## Tech stack
@@ -90,7 +90,7 @@ See `llm/project/tech-stack.md` for best practices and pitfalls.
 ## Key conventions (non-negotiables)
 
 - **CLI-first, single-command, non-interactive** by default (script-friendly).
-- **Exit code**: non-zero **only on crashes** (test/model failures are recorded in results).
+- **Exit code**: non-zero **only on crashes**; per-item failures are recorded in the Run Result. See [ADR-0008](docs/adr/0008-exit-non-zero-only-on-crashes.md).
 - **Results are append-only facts**:
   - never silently “fix up” results after the run
   - record enough evidence to explain outcomes
@@ -118,7 +118,7 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 - `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI)
 - `src/tests/<test-slug>/` — prompts + scoring tests + rubric
   - includes `test.meta.json` for category metadata, scoring mode, `tags`, `requiredHarnessCapabilities`, and optional `timeoutMultiplier`
-- `src/results/` — result schemas, read/write, compare
+- `src/results/` — result schemas, read/write, Run Comparison
 - `src/lib/` — shared helpers (fetch clients, execa wrapper, logging, timing)
 - `results/` — local runtime output (ignored by git)
 - `apps/dashboard/public/results/` — published runs for the hosted dashboard (tracked)
@@ -180,7 +180,7 @@ bun pb
 
 ### Model Profiles
 
-Use `--model-config <file>` to define canonical benchmark models and preserve richer metadata for the Ollama model names you execute. The canonical profile gives you one stable model identity in plans, run artifacts, compare output, and dashboard grouping.
+Use `--model-config <file>` to define canonical **Model Profiles** and preserve richer **Model Variant** metadata for the Ollama **Runtime Models** you execute. The canonical profile gives you one stable model identity in Run Plans, Run Results, Run Comparisons, and dashboard grouping. See [ADR-0002](docs/adr/0002-separate-model-profiles-from-runtime-models.md).
 
 Example file:
 
@@ -205,14 +205,14 @@ Example file:
 }
 ```
 
-Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work. They are normalized into the new model-profile shape automatically, but new configs should prefer `models` (legacy `modelProfiles` are accepted and normalized too).
+Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work. They are normalized into the **Model Profile** shape automatically, but new configs should prefer `models` (legacy `modelProfiles` are accepted and normalized too).
 
 ### Long-Run Stability
 
 - Scoring is process-isolated by default to avoid Bun memory growth from repeated dynamic imports during long runs.
 - The scorer worker now gets a 15s default budget plus startup overhead, reducing false negatives from slow-but-valid scoring setup.
 - Override mode (debugging only): `PLEBDEV_BENCH_SCORER_MODE=in-process bun pb ...`
-- During execution, the runner writes periodic snapshots to `results/<run-id>/run.partial.json` and removes it after a successful final write.
+- During execution, the runner writes a periodic **Partial Run Result** to `results/<run-id>/run.partial.json` and removes it after a successful final write. See [ADR-0009](docs/adr/0009-store-one-run-result-with-partial-progress.md).
 - If the process crashes, inspect `run.partial.json` for recovered progress.
 - Harness-level `harness_error` rows are retried once automatically. For workspace rows, the retry runs on a freshly seeded workspace.
 - OpenCode rows generate isolated config per item and should not require manually adding benchmark models to `~/.config/opencode/opencode.json`.
@@ -227,13 +227,13 @@ Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work.
 ## Core CLI Commands
 
 ```bash
-# Compare two runs
+# Compare two Run Results
 bun run src/index.ts compare <run-a> <run-b>
 
-# Force compare across checkpoint mismatches (normally blocked)
+# Force a cross-checkpoint Run Comparison (normally blocked)
 bun run src/index.ts compare <run-a> <run-b> --allow-cross-checkpoint
 
-# Rewrite legacy artifacts to the standardized machine-profile schema
+# Rewrite legacy artifacts to the standardized Machine Profile schema
 bun run src/index.ts migrate-machine-profiles --dir apps/dashboard/public/results --rebuild-dashboard-index --dashboard-output-dir apps/dashboard/public/results
 
 # Run tests
@@ -246,27 +246,27 @@ bun run typecheck
 ### Output
 
 Each run creates:
-- `results/<run-id>/plan.json` — expanded matrix plan
-- `results/<run-id>/run.json` — execution results
-- `results/<run-id>/run.partial.json` — periodic in-flight checkpoint (deleted after successful completion)
+- `results/<run-id>/plan.json` — **Run Plan** with the expanded **Matrix**
+- `results/<run-id>/run.json` — **Run Result**
+- `results/<run-id>/run.partial.json` — periodic **Partial Run Result** (deleted after successful completion)
 
 Machine metadata now splits:
-- `machine.instanceId` — stable per-machine identity, never derived from hardware
-- `machine.profileKey` — canonical normalized hardware class used for aggregation
+- `machine.instanceId` — stable **Machine Instance** identity, never derived from hardware
+- `machine.profileKey` — canonical **Machine Profile** used for aggregation
 - `machine.observedHardware` — exact sanitized hardware facts retained for audit/debug
 
 Model metadata now splits:
-- `item.model` — exact runtime-specific model identifier used for generation
-- `item.modelProfile.canonical.profileKey` — stable logical model identity used for cross-runtime matching
-- `item.modelProfile.variant` — runtime-specific artifact metadata such as format and quantization
+- `item.model` — exact **Runtime Model** identifier used for generation
+- `item.modelProfile.canonical.profileKey` — stable **Model Profile** identity used for cross-runtime matching
+- `item.modelProfile.variant` — **Model Variant** metadata such as format and quantization
 
 ## Interpreting Results Fairly
 
-- Prefer comparing runs by delta, not by single absolute scores.
-- Re-run the same matrix when evaluating prompt changes, then compare run pairs.
+- Prefer **Run Comparison** deltas over single absolute scores.
+- Re-run the same **Matrix** when evaluating prompt changes, then compare run pairs.
 - Workspace scores are only comparable when the same capability-qualified matrix is used; do not compare pre-hardening computer-use runs against post-hardening runs as if the matrices were equivalent.
 - Read/write-only workspace tests must keep parent directories preseeded in fixtures; if a task needs to create missing directories, it must declare `workspace-mkdir`.
-- Treat preflight failures as harness slice failures first. If a preflight fails, the skipped rows behind it should not be interpreted as model evidence.
+- Treat preflight failures as Harness slice failures first. If a preflight fails, the skipped Matrix Items behind it should not be interpreted as Runtime Model evidence.
 - Treat `harness_error` items as infrastructure or harness-reliability signals. The runner already retries them once automatically; only repeated failures should be treated as stable evidence.
 - Treat harness-level no-output/tool-call failures as harness reliability signals, not always model capability signals.
 - Read the CLI summary carefully:
@@ -292,10 +292,10 @@ Model metadata now splits:
 The hosted dashboard is a static frontend that reads run data from static JSON files committed to git.
 
 High level:
-- Bench runs produce `plan.json` + `run.json` in an output directory.
+- Benchmark Runs produce a Run Plan (`plan.json`) and Run Result (`run.json`) in an output directory.
 - Published runs live in `apps/dashboard/public/results/<runId>/`.
 - An index (`apps/dashboard/public/results/index.json`) is generated from the published runs.
-  - `machineProfileKey` is the canonical machine-profile identifier; `machineProfileId` is still emitted as a deprecated compatibility alias and will be removed in a future release.
+  - `machineProfileKey` is the canonical Machine Profile identifier; `machineProfileId` is still emitted as a deprecated compatibility alias and will be removed in a future release.
 - Checkpoint aggregate artifacts are generated in `apps/dashboard/public/results/aggregates/`:
   - `<checkpointId>.json` for each discovered checkpoint
   - `latest.json` for the checkpoint computed from current benchmark source
@@ -311,9 +311,9 @@ Local vs hosted:
 Design constraints:
 - Runs are treated as append-only facts: publishing is a copy/commit action, not a mutation of prior runs.
 - The dashboard validates fetched JSON at the boundary (Zod) and fails loudly on schema mismatch.
-- Latest leaderboard view is strict to the currently computed benchmark checkpoint.
-- Checkpoint aggregates group by machine + runtime + model + harness + test + passType, prefer the strongest result for each key, and only use recency as a later tiebreaker.
-- Legacy runs (missing checkpoint/machine metadata) remain visible in run history and are excluded from latest-checkpoint leaderboard aggregation.
+- Latest leaderboard view is strict to the currently computed **Benchmark Checkpoint**. See [ADR-0006](docs/adr/0006-require-matching-benchmark-checkpoints-for-comparable-runs.md).
+- Benchmark Checkpoint aggregates group by **Machine Profile** + **Runtime** + **Model Profile** + **Harness** + **Benchmark Test** + **Pass Type**, prefer the strongest result for each key, and only use recency as a later tiebreaker. See [ADR-0007](docs/adr/0007-group-leaderboards-by-machine-profile.md).
+- Legacy runs missing **Benchmark Checkpoint** or **Machine Profile** metadata remain visible in run history and are excluded from latest-checkpoint leaderboard aggregation.
 
 ## Hosted dashboard (what we implemented)
 

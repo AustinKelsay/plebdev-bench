@@ -226,7 +226,6 @@ export const compare = {
 	improved: "Items that failed in run A but completed in run B.",
 	regressed: "Items that completed in run A but failed in run B.",
 	passRateDelta: "Change in overall pass rate from run A to run B.",
-	frontierDelta:
-		"Change in average frontier evaluation score from run A to run B.",
+	frontierDelta: "Change in average Frontier Eval score from run A to run B.",
 	statusChanges: "How item completion status changed between runs.",
 } as const;

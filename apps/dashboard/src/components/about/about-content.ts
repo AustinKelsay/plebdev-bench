@@ -53,52 +53,55 @@ export interface AboutTestDefinition {
 export const aboutFacts: AboutFact[] = [
 	{
 		label: "Matrix",
-		value: "runtime x harness x model x test x prompt mode",
-		detail: "Reproducible Cartesian product so results are comparable.",
+		value: "Runtime x Harness x Runtime Model x Benchmark Test x Pass Type",
+		detail: "Reproducible Matrix so Run Results are comparable.",
 	},
 	{
 		label: "Artifacts",
-		value: "plan.json + run.json per run",
+		value: "Run Plan + Run Result per Benchmark Run",
 		detail:
-			"Resolved plan + fact-only results. Crash-safe partial snapshots in flight.",
+			"Resolved Run Plan + fact-only Run Result. Crash-safe Partial Run Result in flight.",
 	},
 	{
-		label: "Score",
+		label: "Automated Score",
 		value: "passed / total automated tests",
-		detail: "Code is imported, export-checked, and run against a scoring spec.",
+		detail:
+			"Deterministic local evidence from imports, export checks, and scoring specs.",
 	},
 	{
 		label: "Failures",
 		value: "Recorded, never fatal",
 		detail:
-			"Generation, scoring, and frontier failures are saved per item. CLI exits 0.",
+			"Generation Failure, Scoring Failure, and Frontier Eval Failure are saved per Matrix Item. CLI exits 0 unless the process crashes.",
 	},
 ];
 
 /** Benchmark matrix dimensions. */
 export const benchmarkDimensions: BenchmarkDimension[] = [
 	{
-		name: "runtime",
-		description: "Inference backend (currently Ollama; vLLM is historical).",
-	},
-	{
-		name: "harness",
-		description: "Adapter that calls the model (direct HTTP, Goose, OpenCode).",
-	},
-	{
-		name: "model",
+		name: "Runtime",
 		description:
-			"Concrete model name. Aliases map logical names to runtime-specific IDs.",
+			"Inference backend that makes Runtime Models available for execution.",
 	},
 	{
-		name: "test",
+		name: "Harness",
 		description:
-			"Task under `src/tests/<slug>` with prompts, scoring spec, and optional rubric.",
+			"Interface used to ask a Runtime Model to perform a Benchmark Test.",
 	},
 	{
-		name: "prompt mode",
+		name: "Runtime Model",
 		description:
-			"`blind` (task contract only) or `informed` (includes benchmark framing).",
+			"Exact executable model identifier exposed by a Runtime; Model Profiles group equivalent variants.",
+	},
+	{
+		name: "Benchmark Test",
+		description:
+			"Packaged benchmark definition with prompts, scoring expectations, fixtures, metadata, and optional rubric.",
+	},
+	{
+		name: "Pass Type",
+		description:
+			"`blind` or `informed` prompt-context variant for a Matrix Item.",
 	},
 ];
 
@@ -107,23 +110,23 @@ export const workflowSteps: WorkflowStep[] = [
 	{
 		step: "Plan",
 		description:
-			"Discover runtimes/models/tests, compute checkpoint hash, expand matrix.",
+			"Discover Runtimes, Runtime Models, Benchmark Tests, compute Benchmark Checkpoint, expand Matrix.",
 		detail:
-			"Writes `plan.json` with config, machine metadata, and every matrix item.",
+			"Writes the Run Plan with config, Machine Profile metadata, Machine Instance provenance, and every Matrix Item.",
 	},
 	{
 		step: "Generate",
 		description:
-			"Each harness loads the prompt, calls the model, records output + timing.",
+			"Each Harness loads the prompt, calls the Runtime Model, records output + timing.",
 		detail:
-			"Failures classified as timeout, api_error, tool_missing, or harness_error.",
+			"Generation Failures are classified as timeout, api_error, tool_missing, or harness_error.",
 	},
 	{
 		step: "Score",
 		description:
 			"Extract code, import it, validate exports, run `scoring.spec.ts` tests.",
 		detail:
-			"Score = export checks + test assertions. Import/export failures reduce score.",
+			"Automated Score = export checks + test assertions. Import/export failures reduce score.",
 	},
 	{
 		step: "Retry",
@@ -133,15 +136,15 @@ export const workflowSteps: WorkflowStep[] = [
 			"Only promoted if it improves score or fixes imports without regression.",
 	},
 	{
-		step: "Frontier eval",
+		step: "Frontier Eval",
 		description: "Optional rubric grading via OpenRouter if API key is set.",
 		detail:
-			"Best-effort: auth/timeout/rate-limit failures recorded without crashing.",
+			"Best-effort: auth/timeout/rate-limit Frontier Eval Failures are recorded without crashing.",
 	},
 	{
 		step: "Persist",
 		description:
-			"Write `run.json` with all item results, scores, and failures.",
+			"Write the Run Result with all Matrix Item results, scores, and failures.",
 		detail:
 			"Append-only evidence. Dashboard reads artifacts; never mutates past runs.",
 	},
@@ -150,7 +153,7 @@ export const workflowSteps: WorkflowStep[] = [
 /** Scoring systems surfaced in the dashboard. */
 export const scoringSystems: ScoringSystem[] = [
 	{
-		name: "Automated",
+		name: "Automated Score",
 		scale: "passed/total",
 		description: "Export checks + test-case assertions from `scoring.spec.ts`.",
 	},
@@ -160,10 +163,10 @@ export const scoringSystems: ScoringSystem[] = [
 		description: "Sum of passed / sum of total across selected items.",
 	},
 	{
-		name: "Frontier eval",
+		name: "Frontier Eval",
 		scale: "1-10",
 		description:
-			"Optional rubric grading via OpenRouter. Separate from automated score.",
+			"Optional rubric grading via OpenRouter. Separate from Automated Score.",
 	},
 	{
 		name: "Effective score",
@@ -177,15 +180,17 @@ export const scoringSystems: ScoringSystem[] = [
 export const artifactRows: ArtifactRow[] = [
 	{
 		path: "results/<run-id>/plan.json",
-		purpose: "Resolved matrix, checkpoint, machine metadata, config.",
+		purpose:
+			"Run Plan with resolved Matrix, Benchmark Checkpoint, Machine Profile, Machine Instance, and config.",
 	},
 	{
 		path: "results/<run-id>/run.json",
-		purpose: "Per-item results, scores, failures, summary counters.",
+		purpose:
+			"Run Result with Matrix Item results, scores, failures, summary counters.",
 	},
 	{
 		path: "results/<run-id>/run.partial.json",
-		purpose: "In-flight checkpoint. Removed after final write.",
+		purpose: "Partial Run Result. Removed after final Run Result write.",
 	},
 	{
 		path: "public/results/index.json",
@@ -193,16 +198,17 @@ export const artifactRows: ArtifactRow[] = [
 	},
 	{
 		path: "public/results/aggregates/<checkpoint>.json",
-		purpose: "Leaderboard aggregate for cross-run comparison.",
+		purpose:
+			"Leaderboard aggregate for Run Comparison within a Benchmark Checkpoint.",
 	},
 ];
 
 /** Checkpoint fairness notes. */
 export const checkpointNotes: string[] = [
-	"A new season starts when benchmark-defining assets change (prompts, specs, rubrics, harness code). Every season is pinned to a checkpoint hash.",
-	"The leaderboard defaults to the latest season so models are compared against the same definition.",
-	"Aggregates prefer the strongest result per machine + matrix key; recency is a tiebreaker.",
-	"tool-smoke is a preflight: if a harness can't call tools, the remaining items in that slice are skipped rather than scored as model failures.",
+	"A new Benchmark Checkpoint starts when benchmark-defining assets change: prompts, specs, rubrics, or harness code.",
+	"The leaderboard defaults to the latest Benchmark Checkpoint so Model Profiles are compared against the same benchmark definition.",
+	"Aggregates prefer the strongest result per Machine Profile + Matrix key; recency is a tiebreaker.",
+	"tool-smoke is a preflight: if a Harness lacks required Harness Capabilities, remaining items in that slice are skipped rather than scored as Runtime Model failures.",
 ];
 
 /** Current test catalog. */

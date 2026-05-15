@@ -1,6 +1,6 @@
 /**
  * Purpose: Frontier eval scatter plot using Recharts.
- * Shows relationship between automated pass rate and frontier eval score.
+ * Shows relationship between automated pass rate and Frontier Eval score.
  * Enhanced with quadrant labels and token-based point sizing.
  */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,7 +87,7 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 				</CardHeader>
 				<CardContent>
 					<p className="text-foreground-faint text-sm py-8 text-center">
-						No items with both automated score and frontier eval.
+						No items with both Automated Score and Frontier Eval.
 					</p>
 				</CardContent>
 			</Card>

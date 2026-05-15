@@ -56,10 +56,10 @@ export function getCheckpointGuardMessage(
 		return undefined;
 	}
 	if (!checkpointA || !checkpointB) {
-		return "Checkpoint metadata missing in one or both run artifacts. Re-run with --allow-cross-checkpoint to force compare.";
+		return "Benchmark Checkpoint metadata missing in one or both Run Results. Re-run with --allow-cross-checkpoint to force a cross-checkpoint Run Comparison.";
 	}
 	if (checkpointA !== checkpointB) {
-		return `Checkpoint mismatch: ${checkpointA} vs ${checkpointB}. Re-run with --allow-cross-checkpoint to force compare.`;
+		return `Benchmark Checkpoint mismatch: ${checkpointA} vs ${checkpointB}. Re-run with --allow-cross-checkpoint to force a cross-checkpoint Run Comparison.`;
 	}
 	return undefined;
 }

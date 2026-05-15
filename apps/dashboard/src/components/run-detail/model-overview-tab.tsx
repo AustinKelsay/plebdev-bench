@@ -313,7 +313,7 @@ export function ModelOverviewTab({
 							<p className="text-xs text-foreground-faint">
 								{frontierStats
 									? `${frontierStats.count} scored items`
-									: "No frontier eval data"}
+									: "No Frontier Eval data"}
 							</p>
 						</div>
 					</div>
