@@ -48,11 +48,16 @@ export async function runProbe(
  * Parses a numeric probe result into a positive integer.
  *
  * @param value - Raw probe stdout
- * @returns Positive integer when valid
+ * @returns Positive integer when valid; undefined for invalid or unparsable input
+ * @throws This function does not throw; invalid input returns undefined
  */
-export function parsePositiveInt(value: string | undefined): number | undefined {
+export function parsePositiveInt(
+	value: string | undefined,
+): number | undefined {
 	if (!value) return undefined;
-	const parsed = Number.parseInt(value.trim(), 10);
+	const trimmed = value.trim();
+	if (!/^\d+$/.test(trimmed)) return undefined;
+	const parsed = Number.parseInt(trimmed, 10);
 	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
@@ -60,13 +65,16 @@ export function parsePositiveInt(value: string | undefined): number | undefined 
  * Parses a memory string such as `8 GB` or `8192 MB`.
  *
  * @param value - Raw memory string
- * @returns Memory in bytes when parsable
+ * @returns Memory in bytes when parsable; undefined for invalid or unparsable input
+ * @throws This function does not throw; invalid input returns undefined
  */
-export function parseMemoryBytes(value: string | undefined): number | undefined {
+export function parseMemoryBytes(
+	value: string | undefined,
+): number | undefined {
 	if (!value) return undefined;
 	const normalized = value.trim().replace(/,/g, "");
 	const match = normalized.match(
-		/(\d+(?:\.\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb|b)?/i,
+		/^(\d+(?:\.\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb|b)?$/i,
 	);
 	if (!match) return undefined;
 	const amount = Number.parseFloat(match[1]);

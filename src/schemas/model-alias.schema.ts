@@ -1,23 +1,22 @@
 /**
- * Purpose: Model alias schema for cross-runtime model mapping.
+ * Purpose: Legacy model alias schema retained for migration into model profiles.
  * Exports: ModelAliasEntrySchema, ModelAliasEntry,
  *          ModelAliasMapSchema, ModelAliasMap,
  *          ModelAliasFileSchema, ModelAliasFile
  *
  * Model aliases allow specifying a canonical model name that maps to
- * runtime-specific identifiers. This enables testing the "same" model
- * across different runtimes (Ollama, vLLM, etc.) where naming differs.
+ * runtime-specific identifiers. Historical artifacts may contain multiple runtime
+ * mappings, but current live benchmark config only executes Ollama.
  *
  * Invariants:
  * - Alias keys are canonical names (stable across runs)
  * - Values map runtime name -> non-empty model identifier string
- * - Runtime keys are arbitrary strings, but should align with RuntimeNameSchema
+ * - Runtime keys are arbitrary strings for backwards compatibility
  *
  * Example:
  * {
  *   "qwen3-8b": {
- *     "ollama": "qwen3:8b",
- *     "vllm": "Qwen/Qwen3-8B-Instruct"
+ *     "ollama": "qwen3:8b"
  *   }
  * }
  */
@@ -30,8 +29,13 @@ import { SCHEMA_VERSION } from "./common.schema.js";
  * Maps runtime names to their specific model identifiers.
  */
 export const ModelAliasEntrySchema = z.record(
-	z.string(), // runtime name (ollama, vllm, etc.)
-	z.string(), // runtime-specific model name
+	z.string(), // runtime name retained for backwards compatibility
+	z
+		.string()
+		.refine((value) => value.trim().length > 0, {
+			message: "alias target must be a non-empty string",
+		})
+		.transform((value) => value.trim()), // runtime-specific model name
 );
 
 /**

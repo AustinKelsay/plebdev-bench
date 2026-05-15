@@ -125,31 +125,55 @@ describe("discoverTestCatalog", () => {
 		);
 	});
 
-		it("rejects harness capability requirements when tools are disabled", () => {
-			const root = createTempRoot();
-			createTestDir(root, "invalid-capabilities", {
-				category: "coding",
-				requiresTools: false,
-				requiredHarnessCapabilities: ["workspace-read"],
+	it("rejects harness capability requirements when tools are disabled", () => {
+		const root = createTempRoot();
+		createTestDir(root, "invalid-capabilities", {
+			category: "coding",
+			requiresTools: false,
+			requiredHarnessCapabilities: ["workspace-read"],
 		});
 
 		expect(() => discoverTestCatalog(root)).toThrow(
-				"requiredHarnessCapabilities may only be set when requiresTools is true",
-			);
-		});
-
-		it("rejects invalid timeout multipliers", () => {
-			const root = createTempRoot();
-			createTestDir(root, "bad-timeout-multiplier", {
-				category: "coding",
-				timeoutMultiplier: 0,
-			});
-
-			expect(() => discoverTestCatalog(root)).toThrow(
-				"timeoutMultiplier",
-			);
-		});
+			"requiredHarnessCapabilities may only be set when requiresTools is true",
+		);
 	});
+
+	it("rejects invalid timeout multipliers", () => {
+		const root = createTempRoot();
+		createTestDir(root, "bad-timeout-multiplier", {
+			category: "coding",
+			timeoutMultiplier: 0,
+		});
+
+		expect(() => discoverTestCatalog(root)).toThrow("timeoutMultiplier");
+
+		const nullRoot = createTempRoot();
+		createTestDir(nullRoot, "null-timeout-multiplier", {
+			category: "coding",
+			timeoutMultiplier: null,
+		});
+		expect(() => discoverTestCatalog(nullRoot)).toThrow("timeoutMultiplier");
+
+		const infinityRoot = createTempRoot();
+		createTestDir(infinityRoot, "infinite-timeout-multiplier", {
+			category: "coding",
+			timeoutMultiplier: 1,
+		});
+		fs.writeFileSync(
+			path.join(
+				infinityRoot,
+				"src",
+				"tests",
+				"infinite-timeout-multiplier",
+				TEST_METADATA_FILE,
+			),
+			'{"category":"coding","timeoutMultiplier":1e999}',
+		);
+		expect(() => discoverTestCatalog(infinityRoot)).toThrow(
+			"timeoutMultiplier",
+		);
+	});
+});
 
 describe("selectTests", () => {
 	it("throws on unknown requested tests", () => {

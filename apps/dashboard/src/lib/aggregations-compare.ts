@@ -130,8 +130,12 @@ export function compareRuns(
 	const matchedWithFrontierEval = matched.filter(
 		(item) => item.itemA.frontierEval && item.itemB.frontierEval,
 	);
-	const matchedFrontierItemsA = matchedWithFrontierEval.map((item) => item.itemA);
-	const matchedFrontierItemsB = matchedWithFrontierEval.map((item) => item.itemB);
+	const matchedFrontierItemsA = matchedWithFrontierEval.map(
+		(item) => item.itemA,
+	);
+	const matchedFrontierItemsB = matchedWithFrontierEval.map(
+		(item) => item.itemB,
+	);
 	const frontierA = computeFrontierStats(matchedFrontierItemsA);
 	const frontierB = computeFrontierStats(matchedFrontierItemsB);
 	const frontierEvalDelta =

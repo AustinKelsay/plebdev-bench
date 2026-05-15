@@ -13,7 +13,12 @@
  */
 
 import type { Runtime } from "../runtimes/index.js";
-import type { HarnessCapability, SignalAssessment } from "../schemas/index.js";
+import { SupportedRuntimeNameSchema } from "../schemas/index.js";
+import type {
+	HarnessCapability,
+	SignalAssessment,
+	SupportedRuntimeName,
+} from "../schemas/index.js";
 
 /** Supported harness names. "direct" replaces "ollama" for clarity. */
 export const HARNESS_NAMES = ["direct", "goose", "opencode"] as const;
@@ -55,19 +60,14 @@ export type HarnessPromptMode = (typeof HARNESS_PROMPT_MODES)[number];
 /**
  * Runtime compatibility for each harness.
  * Maps harness name to array of compatible runtime names.
- *
- * All harnesses now support multiple runtimes via API format abstraction:
- * - direct: dispatches to ollama-client or openai-compat-client based on runtime.apiFormat
- * - goose: maps runtime.apiFormat to --provider (ollama or openai)
- * - opencode: dynamically configures provider in opencode.json based on runtime
  */
 export const HARNESS_RUNTIME_COMPATIBILITY: Record<
 	HarnessName,
-	readonly string[]
+	readonly SupportedRuntimeName[]
 > = {
-	direct: ["ollama", "vllm"],
-	goose: ["ollama", "vllm"],
-	opencode: ["ollama", "vllm"],
+	direct: ["ollama"],
+	goose: ["ollama"],
+	opencode: ["ollama"],
 } as const;
 
 /**
@@ -75,19 +75,27 @@ export const HARNESS_RUNTIME_COMPATIBILITY: Record<
  * @param harness - Harness name
  * @param runtime - Runtime name
  * @returns true if the harness can be used with the runtime
+ * @throws {Error} If runtime is not a supported active runtime name
  */
 export function isHarnessCompatibleWithRuntime(
 	harness: HarnessName,
 	runtime: string,
 ): boolean {
+	const parsedRuntime = SupportedRuntimeNameSchema.safeParse(runtime);
+	if (!parsedRuntime.success) {
+		throw new Error(
+			`Unsupported runtime for harness compatibility: ${runtime}`,
+		);
+	}
 	const compatibleRuntimes = HARNESS_RUNTIME_COMPATIBILITY[harness];
-	return compatibleRuntimes.includes(runtime);
+	return compatibleRuntimes.includes(parsedRuntime.data);
 }
 
 /**
  * Gets harnesses compatible with a given runtime.
  * @param runtime - Runtime name
  * @returns Array of compatible harness names
+ * @throws {Error} If runtime is not a supported active runtime name
  */
 export function getCompatibleHarnesses(runtime: string): HarnessName[] {
 	return HARNESS_NAMES.filter((harness) =>

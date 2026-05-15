@@ -1,8 +1,10 @@
-Purpose: Document the completed multi-runtime MVP implementation, operational setup, validation evidence, and known constraints.
+HISTORICAL BEHAVIOR (Feb 8, 2026) — DO NOT USE FOR CURRENT RUNTIME
+
+Archived for artifact/debugging context; active benchmarks are Ollama-only.
 
 # Multi-Runtime MVP Implementation
 
-This document captures the February 8, 2026 MVP checkpoint. Later computer-use hardening added capability-aware scheduling, workspace preflights, and separate Goose workspace turn budgets; use [README.md](../../README.md) and [harnesses-implementation.md](./harnesses-implementation.md) for current operational behavior.
+Historical note: this document captures the February 8, 2026 multi-runtime MVP checkpoint. It is no longer the source of truth for current runtime behavior. Active benchmark execution is Ollama-only; use [README.md](../../README.md) and [harnesses-implementation.md](./harnesses-implementation.md) for current operational behavior.
 
 ## Summary
 - `plebdev-bench` now runs a single benchmark matrix across multiple runtimes (`ollama`, `vllm`) and multiple harnesses (`direct`, `goose`, `opencode`) in one command.

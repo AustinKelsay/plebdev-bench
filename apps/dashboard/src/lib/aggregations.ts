@@ -1,15 +1,17 @@
 /**
  * Purpose: Dashboard aggregations public API (stable import path).
- * Exports: re-exports from aggregations-core, aggregations-tooling, aggregations-compare, aggregations-diagnostics
+ * Exports: re-exports from aggregations-core, aggregations-tooling,
+ *          aggregations-compare, aggregations-diagnostics, aggregations-charts,
+ *          aggregations-test-types
  *
  * Invariants:
  * - Keep this module small; split implementations by concern (<500 lines)
  * - UI code should import from `@/lib/aggregations` only
  */
 
-export * from "./aggregations-core";
-export * from "./aggregations-tooling";
-export * from "./aggregations-compare";
-export * from "./aggregations-diagnostics";
-export * from "./aggregations-charts";
-export * from "./aggregations-test-types";
+export * from "./aggregations-core.js";
+export * from "./aggregations-tooling.js";
+export * from "./aggregations-compare.js";
+export * from "./aggregations-diagnostics.js";
+export * from "./aggregations-charts.js";
+export * from "./aggregations-test-types.js";

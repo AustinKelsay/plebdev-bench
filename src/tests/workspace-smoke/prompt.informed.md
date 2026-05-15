@@ -19,5 +19,6 @@ Complete these exact filesystem operations:
 Acceptance requirements:
 
 - Stay inside the current workspace.
-- Do not modify `docs/notes.txt`.
-- Do not create or delete any other files.
+- Only perform the requested writes to `logs/session.log`, `checklist/steps.txt`, and `artifacts/summary.json`.
+- You may read other files, including `docs/notes.txt`, but must not modify them.
+- Do not create, delete, or modify any other files.

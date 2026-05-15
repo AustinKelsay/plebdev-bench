@@ -19,7 +19,6 @@ import { CHART_COLORS } from "@/lib/chart-colors";
 import { composite as compositeTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import { formatTestCategoryLabel } from "@/lib/utils";
-import { ClickableYAxisTick, createRowBackground } from "./chart-primitives";
 import {
 	Bar,
 	BarChart,
@@ -31,6 +30,7 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { ClickableYAxisTick, createRowBackground } from "./chart-primitives";
 
 interface CompositeScoreChartProps {
 	items: MatrixItemResult[];

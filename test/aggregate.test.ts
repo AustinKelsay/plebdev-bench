@@ -78,6 +78,11 @@ interface RunProfileOverrides {
 
 /**
  * Creates a matrix item for aggregation tests.
+ *
+ * @param id - Matrix item identifier
+ * @param completedAt - ISO timestamp used for item start and completion
+ * @param overrides - Optional MatrixItemResult fields that replace defaults
+ * @returns MatrixItemResult with deterministic defaults for aggregation tests
  */
 function createItem(
 	id: string,
@@ -110,6 +115,18 @@ function createItem(
 
 /**
  * Creates a run result for aggregation tests.
+ *
+ * @param runId - RunResult identifier
+ * @param checkpointId - Benchmark checkpoint and manifest hash identifier
+ * @param machineProfileKey - Normalized machine profile key for grouping
+ * @param instanceId - Machine instance identifier for grouping
+ * @param items - Matrix items included in the returned run
+ * @param profile - Optional RunProfileOverrides for profile label, normalized profile, and observed hardware
+ * @returns RunResult containing summary, machine, benchmarkCheckpoint, provenance, timestamps, and items
+ *
+ * Defaults use TEST_PROFILE_LABEL, TEST_NORMALIZED_PROFILE, TEST_HARDWARE,
+ * startedAt/completedAt from item timestamps or fixed ISO timestamps, and
+ * durationMs of 60 seconds.
  */
 function createRun(
 	runId: string,
@@ -128,8 +145,7 @@ function createRun(
 			displayLabel: "Machine A",
 			profileKey: machineProfileKey,
 			profileLabel: profile.profileLabel ?? TEST_PROFILE_LABEL,
-			normalizedProfile:
-				profile.normalizedProfile ?? TEST_NORMALIZED_PROFILE,
+			normalizedProfile: profile.normalizedProfile ?? TEST_NORMALIZED_PROFILE,
 			observedHardware: profile.observedHardware ?? TEST_HARDWARE,
 		},
 		benchmarkCheckpoint: {
@@ -179,14 +195,22 @@ describe("aggregateRunsForCheckpoint", () => {
 
 		const runs: AggregateRunInput[] = [
 			{
-				run: createRun("run-old", checkpointId, TEST_PROFILE_KEY, "instance-a", [
-					olderItem,
-				]),
+				run: createRun(
+					"run-old",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-a",
+					[olderItem],
+				),
 			},
 			{
-				run: createRun("run-new", checkpointId, TEST_PROFILE_KEY, "instance-b", [
-					newerItem,
-				]),
+				run: createRun(
+					"run-new",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-b",
+					[newerItem],
+				),
 			},
 		];
 
@@ -205,14 +229,22 @@ describe("aggregateRunsForCheckpoint", () => {
 
 		const runs: AggregateRunInput[] = [
 			{
-				run: createRun("run-old", checkpointId, TEST_PROFILE_KEY, "instance-a", [
-					olderItem,
-				]),
+				run: createRun(
+					"run-old",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-a",
+					[olderItem],
+				),
 			},
 			{
-				run: createRun("run-new", checkpointId, TEST_PROFILE_KEY, "instance-b", [
-					newerItem,
-				]),
+				run: createRun(
+					"run-new",
+					checkpointId,
+					TEST_PROFILE_KEY,
+					"instance-b",
+					[newerItem],
+				),
 			},
 		];
 
@@ -335,7 +367,13 @@ describe("aggregateRunsForCheckpoint", () => {
 		const aggregate = aggregateRunsForCheckpoint(
 			[
 				{
-					run: createRun("run-empty", checkpointId, TEST_PROFILE_KEY, "instance-a", []),
+					run: createRun(
+						"run-empty",
+						checkpointId,
+						TEST_PROFILE_KEY,
+						"instance-a",
+						[],
+					),
 				},
 			],
 			checkpointId,

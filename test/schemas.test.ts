@@ -3,13 +3,15 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { getModelIdentityKey } from "../src/lib/model-profiles.js";
 import {
 	buildMachineProfileKey,
 	buildMachineProfileLabel,
 	normalizeMachineProfile,
 } from "../src/lib/machine-profile/normalization.js";
+import { getModelIdentityKey } from "../src/lib/model-profiles.js";
 import {
+	AcceleratorDetectionSchema,
+	ArtifactRuntimeNameSchema,
 	BenchConfigSchema,
 	FrontierEvalFailureTypeSchema,
 	HardwareProfileSchema,
@@ -17,15 +19,15 @@ import {
 	MatrixItemResultSchema,
 	MatrixItemSchema,
 	PassTypeSchema,
-	AcceleratorDetectionSchema,
 	RunPlanSchema,
 	RunResultSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringSpecSchema,
+	SupportedRuntimeNameSchema,
 	TestCategorySchema,
 	TestScoringModeSchema,
 	defaultConfig,
+	migrateLegacySupportedRuntimeNames,
 } from "../src/schemas/index.js";
 
 const TEST_HARDWARE = {
@@ -62,13 +64,28 @@ describe("common schemas", () => {
 	});
 
 	it("should export schema version", () => {
-		expect(SCHEMA_VERSION).toBe("0.5.0");
+		expect(SCHEMA_VERSION).toBe("0.5.3");
 	});
 
-	it("should validate runtime names", () => {
-		expect(RuntimeNameSchema.parse("ollama")).toBe("ollama");
-		expect(RuntimeNameSchema.parse("vllm")).toBe("vllm");
-		expect(() => RuntimeNameSchema.parse("unknown")).toThrow();
+	it("should validate supported and artifact runtime names separately", () => {
+		expect(SupportedRuntimeNameSchema.parse("ollama")).toBe("ollama");
+		expect(() => SupportedRuntimeNameSchema.parse("vllm")).toThrow();
+		expect(ArtifactRuntimeNameSchema.parse("ollama")).toBe("ollama");
+		expect(ArtifactRuntimeNameSchema.parse("vllm")).toBe("vllm");
+		expect(() => ArtifactRuntimeNameSchema.parse("unknown")).toThrow();
+	});
+
+	it("should migrate legacy config runtime names to active runtimes", () => {
+		expect(migrateLegacySupportedRuntimeNames(["vllm"])).toEqual(["ollama"]);
+		expect(migrateLegacySupportedRuntimeNames(["ollama", "vllm"])).toEqual([
+			"ollama",
+		]);
+		expect(
+			BenchConfigSchema.parse({
+				schemaVersion: "0.5.2",
+				runtimes: ["vllm"],
+			}).runtimes,
+		).toEqual(["ollama"]);
 	});
 
 	it("should validate frontier eval failure types", () => {
@@ -102,9 +119,9 @@ describe("common schemas", () => {
 describe("BenchConfigSchema", () => {
 	it("should parse empty object with defaults", () => {
 		const config = BenchConfigSchema.parse({});
-		expect(config.runtimes).toEqual([]);
+		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual([]);
-		expect(config.harnesses).toEqual([]); // Auto-discover all available
+		expect(config.harnesses).toEqual([]);
 		expect(config.tests).toEqual([]);
 		expect(config.categories).toEqual([]);
 		expect(config.passTypes).toEqual(["blind", "informed"]);
@@ -140,6 +157,12 @@ describe("BenchConfigSchema", () => {
 		expect(config.gooseRetryMaxTurns).toBe(4);
 		expect(config.gooseWorkspaceMaxTurns).toBe(6);
 		expect(config.gooseWorkspaceRetryMaxTurns).toBe(9);
+	});
+
+	it("should reject empty runtime selections", () => {
+		expect(() => BenchConfigSchema.parse({ runtimes: [] })).toThrow(
+			"runtimes must include at least one runtime",
+		);
 	});
 
 	it("should reject invalid URL", () => {
@@ -202,7 +225,6 @@ describe("BenchConfigSchema", () => {
 			modelAliases: {
 				"qwen3-8b-instruct": {
 					ollama: "qwen3:8b",
-					vllm: "Qwen/Qwen3-8B-Instruct",
 				},
 			},
 		});
@@ -210,6 +232,29 @@ describe("BenchConfigSchema", () => {
 			"qwen3:8b",
 		);
 		expect("modelAliases" in config).toBe(false);
+	});
+
+	it("should reject removed vllm config fields including legacy runtime values and profile variants", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				vllmBaseUrl: "http://localhost:8000",
+			}),
+		).toThrow(/vllmBaseUrl/);
+		expect(() => BenchConfigSchema.parse({ runtimes: ["vllm"] })).toThrow(
+			/runtimes|vllm/,
+		);
+		expect(() =>
+			BenchConfigSchema.parse({
+				modelProfiles: {
+					"qwen3-8b-instruct": {
+						variants: {
+							ollama: "qwen3:8b",
+							vllm: "Qwen/Qwen3-8B-Instruct",
+						},
+					},
+				},
+			}),
+		).toThrow();
 	});
 
 	it("should reject simultaneous modelProfiles and modelAliases", () => {
@@ -264,9 +309,11 @@ describe("BenchConfigSchema", () => {
 		if (result.success) {
 			throw new Error("Expected BenchConfigSchema.safeParse to fail");
 		}
-		expect(result.error.issues.some((issue) => issue.path[0] === "machineInstanceId")).toBe(
-			true,
-		);
+		expect(
+			result.error.issues.some(
+				(issue) => issue.path[0] === "machineInstanceId",
+			),
+		).toBe(true);
 	});
 
 	it("should reject non-string canonical machine fields before alias backfill", () => {
@@ -304,7 +351,8 @@ describe("BenchConfigSchema", () => {
 	});
 
 	it("should provide default config", () => {
-		expect(defaultConfig.harnesses).toEqual([]); // Auto-discover all available
+		expect(defaultConfig.runtimes).toEqual(["ollama"]);
+		expect(defaultConfig.harnesses).toEqual([]);
 	});
 });
 
@@ -363,7 +411,9 @@ describe("HardwareProfileSchema", () => {
 			result.error.issues.some(
 				(issue) =>
 					issue.path[0] === "detail" &&
-					issue.message.includes('requires detail when status is "unavailable"'),
+					issue.message.includes(
+						'requires detail when status is "unavailable"',
+					),
 			),
 		).toBe(true);
 	});
@@ -497,7 +547,9 @@ describe("HardwareProfileSchema", () => {
 			"nvidia/rtx-4060:x1",
 			"nvidia/rtx-4090:x1",
 		]);
-		expect(buildMachineProfileKey(dual4090)).not.toBe(buildMachineProfileKey(mixed));
+		expect(buildMachineProfileKey(dual4090)).not.toBe(
+			buildMachineProfileKey(mixed),
+		);
 	});
 });
 
@@ -532,7 +584,6 @@ describe("RunPlanSchema", () => {
 			},
 			config: {
 				ollamaBaseUrl: "http://localhost:11434",
-				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 120_000,
 				gooseMaxTurns: 1,
 				gooseRetryMaxTurns: 3,
@@ -671,11 +722,7 @@ describe("MatrixItemResultSchema", () => {
 		expect(result.status).toBe("completed");
 		expect(result.generation?.success).toBe(true);
 		expect(
-			getModelIdentityKey(
-				result.model,
-				result.modelProfile,
-				result.modelAlias,
-			),
+			getModelIdentityKey(result.model, result.modelProfile, result.modelAlias),
 		).toBe("llama3.2-3b-instruct");
 	});
 

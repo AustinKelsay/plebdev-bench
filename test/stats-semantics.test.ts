@@ -34,7 +34,10 @@ describe("stats semantics", () => {
 				status: "failed",
 				automatedScore: { passed: 3, failed: 3, total: 6 },
 				generation: { success: true, output: "partial", durationMs: 1000 },
-				scoringFailure: { type: "test_execution", message: "failed assertions" },
+				scoringFailure: {
+					type: "test_execution",
+					message: "failed assertions",
+				},
 			}),
 			createResult({
 				id: "03",
@@ -57,5 +60,7 @@ describe("stats semantics", () => {
 		expect(output).toContain("Semantic pass rate:");
 		expect(output).toContain("Item success rate:");
 		expect(output).toContain("Scored rows:");
+		expect(output).toContain("timeout: 1");
+		expect(output).toContain("residual_failures: 1");
 	});
 });

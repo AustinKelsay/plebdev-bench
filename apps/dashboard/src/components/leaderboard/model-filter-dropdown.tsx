@@ -17,24 +17,44 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { z } from "zod";
 
-interface ModelFilterDropdownProps {
-	models: string[];
-	selectedModels: string[];
-	onSelectionChange: (models: string[]) => void;
+const ModelFilterDropdownPropsSchema = z.strictObject({
+	models: z.array(z.string()),
+	selectedModels: z.array(z.string()),
+	onSelectionChange: z.function().args(z.array(z.string())).returns(z.void()),
+});
+
+type ModelFilterDropdownProps = z.infer<typeof ModelFilterDropdownPropsSchema>;
+
+const MODEL_SORT_COLLATOR = new Intl.Collator("en", { sensitivity: "variant" });
+
+function dedupeAndSortModels(models: string[]): string[] {
+	return [...new Set(models)].sort((a, b) => MODEL_SORT_COLLATOR.compare(a, b));
 }
 
 function buildTriggerLabel(
 	selectedModels: string[],
-	availableModelCount: number,
+	currentModels: string[],
 ): string {
-	if (selectedModels.length === 0 || selectedModels.length === availableModelCount) {
+	const selectedModelSet = new Set(selectedModels);
+	const selectedCurrentModels = currentModels.filter((model) =>
+		selectedModelSet.has(model),
+	);
+	const hasAllCurrentModels =
+		currentModels.length > 0 &&
+		selectedCurrentModels.length === currentModels.length;
+	if (
+		selectedModels.length === 0 ||
+		selectedCurrentModels.length === 0 ||
+		hasAllCurrentModels
+	) {
 		return "All models";
 	}
-	if (selectedModels.length === 1) {
-		return selectedModels[0] ?? "All models";
+	if (selectedCurrentModels.length === 1) {
+		return selectedCurrentModels[0] ?? "All models";
 	}
-	return `${selectedModels.length} models selected`;
+	return `${selectedCurrentModels.length} models selected`;
 }
 
 /**
@@ -45,17 +65,27 @@ function buildTriggerLabel(
  * @param props.selectedModels - Explicitly selected models; empty means all
  * @param props.onSelectionChange - Called whenever the selection changes
  * @returns React element containing the model filter dropdown
+ * @throws {TypeError} When callers violate the runtime props contract, such as
+ * passing non-array `models`/`selectedModels` values or omitting
+ * `onSelectionChange`
  */
-export function ModelFilterDropdown({
-	models,
-	selectedModels,
-	onSelectionChange,
-}: ModelFilterDropdownProps) {
+export function ModelFilterDropdown(props: ModelFilterDropdownProps) {
+	const parsedProps = ModelFilterDropdownPropsSchema.safeParse(props);
+	if (!parsedProps.success) {
+		throw new TypeError("Invalid ModelFilterDropdown props", {
+			cause: parsedProps.error,
+		});
+	}
+	const { models, selectedModels, onSelectionChange } = parsedProps.data;
 	const [isOpen, setIsOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	const normalizedSelectedIds = useMemo(() => {
+		const modelSet = new Set(models);
+		return new Set(selectedModels.filter((selected) => modelSet.has(selected)));
+	}, [models, selectedModels]);
 	const triggerLabel = useMemo(
-		() => buildTriggerLabel(selectedModels, models.length),
-		[selectedModels, models.length],
+		() => buildTriggerLabel(selectedModels, models),
+		[selectedModels, models],
 	);
 
 	useEffect(() => {
@@ -84,12 +114,40 @@ export function ModelFilterDropdown({
 	}, [isOpen]);
 
 	function handleModelToggle(model: string) {
-		if (selectedModels.includes(model)) {
-			onSelectionChange(selectedModels.filter((selected) => selected !== model));
+		const modelSet = new Set(models);
+		const normalizedSelectedModels = selectedModels.filter((selected) =>
+			modelSet.has(selected),
+		);
+		const normalizedSelectedModelSet = new Set(normalizedSelectedModels);
+		const allSelected =
+			selectedModels.length === 0 ||
+			normalizedSelectedModelSet.size === 0 ||
+			(models.length > 0 &&
+				models.every((availableModel) =>
+					normalizedSelectedModelSet.has(availableModel),
+				));
+
+		if (normalizedSelectedModelSet.has(model)) {
+			onSelectionChange(
+				dedupeAndSortModels(
+					normalizedSelectedModels.filter((selected) => selected !== model),
+				),
+			);
 			return;
 		}
 
-		onSelectionChange([...selectedModels, model].sort((a, b) => a.localeCompare(b)));
+		if (allSelected) {
+			onSelectionChange(
+				dedupeAndSortModels(
+					models.filter((availableModel) => availableModel !== model),
+				),
+			);
+			return;
+		}
+
+		onSelectionChange(
+			dedupeAndSortModels([...normalizedSelectedModels, model]),
+		);
 	}
 
 	function handleOptionKeyDown(
@@ -147,7 +205,7 @@ export function ModelFilterDropdown({
 							variant="ghost"
 							size="sm"
 							className="h-7 px-2"
-							onClick={() => onSelectionChange([...models])}
+							onClick={() => onSelectionChange(dedupeAndSortModels(models))}
 						>
 							Select all
 						</Button>
@@ -156,7 +214,9 @@ export function ModelFilterDropdown({
 					<div className="max-h-80 overflow-y-auto p-1">
 						{models.map((model) => {
 							const isSelected =
-								selectedModels.length === 0 || selectedModels.includes(model);
+								selectedModels.length === 0 ||
+								normalizedSelectedIds.size === 0 ||
+								normalizedSelectedIds.has(model);
 
 							return (
 								<button

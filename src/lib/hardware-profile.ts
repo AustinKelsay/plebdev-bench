@@ -8,13 +8,13 @@
  */
 
 import {
-	HardwareProfileSchema,
 	type HardwareProfile,
+	HardwareProfileSchema,
 	type MachineProfile,
 } from "../schemas/index.js";
 import {
-	MACHINE_INSTANCE_ID_ENV_VAR,
 	LEGACY_MACHINE_ID_ENV_VAR,
+	MACHINE_INSTANCE_ID_ENV_VAR,
 	resolveMachineInstanceId,
 } from "./machine-profile/instance-id.js";
 import {
@@ -105,8 +105,7 @@ export async function collectMachineProfile(
 			? HardwareProfileSchema.parse(options.observedHardware)
 			: options.hardwareProfile !== undefined
 				? HardwareProfileSchema.parse(options.hardwareProfile)
-				: undefined) ??
-		(await collectObservedHardwareProfile());
+				: undefined) ?? (await collectObservedHardwareProfile());
 	const normalizedProfile = normalizeMachineProfile(observedHardware);
 	const profileKey = buildMachineProfileKey(normalizedProfile);
 	const profileLabel = buildMachineProfileLabel(

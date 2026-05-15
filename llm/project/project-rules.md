@@ -13,7 +13,7 @@ They are optimized for:
 ### Top-level
 
 - `src/` — application code (runner, harness adapters, schemas, utilities)
-- `src/runtimes/` — runtime adapters (inference backends: Ollama, vLLM)
+- `src/runtimes/` — runtime adapters (inference backends: Ollama)
 - `src/harnesses/` — harness adapters (direct HTTP, Goose/OpenCode CLI) + tool-prompt builder
 - `src/tests/` — benchmark test catalog (coding + computer-use tests, including workspace-scored fixtures) with categories (`coding`, `computer-use`)
 - `src/results/` — result schema + read/write helpers + compare logic
@@ -195,5 +195,6 @@ Before merging changes:
 
 - Single-command CLI; non-interactive by default
 - Auto-discovery of models/harnesses
+- Active runtime fixed to Ollama until multi-runtime execution is intentionally reintroduced
 - `plan.json` + one `run.json` per run
 - Frontier eval auto-enabled when API key is present

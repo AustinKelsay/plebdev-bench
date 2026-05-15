@@ -56,6 +56,11 @@ Goose:
 OpenCode:
 - workspace-mode prompts explicitly advertise `read`, `glob`, `grep`, and `bash`
 - workspace config enables those tools so mkdir/search/delete tasks are benchmarking model behavior rather than missing affordances
+- workspace runs use the canonical workspace `realpath()` for cwd and `--dir`
+- workspace prompts use relative paths only and do not include absolute workspace paths
+- the generated config is supplied through `OPENCODE_CONFIG_DIR`, `OPENCODE_CONFIG`, and `OPENCODE_CONFIG_CONTENT` so headless runs do not depend on user-global OpenCode settings
+- `external_directory` is denied because OpenCode already runs inside the isolated benchmark workspace
+- harness-originated permission denials are recorded as tainted signal assessments instead of being treated as trustworthy semantic failures
 
 Transient harness failures:
 - generation retries once when the failure class is `harness_error`

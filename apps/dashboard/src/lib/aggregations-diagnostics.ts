@@ -7,8 +7,8 @@
  * - Dimension counts are derived from unique values in matrix-like items
  */
 
-import type { TimingStats } from "./aggregations-core";
-import type { MatrixItemResult } from "./types";
+import type { TimingStats } from "./aggregations-core.js";
+import type { MatrixItemResult } from "./types.js";
 
 type DimensionCountItem = Pick<
 	MatrixItemResult,

@@ -10,8 +10,8 @@
  * - Only items with automated scores contribute to pass-rate comparisons
  */
 
-import { computePassRate } from "./aggregations-core";
-import type { MatrixItemResult } from "./types";
+import { computePassRate } from "./aggregations-core.js";
+import type { MatrixItemResult } from "./types.js";
 
 /** Per-model metric for a single benchmark test type. */
 export interface TestTypeComparisonMetric {

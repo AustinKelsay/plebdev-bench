@@ -8,6 +8,7 @@
  * - Expects filtered aggregate items from the leaderboard page
  */
 
+import { ChartTooltipWrapper } from "@/components/charts/chart-primitives";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import {
@@ -15,7 +16,6 @@ import {
 	computeTestTypeComparisonData,
 } from "@/lib/aggregations";
 import { CHART_COLORS, getTestTypeColor } from "@/lib/chart-colors";
-import { ChartTooltipWrapper } from "@/components/charts/chart-primitives";
 import { testTypeSplit as testTypeSplitTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import { formatTestCategoryLabel } from "@/lib/utils";

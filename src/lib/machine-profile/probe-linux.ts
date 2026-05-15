@@ -7,7 +7,10 @@
  * - Deduped outputs preserve repeated-device counts
  */
 
-import type { HardwareProfile, ObservedAccelerator } from "../../schemas/index.js";
+import type {
+	HardwareProfile,
+	ObservedAccelerator,
+} from "../../schemas/index.js";
 import {
 	BYTES_PER_MIB,
 	dedupeAccelerators,

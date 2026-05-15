@@ -5,8 +5,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import { discoverTestCatalog } from "../src/lib/test-catalog.js";
 import { loadScoringSpec } from "../src/lib/scoring-spec.js";
+import { discoverTestCatalog } from "../src/lib/test-catalog.js";
 
 /**
  * Returns true when a created file path needs a parent directory that is absent from the fixture tree.
@@ -15,7 +15,10 @@ import { loadScoringSpec } from "../src/lib/scoring-spec.js";
  * @param filePath - Relative file path created by the benchmark
  * @returns True when the fixture does not already contain the parent directory
  */
-function requiresDirectoryCreation(testSlug: string, filePath: string): boolean {
+function requiresDirectoryCreation(
+	testSlug: string,
+	filePath: string,
+): boolean {
 	const parentDir = path.dirname(filePath);
 	if (parentDir === ".") {
 		return false;

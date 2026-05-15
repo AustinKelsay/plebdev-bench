@@ -1,24 +1,58 @@
 /**
  * Purpose: RunPlan schema capturing the expanded matrix before execution.
- * Exports: MatrixItemSchema, MatrixItem, RunPlanSchema, RunPlan
+ * Exports: MatrixItemSchema, MatrixItem, ModelExclusionSchema,
+ *          ModelExclusion, RunPlanSchema, RunPlan
  *
- * The plan is written to results/<runId>/plan.json for reproducibility.
+ * Invariants:
+ * - Plans serialize the exact expanded benchmark matrix for reproducibility.
+ * - Runtime, harness, test, category, and pass-type values are schema-limited.
+ * - Additive metadata must be represented explicitly before becoming required.
  */
 
 import { z } from "zod";
 import {
 	BenchmarkCheckpointSchema,
+	ExecutableArtifactRuntimeNameSchema,
+	HarnessCapabilitySchema,
 	MachineProfileSchema,
 	PassTypeSchema,
 	RunProvenanceSchema,
 	RuntimeEnvironmentSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
-	HarnessCapabilitySchema,
 	TestCategorySchema,
 	TestScoringModeSchema,
 } from "./common.schema.js";
 import { ModelProfileSchema } from "./model-profile.schema.js";
+
+/** Model exclusion reason codes emitted during plan construction. */
+const ModelExclusionReasonSchema = z.literal("non_generative_model");
+
+/** Evidence captured when a discovered runtime model is excluded. */
+const ModelExclusionEvidenceSchema = z
+	.object({
+		family: z.string().optional(),
+		families: z.array(z.string()).optional(),
+		architecture: z.string().optional(),
+	})
+	.optional();
+
+/** Zod schema for models omitted from generative benchmark plans. */
+export const ModelExclusionSchema = z.object({
+	/** Runtime where the model was discovered. */
+	runtime: ExecutableArtifactRuntimeNameSchema,
+
+	/** Runtime model name that was excluded. */
+	model: z.string(),
+
+	/** Stable exclusion reason. */
+	reason: ModelExclusionReasonSchema,
+
+	/** Best-effort metadata explaining the exclusion. */
+	evidence: ModelExclusionEvidenceSchema,
+});
+
+/** Model omitted from a run plan before matrix expansion. */
+export type ModelExclusion = z.infer<typeof ModelExclusionSchema>;
 
 /** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
 export const MatrixItemSchema = z.object({
@@ -26,7 +60,7 @@ export const MatrixItemSchema = z.object({
 	id: z.string(),
 
 	/** Runtime name (e.g., 'ollama'). */
-	runtime: RuntimeNameSchema,
+	runtime: ExecutableArtifactRuntimeNameSchema,
 
 	/** Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),
@@ -94,7 +128,6 @@ export const RunPlanSchema = z.object({
 	/** Resolved configuration snapshot (subset relevant to reproducibility). */
 	config: z.object({
 		ollamaBaseUrl: z.string().url(),
-		vllmBaseUrl: z.string().url(),
 		generateTimeoutMs: z.number(),
 		gooseMaxTurns: z.number().int().positive().optional(),
 		gooseRetryMaxTurns: z.number().int().positive().optional(),
@@ -106,6 +139,9 @@ export const RunPlanSchema = z.object({
 
 	/** Expanded matrix items to execute. */
 	items: z.array(MatrixItemSchema),
+
+	/** Discovered models omitted before matrix expansion. */
+	modelExclusions: z.array(ModelExclusionSchema).optional(),
 
 	/** Summary counts for display. */
 	summary: z.object({

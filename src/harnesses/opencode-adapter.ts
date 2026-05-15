@@ -2,89 +2,151 @@
  * Purpose: OpenCode CLI adapter implementing the Harness interface.
  * Exports: createOpenCodeAdapter
  *
- * Runs OpenCode via CLI (execa): `opencode run "<prompt>" --model <provider>/<model> --format json`
+ * Runs OpenCode directly with generated per-item config:
+ * `opencode run --model <provider>/<model> --format json --dir <workspace> <prompt>`
  *
  * Invariants:
- * - Uses runtime.baseUrl for provider baseURL
- * - Best-effort tool output capture; plain output is still scored
- * - Enforces timeout + stale-output kill for cleanup
+ * - The public harness name remains `opencode`.
+ * - OpenCode executes from the exact benchmark workspace passed via `--dir`.
+ * - Code-output mode prefers `solution.ts`; workspace mode lets the workspace
+ *   scorer decide semantic success.
  */
 
-import * as crypto from "node:crypto";
 import * as fs from "node:fs";
-import * as path from "node:path";
 import { execa } from "execa";
 import { logger } from "../lib/logger.js";
 import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
+import type { SignalAssessment } from "../schemas/index.js";
 import {
 	appendRetryMarker,
-	buildCodeOnlyPrompt,
 	evaluateCodeOnlyOutput,
 	hasRetryMarker,
 	stripRetryMarker,
 } from "./code-output-policy.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import {
-	buildOpenCodeConfig,
-	buildOpenCodeEnv,
-	resolveOpenCodeToolOutputRoot,
-} from "./opencode-config.js";
-import { normalizeOpenCodeOutput } from "./opencode-output.js";
+	type OpenCodeArtifacts,
+	cleanupOpenCodeArtifacts,
+	prepareOpenCodeArtifacts,
+	readUsableOpenCodeSolution,
+} from "./opencode-artifacts.js";
 import {
-	computeStaleOutputTimeoutMs,
-	forceKillProcess,
-} from "./opencode-process.js";
-import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
+	buildOpenCodeRunArgs,
+	getOpenCodeRunFeatures,
+	isOpenCodeRunCompatible,
+} from "./opencode-cli.js";
+import { buildOpenCodeConfig, buildOpenCodeEnv } from "./opencode-config.js";
+import { parseOpenCodeEvents } from "./opencode-events.js";
+import { runOpenCodeCommand } from "./opencode-runner.js";
+import {
+	buildFailureSignalAssessment,
+	buildOpenCodeFailure,
+	buildSignalAssessment,
+	selectProcessOutput,
+} from "./opencode-signal.js";
+import { buildToolPrompt, buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
-/** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
-
-/** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
 
-/** Interval for checking stale output (ms). */
-const STALE_CHECK_INTERVAL_MS = 30_000;
-
 /**
- * Detects permission-denied stderr emitted by OpenCode.
+ * Builds the code-output prompt contract for OpenCode runs.
  *
- * @param stderr - Raw stderr text
- * @returns True when permission auto-rejection is present
+ * @param prompt - Benchmark task prompt without retry markers
+ * @param isRetryAttempt - Whether the adapter is retrying after missing output
+ * @returns Tool-oriented prompt string that requires writing `solution.ts`
+ * @throws {never} This helper only formats prompt text
  */
-function hasPermissionDeniedStderr(stderr: string): boolean {
-	return (
-		/permission requested:/i.test(stderr) &&
-		/(auto-rejecting|external_directory)/i.test(stderr)
-	);
+function buildCodeOutputPrompt(
+	prompt: string,
+	isRetryAttempt: boolean,
+): string {
+	return buildToolPrompt({
+		toolNames: ["write"],
+		solutionFilename: SOLUTION_FILENAME,
+		taskPrompt: prompt,
+		toolUsageHint: [
+			`Use relative path "${SOLUTION_FILENAME}".`,
+			"Write one complete TypeScript module.",
+			isRetryAttempt
+				? "Previous output did not produce a usable solution file; write the file now."
+				: "",
+		]
+			.filter((line) => line.length > 0)
+			.join(" "),
+	});
 }
 
-/** Creates an OpenCode harness adapter. */
+/**
+ * Builds the workspace-mode prompt contract for OpenCode runs.
+ *
+ * @param prompt - Benchmark task prompt without retry markers
+ * @param workspaceRootPath - Canonical workspace root passed to OpenCode
+ * @returns Tool-oriented workspace prompt string
+ * @throws {never} This helper only formats prompt text
+ */
+function buildWorkspacePrompt(
+	prompt: string,
+	workspaceRootPath: string,
+): string {
+	return buildWorkspaceToolPrompt({
+		toolNames: ["read", "edit", "write", "glob", "grep", "bash"],
+		taskPrompt: prompt,
+		workspaceRootPath,
+		pathMode: "relative-only",
+		toolUsageHint:
+			"Use read/glob/grep to inspect the workspace with relative paths, read any existing file before overwriting it, and use bash for mkdir/delete/move operations when required.",
+	});
+}
+
+/**
+ * Persists salvaged code output into the expected solution artifact path.
+ *
+ * @param artifacts - Prepared OpenCode artifact paths for the generation
+ * @param code - Code content to write into `solution.ts`
+ * @returns Absolute path to the written salvaged code file
+ * @throws {Error} If the salvaged code file cannot be written
+ */
+async function writeSalvagedCode(
+	artifacts: OpenCodeArtifacts,
+	code: string,
+): Promise<string> {
+	await fs.promises.writeFile(artifacts.solutionPath, code, "utf-8");
+	return artifacts.solutionPath;
+}
+
+/**
+ * Creates an OpenCode harness adapter.
+ *
+ * @returns Harness implementation for OpenCode direct CLI mode
+ */
 export function createOpenCodeAdapter(): Harness {
 	return {
 		name: "opencode" as const,
 
 		async ping(): Promise<boolean> {
-			const log = logger.child({ harness: "opencode" });
 			try {
-				const versionResult = await execa("opencode", ["--version"], {
-					timeout: 5000,
-				});
-				const version = versionResult.stdout.trim();
-
-				const versionMatch = version.match(/(\d+)\.(\d+)/);
-				if (versionMatch) {
-					const major = Number.parseInt(versionMatch[1], 10);
-					const minor = Number.parseInt(versionMatch[2], 10);
-					if (major < 1 || (major === 1 && minor < 1)) {
-						log.warn(
-							{ version },
-							"OpenCode version too old, requires >= 1.1.0",
-						);
-						return false;
-					}
+				try {
+					const result = await execa("opencode", ["--version"], {
+						timeout: 5000,
+					});
+					const version = result.stdout.trim();
+					const versionMatch = version.match(/(\d+)\.(\d+)/);
+					logger.debug(
+						{
+							version,
+							parsedVersion: versionMatch?.[0],
+						},
+						"Detected OpenCode version",
+					);
+				} catch (error) {
+					logger.debug(
+						{ err: error },
+						"OpenCode version probe failed; using run feature detection",
+					);
 				}
-
-				return true;
+				const features = await getOpenCodeRunFeatures();
+				return isOpenCodeRunCompatible(features);
 			} catch {
 				return false;
 			}
@@ -94,384 +156,191 @@ export function createOpenCodeAdapter(): Harness {
 			const { runtime, model, prompt, timeoutMs } = opts;
 			const log = logger.child({ harness: "opencode", model });
 			const startTime = performance.now();
+			const promptMode = opts.promptMode ?? "code-output";
 			const isRetryAttempt = hasRetryMarker(prompt);
 			const promptWithoutMarker = stripRetryMarker(prompt);
-			const promptMode = opts.promptMode ?? "code-output";
-			const hasExternalWorkingDirectory = opts.workingDirectory !== undefined;
-			if (promptMode === "workspace" && !hasExternalWorkingDirectory) {
+
+			if (promptMode === "workspace" && opts.workingDirectory === undefined) {
 				throw new Error(
 					"OpenCode workspace mode requires a caller-supplied workingDirectory",
 				);
 			}
 
-			const runId = crypto.randomBytes(8).toString("hex");
-			const toolOutputRoot = resolveOpenCodeToolOutputRoot();
-			const workDir =
-				opts.workingDirectory ??
-				path.join(toolOutputRoot, `plebdev-bench-opencode-${runId}`);
-			const solutionPath = path.join(workDir, SOLUTION_FILENAME);
-			const configDir = path.join(
-				toolOutputRoot,
-				`plebdev-bench-opencode-config-${runId}`,
-			);
+			let codeFilePath: string | undefined;
+			const artifacts = await prepareOpenCodeArtifacts({
+				workingDirectory: opts.workingDirectory,
+				solutionFilename: SOLUTION_FILENAME,
+			});
 
 			try {
-				await fs.promises.mkdir(workDir, { recursive: true });
-				await fs.promises.mkdir(configDir, { recursive: true });
-			} catch (error) {
-				throw new Error(
-					`Failed to create OpenCode directories at "${workDir}": ${error instanceof Error ? error.message : String(error)}`,
-				);
-			}
-
-			if (!hasExternalWorkingDirectory) {
-				try {
-					await execa("git", ["init", "--quiet"], { cwd: workDir });
-					await execa("git", ["config", "user.email", "bench@local"], {
-						cwd: workDir,
-					});
-					await execa("git", ["config", "user.name", "Bench"], {
-						cwd: workDir,
-					});
-				} catch (gitErr) {
-					log.warn(
-						{ error: gitErr },
-						"Failed to initialize git repo in workDir",
-					);
-				}
-			}
-
-			const configPath = path.join(configDir, "opencode.json");
-
-			const providerName = runtime.name;
-			if (runtime.apiFormat === "openai-compat") {
-				const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
-				if (!apiKey) {
-					log.warn(
-						"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
-					);
-				}
-			}
-
-			const { config: openCodeConfig, configJson: openCodeConfigJson } =
-				buildOpenCodeConfig({
-					runtimeName: providerName,
-					runtimeApiFormat: runtime.apiFormat,
+				const configResult = buildOpenCodeConfig({
+					runtimeName: runtime.name,
 					runtimeBaseUrl: runtime.baseUrl,
 					model,
 				});
-			try {
 				await fs.promises.writeFile(
-					configPath,
-					JSON.stringify(openCodeConfig, null, 2),
+					artifacts.configPath,
+					JSON.stringify(configResult.config, null, 2),
+					"utf-8",
 				);
-			} catch (configErr) {
-				log.warn({ error: configErr }, "Failed to write opencode.json config");
-			}
 
-			log.debug(
-				{ workDir, toolOutputRoot, runtimeBaseUrl: runtime.baseUrl },
-				"Created OpenCode work directory",
-			);
+				const env = buildOpenCodeEnv({
+					configDir: artifacts.configDir,
+					configPath: artifacts.configPath,
+					configJson: configResult.configJson,
+				});
+				const fullPrompt =
+					promptMode === "workspace"
+						? buildWorkspacePrompt(
+								promptWithoutMarker,
+								artifacts.executionWorkspaceDir,
+							)
+						: buildCodeOutputPrompt(promptWithoutMarker, isRetryAttempt);
+				const runFeatures = await getOpenCodeRunFeatures();
+				const args = buildOpenCodeRunArgs({
+					prompt: fullPrompt,
+					modelArg: configResult.provider.modelArg,
+					executionWorkspaceDir: artifacts.executionWorkspaceDir,
+					features: runFeatures,
+				});
 
-			const modelArg = `${providerName}/${model}`;
+				log.debug(
+					{
+						cmd: "opencode",
+						modelArg: configResult.provider.modelArg,
+						executionWorkspaceDir: artifacts.executionWorkspaceDir,
+						configDir: artifacts.configDir,
+						supportsPure: runFeatures.supportsPure,
+						supportsLogLevel: runFeatures.supportsLogLevel,
+					},
+					"Executing OpenCode command",
+				);
 
-			const env = buildOpenCodeEnv({
-				configPath,
-				configJson: openCodeConfigJson,
-				runtimeName: runtime.name,
-			});
-
-			const fullPrompt =
-				promptMode === "workspace"
-					? buildWorkspaceToolPrompt({
-							toolNames: ["read", "edit", "write", "glob", "grep", "bash"],
-							taskPrompt: promptWithoutMarker,
-							workspaceRootPath: workDir,
-							toolUsageHint:
-								"Use read/glob/grep to inspect the workspace and bash for mkdir/delete/move operations when the task requires them.",
-						})
-					: buildCodeOnlyPrompt(promptWithoutMarker, isRetryAttempt);
-
-			const args = [
-				"run",
-				fullPrompt,
-				"--model",
-				modelArg,
-				"--format",
-				"json",
-				"--log-level",
-				"ERROR",
-			];
-			log.debug(
-				{ cmd: "opencode", model, workDir },
-				"Executing OpenCode command directly in workDir",
-			);
-
-			let codeFilePath: string | undefined;
-			const controller = new AbortController();
-			let timeoutId: ReturnType<typeof setTimeout> | undefined;
-			let staleCheckId: ReturnType<typeof setInterval> | undefined;
-			let lastOutputTime = Date.now();
-			let timedOut = false;
-			let staleKilled = false;
-			let staleTimeoutMs = 0;
-			let killAttempted = false;
-
-			const stdoutChunks: string[] = [];
-			const stderrChunks: string[] = [];
-
-			try {
-				const proc = execa("opencode", args, {
+				const processResult = await runOpenCodeCommand({
+					args,
 					env,
-					cwd: workDir,
-					stdin: "ignore",
-					stdout: "pipe",
-					stderr: "pipe",
-					cancelSignal: controller.signal,
-					reject: false,
+					cwd: artifacts.executionWorkspaceDir,
+					timeoutMs,
+					log,
 				});
-
-				const pid = proc.pid;
-				log.debug({ pid }, "OpenCode process started");
-
-				proc.stdout?.on("data", (chunk: Buffer) => {
-					lastOutputTime = Date.now();
-					stdoutChunks.push(chunk.toString());
-				});
-				proc.stderr?.on("data", (chunk: Buffer) => {
-					lastOutputTime = Date.now();
-					stderrChunks.push(chunk.toString());
-				});
-
-				const timeoutPromise: Promise<never> = new Promise((_, reject) => {
-					timeoutId = setTimeout(() => {
-						if (killAttempted) return;
-						killAttempted = true;
-						timedOut = true;
-
-						if (staleCheckId) {
-							clearInterval(staleCheckId);
-							staleCheckId = undefined;
-						}
-
-						log.warn({ timeoutMs, pid }, "OpenCode timed out, killing process");
-						void forceKillProcess(
-							proc,
-							pid,
-							log,
-							`timeout after ${timeoutMs}ms`,
-						);
-						controller.abort();
-						reject(
-							new Error(
-								`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
-							),
-						);
-					}, timeoutMs);
-				});
-
-				const staleOutputTimeoutMs = computeStaleOutputTimeoutMs(timeoutMs);
-				staleTimeoutMs = staleOutputTimeoutMs;
-				const stalePromise: Promise<never> = new Promise((_, reject) => {
-					staleCheckId = setInterval(() => {
-						if (killAttempted) return;
-
-						const staleDuration = Date.now() - lastOutputTime;
-						const threshold = staleOutputTimeoutMs;
-
-						if (staleDuration > threshold) {
-							killAttempted = true;
-							staleKilled = true;
-							staleTimeoutMs = threshold;
-
-							clearInterval(staleCheckId);
-							staleCheckId = undefined;
-
-							if (timeoutId) {
-								clearTimeout(timeoutId);
-								timeoutId = undefined;
-							}
-
-							log.warn(
-								{ staleDurationMs: staleDuration, pid, thresholdMs: threshold },
-								"OpenCode appears hung (no output), killing process",
-							);
-							void forceKillProcess(
-								proc,
-								pid,
-								log,
-								`no output for ${staleDuration}ms`,
-							);
-							controller.abort();
-							reject(
-								new Error(
-									`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
-								),
-							);
-						}
-					}, STALE_CHECK_INTERVAL_MS);
-				});
-
-				const result = await Promise.race([proc, timeoutPromise, stalePromise]);
-
-				if (timeoutId) clearTimeout(timeoutId);
-				if (staleCheckId) clearInterval(staleCheckId);
-				timeoutId = undefined;
-				staleCheckId = undefined;
-
-				if (timedOut) {
-					throw new Error(
-						`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
-					);
-				}
-				if (staleKilled) {
-					throw new Error(
-						`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
-					);
-				}
-
-				const stdout = stdoutChunks.join("");
-				const stderr = stderrChunks.join("");
-				const signalAssessment = hasPermissionDeniedStderr(stderr)
-					? appendSignalAssessmentReasons(undefined, [
-							"tool_permission_denied",
-						])
-					: undefined;
-
-				if (result.exitCode !== 0 && result.exitCode !== null) {
-					const stdoutPreview = stdout.trim().slice(0, 800);
-					const stderrPreview = stderr.trim().slice(0, 800);
-					throw Object.assign(
-						new Error(
-						`OpenCode exited with code ${result.exitCode}: ` +
-							`${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
-						),
-						{ signalAssessment },
-					);
-				}
-
 				const durationMs = Math.round(performance.now() - startTime);
+				const rawOutput = selectProcessOutput(
+					processResult.stdout,
+					processResult.stderr,
+				);
 
-				if (stderr?.trim()) {
+				if (processResult.exitCode !== 0) {
+					const stderrPreview = processResult.stderr.trim().slice(0, 800);
+					const stdoutPreview = processResult.stdout.trim().slice(0, 800);
+					const failureOutput = [
+						processResult.stdout.trim()
+							? `stdout:\n${processResult.stdout.trim()}`
+							: "",
+						processResult.stderr.trim()
+							? `stderr:\n${processResult.stderr.trim()}`
+							: "",
+					]
+						.filter(Boolean)
+						.join("\n\n");
+					const exitDescription =
+						processResult.exitCode === null
+							? "process terminated by signal or timed out"
+							: `code ${processResult.exitCode}`;
+					throw buildOpenCodeFailure(
+						`OpenCode exited with ${exitDescription}: ${stderrPreview || "no stderr"}${stdoutPreview ? ` | stdout: ${stdoutPreview}` : ""}`,
+						durationMs,
+						failureOutput || rawOutput,
+						buildFailureSignalAssessment(
+							processResult.stdout,
+							processResult.stderr,
+						),
+					);
+				}
+
+				const parsed = parseOpenCodeEvents(rawOutput);
+				const signalAssessment = buildSignalAssessment(
+					parsed,
+					processResult.stdout,
+					processResult.stderr,
+					rawOutput,
+				);
+
+				if (processResult.stderr.trim().length > 0) {
 					log.warn(
-						{ stderr: stderr.slice(0, 500) },
+						{ stderr: processResult.stderr.slice(0, 500) },
 						"OpenCode produced stderr",
 					);
 				}
 
-				log.debug(
-					{
-						durationMs,
-						outputLength: stdout.length,
-						exitCode: result.exitCode,
-					},
-					"OpenCode completed",
-				);
-
-				let output = stdout;
-
-				if (!output || output.trim().length === 0) {
-					const stderrContent = stderr.trim();
-					if (stderrContent.length >= MIN_OUTPUT_LENGTH) {
-						log.info(
-							{ stderrUsed: true, length: stderrContent.length },
-							"Using stderr output (stdout was empty)",
-						);
-						output = stderrContent;
-					}
-				}
-
-				const normalized = normalizeOpenCodeOutput(output);
-				const toolCallDetected = normalized.method === "tool_call";
-				if (normalized.method !== "raw") {
-					log.debug(
-						{
-							method: normalized.method,
-							originalLength: output.length,
-							normalizedLength: normalized.output.length,
-						},
-						"Normalized OpenCode output",
-					);
-					output = normalized.output;
-				}
-
 				if (promptMode === "workspace") {
 					return {
-						output,
+						output: parsed.output,
 						durationMs,
 						signalAssessment,
 					};
 				}
 
-				if (fs.existsSync(solutionPath)) {
-					const code = await fs.promises.readFile(solutionPath, "utf-8");
-					if (code.trim().length >= MIN_OUTPUT_LENGTH) {
-						codeFilePath = solutionPath;
-						log.info(
-							{ codeFilePath, codeLength: code.length },
-							"Code written via edit tool",
-						);
-					} else {
-						log.warn(
-							{ codeLength: code.trim().length },
-							"solution.ts exists but is too short",
-						);
-					}
+				const solution = await readUsableOpenCodeSolution(
+					artifacts.solutionPath,
+					MIN_OUTPUT_LENGTH,
+				);
+				if (solution) {
+					codeFilePath = solution.codeFilePath;
+					return {
+						output: parsed.output,
+						durationMs,
+						codeFilePath,
+						signalAssessment,
+					};
 				}
 
-				if (!codeFilePath) {
-					if (
-						durationMs < 2000 &&
-						(!output || output.trim().length < MIN_OUTPUT_LENGTH)
-					) {
-						throw new Error(
-							`OpenCode returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized by OpenCode`,
-						);
-					}
+				const decision = evaluateCodeOnlyOutput(
+					parsed.output,
+					MIN_OUTPUT_LENGTH,
+				);
+				if (
+					!decision.shouldRetry &&
+					decision.code.length >= MIN_OUTPUT_LENGTH
+				) {
+					codeFilePath = await writeSalvagedCode(artifacts, decision.code);
+					return {
+						output: parsed.output,
+						durationMs,
+						codeFilePath,
+						signalAssessment: buildSignalAssessment(
+							parsed,
+							processResult.stdout,
+							processResult.stderr,
+							rawOutput,
+							[
+								"output_contract_violation",
+								...decision.taintReasons,
+								...(parsed.method === "tool_call"
+									? (["tool_call_not_executed"] as const)
+									: []),
+							],
+						),
+					};
+				}
 
-					const decision = evaluateCodeOnlyOutput(output, MIN_OUTPUT_LENGTH);
-					if (
-						decision.method !== "raw" &&
-						decision.code.length >= MIN_OUTPUT_LENGTH
-					) {
-						await fs.promises.writeFile(solutionPath, decision.code, "utf-8");
-						codeFilePath = solutionPath;
-						log.info(
-							{
-								codeFilePath,
-								extractionMethod: decision.method,
-								codeLength: decision.code.length,
-								toolCallDetected,
-							},
-							"Persisted extracted code to solution.ts (tool output absent)",
+				if (decision.shouldRetry && !isRetryAttempt) {
+					const elapsedMs = Math.round(performance.now() - startTime);
+					const remainingMs = timeoutMs - elapsedMs;
+					if (remainingMs > 1000) {
+						const firstAttemptAssessment = buildSignalAssessment(
+							parsed,
+							processResult.stdout,
+							processResult.stderr,
+							rawOutput,
+							[
+								"output_contract_violation",
+								...decision.taintReasons,
+								...(parsed.method === "tool_call"
+									? (["tool_call_not_executed"] as const)
+									: []),
+							],
 						);
-						return {
-							output,
-							durationMs,
-							codeFilePath,
-							signalAssessment: appendSignalAssessmentReasons(
-								signalAssessment,
-								[
-									...decision.taintReasons,
-									...(toolCallDetected
-										? (["tool_call_not_executed"] as const)
-										: []),
-								],
-							),
-						};
-					} else if (decision.shouldRetry) {
-						const elapsedMs = Math.round(performance.now() - startTime);
-						const remainingMs = timeoutMs - elapsedMs;
-						if (!isRetryAttempt && remainingMs > 1000) {
-							log.warn(
-								{
-									reason: decision.reason,
-									remainingMs,
-									outputPreview: output.slice(0, 200),
-								},
-								"OpenCode returned off-task/non-code output, retrying once",
-							);
+						try {
 							const retryResult = await createOpenCodeAdapter().generate({
 								...opts,
 								prompt: appendRetryMarker(promptWithoutMarker),
@@ -480,80 +349,59 @@ export function createOpenCodeAdapter(): Harness {
 							return {
 								...retryResult,
 								durationMs: Math.round(performance.now() - startTime),
+								signalAssessment: appendSignalAssessmentReasons(
+									retryResult.signalAssessment,
+									firstAttemptAssessment?.classification === "tainted"
+										? firstAttemptAssessment.reasons
+										: [],
+								),
 							};
+						} catch (error) {
+							const totalDurationMs = Math.round(performance.now() - startTime);
+							if (error !== null && typeof error === "object") {
+								Object.assign(error, { durationMs: totalDurationMs });
+								if (firstAttemptAssessment?.classification === "tainted") {
+									const existingAssessment =
+										"signalAssessment" in error
+											? (error.signalAssessment as SignalAssessment | undefined)
+											: undefined;
+									Object.assign(error, {
+										signalAssessment: appendSignalAssessmentReasons(
+											existingAssessment,
+											firstAttemptAssessment.reasons,
+										),
+									});
+								}
+							}
+							throw error;
 						}
-
-						log.warn(
-							{
-								toolCallDetected,
-								outputLength: output.length,
-								extractionMethod: decision.method,
-								reason: decision.reason,
-							},
-							"OpenCode finished with off-task/non-code output",
-						);
 					}
 				}
 
-				return {
-					output,
+				const failureAssessment = buildSignalAssessment(
+					parsed,
+					processResult.stdout,
+					processResult.stderr,
+					rawOutput,
+					[
+						"output_contract_violation",
+						...decision.taintReasons,
+						...(parsed.method === "tool_call"
+							? (["tool_call_not_executed"] as const)
+							: []),
+					],
+				);
+				throw buildOpenCodeFailure(
+					`OpenCode did not write ${SOLUTION_FILENAME} and no usable code output was produced`,
 					durationMs,
-					codeFilePath,
-					signalAssessment,
-				};
-			} catch (error) {
-				if (timeoutId) clearTimeout(timeoutId);
-				if (staleCheckId) clearInterval(staleCheckId);
-
-				if (error instanceof Error && error.name === "AbortError") {
-					if (timedOut) {
-						throw new Error(
-							`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
-						);
-					}
-					if (staleKilled) {
-						throw new Error(
-							`OpenCode hung (no output for ${Math.round(staleTimeoutMs / 1000)}s). Process may be stuck on backend.`,
-						);
-					}
-					throw new Error("OpenCode was aborted");
-				}
-
-				if (error instanceof Error && error.message.includes("timed out")) {
-					throw new Error(
-						`OpenCode timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
-					);
-				}
-
-				if (error && typeof error === "object" && "stderr" in error) {
-					const execaError = error as { stderr: string; message: string };
-					throw Object.assign(
-						new Error(
-							`OpenCode failed: ${execaError.stderr || execaError.message}`,
-						),
-						{
-							signalAssessment: hasPermissionDeniedStderr(execaError.stderr)
-								? appendSignalAssessmentReasons(undefined, [
-										"tool_permission_denied",
-									])
-								: undefined,
-						},
-					);
-				}
-
-				throw error;
+					parsed.output,
+					failureAssessment,
+				);
 			} finally {
-				if (timeoutId) clearTimeout(timeoutId);
-				if (staleCheckId) clearInterval(staleCheckId);
-
-				if (!hasExternalWorkingDirectory && !codeFilePath) {
-					fs.promises
-						.rm(workDir, { recursive: true, force: true })
-						.catch(() => {});
-				}
-				fs.promises
-					.rm(configDir, { recursive: true, force: true })
-					.catch(() => {});
+				await cleanupOpenCodeArtifacts(artifacts, {
+					preserveWorkspace:
+						artifacts.hasExternalWorkspace || codeFilePath !== undefined,
+				});
 			}
 		},
 	};

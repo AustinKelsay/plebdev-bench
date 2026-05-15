@@ -12,11 +12,11 @@ import * as path from "node:path";
 import { Command } from "commander";
 import { z } from "zod";
 import { buildDashboardIndexArtifacts } from "../../apps/dashboard/scripts/build-index.js";
+import { logger } from "../lib/logger.js";
 import {
 	normalizeKnownPlanPayload,
 	normalizeKnownRunPayload,
 } from "../lib/machine-profile/legacy.js";
-import { logger } from "../lib/logger.js";
 import { RunPlanSchema, RunResultSchema } from "../schemas/index.js";
 
 /**
@@ -243,7 +243,9 @@ async function writePreparedArtifacts(
 			}
 			const shouldDeleteBackup =
 				rewrite.backupCreated &&
-				(writeCommitted || rewrite.rollbackSucceeded || !rewrite.renameCompleted);
+				(writeCommitted ||
+					rewrite.rollbackSucceeded ||
+					!rewrite.renameCompleted);
 			if (shouldDeleteBackup) {
 				try {
 					await fs.unlink(rewrite.backupPath);
@@ -316,7 +318,9 @@ async function migrateResultsDirectory(resultsDir: string): Promise<{
 
 /** CLI command for machine-profile artifact migration. */
 export const migrateMachineCommand = new Command("migrate-machine-profiles")
-	.description("Rewrite run artifacts to the standardized machine-profile schema")
+	.description(
+		"Rewrite run artifacts to the standardized machine-profile schema",
+	)
 	.option("-d, --dir <path>", "Results directory to rewrite", "results")
 	.option(
 		"--rebuild-dashboard-index",
@@ -328,18 +332,26 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 		"Output directory for rebuilt dashboard artifacts",
 	)
 	.action(async (options) => {
+		const parsedOptions = MigrateMachineCommandOptionsSchema.safeParse(options);
+		if (!parsedOptions.success) {
+			logger.warn(
+				{ issues: parsedOptions.error.issues },
+				"Machine-profile migration options failed validation",
+			);
+			return;
+		}
+
 		try {
-			const parsedOptions = MigrateMachineCommandOptionsSchema.parse(options);
-			const resultsDir = path.resolve(parsedOptions.dir);
+			const resultsDir = path.resolve(parsedOptions.data.dir);
 			const migrated = await migrateResultsDirectory(resultsDir);
 			logger.info(
 				{ resultsDir, ...migrated },
 				"Migrated machine-profile artifacts",
 			);
 
-			if (parsedOptions.rebuildDashboardIndex) {
+			if (parsedOptions.data.rebuildDashboardIndex) {
 				const dashboardOutputDir = path.resolve(
-					parsedOptions.dashboardOutputDir!,
+					parsedOptions.data.dashboardOutputDir!,
 				);
 				const result = await buildDashboardIndexArtifacts({
 					sourceResultsDir: resultsDir,
@@ -355,9 +367,6 @@ export const migrateMachineCommand = new Command("migrate-machine-profiles")
 				);
 			}
 		} catch (error) {
-			console.error(
-				error instanceof Error ? error.message : String(error),
-			);
 			logger.error({ error }, "Machine-profile migration failed");
 			process.exit(1);
 		}

@@ -9,9 +9,9 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { isPreflightTest } from "./tool-smoke.js";
 import type { TestCategory, TestDefinition } from "../schemas/index.js";
 import { TestDefinitionSchema, TestMetadataSchema } from "../schemas/index.js";
+import { isPreflightTest } from "./tool-smoke.js";
 
 /** Required metadata filename in each test directory. */
 export const TEST_METADATA_FILE = "test.meta.json";

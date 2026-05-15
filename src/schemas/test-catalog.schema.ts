@@ -55,14 +55,6 @@ function validateTestMetadata(
 				"workspace-scored tests must declare requiredHarnessCapabilities",
 		});
 	}
-
-	if (!Number.isFinite(value.timeoutMultiplier) || value.timeoutMultiplier <= 0) {
-		ctx.addIssue({
-			code: z.ZodIssueCode.custom,
-			path: ["timeoutMultiplier"],
-			message: "timeoutMultiplier must be a finite positive number",
-		});
-	}
 }
 
 /** Base object schema shared by raw metadata and resolved definitions. */
@@ -89,7 +81,11 @@ const TestMetadataFieldsSchema = z.object({
 	requiredHarnessCapabilities: z.array(HarnessCapabilitySchema).default([]),
 
 	/** Optional per-test multiplier applied on top of dynamic generation timeouts. */
-	timeoutMultiplier: z.number().positive().default(1),
+	timeoutMultiplier: z
+		.number()
+		.finite({ message: "timeoutMultiplier must be a finite positive number" })
+		.positive({ message: "timeoutMultiplier must be a finite positive number" })
+		.default(1),
 });
 
 /** Zod schema for per-test metadata file contents. */

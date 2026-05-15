@@ -1,6 +1,11 @@
 /**
  * Purpose: Run list page component displaying all benchmark runs grouped by checkpoint season.
- * Shows the live season first, then archived seasons for auditability.
+ * Exports: RunListPage
+ *
+ * Invariants:
+ * - Runs are grouped by checkpoint season.
+ * - The live season is shown first.
+ * - Archived seasons are retained for auditability.
  */
 
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
@@ -20,9 +25,20 @@ const RUN_LIST_SKELETON_KEYS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 const STAT_ACCENTS = [
 	"hsl(142, 60%, 49%)", // green — Live Runs
 	"hsl(215, 70%, 60%)", // blue — Profiles
-	"hsl(38, 80%, 58%)",  // amber — Instances
+	"hsl(38, 80%, 58%)", // amber — Instances
 	"hsl(265, 50%, 62%)", // purple — Last Published
 ];
+
+const STAGGER_CLASSES = [
+	"animate-stagger-1",
+	"animate-stagger-2",
+	"animate-stagger-3",
+	"animate-stagger-4",
+	"animate-stagger-5",
+	"animate-stagger-6",
+	"animate-stagger-7",
+	"animate-stagger-8",
+] as const;
 
 /** Left-border accent color per group type. */
 function groupBorderColor(group: { isLatest: boolean; isLegacy: boolean }) {
@@ -31,6 +47,13 @@ function groupBorderColor(group: { isLatest: boolean; isLegacy: boolean }) {
 	return "border-l-foreground-faint";
 }
 
+/**
+ * Renders the benchmark run list page grouped by checkpoint season.
+ *
+ * Takes no params; run data is loaded from dashboard context via `useRuns`.
+ * @returns JSX element containing loading, error, empty, and grouped run states.
+ * @throws No intentional runtime errors; hook/provider failures are surfaced as error UI.
+ */
 export function RunListPage() {
 	const { runs, checkpoints, latestCheckpointId, loading, error } = useRuns();
 	const checkpointGroups = buildRunCheckpointGroups(
@@ -123,27 +146,53 @@ export function RunListPage() {
 						<CardContent className="space-y-4 pt-6">
 							<div className="grid gap-3 md:grid-cols-4">
 								{[
-									{ label: "Live Runs", value: formatNumber(liveGroup?.runCount ?? 0), large: true },
-									{ label: "Profiles", value: formatNumber(liveGroup?.machineCount ?? 0), large: true },
-									{ label: "Instances", value: formatNumber(liveGroup?.instanceCount ?? 0), large: true },
-									{ label: "Last Published", value: liveGroup ? formatDate(liveGroup.latestRunAt) : "n/a", large: false },
+									{
+										label: "Live Runs",
+										value: formatNumber(liveGroup?.runCount ?? 0),
+										large: true,
+										accent: STAT_ACCENTS[0],
+									},
+									{
+										label: "Profiles",
+										value: formatNumber(liveGroup?.machineCount ?? 0),
+										large: true,
+										accent: STAT_ACCENTS[1],
+									},
+									{
+										label: "Instances",
+										value: formatNumber(liveGroup?.instanceCount ?? 0),
+										large: true,
+										accent: STAT_ACCENTS[2],
+									},
+									{
+										label: "Last Published",
+										value: liveGroup
+											? formatDate(liveGroup.latestRunAt)
+											: "n/a",
+										large: false,
+										accent: STAT_ACCENTS[3],
+									},
 								].map((stat, i) => (
 									<div
 										key={stat.label}
-										className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up animate-stagger-${i + 1}`}
-										style={{ borderLeftColor: STAT_ACCENTS[i] }}
+										className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
+										style={{ borderLeftColor: stat.accent ?? STAT_ACCENTS[i] }}
 									>
 										<p className="text-xs uppercase tracking-[0.16em] text-foreground-faint">
 											{stat.label}
 										</p>
-										<p className={`mt-2 font-semibold tabular-nums ${stat.large ? "text-2xl" : "text-lg"}`}>
+										<p
+											className={`mt-2 font-semibold tabular-nums ${stat.large ? "text-2xl" : "text-lg"}`}
+										>
 											{stat.value}
 										</p>
 									</div>
 								))}
 							</div>
 							<div className="space-y-2">
-								<p className="text-sm font-medium text-foreground">How seasons work</p>
+								<p className="text-sm font-medium text-foreground">
+									How seasons work
+								</p>
 								{[
 									"A new season starts when benchmark definitions change — prompts, specs, rubrics, or harness code. Each season is pinned to a checkpoint hash.",
 									"The leaderboard defaults to the live season so models are compared on identical ground — no moving targets.",
@@ -151,7 +200,7 @@ export function RunListPage() {
 								].map((note, i) => (
 									<div
 										key={note}
-										className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up animate-stagger-${i + 1}`}
+										className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 									>
 										{note}
 									</div>
@@ -166,7 +215,7 @@ export function RunListPage() {
 							<Card
 								key={`${group.key}-summary`}
 								glow
-								className={`border-l-2 ${groupBorderColor(group)} animate-fade-slide-up animate-stagger-${i + 1} ${
+								className={`border-l-2 ${groupBorderColor(group)} animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]} ${
 									group.isLatest
 										? "border-success/20 bg-success/5"
 										: group.isLegacy
@@ -255,13 +304,20 @@ export function RunListPage() {
 										<Badge variant="outline">{group.checkpointId}</Badge>
 									) : null}
 									<span className="text-foreground-muted">
-										{formatNumber(group.runCount)} runs · {formatNumber(group.machineCount)} profiles · {formatNumber(group.instanceCount)} instances · {formatNumber(group.rawItemCount)} items · last published {formatDate(group.latestRunAt)}
+										{formatNumber(group.runCount)} runs ·{" "}
+										{formatNumber(group.machineCount)} profiles ·{" "}
+										{formatNumber(group.instanceCount)} instances ·{" "}
+										{formatNumber(group.rawItemCount)} items · last published{" "}
+										{formatDate(group.latestRunAt)}
 									</span>
 								</div>
 
 								<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 									{group.runs.map((run, i) => (
-										<div key={run.runId} className={`animate-fade-slide-up animate-stagger-${(i % 8) + 1}`}>
+										<div
+											key={run.runId}
+											className={`animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
+										>
 											<RunCard
 												run={run}
 												showCheckpointBadge={false}

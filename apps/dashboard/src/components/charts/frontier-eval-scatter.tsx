@@ -6,7 +6,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { computeItemPassRate } from "@/lib/aggregations";
-import { CHART_COLORS } from "@/lib/chart-colors";
+import { CHART_COLORS, getHarnessColor } from "@/lib/chart-colors";
 import { scatter as scatterTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
 import {
@@ -25,12 +25,6 @@ import {
 interface FrontierEvalScatterProps {
 	items: MatrixItemResult[];
 }
-
-const HARNESS_COLORS: Record<string, string> = {
-	direct: "hsl(215, 70%, 62%)",  // steel blue
-	goose: "hsl(142, 60%, 49%)",   // brand green
-	opencode: "hsl(38, 80%, 58%)", // warm amber
-};
 
 function CustomTooltip({
 	active,
@@ -104,7 +98,7 @@ export function FrontierEvalScatter({ items }: FrontierEvalScatterProps) {
 	const dataByHarness = harnesses.map((harness) => ({
 		harness,
 		data: dataPoints.filter((d) => d.harness === harness),
-		color: HARNESS_COLORS[harness] || CHART_COLORS.muted,
+		color: getHarnessColor(harness),
 	}));
 
 	// Determine if we have token data for point sizing

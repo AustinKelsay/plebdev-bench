@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import {
+	ArtifactRuntimeNameSchema,
 	BenchmarkCheckpointSchema,
 	FrontierEvalFailureTypeSchema,
 	GenerationFailureTypeSchema,
@@ -16,7 +17,6 @@ import {
 	MachineProfileSchema,
 	PassTypeSchema,
 	RunProvenanceSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
 	SignalAssessmentSchema,
@@ -91,16 +91,66 @@ export const FrontierEvalSchema = z.object({
 export type FrontierEval = z.infer<typeof FrontierEvalSchema>;
 
 /** Zod schema for scoring metrics (timing). */
-export const ScoringMetricsSchema = z.object({
-	/** Total scoring pipeline duration in milliseconds (includes compile-retry generation if used). */
-	durationMs: z.number(),
+export const ScoringMetricsSchema = z
+	.object({
+		/** Total scoring pipeline duration in milliseconds (includes compile-retry generation if used). */
+		durationMs: z.number(),
 
-	/** Pure scoring evaluation duration in milliseconds (excludes retry generation). */
-	scoringDurationMs: z.number().optional(),
+		/** Pure scoring evaluation duration in milliseconds (excludes retry generation). */
+		scoringDurationMs: z.number().optional(),
 
-	/** Compile-feedback retry generation time in milliseconds (when retry path is used). */
-	retryGenerationDurationMs: z.number().optional(),
-});
+		/** Compile-feedback retry generation time in milliseconds (when retry path is used). */
+		retryGenerationDurationMs: z.number().optional(),
+
+		/** Retry family used by the scoring pipeline. */
+		retryKind: z.enum(["compile-feedback", "opencode-workspace"]).optional(),
+
+		/** Stable human-readable reason for a scoring retry. */
+		retryReason: z.string().optional(),
+
+		/** Whether a scoring-level retry was attempted. */
+		retryAttempted: z.boolean().optional(),
+
+		/** Whether the retry result replaced the first attempt. */
+		retryPromoted: z.boolean().optional(),
+	})
+	.refine(
+		(metrics) => {
+			const hasAnyRetryField =
+				metrics.retryKind !== undefined ||
+				metrics.retryReason !== undefined ||
+				metrics.retryAttempted !== undefined ||
+				metrics.retryPromoted !== undefined ||
+				metrics.retryGenerationDurationMs !== undefined;
+			if (!hasAnyRetryField) {
+				return true;
+			}
+			if (metrics.retryAttempted === true) {
+				return (
+					metrics.retryKind !== undefined &&
+					typeof metrics.retryReason === "string" &&
+					metrics.retryReason.trim().length > 0 &&
+					typeof metrics.retryPromoted === "boolean" &&
+					typeof metrics.retryGenerationDurationMs === "number" &&
+					metrics.retryGenerationDurationMs >= 0
+				);
+			}
+			if (metrics.retryAttempted === false) {
+				return (
+					metrics.retryKind === undefined &&
+					metrics.retryReason === undefined &&
+					metrics.retryPromoted === undefined &&
+					metrics.retryGenerationDurationMs === undefined
+				);
+			}
+			return false;
+		},
+		{
+			message:
+				"retry metrics must be fully absent, or when retryAttempted is true include retryKind, non-empty retryReason, retryPromoted, and non-negative retryGenerationDurationMs; when retryAttempted is false the other retry fields must be absent",
+			path: ["retryKind"],
+		},
+	);
 
 /** Scoring metrics type. */
 export type ScoringMetrics = z.infer<typeof ScoringMetricsSchema>;
@@ -159,7 +209,7 @@ export const MatrixItemResultSchema = z.object({
 	id: z.string(),
 
 	/** Runtime name. */
-	runtime: RuntimeNameSchema,
+	runtime: ArtifactRuntimeNameSchema,
 
 	/** Model name. */
 	model: z.string(),

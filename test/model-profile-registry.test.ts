@@ -11,13 +11,14 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
+import { buildFallbackModelProfile } from "../src/lib/model-profile/normalization.js";
 import {
 	buildResolvedModelProfile,
 	loadModelProfiles,
 	parseInlineModelProfile,
 	resolveModelSelection,
 } from "../src/lib/model-profiles.js";
-import { buildFallbackModelProfile } from "../src/lib/model-profile/normalization.js";
+import { SCHEMA_VERSION } from "../src/schemas/index.js";
 import {
 	ConfiguredModelProfileSchema,
 	ModelProfileFileSchema,
@@ -32,9 +33,7 @@ describe("parseInlineModelProfile", () => {
 
 	it("rejects duplicate runtimes in inline mappings", () => {
 		expect(() =>
-			parseInlineModelProfile(
-				"qwen3-27b=ollama:qwen3:27b,ollama:qwen3:27b-q4",
-			),
+			parseInlineModelProfile("qwen3-27b=ollama:qwen3:27b,ollama:qwen3:27b-q4"),
 		).toThrow('duplicate runtime "ollama"');
 	});
 });
@@ -84,6 +83,80 @@ describe("model-profile registry provenance", () => {
 
 		expect(selection.resolutionSource).toBe("configured_profile");
 	});
+
+	it("loads legacy profile files by ignoring unsupported variants when supported variants remain", () => {
+		const tempDir = fs.mkdtempSync(
+			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
+		);
+		try {
+			const profilePath = path.join(tempDir, "models.json");
+			fs.writeFileSync(
+				profilePath,
+				JSON.stringify(
+					{
+						schemaVersion: SCHEMA_VERSION,
+						models: {
+							"qwen3-27b-instruct": {
+								profileLabel: "Qwen 3 27B Instruct",
+								family: "qwen3",
+								variants: {
+									ollama: "qwen3:27b",
+									vllm: "Qwen/Qwen3-27B-Instruct",
+								},
+							},
+						},
+					},
+					null,
+					2,
+				),
+			);
+
+			const registry = loadModelProfiles(profilePath);
+			expect(registry["qwen3-27b-instruct"]?.variants.ollama).toBe("qwen3:27b");
+			expect(
+				Object.prototype.hasOwnProperty.call(
+					registry["qwen3-27b-instruct"]?.variants ?? {},
+					"vllm",
+				),
+			).toBe(false);
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects legacy profiles with no supported runtime variants", () => {
+		const tempDir = fs.mkdtempSync(
+			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
+		);
+		try {
+			const profilePath = path.join(tempDir, "models.json");
+			fs.writeFileSync(
+				profilePath,
+				JSON.stringify(
+					{
+						schemaVersion: SCHEMA_VERSION,
+						models: {
+							"legacy-vllm-only": {
+								profileLabel: "Legacy vLLM Only",
+								family: "qwen3",
+								variants: {
+									vllm: "Qwen/Qwen3-32B-Instruct",
+								},
+							},
+						},
+					},
+					null,
+					2,
+				),
+			);
+
+			expect(() => loadModelProfiles(profilePath)).toThrow(
+				"legacy-vllm-only (original runtimes: vllm)",
+			);
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
 });
 
 describe("model-profile normalization", () => {
@@ -122,7 +195,7 @@ describe("ModelProfileFileSchema", () => {
 		).toBe(false);
 	});
 
-	it("rejects invalid runtime keys in configured variants", () => {
+	it("rejects unknown runtime keys in configured variants", () => {
 		expect(
 			ConfiguredModelProfileSchema.safeParse({
 				variants: {
@@ -130,6 +203,29 @@ describe("ModelProfileFileSchema", () => {
 				},
 			}).success,
 		).toBe(false);
+		expect(
+			ConfiguredModelProfileSchema.safeParse({
+				variants: {
+					vllm: "Qwen/Qwen3-27B-Instruct",
+				},
+			}).success,
+		).toBe(false);
+	});
+
+	it("accepts legacy artifact runtime keys in persisted files", () => {
+		expect(
+			ModelProfileFileSchema.safeParse({
+				schemaVersion: SCHEMA_VERSION,
+				models: {
+					"qwen3-27b-instruct": {
+						variants: {
+							ollama: "qwen3:27b",
+							vllm: "Qwen/Qwen3-27B-Instruct",
+						},
+					},
+				},
+			}).success,
+		).toBe(true);
 	});
 });
 

@@ -11,8 +11,10 @@ import { describe, expect, it } from "vitest";
 import {
 	DashboardIndexLegacyOrCurrentSchema,
 	LeaderboardAggregateSchema,
+	RunPlanSchema,
 	RunResultSchema,
 } from "../apps/dashboard/src/lib/schemas.js";
+import { SCHEMA_VERSION } from "../src/schemas/index.js";
 
 describe("LeaderboardAggregateSchema", () => {
 	it("upgrades legacy schemaVersion 1 aggregates to the v2 shape", () => {
@@ -162,7 +164,7 @@ describe("DashboardIndexLegacyOrCurrentSchema", () => {
 describe("RunResultSchema", () => {
 	it("accepts optional model profile and signal assessment metadata on items", () => {
 		const parsed = RunResultSchema.parse({
-			schemaVersion: "0.5.0",
+			schemaVersion: SCHEMA_VERSION,
 			runId: "run-test",
 			startedAt: "2026-03-25T12:00:00.000Z",
 			completedAt: "2026-03-25T12:01:00.000Z",
@@ -218,7 +220,7 @@ describe("RunResultSchema", () => {
 	it("rejects trustworthy signal assessments that include taint reasons", () => {
 		expect(() =>
 			RunResultSchema.parse({
-				schemaVersion: "0.5.0",
+				schemaVersion: SCHEMA_VERSION,
 				runId: "run-test",
 				startedAt: "2026-03-25T12:00:00.000Z",
 				completedAt: "2026-03-25T12:01:00.000Z",
@@ -246,5 +248,130 @@ describe("RunResultSchema", () => {
 				],
 			}),
 		).toThrow("trustworthy signal assessments must not include taint reasons");
+	});
+
+	it("accepts newly added transcript/input taint reasons", () => {
+		const parsed = RunResultSchema.parse({
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-test",
+			startedAt: "2026-03-25T12:00:00.000Z",
+			completedAt: "2026-03-25T12:01:00.000Z",
+			durationMs: 60_000,
+			summary: {
+				total: 1,
+				completed: 1,
+				failed: 0,
+				pending: 0,
+			},
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "qwen3:27b",
+					harness: "goose",
+					test: "workspace-smoke",
+					passType: "blind",
+					status: "completed",
+					signalAssessment: {
+						classification: "tainted",
+						reasons: ["internal_tool_transcript", "agent_requested_input"],
+					},
+				},
+			],
+		});
+
+		expect(parsed.items[0]?.signalAssessment?.reasons).toEqual([
+			"internal_tool_transcript",
+			"agent_requested_input",
+		]);
+	});
+});
+
+describe("RunPlanSchema", () => {
+	it("preserves legacy vllmBaseUrl config fields for older plan display", () => {
+		const parsed = RunPlanSchema.parse({
+			schemaVersion: "0.5.0",
+			runId: "run-legacy-plan",
+			createdAt: "2026-03-25T12:00:00.000Z",
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
+				generateTimeoutMs: 300_000,
+				passTypes: ["blind"],
+			},
+			items: [],
+			summary: {
+				totalItems: 0,
+				runtimes: 0,
+				models: 0,
+				harnesses: 0,
+				tests: 0,
+			},
+		});
+
+		expect(parsed.config.vllmBaseUrl).toBe("http://localhost:8000");
+	});
+
+	it("preserves additive plan fields for dashboard compatibility", () => {
+		const parsed = RunPlanSchema.parse({
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-additive-plan",
+			createdAt: "2026-03-25T12:00:00.000Z",
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 300_000,
+				passTypes: ["blind"],
+				futureConfigField: "kept",
+			},
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "qwen3:27b",
+					harness: "direct",
+					test: "smoke",
+					passType: "blind",
+					futureItemField: "kept",
+				},
+			],
+			modelExclusions: [
+				{
+					runtime: "ollama",
+					model: "nomic-embed-text",
+					reason: "non_generative_model",
+					evidence: {
+						architecture: "bert",
+					},
+				},
+			],
+			summary: {
+				totalItems: 1,
+				runtimes: 1,
+				models: 1,
+				harnesses: 1,
+				tests: 1,
+				categories: 1,
+				futureSummaryField: "kept",
+			},
+			futureTopLevelField: "kept",
+		});
+
+		expect(parsed.summary.categories).toBe(1);
+		expect(parsed.modelExclusions?.[0]).toMatchObject({
+			model: "nomic-embed-text",
+			reason: "non_generative_model",
+		});
+		expect((parsed as Record<string, unknown>).futureTopLevelField).toBe(
+			"kept",
+		);
+		expect((parsed.config as Record<string, unknown>).futureConfigField).toBe(
+			"kept",
+		);
+		expect((parsed.items[0] as Record<string, unknown>).futureItemField).toBe(
+			"kept",
+		);
+		expect((parsed.summary as Record<string, unknown>).futureSummaryField).toBe(
+			"kept",
+		);
 	});
 });

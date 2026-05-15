@@ -1,10 +1,7 @@
 {
-  "category": "coding",
-  "description": "Chainable calculator with state and memory behavior",
-  "tags": [
-    "stateful",
-    "api-design"
-  ],
-  "timeoutMultiplier": 2,
-  "schemaVersion": 1
+	"category": "coding",
+	"description": "Chainable calculator with state and memory behavior",
+	"tags": ["stateful", "api-design"],
+	"timeoutMultiplier": 2,
+	"schemaVersion": 1
 }

@@ -45,7 +45,8 @@ export function classifyGenerationError(
 	// Prompt file not found
 	if (
 		lower.includes("prompt file not found") ||
-		lower.includes("prompt not found")
+		lower.includes("prompt not found") ||
+		lower.includes("prompt missing")
 	) {
 		return "prompt_not_found";
 	}
@@ -70,7 +71,8 @@ export function classifyGenerationError(
 		lower.includes("no output") ||
 		lower.includes("not recognized") ||
 		lower.includes("command failed") ||
-		lower.includes("exit code")
+		lower.includes("exit code") ||
+		lower.includes("exited with code")
 	) {
 		return "harness_error";
 	}

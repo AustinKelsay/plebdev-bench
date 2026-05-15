@@ -1,10 +1,7 @@
 {
-  "category": "coding",
-  "description": "Per-key fixed-window rate limiter semantics",
-  "tags": [
-    "stateful",
-    "time-window"
-  ],
-  "timeoutMultiplier": 3,
-  "schemaVersion": 1
+	"category": "coding",
+	"description": "Per-key fixed-window rate limiter semantics",
+	"tags": ["stateful", "time-window"],
+	"timeoutMultiplier": 3,
+	"schemaVersion": 1
 }

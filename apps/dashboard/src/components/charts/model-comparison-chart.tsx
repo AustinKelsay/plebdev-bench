@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/select";
 import { computeHeadToHeadData, groupByModel } from "@/lib/aggregations";
 import { CHART_COLORS } from "@/lib/chart-colors";
+import { MatrixItemResultSchema } from "@/lib/schemas";
 import { headToHead as h2hTooltips } from "@/lib/tooltip-content";
 import type { MatrixItemResult } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	Bar,
 	BarChart,
@@ -33,11 +34,24 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { z } from "zod";
 
 interface ModelComparisonChartProps {
 	items: MatrixItemResult[];
 }
 
+const ModelComparisonChartPropsSchema = z.object({
+	items: z.array(MatrixItemResultSchema),
+});
+
+/**
+ * Renders the head-to-head tooltip for a single test row.
+ *
+ * @param props - Tooltip activation state and Recharts payload entries
+ * @param props.active - Whether the tooltip is currently active
+ * @param props.payload - Payload entries containing test, model scores, and delta
+ * @returns Tooltip markup for the active row, or `null` when inactive or empty
+ */
 function ComparisonTooltip({
 	active,
 	payload,
@@ -46,7 +60,12 @@ function ComparisonTooltip({
 	payload?: Array<{
 		name: string;
 		value: number;
-		payload: { test: string; modelAScore: number; modelBScore: number; delta: number };
+		payload: {
+			test: string;
+			modelAScore: number;
+			modelBScore: number;
+			delta: number;
+		};
 	}>;
 }) {
 	if (!active || !payload?.length) return null;
@@ -54,12 +73,8 @@ function ComparisonTooltip({
 	return (
 		<div className="bg-background-raised border border-border rounded p-2 text-sm font-mono">
 			<p className="font-medium mb-1">{d.test}</p>
-			<p className="text-success">
-				Model A: {d.modelAScore.toFixed(1)}%
-			</p>
-			<p className="text-info">
-				Model B: {d.modelBScore.toFixed(1)}%
-			</p>
+			<p className="text-success">Model A: {d.modelAScore.toFixed(1)}%</p>
+			<p className="text-info">Model B: {d.modelBScore.toFixed(1)}%</p>
 			<p className="text-foreground-muted text-xs mt-1">
 				Delta: {d.delta > 0 ? "+" : ""}
 				{d.delta.toFixed(1)}%
@@ -74,8 +89,32 @@ function ComparisonTooltip({
  * @param props - Component props
  * @param props.items - Filtered matrix items
  * @returns Card with model selectors and diverging bar chart
+ * @throws {Error} Prop validation uses safeParse and renders a fallback instead
+ * of throwing; downstream aggregation or chart rendering may still throw for
+ * unexpected validated data.
  */
-export function ModelComparisonChart({ items }: ModelComparisonChartProps) {
+export function ModelComparisonChart(props: ModelComparisonChartProps) {
+	const parsedProps = useMemo(
+		() => ModelComparisonChartPropsSchema.safeParse(props),
+		[props],
+	);
+	const validationErrorMessage = parsedProps.success
+		? undefined
+		: parsedProps.error.message;
+	const lastLoggedValidationError = useRef<string | undefined>(undefined);
+	useEffect(() => {
+		if (
+			!parsedProps.success &&
+			validationErrorMessage !== lastLoggedValidationError.current
+		) {
+			lastLoggedValidationError.current = validationErrorMessage;
+			console.error(
+				"Invalid ModelComparisonChart props",
+				validationErrorMessage,
+			);
+		}
+	}, [parsedProps.success, validationErrorMessage]);
+	const items = parsedProps.success ? parsedProps.data.items : [];
 	const allModels = useMemo(() => {
 		const groups = groupByModel(items);
 		return [...groups.keys()].sort();
@@ -88,6 +127,25 @@ export function ModelComparisonChart({ items }: ModelComparisonChartProps) {
 		if (!modelA || !modelB || modelA === modelB) return [];
 		return computeHeadToHeadData(items, modelA, modelB);
 	}, [items, modelA, modelB]);
+
+	if (!parsedProps.success) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-base">
+						<WithInfoTooltip tooltip={h2hTooltips.title}>
+							Head-to-Head Comparison
+						</WithInfoTooltip>
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<p className="text-foreground-faint text-sm py-8 text-center">
+						Unable to render model comparison.
+					</p>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	if (allModels.length < 2) {
 		return (

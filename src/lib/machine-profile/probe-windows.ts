@@ -7,7 +7,10 @@
  * - Probe failures return explicit unavailable status details
  */
 
-import type { HardwareProfile, ObservedAccelerator } from "../../schemas/index.js";
+import type {
+	HardwareProfile,
+	ObservedAccelerator,
+} from "../../schemas/index.js";
 import { runProbe } from "./probe-utils.js";
 
 /**

@@ -115,7 +115,8 @@ function normalizeCpuModelKey(cpuModelRaw: string, cpuVendor: string): string {
  */
 function normalizeAcceleratorVendor(accelerator: ObservedAccelerator): string {
 	const explicitVendorSlug = normalizeOptionalSlug(accelerator.vendor);
-	const candidate = `${accelerator.vendor ?? ""} ${accelerator.modelRaw}`.toLowerCase();
+	const candidate =
+		`${accelerator.vendor ?? ""} ${accelerator.modelRaw}`.toLowerCase();
 	if (candidate.includes("apple")) return "apple";
 	if (candidate.includes("nvidia")) return "nvidia";
 	if (candidate.includes("amd") || candidate.includes("radeon")) return "amd";
@@ -163,7 +164,9 @@ function selectPrimaryAccelerator(
  * @param accelerators - Observed accelerators
  * @returns Total observed accelerator device count
  */
-function getObservedAcceleratorCount(accelerators: ObservedAccelerator[]): number {
+function getObservedAcceleratorCount(
+	accelerators: ObservedAccelerator[],
+): number {
 	return accelerators.reduce(
 		(total, accelerator) => total + (accelerator.count ?? 1),
 		0,
@@ -239,10 +242,7 @@ export function normalizeMachineProfile(
 		platformFamily: normalizePlatformFamily(observedHardware.platform),
 		arch: slugify(observedHardware.arch) || "unknown",
 		cpuVendor,
-		cpuModelKey: normalizeCpuModelKey(
-			observedHardware.cpuModelRaw,
-			cpuVendor,
-		),
+		cpuModelKey: normalizeCpuModelKey(observedHardware.cpuModelRaw, cpuVendor),
 		...(observedHardware.physicalCores
 			? { physicalCores: observedHardware.physicalCores }
 			: {}),
@@ -276,9 +276,9 @@ export function buildMachineProfileKey(
 	const cpuCoreCount =
 		normalizedProfile.logicalCores ?? normalizedProfile.physicalCores;
 	const acceleratorKey =
-		normalizedProfile.acceleratorSummary?.map((entry) =>
-			entry.replace(/\//g, "-"),
-		).join("+") ?? normalizedProfile.acceleratorKey.replace(/\//g, "-");
+		normalizedProfile.acceleratorSummary
+			?.map((entry) => entry.replace(/\//g, "-"))
+			.join("+") ?? normalizedProfile.acceleratorKey.replace(/\//g, "-");
 	const acceleratorMemory =
 		normalizedProfile.acceleratorMemoryGiB === undefined
 			? "na"
@@ -319,13 +319,16 @@ export function buildMachineProfileLabel(
 			(acceleratorDisplayCounts.get(entry.modelRaw) ?? 0) + (entry.count ?? 1),
 		);
 	}
-	const hasRepeatedAccelerator =
-		observedHardware.accelerators.some((entry) => (entry.count ?? 1) > 1);
+	const hasRepeatedAccelerator = observedHardware.accelerators.some(
+		(entry) => (entry.count ?? 1) > 1,
+	);
 	const acceleratorSummaryLabel =
 		acceleratorDisplayCounts.size > 0
 			? [...acceleratorDisplayCounts.entries()]
 					.sort(([left], [right]) => left.localeCompare(right))
-					.map(([modelRaw, count]) => (count > 1 ? `${count}x ${modelRaw}` : modelRaw))
+					.map(([modelRaw, count]) =>
+						count > 1 ? `${count}x ${modelRaw}` : modelRaw,
+					)
 					.join(" + ")
 			: undefined;
 	const acceleratorLabel =

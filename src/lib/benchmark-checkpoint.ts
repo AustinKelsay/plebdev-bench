@@ -1,6 +1,7 @@
 /**
  * Purpose: Compute deterministic benchmark checkpoint metadata from benchmark-defining assets.
- * Exports: computeBenchmarkCheckpoint, collectBenchmarkAssetPaths, buildBenchmarkManifest
+ * Exports: CORE_BENCHMARK_LIB_ASSETS, computeBenchmarkCheckpoint,
+ *          collectBenchmarkAssetPaths, buildBenchmarkManifest
  *
  * Invariants:
  * - Asset list is deterministic (sorted by normalized relative path)
@@ -26,7 +27,7 @@ const REQUIRED_TEST_ASSETS = [
 const OPTIONAL_TEST_ASSETS = ["rubric.md", "scoring.spec.ts"] as const;
 
 /** Benchmark-core library assets that affect execution, scoring, or evaluation semantics. */
-const CORE_BENCHMARK_LIB_ASSETS = [
+export const CORE_BENCHMARK_LIB_ASSETS = [
 	"src/lib/benchmark-checkpoint.ts",
 	"src/lib/scorer.ts",
 	"src/lib/scorer-core.ts",
@@ -45,7 +46,6 @@ const CORE_BENCHMARK_LIB_ASSETS = [
 	"src/lib/failure-classifier.ts",
 	"src/lib/model-aliases.ts",
 	"src/lib/ollama-client.ts",
-	"src/lib/openai-compat-client.ts",
 	"src/lib/openrouter-client.ts",
 ] as const;
 
@@ -109,7 +109,9 @@ function normalizeRelativePath(relPath: string): string {
 function collectFilesUnderDirectory(rootDir: string, relDir: string): string[] {
 	const absoluteDir = path.join(rootDir, relDir);
 	if (!fs.existsSync(absoluteDir)) {
-		throw new Error(`Required benchmark source directory missing: ${absoluteDir}`);
+		throw new Error(
+			`Required benchmark source directory missing: ${absoluteDir}`,
+		);
 	}
 
 	const collected: string[] = [];

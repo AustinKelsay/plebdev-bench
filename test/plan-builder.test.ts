@@ -4,102 +4,18 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
+import {
+	createWorkspaceCapabilityCatalog,
+	fallbackCollectMachineProfile,
+} from "./utils/fixtures.js";
 
 const discoverHarnessesMock = vi.fn();
-const discoverRuntimesMock = vi.fn();
 const createRuntimeMock = vi.fn();
 const discoverTestCatalogMock = vi.fn();
 const selectTestsMock = vi.fn();
 const computeBenchmarkCheckpointMock = vi.fn();
 const collectMachineProfileMock = vi.fn();
 const generateRunIdMock = vi.fn();
-
-function fallbackCollectMachineProfile(options: {
-	machineInstanceId?: string;
-	machineDisplayLabel?: string;
-	machineProfileId?: string;
-	machineLabel?: string;
-	env?: NodeJS.ProcessEnv;
-	hardwareProfile?: {
-		platform: string;
-		arch: string;
-		osRelease: string;
-		cpuModelRaw: string;
-		logicalCores: number;
-		totalMemoryBytes: number;
-		accelerators: Array<{
-			modelRaw: string;
-			kind: "integrated" | "discrete" | "unknown";
-			vendor?: string;
-			backend?: string;
-		}>;
-		acceleratorDetection: {
-			status: "detected" | "none_detected" | "unavailable";
-		};
-	};
-} = {}) {
-	const env = options.env ?? process.env;
-	const hardware =
-		options.hardwareProfile ?? {
-			platform: "darwin",
-			arch: "arm64",
-			osRelease: "unknown",
-			cpuModelRaw: "unknown",
-			logicalCores: 1,
-			totalMemoryBytes: 1,
-			accelerators: [],
-			acceleratorDetection: {
-				status: "unavailable" as const,
-			},
-		};
-	const readNonEmpty = (value: string | undefined) => {
-		if (typeof value !== "string") return undefined;
-		const trimmed = value.trim();
-		return trimmed.length > 0 ? trimmed : undefined;
-	};
-	const instanceId =
-		readNonEmpty(options.machineInstanceId) ??
-		readNonEmpty(options.machineProfileId) ??
-		readNonEmpty(env.BENCH_MACHINE_INSTANCE_ID) ??
-		readNonEmpty(env.BENCH_MACHINE_ID) ??
-		"inst_0123456789abcdef0123456789abcdef";
-	const displayLabel =
-		readNonEmpty(options.machineDisplayLabel) ??
-		readNonEmpty(options.machineLabel) ??
-		readNonEmpty(env.BENCH_MACHINE_DISPLAY_LABEL) ??
-		readNonEmpty(env.BENCH_MACHINE_LABEL);
-	const identitySource =
-		readNonEmpty(options.machineInstanceId) !== undefined ||
-		readNonEmpty(options.machineProfileId) !== undefined
-			? "config"
-		: readNonEmpty(env.BENCH_MACHINE_ID) !== undefined
-				|| readNonEmpty(env.BENCH_MACHINE_INSTANCE_ID) !== undefined
-			? "env"
-		: "generated";
-
-	return {
-		machine: {
-			instanceId,
-			instanceIdSource: identitySource,
-			...(displayLabel ? { displayLabel } : {}),
-			profileKey: "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro-gpu_na_x1",
-			profileLabel: "Apple M4 Pro / 64GB / Apple M4 Pro GPU",
-			normalizedProfile: {
-				platformFamily: "macos" as const,
-				arch: hardware.arch,
-				cpuVendor: "apple",
-				cpuModelKey: "m4-pro",
-				logicalCores: hardware.logicalCores,
-				memoryGiB: 64,
-				acceleratorKey: "apple/m4-pro-gpu",
-				acceleratorCount: 1,
-			},
-			observedHardware: hardware,
-		},
-		isAnonymous: identitySource === "generated",
-		identitySource,
-	};
-}
 
 collectMachineProfileMock.mockImplementation(fallbackCollectMachineProfile);
 
@@ -134,8 +50,7 @@ vi.mock("../src/harnesses/index.js", () => {
 
 vi.mock("../src/runtimes/index.js", () => {
 	return {
-		RUNTIME_NAMES: ["ollama", "vllm"],
-		discoverRuntimes: discoverRuntimesMock,
+		RUNTIME_NAMES: ["ollama"],
 		createRuntime: createRuntimeMock,
 	};
 });
@@ -163,6 +78,21 @@ vi.mock("../src/lib/run-id.js", () => ({
 	generateRunId: generateRunIdMock,
 }));
 
+function createRuntimeStub(overrides: Record<string, unknown> = {}) {
+	return {
+		ping: async () => true,
+		listModels: async () => ["qwen3.5:4b"],
+		getModelInfo: async (model: string) => ({
+			name: model,
+			sizeBytes: 4_000_000_000,
+			parametersBillions: 4,
+			modelKind: "text-generation",
+			capabilities: { generateText: true },
+		}),
+		...overrides,
+	};
+}
+
 describe("buildRunPlan", () => {
 	afterEach(() => {
 		collectMachineProfileMock.mockReset();
@@ -171,7 +101,6 @@ describe("buildRunPlan", () => {
 
 	beforeEach(() => {
 		discoverHarnessesMock.mockReset();
-		discoverRuntimesMock.mockReset();
 		createRuntimeMock.mockReset();
 		discoverTestCatalogMock.mockReset();
 		selectTestsMock.mockReset();
@@ -180,11 +109,7 @@ describe("buildRunPlan", () => {
 		generateRunIdMock.mockReset();
 
 		discoverHarnessesMock.mockResolvedValue(["direct", "goose", "opencode"]);
-		discoverRuntimesMock.mockResolvedValue(["ollama"]);
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["qwen3.5:4b"],
-		});
+		createRuntimeMock.mockReturnValue(createRuntimeStub());
 		computeBenchmarkCheckpointMock.mockReturnValue({
 			checkpointId: "chk_test",
 			algorithm: "sha256v1",
@@ -235,89 +160,7 @@ describe("buildRunPlan", () => {
 	});
 
 	it("filters harnesses by declared workspace capabilities and keeps preflights single-pass", async () => {
-		const catalog = [
-				{
-					slug: "tool-smoke",
-					category: "coding",
-					description: "code preflight",
-					tags: ["preflight"],
-					scoringMode: "code-module",
-					requiresTools: false,
-					requiredHarnessCapabilities: [],
-					timeoutMultiplier: 1,
-					schemaVersion: 1,
-				},
-			{
-				slug: "workspace-tool-smoke",
-				category: "computer-use",
-				description: "workspace preflight",
-					tags: ["preflight", "workspace"],
-					scoringMode: "workspace",
-					requiresTools: true,
-					requiredHarnessCapabilities: ["workspace-read", "workspace-write"],
-					timeoutMultiplier: 1,
-					schemaVersion: 1,
-				},
-			{
-				slug: "file-search-smoke",
-				category: "computer-use",
-				description: "search preflight",
-				tags: ["preflight", "workspace", "search"],
-				scoringMode: "workspace",
-				requiresTools: true,
-					requiredHarnessCapabilities: [
-						"workspace-read",
-						"workspace-write",
-						"workspace-mkdir",
-						"workspace-search",
-					],
-					timeoutMultiplier: 1,
-					schemaVersion: 1,
-				},
-			{
-				slug: "file-delete-smoke",
-				category: "computer-use",
-				description: "delete preflight",
-				tags: ["preflight", "workspace", "delete"],
-				scoringMode: "workspace",
-				requiresTools: true,
-					requiredHarnessCapabilities: [
-						"workspace-read",
-						"workspace-write",
-						"workspace-mkdir",
-						"workspace-delete",
-					],
-					timeoutMultiplier: 1,
-					schemaVersion: 1,
-				},
-			{
-				slug: "targeted-edit",
-				category: "computer-use",
-				description: "single file edit",
-					tags: ["workspace", "edit"],
-					scoringMode: "workspace",
-					requiresTools: true,
-					requiredHarnessCapabilities: ["workspace-read", "workspace-write"],
-					timeoutMultiplier: 1.2,
-					schemaVersion: 1,
-				},
-			{
-				slug: "safe-cleanup",
-				category: "computer-use",
-				description: "delete files safely",
-				tags: ["workspace", "delete"],
-				scoringMode: "workspace",
-				requiresTools: true,
-					requiredHarnessCapabilities: [
-						"workspace-read",
-						"workspace-write",
-						"workspace-mkdir",
-						"workspace-delete",
-					],
-					timeoutMultiplier: 1.15,
-					schemaVersion: 1,
-				},
-			];
+		const catalog = createWorkspaceCapabilityCatalog();
 		discoverTestCatalogMock.mockReturnValue(catalog);
 		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
 
@@ -331,7 +174,6 @@ describe("buildRunPlan", () => {
 			categories: [],
 			passTypes: ["blind", "informed"],
 			ollamaBaseUrl: "http://localhost:11434",
-			vllmBaseUrl: "http://localhost:8000",
 			generateTimeoutMs: 300_000,
 			gooseMaxTurns: 1,
 			gooseRetryMaxTurns: 3,
@@ -383,23 +225,22 @@ describe("buildRunPlan", () => {
 		expect(
 			rows.filter((row) => row.test === "workspace-tool-smoke"),
 		).toHaveLength(2);
-			expect(rows.filter((row) => row.test === "targeted-edit")).toHaveLength(4);
-			expect(plan.items[0].test).toBe("tool-smoke");
-			expect(
-				plan.items.find(
-					(item) => item.test === "targeted-edit" && item.harness === "goose",
-				)?.timeoutMultiplier,
-			).toBe(1.2);
-		});
+		expect(rows.filter((row) => row.test === "targeted-edit")).toHaveLength(4);
+		expect(plan.items[0].test).toBe("tool-smoke");
+		expect(
+			plan.items.find(
+				(item) => item.test === "targeted-edit" && item.harness === "goose",
+			)?.timeoutMultiplier,
+		).toBe(1.2);
+		expect(plan.config).not.toHaveProperty("vllmBaseUrl");
+	});
 
-	it("groups runtime-specific variants under one canonical model profile", async () => {
-		createRuntimeMock.mockImplementation((runtimeName: string) => ({
-			ping: async () => true,
-			listModels: async () =>
-				runtimeName === "ollama"
-					? ["qwen3:27b"]
-					: ["Qwen/Qwen3-27B-Instruct-MLX-4bit"],
-		}));
+	it("groups discovered Ollama variants under one canonical model profile", async () => {
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["qwen3:27b"],
+			}),
+		);
 
 		const catalog = [
 			{
@@ -420,14 +261,13 @@ describe("buildRunPlan", () => {
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 		const plan = await buildRunPlan({
 			schemaVersion: SCHEMA_VERSION,
-			runtimes: ["ollama", "vllm"],
+			runtimes: ["ollama"],
 			models: ["qwen3-27b-instruct"],
 			harnesses: ["direct"],
 			tests: [],
 			categories: [],
 			passTypes: ["blind"],
 			ollamaBaseUrl: "http://localhost:11434",
-			vllmBaseUrl: "http://localhost:8000",
 			generateTimeoutMs: 300_000,
 			gooseMaxTurns: 1,
 			gooseRetryMaxTurns: 3,
@@ -442,34 +282,26 @@ describe("buildRunPlan", () => {
 					tuning: "instruct",
 					variants: {
 						ollama: "qwen3:27b",
-						vllm: {
-							modelName: "Qwen/Qwen3-27B-Instruct-MLX-4bit",
-							format: "MLX",
-							quantization: "4-bit",
-						},
 					},
 				},
 			},
 		});
 
 		expect(plan.summary.models).toBe(1);
-		expect(plan.items).toHaveLength(2);
-		expect(plan.items.map((item) => item.model)).toEqual([
-			"qwen3:27b",
-			"Qwen/Qwen3-27B-Instruct-MLX-4bit",
-		]);
+		expect(plan.items).toHaveLength(1);
+		expect(plan.items.map((item) => item.model)).toEqual(["qwen3:27b"]);
 		expect(
 			plan.items.map((item) => item.modelProfile?.canonical.profileKey),
-		).toEqual(["qwen3-27b-instruct", "qwen3-27b-instruct"]);
-		expect(plan.items[1].modelProfile?.variant.format).toBe("MLX");
-		expect(plan.items[1].modelProfile?.variant.quantization).toBe("4-bit");
+		).toEqual(["qwen3-27b-instruct"]);
+		expect(plan.items[0].modelProfile?.variant.runtime).toBe("ollama");
 	});
 
 	it("dedupes overlapping model selectors that resolve to the same runtime model", async () => {
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["qwen3:27b"],
-		});
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["qwen3:27b"],
+			}),
+		);
 		const catalog = [
 			{
 				slug: "smoke",
@@ -496,7 +328,6 @@ describe("buildRunPlan", () => {
 			categories: [],
 			passTypes: ["blind"],
 			ollamaBaseUrl: "http://localhost:11434",
-			vllmBaseUrl: "http://localhost:8000",
 			generateTimeoutMs: 300_000,
 			gooseMaxTurns: 1,
 			gooseRetryMaxTurns: 3,
@@ -520,7 +351,7 @@ describe("buildRunPlan", () => {
 		expect(plan.items[0]?.model).toBe("qwen3:27b");
 	});
 
-	it("fails fast when an explicit model profile lacks a runtime variant", async () => {
+	it("fails fast when an explicit model profile lacks an Ollama variant", async () => {
 		const catalog = [
 			{
 				slug: "smoke",
@@ -542,14 +373,13 @@ describe("buildRunPlan", () => {
 		await expect(
 			buildRunPlan({
 				schemaVersion: SCHEMA_VERSION,
-				runtimes: ["ollama", "vllm"],
+				runtimes: ["ollama"],
 				models: ["qwen3-27b-instruct"],
 				harnesses: ["direct"],
 				tests: [],
 				categories: [],
 				passTypes: ["blind"],
 				ollamaBaseUrl: "http://localhost:11434",
-				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 300_000,
 				gooseMaxTurns: 1,
 				gooseRetryMaxTurns: 3,
@@ -562,22 +392,21 @@ describe("buildRunPlan", () => {
 						family: "qwen3",
 						parametersBillions: 27,
 						tuning: "instruct",
-						variants: {
-							ollama: "qwen3:27b",
-						},
+						variants: {},
 					},
 				},
 			}),
 		).rejects.toThrow(
-			'Configured model profile "qwen3-27b-instruct" does not define a variant for runtime "vllm"',
+			'Configured model profile "qwen3-27b-instruct" does not define a variant for runtime "ollama"',
 		);
 	});
 
 	it("fails when requested model selectors are not found on any reachable runtime", async () => {
-		createRuntimeMock.mockReturnValue({
-			ping: async () => true,
-			listModels: async () => ["qwen3:27b"],
-		});
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["qwen3:27b"],
+			}),
+		);
 		const catalog = [
 			{
 				slug: "smoke",
@@ -606,7 +435,6 @@ describe("buildRunPlan", () => {
 				categories: [],
 				passTypes: ["blind"],
 				ollamaBaseUrl: "http://localhost:11434",
-				vllmBaseUrl: "http://localhost:8000",
 				generateTimeoutMs: 300_000,
 				gooseMaxTurns: 1,
 				gooseRetryMaxTurns: 3,
@@ -615,6 +443,75 @@ describe("buildRunPlan", () => {
 				outputDir: "results",
 				modelProfiles: {},
 			}),
-		).rejects.toThrow('Requested model selectors not found: missing-model');
+		).rejects.toThrow("Requested model selectors not found: missing-model");
 	});
+
+	it("reports when discovered models are all excluded before matrix expansion", async () => {
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				listModels: async () => ["nomic-embed-text:latest"],
+				getModelInfo: async () => ({
+					name: "nomic-embed-text:latest",
+					sizeBytes: 1_000_000,
+					parametersBillions: 0.3,
+					capabilities: { generateText: false, embedText: true },
+				}),
+			}),
+		);
+		discoverTestCatalogMock.mockReturnValue([]);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+		await expect(
+			buildRunPlan({
+				schemaVersion: SCHEMA_VERSION,
+				runtimes: ["ollama"],
+				models: [],
+				harnesses: [],
+				tests: [],
+				categories: [],
+				passTypes: ["blind"],
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 300_000,
+				gooseMaxTurns: 1,
+				gooseRetryMaxTurns: 3,
+				gooseWorkspaceMaxTurns: 8,
+				gooseWorkspaceRetryMaxTurns: 12,
+				outputDir: "results",
+				modelProfiles: {},
+			}),
+		).rejects.toThrow("Models were discovered but all were excluded");
 	});
+
+	it("fails immediately when Ollama is unreachable", async () => {
+		createRuntimeMock.mockReturnValue(
+			createRuntimeStub({
+				ping: async () => false,
+				listModels: async () => [],
+			}),
+		);
+		discoverTestCatalogMock.mockReturnValue([]);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+
+		await expect(
+			buildRunPlan({
+				schemaVersion: SCHEMA_VERSION,
+				runtimes: ["ollama"],
+				models: [],
+				harnesses: [],
+				tests: [],
+				categories: [],
+				passTypes: ["blind"],
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 300_000,
+				gooseMaxTurns: 1,
+				gooseRetryMaxTurns: 3,
+				gooseWorkspaceMaxTurns: 8,
+				gooseWorkspaceRetryMaxTurns: 12,
+				outputDir: "results",
+				modelProfiles: {},
+			}),
+		).rejects.toThrow(/Ollama is not reachable/);
+	});
+});

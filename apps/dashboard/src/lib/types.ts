@@ -5,9 +5,12 @@
  */
 
 import type {
-	RuntimeName,
+	ArtifactRuntimeName,
+	ModelExclusion,
+	SignalAssessmentReason as SharedSignalAssessmentReason,
 	TestCategory,
-} from "../../../../src/schemas/common.schema.js";
+} from "../../../../src/schemas/index.js";
+export type { SignalAssessmentReason } from "../../../../src/schemas/index.js";
 
 /** Pass type for benchmark items */
 export type PassType = "blind" | "informed";
@@ -53,18 +56,10 @@ export type VerificationStatus = "self_reported" | "verified" | "rejected";
 /** Item-level signal quality classification */
 export type SignalAssessmentClassification = "trustworthy" | "tainted";
 
-/** Stable reason codes for tainted benchmark rows */
-export type SignalAssessmentReason =
-	| "output_contract_violation"
-	| "mixed_prose_salvaged"
-	| "tool_permission_denied"
-	| "tool_call_not_executed"
-	| "confirmation_without_artifact";
-
 /** Item-level benchmark signal assessment */
 export interface SignalAssessment {
 	classification: SignalAssessmentClassification;
-	reasons: SignalAssessmentReason[];
+	reasons: SharedSignalAssessmentReason[];
 }
 
 /** Resolution source for canonical model-profile metadata */
@@ -88,7 +83,7 @@ export interface CanonicalModelProfile {
 export interface ModelVariant {
 	variantKey: string;
 	variantLabel: string;
-	runtime: RuntimeName;
+	runtime: ArtifactRuntimeName;
 	runtimeModelName: string;
 	format?: string;
 	quantization?: string;
@@ -256,7 +251,7 @@ export interface RunProvenance {
 /** Single matrix item in plan */
 export interface MatrixItem {
 	id: string;
-	runtime: string;
+	runtime: ArtifactRuntimeName;
 	model: string;
 	modelAlias?: string;
 	modelProfile?: ModelProfile;
@@ -290,8 +285,12 @@ export interface LegacyEnvironment {
 /** Run plan configuration */
 export interface PlanConfig {
 	ollamaBaseUrl: string;
-	vllmBaseUrl: string;
+	vllmBaseUrl?: string;
 	generateTimeoutMs: number;
+	gooseMaxTurns?: number;
+	gooseRetryMaxTurns?: number;
+	gooseWorkspaceMaxTurns?: number;
+	gooseWorkspaceRetryMaxTurns?: number;
 	categories?: TestCategory[];
 	passTypes: PassType[];
 }
@@ -309,6 +308,7 @@ export interface RunPlan {
 	environment?: LegacyEnvironment;
 	config: PlanConfig;
 	items: MatrixItem[];
+	modelExclusions?: ModelExclusion[];
 	summary: {
 		totalItems: number;
 		runtimes: number;
@@ -456,7 +456,7 @@ export interface ItemDeltas {
 /** Matched item in compare result */
 export interface MatchedItem {
 	key: string;
-	runtime: string;
+	runtime: ArtifactRuntimeName;
 	model: string;
 	harness: string;
 	test: string;
@@ -521,7 +521,13 @@ export type ExtractionMethod =
 /** Test slug used for tool-smoke preflight tests */
 export const TOOL_SMOKE_TEST_SLUG = "tool-smoke";
 
-/** Checks if an item is a tool-smoke test */
+/**
+ * Checks whether an item targets the tool-smoke preflight test slug.
+ *
+ * @param item - Matrix-like item containing a `test` slug
+ * @returns True when `item.test` equals `TOOL_SMOKE_TEST_SLUG`
+ * @throws {never} This helper performs a pure string comparison
+ */
 export function isToolSmokeItem(item: { test: string }): boolean {
 	return item.test === TOOL_SMOKE_TEST_SLUG;
 }

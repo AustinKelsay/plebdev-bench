@@ -10,7 +10,7 @@
  * - Heuristic fallback preserves raw names when no configured profile exists
  */
 
-import type { RuntimeName } from "../../schemas/common.schema.js";
+import type { SupportedRuntimeName } from "../../schemas/common.schema.js";
 import type {
 	ConfiguredModelProfile,
 	ConfiguredModelVariantValue,
@@ -159,9 +159,7 @@ function deriveFamily(value: string): string {
 		if (isParameterToken(token) || isVariantOnlyToken(token)) {
 			break;
 		}
-		if (
-			(TUNING_PATTERNS as readonly string[]).includes(token)
-		) {
+		if ((TUNING_PATTERNS as readonly string[]).includes(token)) {
 			break;
 		}
 		familyTokens.push(token);
@@ -237,7 +235,7 @@ export function normalizeConfiguredVariant(
 export function buildConfiguredModelProfile(args: {
 	profileKey: string;
 	profile: ConfiguredModelProfile;
-	runtime: RuntimeName;
+	runtime: SupportedRuntimeName;
 	runtimeModelName: string;
 	resolutionSource: ModelProfile["resolutionSource"];
 }): ModelProfile {
@@ -270,7 +268,9 @@ export function buildConfiguredModelProfile(args: {
 			...(args.profile.parameterScaleLabel
 				? { parameterScaleLabel: args.profile.parameterScaleLabel }
 				: parametersBillions !== undefined
-					? { parameterScaleLabel: `${formatCompactNumber(parametersBillions)}B` }
+					? {
+							parameterScaleLabel: `${formatCompactNumber(parametersBillions)}B`,
+						}
 					: {}),
 			...(args.profile.provider ? { provider: args.profile.provider } : {}),
 			...(tuning ? { tuning } : {}),
@@ -284,7 +284,9 @@ export function buildConfiguredModelProfile(args: {
 			...(configuredVariant.quantization
 				? { quantization: configuredVariant.quantization }
 				: {}),
-			...(configuredVariant.sourceId ? { sourceId: configuredVariant.sourceId } : {}),
+			...(configuredVariant.sourceId
+				? { sourceId: configuredVariant.sourceId }
+				: {}),
 		},
 		resolutionSource: args.resolutionSource,
 	};
@@ -299,7 +301,7 @@ export function buildConfiguredModelProfile(args: {
  * @throws none
  */
 export function buildFallbackModelProfile(
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	runtimeModelName: string,
 ): ModelProfile {
 	const family = deriveFamily(runtimeModelName);
@@ -347,7 +349,7 @@ export function buildFallbackModelProfile(
  * @throws {Error} When only one of `profileKey` or `profile` is provided
  */
 export function buildResolvedModelProfile(args: {
-	runtime: RuntimeName;
+	runtime: SupportedRuntimeName;
 	runtimeModelName: string;
 	profileKey?: string;
 	profile?: ConfiguredModelProfile;

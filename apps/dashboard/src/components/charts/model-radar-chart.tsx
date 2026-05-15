@@ -116,9 +116,7 @@ export function ModelRadarChart({ items }: ModelRadarChartProps) {
 									isSelected && colorIndex >= 0
 										? {
 												borderColor:
-													MODEL_PALETTE[
-														colorIndex % MODEL_PALETTE.length
-													],
+													MODEL_PALETTE[colorIndex % MODEL_PALETTE.length],
 											}
 										: undefined
 								}
@@ -149,10 +147,7 @@ export function ModelRadarChart({ items }: ModelRadarChartProps) {
 									<div className="bg-background-raised border border-border rounded p-2 text-sm font-mono">
 										<p className="font-medium mb-1">{label}</p>
 										{payload.map((p) => (
-											<p
-												key={String(p.name)}
-												style={{ color: p.color }}
-											>
+											<p key={String(p.name)} style={{ color: p.color }}>
 												{String(p.name).length > 20
 													? `${String(p.name).slice(0, 18)}..`
 													: p.name}

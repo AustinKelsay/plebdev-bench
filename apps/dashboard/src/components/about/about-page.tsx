@@ -42,7 +42,7 @@ import {
 const STEP_ACCENTS = [
 	"hsl(142, 60%, 49%)", // brand green — Plan
 	"hsl(215, 70%, 60%)", // steel blue — Generate
-	"hsl(38, 80%, 58%)",  // warm amber — Score
+	"hsl(38, 80%, 58%)", // warm amber — Score
 	"hsl(265, 50%, 62%)", // soft purple — Retry
 	"hsl(185, 55%, 50%)", // muted cyan — Frontier eval
 	"hsl(335, 55%, 58%)", // muted rose — Persist
@@ -52,9 +52,20 @@ const STEP_ACCENTS = [
 const FACT_ACCENTS = [
 	"hsl(142, 60%, 49%)", // brand green — Matrix
 	"hsl(215, 70%, 60%)", // steel blue — Artifacts
-	"hsl(38, 80%, 58%)",  // warm amber — Score
+	"hsl(38, 80%, 58%)", // warm amber — Score
 	"hsl(265, 50%, 62%)", // soft purple — Failures
 ];
+
+const STAGGER_CLASSES = [
+	"animate-stagger-1",
+	"animate-stagger-2",
+	"animate-stagger-3",
+	"animate-stagger-4",
+	"animate-stagger-5",
+	"animate-stagger-6",
+	"animate-stagger-7",
+	"animate-stagger-8",
+] as const;
 
 /**
  * Renders the benchmark about page.
@@ -88,16 +99,17 @@ export function AboutPage() {
 						Reproducible matrix runs for local LLMs
 					</CardTitle>
 					<CardDescription className="max-w-3xl text-sm leading-6">
-						Each run expands a matrix of runtime × harness × model × test
-						× prompt mode, then saves results as JSON artifacts and exits. The
-						dashboard reads those artifacts — it never runs the benchmark itself.
+						Each run expands a matrix of runtime × harness × model × test ×
+						passType (prompt mode), then saves results as JSON artifacts and
+						exits. The dashboard reads those artifacts — it never runs the
+						benchmark itself.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
 					{aboutFacts.map((fact, i) => (
 						<div
 							key={fact.label}
-							className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up animate-stagger-${i + 1}`}
+							className={`rounded border border-border border-l-2 bg-background p-4 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 							style={{ borderLeftColor: FACT_ACCENTS[i] }}
 						>
 							<p className="text-xs uppercase tracking-[0.18em] text-foreground-faint">
@@ -157,12 +169,14 @@ export function AboutPage() {
 						<Card
 							key={ws.step}
 							glow
-							className={`h-full border-l-2 animate-fade-slide-up animate-stagger-${i + 1}`}
+							className={`h-full border-l-2 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 							style={{ borderLeftColor: STEP_ACCENTS[i] }}
 						>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-base">
-									<span className="text-foreground-faint mr-2 text-sm">{i + 1}.</span>
+									<span className="text-foreground-faint mr-2 text-sm">
+										{i + 1}.
+									</span>
 									{ws.step}
 								</CardTitle>
 							</CardHeader>
@@ -215,16 +229,20 @@ export function AboutPage() {
 
 					<Card glow className="border-l-2 border-l-warning">
 						<CardHeader>
-							<CardTitle className="text-base">Seasons &amp; Checkpoints</CardTitle>
+							<CardTitle className="text-base">
+								Seasons &amp; Checkpoints
+							</CardTitle>
 							<CardDescription className="text-xs leading-5">
-								A checkpoint is a content-hash of all benchmark definitions (prompts, specs, rubrics, harness code). Each season is pinned to one checkpoint so comparisons stay fair.
+								A checkpoint is a content-hash of all benchmark definitions
+								(prompts, specs, rubrics, harness code). Each season is pinned
+								to one checkpoint so comparisons stay fair.
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-2">
 							{checkpointNotes.map((note, i) => (
 								<div
 									key={note}
-									className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up animate-stagger-${i + 1}`}
+									className={`rounded border border-border bg-muted/20 p-3 text-sm leading-6 text-foreground-muted animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 								>
 									{note}
 								</div>
@@ -253,7 +271,9 @@ export function AboutPage() {
 								{artifactRows.map((a) => (
 									<TableRow key={a.path}>
 										<TableCell>
-											<code className="font-mono text-xs text-success">{a.path}</code>
+											<code className="font-mono text-xs text-success">
+												{a.path}
+											</code>
 										</TableCell>
 										<TableCell className="text-foreground-muted">
 											{a.purpose}
@@ -277,18 +297,26 @@ export function AboutPage() {
 						<Card
 							key={test.slug}
 							glow
-							className={`h-full border-l-2 border-l-success/50 animate-fade-slide-up animate-stagger-${(i % 8) + 1}`}
+							className={`h-full border-l-2 border-l-success/50 animate-fade-slide-up ${STAGGER_CLASSES[i % STAGGER_CLASSES.length]}`}
 						>
 							<CardHeader className="pb-2">
 								<div className="flex flex-wrap items-center gap-2">
-									<Badge variant="success" className="font-mono">{test.slug}</Badge>
+									<Badge variant="success" className="font-mono">
+										{test.slug}
+									</Badge>
 									{test.tags.map((tag) => (
-										<Badge key={tag} variant="secondary" className="text-[11px]">
+										<Badge
+											key={tag}
+											variant="secondary"
+											className="text-[11px]"
+										>
 											{tag}
 										</Badge>
 									))}
 								</div>
-								<CardTitle className="text-base mt-2">{test.description}</CardTitle>
+								<CardTitle className="text-base mt-2">
+									{test.description}
+								</CardTitle>
 								<CardDescription className="text-xs leading-5">
 									{test.contract}
 								</CardDescription>
@@ -298,7 +326,9 @@ export function AboutPage() {
 									<p className="text-[10px] uppercase tracking-widest text-foreground-faint mb-1">
 										Scoring
 									</p>
-									<p className="text-xs text-foreground-muted">{test.scoring}</p>
+									<p className="text-xs text-foreground-muted">
+										{test.scoring}
+									</p>
 								</div>
 							</CardContent>
 						</Card>

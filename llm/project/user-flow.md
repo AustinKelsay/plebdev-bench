@@ -45,19 +45,19 @@ progress output, and generated artifacts on disk.
 - **Decision points**:
   - Should OpenRouter frontier-eval be enabled (auto-enabled when API key is present)?
 
-### State S2 — Catalog Browse (Tests / Runtimes / Harnesses / Models)
-- **User sees**: Lists of available tests, runtimes, harness adapters, and discoverable local models.
+### State S2 — Catalog Browse (Tests / Fixed Runtime / Harnesses / Models)
+- **User sees**: Lists of available tests, the active runtime (`ollama`), harness adapters, and discoverable local models.
 - **Artifacts**: Optional cached discovery output.
+- **Note**: Runtime is fixed to `ollama` for the MVP.
 - **Decision points**:
-  - Which test(s) to run?
-  - Which category/categories to run (`coding`, `computer-use`)?
-  - Which runtime(s) to use?
-  - Which harness(es) to run through?
-  - Which model(s) to benchmark?
+  - Select test(s) to run.
+  - Choose category/categories (`coding`, `computer-use`).
+  - Pick harness(es) to execute.
+  - Select model(s) to benchmark.
 
 ### State S3 — Run Plan (Matrix + Pass Types)
 - **User sees**: A concrete execution plan before running:
-  - All combinations of runtime × harness × model × test × pass type (blind/informed)
+  - All combinations of the fixed `ollama` runtime × harness × model × test × pass type (blind/informed)
   - Estimated runtime and costs (if frontier eval is enabled)
 - **Artifacts**:
   - A saved “run plan” metadata blob (recommended) for reproducibility.
@@ -206,7 +206,7 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 
 - **Command model**: single primary command (no multi-step interactive wizard).
 - **Interactivity**: non-interactive by default; no “confirm plan” prompt in MVP.
-- **Discovery**: models/harnesses are auto-discovered by default.
+- **Discovery**: models/harnesses are auto-discovered by default; runtime is fixed to `ollama` for the MVP.
 - **Run plan persistence**: save an explicit plan artifact per run for reproducibility.
 - **Results format**: one JSON per run (structured for easy aggregation/analysis).
 - **Exit codes**: non-zero only on crashes (failed tests/items are recorded but do not fail the process).

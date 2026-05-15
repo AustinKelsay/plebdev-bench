@@ -21,8 +21,8 @@ import { runBenchmark } from "../runner/index.js";
 import {
 	type BenchConfig,
 	BenchConfigSchema,
-	testCategories,
 	type ModelProfileRegistry,
+	testCategories,
 } from "../schemas/index.js";
 
 /** Human-readable category list for CLI help text. */
@@ -82,7 +82,7 @@ export const runCommand = new Command("run")
 	.description("Run benchmark matrix")
 	.option(
 		"-r, --runtimes <runtimes...>",
-		"Limit to specific runtimes: ollama, vllm (default: all available)",
+		"Limit to specific runtimes: ollama (default: ollama)",
 	)
 	.option(
 		"-m, --models <models...>",
@@ -105,7 +105,10 @@ export const runCommand = new Command("run")
 		"Limit to specific harnesses: direct, goose, opencode (default: all available). 'ollama' is accepted as alias for 'direct'.",
 	)
 	.option("--ollama-url <url>", "Ollama API base URL", "http://localhost:11434")
-	.option("--vllm-url <url>", "vLLM API base URL", "http://localhost:8000")
+	.option(
+		"--vllm-url <url>",
+		"Deprecated alias for --ollama-url; runtime remains Ollama-only",
+	)
 	.option("--timeout <ms>", "Generation timeout in milliseconds", "300000")
 	.option("--goose-max-turns <n>", "Goose max turns for initial attempt", "1")
 	.option(
@@ -132,10 +135,7 @@ export const runCommand = new Command("run")
 		"--machine-display-label <label>",
 		"Optional display label for a specific machine instance",
 	)
-	.option(
-		"--machine-id <id>",
-		"Deprecated alias for --machine-instance-id",
-	)
+	.option("--machine-id <id>", "Deprecated alias for --machine-instance-id")
 	.option(
 		"--machine-label <label>",
 		"Deprecated alias for --machine-display-label",
@@ -157,7 +157,10 @@ export const runCommand = new Command("run")
 				const fileProfiles = loadModelProfiles(options.modelConfig);
 				modelProfiles = mergeModelProfiles(modelProfiles, fileProfiles);
 				logger.info(
-					{ file: options.modelConfig, count: Object.keys(fileProfiles).length },
+					{
+						file: options.modelConfig,
+						count: Object.keys(fileProfiles).length,
+					},
 					"Loaded model profiles from file",
 				);
 			}
@@ -206,8 +209,7 @@ export const runCommand = new Command("run")
 				);
 			}
 			const resolvedMachineId = canonicalMachineId ?? legacyMachineId;
-			const resolvedMachineLabel =
-				canonicalMachineLabel ?? legacyMachineLabel;
+			const resolvedMachineLabel = canonicalMachineLabel ?? legacyMachineLabel;
 			if (legacyMachineId) {
 				logger.warn(
 					"Warning: --machine-id is deprecated; use --machine-instance-id",
@@ -218,11 +220,38 @@ export const runCommand = new Command("run")
 					"Warning: --machine-label is deprecated; use --machine-display-label",
 				);
 			}
+			const parsedOllamaUrl = normalizeOptionalStringOption(
+				"--ollama-url",
+				options.ollamaUrl,
+			);
+			const deprecatedVllmUrl = normalizeOptionalStringOption(
+				"--vllm-url",
+				options.vllmUrl,
+			);
+			if (deprecatedVllmUrl) {
+				logger.warn(
+					"Warning: --vllm-url is deprecated; use --ollama-url. This alias will be removed next release.",
+				);
+			}
+			const hasExplicitOllamaUrl =
+				runCommand.getOptionValueSource("ollamaUrl") === "cli";
+			if (
+				hasExplicitOllamaUrl &&
+				deprecatedVllmUrl &&
+				parsedOllamaUrl !== deprecatedVllmUrl
+			) {
+				throw new Error(
+					`Conflicting runtime URL flags: --ollama-url="${parsedOllamaUrl}" does not match deprecated --vllm-url="${deprecatedVllmUrl}"`,
+				);
+			}
+			const resolvedOllamaUrl =
+				(hasExplicitOllamaUrl || !deprecatedVllmUrl
+					? parsedOllamaUrl
+					: deprecatedVllmUrl) ?? "http://localhost:11434";
 
 			// Build config from CLI options
 			const configInput: Partial<BenchConfig> = {
-				ollamaBaseUrl: options.ollamaUrl,
-				vllmBaseUrl: options.vllmUrl,
+				ollamaBaseUrl: resolvedOllamaUrl,
 				generateTimeoutMs: Number.parseInt(options.timeout, 10),
 				gooseMaxTurns: parseStrictIntegerOption(
 					"--goose-max-turns",

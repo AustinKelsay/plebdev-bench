@@ -1,176 +1,138 @@
 /**
- * Purpose: OpenCode config/env builders (pure-ish helpers).
- * Exports: buildOpenCodeConfig, buildOpenCodeEnv, resolveOpenCodeToolOutputRoot
- *
- * OpenCode expects an on-disk config file (opencode.json) and optionally accepts
- * config content via env vars. This module standardizes how we generate those.
+ * Purpose: OpenCode generated config/env builders for benchmark runs.
+ * Exports: BuildOpenCodeConfigOpts, OpenCodeConfigBuildResult,
+ *          buildOpenCodeConfig, buildOpenCodeEnv
  *
  * Invariants:
- * - Tool output root is always a stable XDG data home path (non-interactive)
- * - OpenAI-compatible runtimes must provide some API key value (dummy allowed)
+ * - Config is generated per item and isolated from user-global providers.
+ * - Permissions use current `permission` config, not deprecated top-level tools.
+ * - Provider config preserves runtime model names behind slash-safe CLI keys.
  */
 
-import * as os from "node:os";
-import * as path from "node:path";
 import { z } from "zod";
-import { toOpenAiCompatBaseUrl, toOpenCodeModelKey } from "./opencode-model.js";
+import {
+	type OpenCodePermissionPolicy,
+	createOpenCodePermissionPolicy,
+} from "./opencode-permissions.js";
+import {
+	type OpenCodeProviderSpec,
+	buildOpenCodeProviderSpec,
+} from "./opencode-provider.js";
 
-/** OpenCode tool-output root subpath within XDG data home. */
-const OPENCODE_TOOL_OUTPUT_SUBPATH = path.join("opencode", "tool-output");
-
-const RuntimeNameSchema = z.union([z.literal("ollama"), z.literal("vllm")]);
-const RuntimeApiFormatSchema = z.union([
-	z.literal("ollama"),
-	z.literal("openai-compat"),
-]);
+const RuntimeNameSchema = z.literal("ollama");
 
 const BuildOpenCodeConfigOptsSchema = z.object({
 	runtimeName: RuntimeNameSchema,
-	runtimeApiFormat: RuntimeApiFormatSchema,
 	runtimeBaseUrl: z.string().min(1),
-	model: z.string().min(1),
+	model: z.string().trim().min(1),
 });
 
 export type BuildOpenCodeConfigOpts = z.infer<
 	typeof BuildOpenCodeConfigOptsSchema
 >;
 
+/** Generated OpenCode config artifacts. */
 export interface OpenCodeConfigBuildResult {
+	/** Config object safe to serialize to `opencode.json`. */
 	config: unknown;
+	/** Compact JSON config content for `OPENCODE_CONFIG_CONTENT`. */
 	configJson: string;
+	/** Provider spec used for CLI args and config. */
+	provider: OpenCodeProviderSpec;
+	/** Permission policy embedded in the config. */
+	permission: OpenCodePermissionPolicy;
 }
 
 /**
- * Resolve OpenCode's tool-output root directory.
- *
- * @returns Absolute path to tool-output root directory
- * @throws z.ZodError when the environment shape is unexpected (defensive; should not happen in Node).
- */
-export function resolveOpenCodeToolOutputRoot(): string {
-	z.object({ XDG_DATA_HOME: z.string().optional() })
-		.passthrough()
-		.parse(process.env);
-
-	const xdgDataHome =
-		typeof process.env.XDG_DATA_HOME === "string" &&
-		process.env.XDG_DATA_HOME.trim().length > 0
-			? process.env.XDG_DATA_HOME.trim()
-			: path.join(os.homedir(), ".local", "share");
-
-	return path.join(xdgDataHome, OPENCODE_TOOL_OUTPUT_SUBPATH);
-}
-
-/**
- * Build the OpenCode config object + JSON for `opencode.json`.
+ * Builds the generated OpenCode config for one benchmark item.
  *
  * @param opts - Runtime/model inputs
- * @returns Config object and its JSON representation
- * @throws z.ZodError when `opts` fails validation.
- * @throws Error when `toOpenAiCompatBaseUrl` rejects `runtimeBaseUrl`.
- * @throws Error when `toOpenCodeModelKey` rejects `model`.
+ * @returns Config object, serialized config, provider spec, and permission policy
+ * @throws z.ZodError when options fail validation
+ * @throws {Error} when provider URL/model normalization fails
  */
 export function buildOpenCodeConfig(
 	opts: BuildOpenCodeConfigOpts,
 ): OpenCodeConfigBuildResult {
-	const { runtimeName, runtimeApiFormat, runtimeBaseUrl, model } =
-		BuildOpenCodeConfigOptsSchema.parse(opts);
-
-	const baseURL = toOpenAiCompatBaseUrl(runtimeBaseUrl);
-	const providerOptions: Record<string, string> = { baseURL };
-
-	if (runtimeApiFormat === "openai-compat") {
-		const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
-		providerOptions.apiKey = apiKey ?? "dummy";
-	}
-
-	const modelKey = toOpenCodeModelKey(model);
+	const parsed = BuildOpenCodeConfigOptsSchema.parse(opts);
+	const provider = buildOpenCodeProviderSpec(parsed);
+	const permission = createOpenCodePermissionPolicy();
+	const modelConfig = {
+		name: provider.runtimeModelName,
+		tools: true,
+	};
 
 	const config = {
 		$schema: "https://opencode.ai/config.json",
+		enabled_providers: [provider.providerId],
+		model: provider.modelArg,
 		provider: {
-			[runtimeName]: {
-				npm: "@ai-sdk/openai-compatible",
-				name: runtimeName === "ollama" ? "Ollama (local)" : "vLLM",
-				options: providerOptions,
+			[provider.providerId]: {
+				npm: provider.npmPackage,
+				name: provider.providerName,
+				options: {
+					baseURL: provider.baseURL,
+				},
 				models: {
-					[model]: { name: model, tools: true },
-					...(modelKey !== model
-						? { [modelKey]: { name: model, tools: true } }
+					[provider.transportModelKey]: modelConfig,
+					...(provider.transportModelKey !== provider.runtimeModelName
+						? { [provider.runtimeModelName]: modelConfig }
 						: {}),
 				},
 			},
 		},
-		permission: {
-			edit: "allow",
-			write: "allow",
-			read: "allow",
-			bash: "allow",
-			question: "deny",
-			websearch: "deny",
-			webfetch: "deny",
-		},
-		tools: {
-			edit: true,
-			write: true,
-			read: true,
-			bash: true,
-			question: false,
-			websearch: false,
-			webfetch: false,
-			glob: true,
-			grep: true,
-			task: false,
-		},
+		permission,
 	};
 
-	return { config, configJson: JSON.stringify(config) };
+	return {
+		config,
+		configJson: JSON.stringify(config),
+		provider,
+		permission,
+	};
 }
 
 /**
- * Build a headless env for running OpenCode.
+ * Builds environment overrides for a headless OpenCode run.
  *
- * @param configPath - Absolute path to `opencode.json`
- * @param configJson - JSON string form of the config (best-effort)
- * @param runtimeName - Runtime name for runtime-specific tuning
- * @returns Env overrides suitable for execa
- * @throws z.ZodError when inputs fail validation.
+ * @param opts - Generated config directory/path/content
+ * @returns Environment variables for `execa`
+ * @throws z.ZodError when inputs fail validation
  */
 export function buildOpenCodeEnv(opts: {
+	configDir: string;
 	configPath: string;
 	configJson: string;
-	runtimeName: "ollama" | "vllm";
 }): Record<string, string> {
-	const { configPath, configJson, runtimeName } = z
+	const parsed = z
 		.object({
+			configDir: z.string().min(1),
 			configPath: z.string().min(1),
 			configJson: z.string().min(1),
-			runtimeName: RuntimeNameSchema,
 		})
 		.parse(opts);
-
 	const safeEnv = Object.fromEntries(
 		Object.entries(process.env).filter(
-			(entry): entry is [string, string] => entry[1] !== undefined,
+			(entry): entry is [string, string] =>
+				entry[1] !== undefined && !entry[0].startsWith("OPENCODE_"),
 		),
 	);
 
 	return {
 		...safeEnv,
-		OPENCODE_CONFIG: configPath,
-		OPENCODE_CONFIG_CONTENT: configJson,
+		OPENCODE_CONFIG_DIR: parsed.configDir,
+		OPENCODE_CONFIG: parsed.configPath,
+		OPENCODE_CONFIG_CONTENT: parsed.configJson,
 		OPENCODE_DISABLE_AUTOUPDATE: "true",
-		OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
 		OPENCODE_DISABLE_DEFAULT_PLUGINS: "true",
+		OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
+		OPENCODE_DISABLE_WEBSEARCH: "true",
+		OPENCODE_DISABLE_WEBFETCH: "true",
 		OPENCODE_DISABLE_AUTOCOMPACT: "true",
 		OPENCODE_DISABLE_PRUNE: "true",
 		OPENCODE_DISABLE_TERMINAL_TITLE: "true",
-		OPENCODE_DISABLE_WEBSEARCH: "true",
-		OPENCODE_DISABLE_WEBFETCH: "true",
 		OPENCODE_DISABLE_CLAUDE_CODE: "true",
 		OPENCODE_DISABLE_CLAUDE_CODE_PROMPT: "true",
 		OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: "true",
-		...(runtimeName === "vllm" && {
-			OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX: "1024",
-		}),
 	};
 }

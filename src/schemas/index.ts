@@ -5,9 +5,15 @@
 
 export {
 	SCHEMA_VERSION,
-	runtimeNames,
-	RuntimeNameSchema,
-	type RuntimeName,
+	supportedRuntimeNames,
+	SupportedRuntimeNameSchema,
+	type SupportedRuntimeName,
+	migrateLegacySupportedRuntimeNames,
+	artifactRuntimeNames,
+	ArtifactRuntimeNameSchema,
+	type ArtifactRuntimeName,
+	ExecutableArtifactRuntimeNameSchema,
+	type ExecutableArtifactRuntimeName,
 	passTypes,
 	PassTypeSchema,
 	type PassType,
@@ -77,6 +83,27 @@ export {
 	type RunProvenance,
 } from "./common.schema.js";
 
+/**
+ * @deprecated Use `artifactRuntimeNames` for persisted artifacts or
+ * `supportedRuntimeNames` for active execution config. Migration: import the
+ * explicit runtime set you need. Remove after the next release.
+ */
+export { supportedRuntimeNames as runtimeNames } from "./common.schema.js";
+
+/**
+ * @deprecated Use `ArtifactRuntimeNameSchema` for persisted artifacts or
+ * `SupportedRuntimeNameSchema` for active execution config. Migration: import
+ * the explicit schema you need. Remove after the next release.
+ */
+export { SupportedRuntimeNameSchema as RuntimeNameSchema } from "./common.schema.js";
+
+/**
+ * @deprecated Use `ArtifactRuntimeName` for persisted artifacts or
+ * `SupportedRuntimeName` for active execution config. Migration: import the
+ * explicit type you need. Remove after the next release.
+ */
+export type { SupportedRuntimeName as RuntimeName } from "./common.schema.js";
+
 export {
 	BenchConfigSchema,
 	type BenchConfig,
@@ -86,6 +113,8 @@ export {
 export {
 	MatrixItemSchema,
 	type MatrixItem,
+	ModelExclusionSchema,
+	type ModelExclusion,
 	RunPlanSchema,
 	type RunPlan,
 } from "./plan.schema.js";
@@ -155,8 +184,12 @@ export {
 	type ConfiguredModelVariantValue,
 	ConfiguredModelProfileSchema,
 	type ConfiguredModelProfile,
+	ArtifactConfiguredModelProfileSchema,
+	type ArtifactConfiguredModelProfile,
 	ModelProfileRegistrySchema,
 	type ModelProfileRegistry,
+	ArtifactModelProfileRegistrySchema,
+	type ArtifactModelProfileRegistry,
 	ModelProfileFileSchema,
 	type ModelProfileFile,
 } from "./model-profile.schema.js";

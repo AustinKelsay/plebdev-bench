@@ -20,7 +20,6 @@ import { calculateTimeout, formatTimeout } from "../lib/timeout.js";
 import { isPreflightTest } from "../lib/tool-smoke.js";
 import {
 	deletePartialResult,
-	writePartialResult,
 	writePlan,
 	writeResult,
 } from "../results/writer.js";
@@ -29,71 +28,47 @@ import {
 	type RuntimeName,
 	createRuntime,
 } from "../runtimes/index.js";
+import { ensureOnlyOllamaModelLoaded } from "../runtimes/ollama-residency.js";
 import type {
 	BenchConfig,
+	GenerationFailureType,
+	MatrixItem,
 	MatrixItemResult,
-	RunResult,
 } from "../schemas/index.js";
-import { SCHEMA_VERSION } from "../schemas/index.js";
 import { executeItem } from "./item-executor.js";
 import { buildRunPlan } from "./plan-builder.js";
+import {
+	buildPreflightSkipResult,
+	buildResidencyGuardFailureResult,
+	buildRunResultSnapshot,
+	printModelGuardReport,
+	readErrorMessage,
+	shouldWriteProgressCheckpoint,
+	writeProgressCheckpoint,
+} from "./run-progress.js";
 
 /** Warn if run.json exceeds this size (bytes). */
 const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
-/** Write crash-safe run checkpoints every N completed items. */
-const PARTIAL_RESULT_CHECKPOINT_INTERVAL = 20;
+/** Generation failures that indicate a tool harness/model should stop early. */
+const PREFLIGHT_SKIP_FAILURE_TYPES = new Set<GenerationFailureType>([
+	"api_error",
+	"harness_error",
+	"tool_missing",
+]);
 
 /**
- * Builds a run result snapshot from current progress.
+ * Determines whether a preflight failure means later tool rows should be skipped.
  *
- * @param plan - Run plan metadata source
- * @param startedAt - Run start timestamp
- * @param total - Total planned items
- * @param results - Completed item results so far
- * @returns Run result snapshot payload
+ * @param result - Executed preflight item result
+ * @returns True when the failure is infrastructure-level rather than semantic
  */
-function buildRunResultSnapshot(
-	plan: Awaited<ReturnType<typeof buildRunPlan>>,
-	startedAt: string,
-	runStartTimeMs: number,
-	total: number,
-	results: MatrixItemResult[],
-): RunResult {
-	const completed = results.filter((r) => r.status === "completed").length;
-	const failed = results.filter((r) => r.status === "failed").length;
-	const pending = Math.max(0, total - results.length);
-	const completedAt = new Date().toISOString();
-	const durationMs = Math.round(performance.now() - runStartTimeMs);
-
-	return {
-		schemaVersion: SCHEMA_VERSION,
-		runId: plan.runId,
-		...(plan.machine ? { machine: plan.machine } : {}),
-		...(plan.benchmarkCheckpoint
-			? { benchmarkCheckpoint: plan.benchmarkCheckpoint }
-			: {}),
-		provenance: {
-			verificationStatus: "self_reported",
-			source: plan.provenance?.source ?? "local_cli",
-			...(plan.provenance?.submittedBy
-				? { submittedBy: plan.provenance.submittedBy }
-				: {}),
-			...(plan.provenance?.submittedAt
-				? { submittedAt: plan.provenance.submittedAt }
-				: {}),
-			...(plan.provenance?.notes ? { notes: plan.provenance.notes } : {}),
-		},
-		startedAt,
-		completedAt,
-		durationMs,
-		summary: {
-			total,
-			completed,
-			failed,
-			pending,
-		},
-		items: results,
-	};
+function shouldSkipRemainingToolItems(result: MatrixItemResult): boolean {
+	const failureType = result.generation?.failureType;
+	return (
+		result.generation?.success === false &&
+		failureType !== undefined &&
+		PREFLIGHT_SKIP_FAILURE_TYPES.has(failureType)
+	);
 }
 
 /**
@@ -146,7 +121,6 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	for (const [runtimeName, models] of runtimeModelSet) {
 		const runtime = createRuntime(runtimeName, {
 			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
 			defaultTimeoutMs: config.generateTimeoutMs,
 		});
 
@@ -198,18 +172,93 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const toolCallingHarnesses = new Set(TOOL_CALLING_HARNESS_NAMES);
 	const preflightStatus = new Map<
 		string,
-		{ status: "passed" | "failed"; skip: boolean; message?: string }
+		{
+			status: "passed" | "failed";
+			skip: boolean;
+			message?: string;
+			failureType?: GenerationFailureType;
+		}
 	>();
+	const executedModelGroups = new Set<string>();
 	let lastCheckpointItemCount = 0;
 
 	if (!plan.items.some((item) => isPreflightTest(item.tags))) {
 		log.warn("No preflight tests present in plan; tool preflight is disabled");
 	}
 
+	const runPostItemResidencyTeardown = async (
+		item: MatrixItem,
+	): Promise<void> => {
+		try {
+			const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
+				baseUrl: config.ollamaBaseUrl,
+			});
+			printModelGuardReport(postItemResidencyReport, log);
+		} catch (error) {
+			log.warn(
+				{ itemId: item.id, error: readErrorMessage(error) },
+				"Ollama residency guard failed after item; continuing",
+			);
+		}
+	};
+
 	for (let i = 0; i < plan.items.length; i++) {
 		const item = plan.items[i];
 		const itemNum = String(i + 1).padStart(2, "0");
 		const nextItem = plan.items[i + 1];
+		// Unload model only when switching to a different model/runtime (or last item)
+		// Must check both: same model name on different runtimes should trigger unload
+		const isLastForModel =
+			!nextItem ||
+			nextItem.model !== item.model ||
+			nextItem.runtime !== item.runtime;
+		const modelGroupKey = `${item.runtime}::${item.model}`;
+		const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
+		const isToolHarness = toolCallingHarnesses.has(
+			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
+		);
+		const isPreflight = isPreflightTest(item.tags);
+
+		if (isToolHarness) {
+			const status = preflightStatus.get(preflightKey);
+			if (status?.skip) {
+				const message =
+					status.message ??
+					"preflight failed; skipping remaining items for this harness/model";
+				const failureType = status.failureType ?? "tool_missing";
+				log.warn(
+					{ harness: item.harness, model: item.model, test: item.test },
+					"Skipping item due to preflight failure",
+				);
+				results.push(buildPreflightSkipResult(item, message, failureType));
+				try {
+					const itemCount = results.length;
+					if (
+						shouldWriteProgressCheckpoint(
+							itemCount,
+							total,
+							lastCheckpointItemCount,
+						)
+					) {
+						await writeProgressCheckpoint({
+							config,
+							plan,
+							startedAt,
+							startTime,
+							total,
+							results,
+							log,
+						});
+						lastCheckpointItemCount = itemCount;
+					}
+				} finally {
+					if (isLastForModel && executedModelGroups.has(modelGroupKey)) {
+						await runPostItemResidencyTeardown(item);
+					}
+				}
+				continue;
+			}
+		}
 
 		// Calculate dynamic timeout based on model size and harness
 		const modelInfo = modelInfoCache.get(`${item.runtime}:${item.model}`);
@@ -222,91 +271,58 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			item.timeoutMultiplier,
 		);
 
+		try {
+			const preItemResidencyReport = await ensureOnlyOllamaModelLoaded({
+				baseUrl: config.ollamaBaseUrl,
+				allowedModel: item.model,
+			});
+			printModelGuardReport(preItemResidencyReport, log);
+		} catch (error) {
+			const errorMessage = readErrorMessage(error);
+			if (isToolHarness && isPreflight) {
+				preflightStatus.set(preflightKey, {
+					status: "failed",
+					skip: true,
+					message: `Residency guard failed: ${errorMessage}`,
+					failureType: "api_error",
+				});
+			}
+			log.warn(
+				{ itemId: item.id, error: errorMessage },
+				"Ollama residency guard failed before item; recording item failure",
+			);
+			results.push(buildResidencyGuardFailureResult(item, error));
+			const itemCount = results.length;
+			if (
+				shouldWriteProgressCheckpoint(itemCount, total, lastCheckpointItemCount)
+			) {
+				await writeProgressCheckpoint({
+					config,
+					plan,
+					startedAt,
+					startTime,
+					total,
+					results,
+					log,
+				});
+				lastCheckpointItemCount = itemCount;
+			}
+			if (isLastForModel) {
+				await runPostItemResidencyTeardown(item);
+			}
+			continue;
+		}
+
 		// Progress counter (terminal-native UX)
 		console.log(
 			`item ${itemNum}/${String(total).padStart(2, "0")}: runtime=${item.runtime} harness=${item.harness} model=${item.model} test=${item.test} pass=${item.passType} timeout=${formatTimeout(dynamicTimeout)}`,
 		);
 
-		const preflightKey = `${item.runtime}::${item.harness}::${item.model}`;
-		const isToolHarness = toolCallingHarnesses.has(
-			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
-		);
-		const isPreflight = isPreflightTest(item.tags);
-
-		if (isToolHarness && !isPreflight) {
-			const status = preflightStatus.get(preflightKey);
-			if (status?.skip) {
-				const now = new Date().toISOString();
-				const message =
-					status.message ??
-					"preflight failed; skipping remaining items for this harness/model";
-				log.warn(
-					{ harness: item.harness, model: item.model, test: item.test },
-					"Skipping item due to preflight failure",
-				);
-				results.push({
-					id: item.id,
-					runtime: item.runtime,
-					model: item.model,
-					...(item.modelAlias ? { modelAlias: item.modelAlias } : {}),
-					...(item.modelProfile ? { modelProfile: item.modelProfile } : {}),
-					harness: item.harness,
-					test: item.test,
-					passType: item.passType,
-					status: "failed",
-					startedAt: now,
-					completedAt: now,
-					generation: {
-						success: false,
-						error: `Skipped: ${message}`,
-						failureType: "tool_missing",
-						durationMs: 0,
-					},
-					generationFailure: {
-						type: "tool_missing",
-						message: `Skipped: ${message}`,
-					},
-				});
-				const itemCount = results.length;
-				const shouldCheckpoint =
-					itemCount === total ||
-					itemCount - lastCheckpointItemCount >=
-						PARTIAL_RESULT_CHECKPOINT_INTERVAL;
-				if (shouldCheckpoint) {
-					const partialSnapshot = buildRunResultSnapshot(
-						plan,
-						startedAt,
-						startTime,
-						total,
-						results,
-					);
-					await writePartialResult(config.outputDir, partialSnapshot);
-					log.info(
-						{
-							completedItems: itemCount,
-							totalItems: total,
-							checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
-						},
-						"Wrote run checkpoint",
-					);
-					lastCheckpointItemCount = itemCount;
-				}
-				continue;
-			}
-		}
-
-		// Unload model only when switching to a different model/runtime (or last item)
-		// Must check both: same model name on different runtimes should trigger unload
-		const isLastForModel =
-			!nextItem ||
-			nextItem.model !== item.model ||
-			nextItem.runtime !== item.runtime;
-
+		executedModelGroups.add(modelGroupKey);
 		const result = await executeItem(
 			item,
 			{
 				ollamaBaseUrl: config.ollamaBaseUrl,
-				vllmBaseUrl: config.vllmBaseUrl,
 				gooseMaxTurns: config.gooseMaxTurns,
 				gooseRetryMaxTurns: config.gooseRetryMaxTurns,
 				gooseWorkspaceMaxTurns: config.gooseWorkspaceMaxTurns,
@@ -317,40 +333,36 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		);
 		results.push(result);
 		const itemCount = results.length;
-		const shouldCheckpoint =
-			itemCount === total ||
-			itemCount - lastCheckpointItemCount >= PARTIAL_RESULT_CHECKPOINT_INTERVAL;
-		if (shouldCheckpoint) {
-			const partialSnapshot = buildRunResultSnapshot(
+		if (
+			shouldWriteProgressCheckpoint(itemCount, total, lastCheckpointItemCount)
+		) {
+			await writeProgressCheckpoint({
+				config,
 				plan,
 				startedAt,
 				startTime,
 				total,
 				results,
-			);
-			await writePartialResult(config.outputDir, partialSnapshot);
-			log.info(
-				{
-					completedItems: itemCount,
-					totalItems: total,
-					checkpointPath: `${config.outputDir}/${plan.runId}/run.partial.json`,
-				},
-				"Wrote run checkpoint",
-			);
+				log,
+			});
 			lastCheckpointItemCount = itemCount;
+		}
+		if (isLastForModel) {
+			await runPostItemResidencyTeardown(item);
 		}
 
 		if (isToolHarness && isPreflight) {
 			const failureMessage =
 				result.generation?.error ?? result.generationFailure?.message;
 			const passed = result.generation?.success === true;
-			const shouldSkip =
-				result.generation?.success === false &&
-				result.generation?.failureType === "tool_missing";
+			const shouldSkip = shouldSkipRemainingToolItems(result);
 			preflightStatus.set(preflightKey, {
 				status: passed ? "passed" : "failed",
 				skip: shouldSkip,
 				message: failureMessage,
+				...(result.generation?.failureType
+					? { failureType: result.generation.failureType }
+					: {}),
 			});
 		}
 

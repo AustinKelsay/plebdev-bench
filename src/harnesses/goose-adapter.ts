@@ -2,24 +2,24 @@
  * Purpose: Goose CLI adapter implementing the Harness interface.
  * Exports: createGooseAdapter, GooseAdapterOptions
  *
- * This adapter runs Goose via CLI using execa.
- * Command: goose run --no-session --provider <provider> --model <model> -q --output-format json -i -
- * Prompt is passed via stdin and asks for final TypeScript code output.
- *
  * Invariants:
- * - Uses runtime.baseUrl for provider-specific API routing
- * - Timeout handled via execa options
- * - Tool output is optional; plain assistant output is still scored
+ * - Runs Goose through execa with stdin prompts and bounded timeouts.
+ * - Passes runtime.baseUrl through Goose env for provider API routing.
+ * - Tool output is optional; plain assistant output is still scored.
  */
 
-import * as crypto from "node:crypto";
+import { randomBytes } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { execa } from "execa";
 import { z } from "zod";
 import { logger } from "../lib/logger.js";
-import { appendSignalAssessmentReasons } from "../lib/signal-assessment.js";
+import {
+	appendSignalAssessmentReasons,
+	getTranscriptOrInputTaintReasons,
+	mergeSignalAssessments,
+} from "../lib/signal-assessment.js";
 import {
 	appendRetryMarker,
 	buildCodeOnlyPrompt,
@@ -27,14 +27,17 @@ import {
 	hasRetryMarker,
 	stripRetryMarker,
 } from "./code-output-policy.js";
-import { normalizeOpenAiBasePath } from "./goose-openai.js";
 import { normalizeGooseOutput } from "./goose-output.js";
+import {
+	fingerprintText,
+	normalizeTurnLimit,
+	sanitizeRuntimeBaseUrl,
+} from "./goose-utils.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import { buildWorkspaceToolPrompt } from "./tool-prompt.js";
 
 /** Minimum output length to consider a response valid. */
 const MIN_OUTPUT_LENGTH = 10;
-
 /** Output filename for tool-calling mode. */
 const SOLUTION_FILENAME = "solution.ts";
 
@@ -71,55 +74,6 @@ const GooseAdapterOptionsSchema = z
 		workspaceRetryMaxTurns: z.number().optional(),
 	})
 	.strict();
-
-/**
- * Normalizes turn limits to safe positive integers.
- *
- * @param paramName - Option name for error context
- * @param value - User-supplied turn limit
- * @param fallback - Fallback turn limit when input is undefined
- * @returns Positive integer turn limit
- * @throws {TypeError} If value is provided but is not a positive integer
- */
-function normalizeTurnLimit(
-	paramName: string,
-	value: number | undefined,
-	fallback: number,
-): number {
-	if (value === undefined) {
-		return fallback;
-	}
-	if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
-		throw new TypeError(
-			`${paramName} must be a positive integer, received ${String(value)}`,
-		);
-	}
-	return value;
-}
-
-/**
- * Produces a redaction-safe fingerprint for logs.
- *
- * @param text - Arbitrary text payload
- * @returns Short SHA-256 fingerprint prefix
- */
-function fingerprintText(text: string): string {
-	return crypto.createHash("sha256").update(text).digest("hex").slice(0, 12);
-}
-
-/**
- * Sanitizes runtime base URL for logs by retaining origin only.
- *
- * @param baseUrl - Runtime base URL
- * @returns Safe origin string or redacted fallback
- */
-function sanitizeRuntimeBaseUrl(baseUrl: string): string {
-	try {
-		return new URL(baseUrl).origin;
-	} catch {
-		return "REDACTED";
-	}
-}
 
 /**
  * Creates a Goose harness adapter.
@@ -171,7 +125,6 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 
 		async ping(): Promise<boolean> {
 			try {
-				// Check if goose CLI is available
 				await execa("which", ["goose"], { timeout: 5000 });
 				return true;
 			} catch {
@@ -201,7 +154,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			}
 
 			// Create unique temp directory for this generation
-			const runId = crypto.randomBytes(8).toString("hex");
+			const runId = randomBytes(8).toString("hex");
 			const workDir =
 				opts.workingDirectory ??
 				path.join(os.tmpdir(), `plebdev-bench-goose-${runId}`);
@@ -211,64 +164,17 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 			await fs.promises.mkdir(workDir, { recursive: true });
 			log.debug({ workDir, executionCwd }, "Prepared Goose output directory");
 
-			// Determine Goose provider and extra env based on runtime API format
-			let provider: string;
-			let extraEnv: Record<string, string> = {};
-
-			switch (runtime.apiFormat) {
-				case "ollama":
-					provider = "ollama";
-					break;
-				case "openai-compat": {
-					provider = "openai";
-
-					const apiKey = process.env.VLLM_API_KEY ?? process.env.OPENAI_API_KEY;
-					if (!apiKey) {
-						log.warn(
-							"No VLLM_API_KEY or OPENAI_API_KEY set; using dummy key for OpenAI-compatible provider",
-						);
-					}
-
-					const parsedBaseUrl = new URL(runtime.baseUrl);
-					const host = `${parsedBaseUrl.protocol}//${parsedBaseUrl.host}`;
-					let basePath = normalizeOpenAiBasePath(parsedBaseUrl.pathname);
-					// Goose's OpenAI provider sometimes hits /v1/completions by default.
-					// vLLM only supports chat completions, so force the chat endpoint path.
-					if (runtime.name === "vllm" && basePath === "v1") {
-						basePath = "v1/chat/completions";
-					}
-					const baseUrl = `${host}/${basePath}`;
-
-					extraEnv = {
-						OPENAI_API_KEY: apiKey ?? "dummy",
-						OPENAI_HOST: host,
-						OPENAI_BASE_PATH: basePath,
-						OPENAI_BASE_URL: baseUrl,
-						OPENAI_API_BASE: baseUrl,
-						OPENAI_MODEL: model,
-						OPENAI_DEFAULT_MODEL: model,
-					};
-					break;
-				}
-				default: {
-					const _exhaustive: never = runtime.apiFormat;
-					log.warn(
-						{ apiFormat: _exhaustive },
-						"Unsupported runtime apiFormat for Goose",
-					);
-					throw new Error(
-						`Unsupported runtime apiFormat for Goose: ${String(_exhaustive)}`,
-					);
-				}
-			}
+			const provider = "ollama";
 
 			// Set up environment for Goose (headless mode)
-			const env = {
+			const env: NodeJS.ProcessEnv = {
 				...process.env,
 				GOOSE_PROVIDER: provider,
 				GOOSE_MODEL: model,
-				...extraEnv,
 			};
+			if (runtime.baseUrl) {
+				env.OLLAMA_HOST = runtime.baseUrl;
+			}
 
 			const fullPrompt =
 				promptMode === "workspace"
@@ -319,6 +225,9 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				const durationMs = Math.round(performance.now() - startTime);
 				let output = result.stdout;
 				const stderr = result.stderr?.trim() || "";
+				const rawOutputParts = [result.stdout, result.stderr].filter(
+					(part): part is string => typeof part === "string" && part.length > 0,
+				);
 
 				// Log stderr if present (may contain warnings)
 				if (stderr) {
@@ -336,6 +245,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					}
 				}
 
+				const rawOutput = output;
 				const normalized = normalizeGooseOutput(output);
 				const toolCallDetected =
 					normalized.method === "tool_call" ||
@@ -351,6 +261,21 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					);
 					output = normalized.output;
 				}
+				const transcriptOrInputReasons = Array.from(
+					new Set([
+						...rawOutputParts.flatMap((part) =>
+							getTranscriptOrInputTaintReasons(part, { source: "harness" }),
+						),
+						...getTranscriptOrInputTaintReasons(rawOutput, {
+							source: "harness",
+						}),
+						...getTranscriptOrInputTaintReasons(output, { source: "harness" }),
+					]),
+				);
+				const signalAssessment =
+					transcriptOrInputReasons.length > 0
+						? appendSignalAssessmentReasons(undefined, transcriptOrInputReasons)
+						: undefined;
 
 				log.debug(
 					{
@@ -365,6 +290,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					return {
 						output,
 						durationMs,
+						signalAssessment,
 					};
 				}
 
@@ -390,7 +316,8 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 				if (!codeFilePath) {
 					if (
 						durationMs < 2000 &&
-						(!output || output.trim().length < MIN_OUTPUT_LENGTH)
+						(!output || output.trim().length < MIN_OUTPUT_LENGTH) &&
+						transcriptOrInputReasons.length === 0
 					) {
 						throw new Error(
 							`Goose returned empty output instantly (${durationMs}ms) - model "${model}" may not be recognized`,
@@ -418,7 +345,7 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 							durationMs,
 							codeFilePath,
 							signalAssessment: appendSignalAssessmentReasons(
-								undefined,
+								signalAssessment,
 								[
 									...decision.taintReasons,
 									...(toolCallDetected
@@ -427,7 +354,8 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 								],
 							),
 						};
-					} else if (decision.shouldRetry) {
+					}
+					if (decision.shouldRetry) {
 						const elapsedMs = Math.round(performance.now() - startTime);
 						const remainingMs = timeoutMs - elapsedMs;
 						if (!isRetryAttempt && remainingMs > 1000) {
@@ -457,9 +385,17 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 								prompt: appendRetryMarker(promptWithoutMarker),
 								timeoutMs: remainingMs,
 							});
+							const firstAttemptAssessment = appendSignalAssessmentReasons(
+								signalAssessment,
+								decision.taintReasons,
+							);
 							return {
 								...retryResult,
 								durationMs: Math.round(performance.now() - startTime),
+								signalAssessment: mergeSignalAssessments(
+									firstAttemptAssessment,
+									retryResult.signalAssessment,
+								),
 							};
 						}
 
@@ -480,34 +416,60 @@ export function createGooseAdapter(options?: GooseAdapterOptions): Harness {
 					durationMs,
 					codeFilePath,
 					signalAssessment: appendSignalAssessmentReasons(
-						undefined,
-						toolCallDetected && !codeFilePath
-							? ["tool_call_not_executed"]
-							: [],
+						signalAssessment,
+						toolCallDetected && !codeFilePath ? ["tool_call_not_executed"] : [],
 					),
 					// Goose doesn't provide token counts
 				};
 			} catch (error) {
-				// Check if it's a timeout error
-				if (error instanceof Error && error.message.includes("timed out")) {
-					throw new Error(
-						`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
+				const durationMs = Math.round(performance.now() - startTime);
+				if (
+					error &&
+					typeof error === "object" &&
+					("stdout" in error || "stderr" in error)
+				) {
+					const execaError = error as {
+						stdout?: string;
+						stderr?: string;
+						message: string;
+						timedOut?: boolean;
+					};
+					const isTimeoutError = execaError.timedOut === true;
+					const trimmedCombined =
+						`${execaError.stdout ?? ""}\n${execaError.stderr ?? ""}`.trim();
+					const effectiveOutput = trimmedCombined || execaError.message;
+					const errorReasons = getTranscriptOrInputTaintReasons(
+						effectiveOutput,
+						{ source: "harness" },
 					);
+					const message = isTimeoutError
+						? `Goose timed out after ${Math.round(timeoutMs / 1000)}s: ${effectiveOutput}`
+						: `Goose failed: ${effectiveOutput}`;
+					throw Object.assign(new Error(message), {
+						signalAssessment:
+							errorReasons.length > 0
+								? appendSignalAssessmentReasons(undefined, errorReasons)
+								: undefined,
+						output: effectiveOutput,
+						durationMs,
+					});
 				}
 
-				// Check for execa error with stderr
-				if (error && typeof error === "object" && "stderr" in error) {
-					const execaError = error as { stderr: string; message: string };
-					throw new Error(
-						`Goose failed: ${execaError.stderr || execaError.message}`,
+				const isTimeoutError =
+					typeof error === "object" &&
+					error !== null &&
+					"timedOut" in error &&
+					(error as { timedOut?: boolean }).timedOut === true;
+				if (isTimeoutError) {
+					throw Object.assign(
+						new Error(
+							`Goose timed out after ${Math.round(timeoutMs / 1000)}s. Try increasing --timeout.`,
+						),
+						{ durationMs },
 					);
 				}
 
 				throw error;
-			} finally {
-				// Clean up temp directory (best effort, but preserve if codeFilePath is set)
-				// Note: cleanup happens after scoring reads the file
-				// We leave cleanup to the caller/GC since the file needs to persist for scoring
 			}
 		},
 	};

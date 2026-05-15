@@ -120,8 +120,8 @@
 }
 
 .card-glow:hover {
-	box-shadow: 0 0 24px hsla(142, 60%, 49%, 0.1),
-		0 0 48px hsla(212, 100%, 67%, 0.06);
+	box-shadow: 0 0 24px hsla(142, 60%, 49%, 0.1), 0 0 48px
+		hsla(212, 100%, 67%, 0.06);
 	border-color: hsla(210, 30%, 92%, 0.12);
 }
 

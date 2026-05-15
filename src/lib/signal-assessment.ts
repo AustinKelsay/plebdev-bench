@@ -1,9 +1,11 @@
 /**
  * Purpose: Helpers for per-item benchmark signal assessment and trusted-metric filtering.
  * Exports: createTrustworthySignalAssessment, createTaintedSignalAssessment,
- *          appendSignalAssessmentReasons, hasCompleteSignalAssessments,
- *          isTaintedItem, isConfirmationOnlyOutput, isLikelyToolCallPayload,
- *          finalizeItemSignalAssessment
+ *          appendSignalAssessmentReasons, mergeSignalAssessments,
+ *          hasCompleteSignalAssessments, isTaintedItem, isConfirmationOnlyOutput,
+ *          isLikelyToolCallPayload,
+ *          isInternalToolTranscriptOutput, isAgentRequestedInputOutput,
+ *          getTranscriptOrInputTaintReasons, finalizeItemSignalAssessment
  *
  * Invariants:
  * - New runs should emit a signal assessment for every row.
@@ -16,13 +18,38 @@ import type {
 	MatrixItemResult,
 	SignalAssessment,
 	SignalAssessmentReason,
-	TestScoringMode,
 } from "../schemas/index.js";
+
+const INTERNAL_TOOL_TRANSCRIPT_WINDOW_CHARS = 200;
+
+const INTERNAL_TOOL_SESSION_ID_PATTERN = /"sessionID"\s*:/i;
+const INTERNAL_TOOL_EVENT_TYPE_PATTERN =
+	/"type"\s*:\s*"(?:step_(?:start|finish)|tool_(?:call|result|use))"/i;
+const INTERNAL_TOOL_FUNCTION_MARKER_PATTERN =
+	/(?:\[Function\s+(?:bash|edit|glob|grep|read|write)\b|<function=(?:bash|edit|glob|grep|read|write)>)/i;
+const INTERNAL_TOOL_FILE_PATH_MARKER_PATTERN =
+	/(?:<parameter=filePath>|\bfilePath\s*:)/i;
+
+const AGENT_REQUESTED_INPUT_PATTERNS = [
+	/\bwould you like me to continue\?\s*(?:i\s+)?(?:have\s+)?reached the maximum number of actions\b/i,
+	/\breached the maximum number of actions(?:[\s\S]{0,160})\bwithout user input\b(?:[\s\S]{0,160})\bwould you like me to continue\??\b/i,
+	/\b(?:assistant|agent)\s+(?:is\s+)?operating\s+without\s+user\s+input\b/i,
+	/\b(?:assistant|agent|harness|goose|opencode)\b[\s\S]{0,120}\b(?:awaiting|needs?|needing|requires?)\s+user\s+input\b/i,
+	/\b(?:awaiting|needs?|needing|requires?)\s+user\s+input\b[\s\S]{0,120}\b(?:assistant|agent|harness|goose|opencode)\b/i,
+	/\b(?:assistant|agent|harness|goose|opencode)\b[\s\S]{0,120}\bplease confirm\s+(?:to\s+(?:continue|proceed)|that\s+you\s+want\s+(?:me|the\s+run|the\s+agent)\s+to\s+continue|how\s+you(?:'d| would)\s+like\s+to\s+proceed)\b/i,
+	/\bplease confirm\s+(?:to\s+(?:continue|proceed)|that\s+you\s+want\s+(?:me|the\s+run|the\s+agent)\s+to\s+continue)\b[\s\S]{0,120}\b(?:assistant|agent|harness|goose|opencode)\b/i,
+	/\b(?:assistant|agent|harness|goose|opencode)\b[\s\S]{0,120}\bneeds?\s+your\s+confirmation(?:\s+to\s+(?:continue|proceed))?\b/i,
+] as const;
+
+interface TranscriptOrInputTaintOptions {
+	source?: "harness" | "artifact";
+}
 
 /**
  * Builds a trustworthy signal assessment.
  *
  * @returns Trustworthy assessment with no taint reasons
+ * @throws {never} This helper only returns a constant trustworthy assessment
  */
 export function createTrustworthySignalAssessment(): SignalAssessment {
 	return {
@@ -58,6 +85,7 @@ export function createTaintedSignalAssessment(
  * @param current - Existing assessment, if any
  * @param reasons - Reasons to append
  * @returns Updated assessment
+ * @throws {never} This helper only merges stable taint reason arrays
  */
 export function appendSignalAssessmentReasons(
 	current: SignalAssessment | undefined,
@@ -66,8 +94,28 @@ export function appendSignalAssessmentReasons(
 	if (reasons.length === 0) {
 		return current ?? createTrustworthySignalAssessment();
 	}
-	const currentReasons = current?.classification === "tainted" ? current.reasons : [];
+	const currentReasons =
+		current?.classification === "tainted" ? current.reasons : [];
 	return createTaintedSignalAssessment([...currentReasons, ...reasons]);
+}
+
+/**
+ * Preserves existing taint while adding later assessment taint reasons.
+ *
+ * @param existing - Current signal assessment
+ * @param next - New signal assessment from a later pipeline stage
+ * @returns Merged signal assessment, or undefined when neither assessment exists
+ * @throws {never} This helper only merges existing assessment payloads
+ */
+export function mergeSignalAssessments(
+	existing: SignalAssessment | undefined,
+	next: SignalAssessment | undefined,
+): SignalAssessment | undefined {
+	if (!next) return existing;
+	return appendSignalAssessmentReasons(
+		existing,
+		next.classification === "tainted" ? next.reasons : [],
+	);
 }
 
 /**
@@ -75,11 +123,14 @@ export function appendSignalAssessmentReasons(
  *
  * @param results - Run rows
  * @returns True when trusted metrics can be computed
+ * @throws {never} This helper only inspects assessment presence on results
  */
 export function hasCompleteSignalAssessments(
 	results: readonly MatrixItemResult[],
 ): boolean {
-	return results.length > 0 && results.every((result) => result.signalAssessment);
+	return (
+		results.length > 0 && results.every((result) => result.signalAssessment)
+	);
 }
 
 /**
@@ -87,6 +138,7 @@ export function hasCompleteSignalAssessments(
  *
  * @param item - Matrix item result
  * @returns True when classification is tainted
+ * @throws {never} This helper only inspects the provided row
  */
 export function isTaintedItem(item: MatrixItemResult): boolean {
 	return item.signalAssessment?.classification === "tainted";
@@ -97,6 +149,7 @@ export function isTaintedItem(item: MatrixItemResult): boolean {
  *
  * @param output - Raw generation output
  * @returns True when output is only a short confirmation
+ * @throws {never} This helper only matches static output patterns
  */
 export function isConfirmationOnlyOutput(output: string): boolean {
 	const trimmed = output.trim();
@@ -111,6 +164,7 @@ export function isConfirmationOnlyOutput(output: string): boolean {
  *
  * @param output - Raw generation output
  * @returns True when output resembles an unevaluated tool call
+ * @throws {never} JSON parse failures are caught and reported as `false`
  */
 export function isLikelyToolCallPayload(output: string): boolean {
 	const trimmed = output.trim();
@@ -135,24 +189,180 @@ export function isLikelyToolCallPayload(output: string): boolean {
 }
 
 /**
+ * Returns a global regex copy so `matchAll` can scan every occurrence.
+ *
+ * @param pattern - Source regex
+ * @returns Global regex preserving existing flags
+ */
+function toGlobalRegex(pattern: RegExp): RegExp {
+	return new RegExp(
+		pattern.source,
+		pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`,
+	);
+}
+
+/**
+ * Returns true when `secondaryPattern` appears near any `primaryPattern` match.
+ *
+ * @param output - Candidate output text
+ * @param primaryPattern - First required marker
+ * @param secondaryPattern - Second required marker
+ * @returns True when both markers occur in the same local window
+ */
+function hasNearbyPatternPair(
+	output: string,
+	primaryPattern: RegExp,
+	secondaryPattern: RegExp,
+): boolean {
+	const secondaryMatcher = new RegExp(
+		secondaryPattern.source,
+		secondaryPattern.flags.replaceAll("g", ""),
+	);
+	for (const match of output.matchAll(toGlobalRegex(primaryPattern))) {
+		const start = match.index ?? 0;
+		const end = start + match[0].length;
+		const windowStart = Math.max(
+			0,
+			start - INTERNAL_TOOL_TRANSCRIPT_WINDOW_CHARS,
+		);
+		const windowEnd = Math.min(
+			output.length,
+			end + INTERNAL_TOOL_TRANSCRIPT_WINDOW_CHARS,
+		);
+		if (secondaryMatcher.test(output.slice(windowStart, windowEnd))) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Detects structured JSON transcript markers rather than isolated token mentions.
+ *
+ * @param output - Candidate output text
+ * @returns True when session and step/tool event markers appear together nearby
+ */
+function hasStructuredJsonTranscriptMarkers(output: string): boolean {
+	return (
+		hasNearbyPatternPair(
+			output,
+			INTERNAL_TOOL_SESSION_ID_PATTERN,
+			INTERNAL_TOOL_EVENT_TYPE_PATTERN,
+		) ||
+		hasNearbyPatternPair(
+			output,
+			INTERNAL_TOOL_EVENT_TYPE_PATTERN,
+			INTERNAL_TOOL_SESSION_ID_PATTERN,
+		)
+	);
+}
+
+/**
+ * Detects tool transcript blocks that include both a tool marker and file-path marker.
+ *
+ * @param output - Candidate output text
+ * @returns True when both markers co-occur in the same transcript block
+ */
+function hasToolInvocationTranscriptBlock(output: string): boolean {
+	const blocks = output.split(/\n\s*\n/);
+	return blocks.some((block) => {
+		const trimmedBlock = block.trim();
+		return (
+			trimmedBlock.length > 0 &&
+			INTERNAL_TOOL_FUNCTION_MARKER_PATTERN.test(trimmedBlock) &&
+			INTERNAL_TOOL_FILE_PATH_MARKER_PATTERN.test(trimmedBlock)
+		);
+	});
+}
+
+/**
+ * Detects raw harness protocol transcripts or internal tool chatter leaked to output.
+ *
+ * @param output - Raw generation output
+ * @returns True when output resembles internal transport/tool transcript text
+ * @throws {never} This helper only applies deterministic text heuristics
+ */
+export function isInternalToolTranscriptOutput(output: string): boolean {
+	const trimmed = output.trim();
+	if (trimmed.length === 0) {
+		return false;
+	}
+	return (
+		hasStructuredJsonTranscriptMarkers(trimmed) ||
+		hasToolInvocationTranscriptBlock(trimmed)
+	);
+}
+
+/**
+ * Detects outputs where the agent is asking for user confirmation/input.
+ *
+ * @param output - Raw generation output
+ * @param options - Context for deciding whether input-request phrases are boundary text
+ * @returns True when output asks the user to continue or confirm
+ * @throws {never} This helper only applies deterministic text heuristics
+ */
+export function isAgentRequestedInputOutput(
+	output: string,
+	options: TranscriptOrInputTaintOptions = {},
+): boolean {
+	const trimmed = output.trim();
+	if (trimmed.length === 0) {
+		return false;
+	}
+	if (options.source !== "harness") {
+		return false;
+	}
+	return AGENT_REQUESTED_INPUT_PATTERNS.some((pattern) =>
+		pattern.test(trimmed),
+	);
+}
+
+/**
+ * Collects transcript/input-specific taint reasons for harness boundary output.
+ *
+ * @param output - Raw or normalized output text
+ * @param options - Context for filtering harness-boundary-only patterns
+ * @returns Stable taint reasons for non-semantic transcript/input leakage
+ * @throws {never} This helper only returns stable reason codes derived from text
+ */
+export function getTranscriptOrInputTaintReasons(
+	output: string,
+	options: TranscriptOrInputTaintOptions = {},
+): SignalAssessmentReason[] {
+	const reasons: SignalAssessmentReason[] = [];
+	if (isInternalToolTranscriptOutput(output)) {
+		reasons.push("internal_tool_transcript");
+	}
+	if (isAgentRequestedInputOutput(output, options)) {
+		reasons.push("agent_requested_input");
+	}
+	return reasons;
+}
+
+/**
  * Finalizes per-item signal assessment after scoring.
  *
  * @param input - Row context used for post-scoring taint adjustments
  * @returns Finalized signal assessment
+ * @throws {Error} When neither `rowFailed` nor `automatedScore` is provided
  */
 export function finalizeItemSignalAssessment(input: {
 	existing: SignalAssessment | undefined;
-	scoringMode: TestScoringMode;
 	automatedScore: AutomatedScore | undefined;
+	rowFailed?: boolean;
 	output: string | undefined;
+	outputSource?: "harness" | "artifact";
 }): SignalAssessment {
 	let assessment = input.existing ?? createTrustworthySignalAssessment();
-	if (
-		input.scoringMode !== "workspace" ||
-		!input.output ||
-		!input.automatedScore ||
-		input.automatedScore.failed === 0
-	) {
+	if (input.rowFailed === undefined && input.automatedScore === undefined) {
+		throw new Error(
+			"finalizeItemSignalAssessment requires rowFailed or automatedScore",
+		);
+	}
+	const rowFailed =
+		input.rowFailed ??
+		Boolean(input.automatedScore && input.automatedScore.failed > 0);
+	if (!rowFailed || !input.output) {
 		return assessment;
 	}
 
@@ -163,6 +373,11 @@ export function finalizeItemSignalAssessment(input: {
 	if (isLikelyToolCallPayload(input.output)) {
 		reasons.push("tool_call_not_executed");
 	}
+	reasons.push(
+		...getTranscriptOrInputTaintReasons(input.output, {
+			source: input.outputSource,
+		}),
+	);
 
 	assessment = appendSignalAssessmentReasons(assessment, reasons);
 	return assessment;

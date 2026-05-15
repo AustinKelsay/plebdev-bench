@@ -11,8 +11,8 @@
 
 import * as fs from "node:fs";
 import {
-	RuntimeNameSchema,
-	type RuntimeName,
+	type SupportedRuntimeName,
+	SupportedRuntimeNameSchema,
 } from "../../schemas/common.schema.js";
 import {
 	ModelAliasFileSchema,
@@ -20,8 +20,8 @@ import {
 	ModelAliasMapSchema,
 } from "../../schemas/model-alias.schema.js";
 import {
-	ModelProfileFileSchema,
 	type ModelProfile,
+	ModelProfileFileSchema,
 	type ModelProfileRegistry,
 	ModelProfileRegistrySchema,
 } from "../../schemas/model-profile.schema.js";
@@ -32,6 +32,11 @@ import {
 	humanizeSlug,
 	normalizeConfiguredVariant,
 } from "./normalization.js";
+import {
+	LegacyCompatibleModelProfileFileSchema,
+	LegacyCompatibleModelProfileRegistrySchema,
+	normalizeLoadedModelProfileRegistry,
+} from "./registry-compat.js";
 
 const REGISTRY_PROVENANCE = Symbol("modelProfileRegistryProvenance");
 
@@ -74,7 +79,9 @@ function withRegistryProvenance(
 function getRegistryProfileProvenance(
 	profile: ModelProfileRegistry[string],
 ): RegistryResolutionSource {
-	return (profile as RegistryProfile)[REGISTRY_PROVENANCE] ?? "configured_profile";
+	return (
+		(profile as RegistryProfile)[REGISTRY_PROVENANCE] ?? "configured_profile"
+	);
 }
 
 /** Resolved runtime-specific model selection for one matrix row. */
@@ -93,7 +100,10 @@ function normalizeLegacyAliasMap(aliases: ModelAliasMap): ModelProfileRegistry {
 			{
 				profileLabel: humanizeSlug(profileKey),
 				variants: Object.fromEntries(
-					Object.entries(variants).map(([runtime, modelName]) => [runtime, modelName]),
+					Object.entries(variants).map(([runtime, modelName]) => [
+						runtime,
+						modelName,
+					]),
 				),
 			},
 			"legacy_alias",
@@ -142,11 +152,31 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 
 	const profileWrapper = ModelProfileFileSchema.safeParse(parsed);
 	if (profileWrapper.success) {
+		const normalized = normalizeLoadedModelProfileRegistry(
+			LegacyCompatibleModelProfileRegistrySchema.parse(
+				profileWrapper.data.models,
+			),
+			log,
+		);
 		log.debug(
-			{ profileCount: Object.keys(profileWrapper.data.models).length },
+			{ profileCount: Object.keys(normalized).length },
 			"Loaded versioned model profile file",
 		);
-		return withRegistryProvenance(profileWrapper.data.models, "configured_profile");
+		return withRegistryProvenance(normalized, "configured_profile");
+	}
+
+	const legacyCompatibleProfileWrapper =
+		LegacyCompatibleModelProfileFileSchema.safeParse(parsed);
+	if (legacyCompatibleProfileWrapper.success) {
+		const normalized = normalizeLoadedModelProfileRegistry(
+			legacyCompatibleProfileWrapper.data.models,
+			log,
+		);
+		log.debug(
+			{ profileCount: Object.keys(normalized).length },
+			"Loaded legacy-compatible model profile file",
+		);
+		return withRegistryProvenance(normalized, "configured_profile");
 	}
 
 	const rawProfiles = ModelProfileRegistrySchema.safeParse(parsed);
@@ -158,24 +188,44 @@ export function loadModelProfiles(filePath: string): ModelProfileRegistry {
 		return withRegistryProvenance(rawProfiles.data, "configured_profile");
 	}
 
+	const legacyCompatibleRawProfiles =
+		LegacyCompatibleModelProfileRegistrySchema.safeParse(parsed);
+	if (legacyCompatibleRawProfiles.success) {
+		const normalized = normalizeLoadedModelProfileRegistry(
+			legacyCompatibleRawProfiles.data,
+			log,
+		);
+		log.debug(
+			{ profileCount: Object.keys(normalized).length },
+			"Loaded legacy-compatible raw model profiles",
+		);
+		return withRegistryProvenance(normalized, "configured_profile");
+	}
+
 	const aliasWrapper = ModelAliasFileSchema.safeParse(parsed);
 	if (aliasWrapper.success) {
-		const normalized = normalizeLegacyAliasMap(aliasWrapper.data.aliases);
+		const normalized = normalizeLoadedModelProfileRegistry(
+			normalizeLegacyAliasMap(aliasWrapper.data.aliases),
+			log,
+		);
 		log.debug(
 			{ profileCount: Object.keys(normalized).length },
 			"Loaded legacy alias wrapper as model profiles",
 		);
-		return normalized;
+		return withRegistryProvenance(normalized, "legacy_alias");
 	}
 
 	const rawAliases = ModelAliasMapSchema.safeParse(parsed);
 	if (rawAliases.success) {
-		const normalized = normalizeLegacyAliasMap(rawAliases.data);
+		const normalized = normalizeLoadedModelProfileRegistry(
+			normalizeLegacyAliasMap(rawAliases.data),
+			log,
+		);
 		log.debug(
 			{ profileCount: Object.keys(normalized).length },
 			"Loaded legacy alias map as model profiles",
 		);
-		return normalized;
+		return withRegistryProvenance(normalized, "legacy_alias");
 	}
 
 	throw new Error(`Invalid model profile format in ${filePath}`);
@@ -221,7 +271,7 @@ export function parseInlineModelProfile(inline: string): ModelProfileRegistry {
 				`Invalid runtime mapping in profile "${profileKey}": "${entry}"`,
 			);
 		}
-		const runtimeResult = RuntimeNameSchema.safeParse(runtimeInput);
+		const runtimeResult = SupportedRuntimeNameSchema.safeParse(runtimeInput);
 		if (!runtimeResult.success) {
 			throw new Error(
 				`Invalid runtime mapping in profile "${profileKey}": unknown runtime "${runtimeInput}"`,
@@ -252,6 +302,7 @@ export function parseInlineModelProfile(inline: string): ModelProfileRegistry {
  *
  * @param inlines - Inline definitions
  * @returns Combined model-profile registry
+ * @throws {Error} If any inline definition cannot be parsed
  */
 export function parseInlineModelProfiles(
 	inlines: string[],
@@ -266,6 +317,7 @@ export function parseInlineModelProfiles(
  *
  * @param registries - Registries to merge
  * @returns Combined registry
+ * @throws {never} This helper only merges in-memory registry objects
  */
 export function mergeModelProfiles(
 	...registries: ModelProfileRegistry[]
@@ -293,7 +345,7 @@ export function mergeModelProfiles(
 
 /** Searches for a configured profile by runtime-specific model name. */
 function findConfiguredVariantByRuntimeModel(
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	runtimeModelName: string,
 	registry: ModelProfileRegistry,
 ): { profileKey: string; profile: ModelProfileRegistry[string] } | undefined {
@@ -328,9 +380,11 @@ function findConfiguredVariantByRuntimeModel(
  * @param runtimeModelName - Runtime-specific model identifier
  * @param registry - Configured model-profile registry
  * @returns Resolved model profile
+ * @throws {Error} If `findConfiguredVariantByRuntimeModel` finds multiple
+ * configured profiles for the same runtime/runtimeModelName mapping
  */
 export function buildResolvedModelProfile(
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	runtimeModelName: string,
 	registry: ModelProfileRegistry,
 ): ModelProfile {
@@ -363,10 +417,12 @@ export function buildResolvedModelProfile(
  * @param runtime - Target runtime
  * @param registry - Configured model-profile registry
  * @returns Resolved runtime model and profile, or undefined if the profile lacks a mapping for this runtime
+ * @throws {Error} If `findConfiguredVariantByRuntimeModel` finds multiple
+ * configured profiles for the same runtime/runtimeModelName mapping
  */
 export function resolveModelSelection(
 	modelSpec: string,
-	runtime: RuntimeName,
+	runtime: SupportedRuntimeName,
 	registry: ModelProfileRegistry,
 ): ResolvedModelSelection | undefined {
 	const configuredProfile = registry[modelSpec];

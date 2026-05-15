@@ -453,6 +453,21 @@ describe("calculateRunStats", () => {
 });
 
 describe("formatRunStats", () => {
+	it("throws when generation failure counts exceed failed items", () => {
+		const stats = createRunStats({
+			generationFailures: {
+				total: 2,
+				byType: [{ type: "timeout", count: 2 }],
+			},
+		});
+
+		expect(() =>
+			formatRunStats(stats, "test-run", 10, 1, 11, 60000, "results"),
+		).toThrow(
+			"generation failure count (2) cannot exceed failed item count (1)",
+		);
+	});
+
 	it("should format basic timing stats", () => {
 		const stats = createRunStats({
 			timing: {

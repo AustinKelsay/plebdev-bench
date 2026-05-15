@@ -9,10 +9,10 @@
  * - Zero-length inputs produce empty arrays (never null)
  */
 
-import { computeItemPassRate, computePassRate } from "./aggregations-core";
-import { inferToolHarnesses } from "./aggregations-tooling";
-import type { MatrixItemResult } from "./types";
-import { TOOL_SMOKE_TEST_SLUG } from "./types";
+import { computeItemPassRate, computePassRate } from "./aggregations-core.js";
+import { inferToolHarnesses } from "./aggregations-tooling.js";
+import type { MatrixItemResult } from "./types.js";
+import { TOOL_SMOKE_TEST_SLUG } from "./types.js";
 
 /** Cell for model x test heatmap. */
 export interface HeatmapCell {
@@ -111,9 +111,15 @@ export function computeModelRadarData(
 	selectedModels: string[],
 ): RadarDataPoint[] {
 	const toolHarnesses = inferToolHarnesses(items);
-	const axes = ["Pass Rate", "Completion", "Tool Success", "Frontier", "Speed"];
-	const radarData: RadarDataPoint[] = axes.map((axis) => ({
-		axis,
+	const axisEntries = [
+		{ key: "passRate", axis: "Pass Rate" },
+		{ key: "completion", axis: "Completion" },
+		{ key: "toolSuccess", axis: "Tool Success" },
+		{ key: "frontier", axis: "Frontier" },
+		{ key: "speed", axis: "Speed" },
+	] as const;
+	const radarData: RadarDataPoint[] = axisEntries.map((entry) => ({
+		axis: entry.axis,
 		fullMark: 100,
 	}));
 
@@ -158,11 +164,19 @@ export function computeModelRadarData(
 				: 0;
 		// Normalize: 0ms = 100, 300s = 0
 		// Normalize: 0ms = 100, 300_000ms (5min) = 0
-		const speedScore = avgDuration > 0 ? Math.max(0, 100 - (avgDuration / 300_000) * 100) : 50;
+		const speedScore =
+			avgDuration > 0 ? Math.max(0, 100 - (avgDuration / 300_000) * 100) : 50;
 
-		const values = [pr.passRate * 100, completionRate, toolSuccess, frontierAvg, speedScore];
-		for (let i = 0; i < axes.length; i++) {
-			radarData[i][model] = Math.round(values[i] * 10) / 10;
+		const valuesByAxis = {
+			passRate: pr.passRate * 100,
+			completion: completionRate,
+			toolSuccess,
+			frontier: frontierAvg,
+			speed: speedScore,
+		} satisfies Record<(typeof axisEntries)[number]["key"], number>;
+		for (let i = 0; i < axisEntries.length; i++) {
+			const axis = axisEntries[i];
+			radarData[i][model] = Math.round(valuesByAxis[axis.key] * 10) / 10;
 		}
 	}
 
@@ -306,7 +320,9 @@ export interface TestDifficultyRow {
  * @param model - Model name string
  * @returns "small" | "medium" | "large"
  */
-export function inferModelSizeBucket(model: string): "small" | "medium" | "large" {
+export function inferModelSizeBucket(
+	model: string,
+): "small" | "medium" | "large" {
 	const lower = model.toLowerCase();
 	// Check for common size indicators
 	if (/\b(1b|3b|7b|8b|1\.5b|0\.5b|tiny|mini|small|nano|phi-2)\b/.test(lower))

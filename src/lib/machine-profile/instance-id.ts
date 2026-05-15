@@ -11,6 +11,7 @@ import { randomBytes } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { z } from "zod";
 import type { MachineInstanceIdSource } from "../../schemas/index.js";
 
 /** New environment variable name for machine instance IDs. */
@@ -57,17 +58,11 @@ export function resolveDefaultInstanceIdPath(
 	}
 	if (platform === "win32") {
 		const localAppData =
-			readNonEmpty(env.LOCALAPPDATA) ??
-			path.join(homeDir, "AppData", "Local");
-		return path.join(
-			localAppData,
-			"plebdev-bench",
-			"machine-instance-id",
-		);
+			readNonEmpty(env.LOCALAPPDATA) ?? path.join(homeDir, "AppData", "Local");
+		return path.join(localAppData, "plebdev-bench", "machine-instance-id");
 	}
 	const stateHome =
-		readNonEmpty(env.XDG_STATE_HOME) ??
-		path.join(homeDir, ".local", "state");
+		readNonEmpty(env.XDG_STATE_HOME) ?? path.join(homeDir, ".local", "state");
 	return path.join(stateHome, "plebdev-bench", "machine-instance-id");
 }
 
@@ -185,6 +180,15 @@ export interface ResolveMachineInstanceIdOptions {
 	instanceIdFilePath?: string;
 }
 
+const ResolveMachineInstanceIdOptionsSchema = z
+	.object({
+		configuredInstanceId: z.string().optional(),
+		legacyConfiguredInstanceId: z.string().optional(),
+		env: z.record(z.string(), z.string()).optional(),
+		instanceIdFilePath: z.string().optional(),
+	})
+	.strict();
+
 /** Resolved machine instance ID plus its source. */
 export interface ResolvedMachineInstanceId {
 	instanceId: string;
@@ -196,12 +200,16 @@ export interface ResolvedMachineInstanceId {
  *
  * @param options - Resolution options
  * @returns Resolved machine instance identity
+ * @throws {Error} If options fail boundary validation or persistence fails
  */
 export function resolveMachineInstanceId(
 	options: ResolveMachineInstanceIdOptions = {},
 ): ResolvedMachineInstanceId {
-	const env = options.env ?? process.env;
-	const configuredInstanceId = readNonEmpty(options.configuredInstanceId);
+	const validatedOptions = ResolveMachineInstanceIdOptionsSchema.parse(options);
+	const env = validatedOptions.env ?? process.env;
+	const configuredInstanceId = readNonEmpty(
+		validatedOptions.configuredInstanceId,
+	);
 	if (configuredInstanceId) {
 		return {
 			instanceId: configuredInstanceId,
@@ -210,7 +218,7 @@ export function resolveMachineInstanceId(
 	}
 
 	const legacyConfiguredInstanceId = readNonEmpty(
-		options.legacyConfiguredInstanceId,
+		validatedOptions.legacyConfiguredInstanceId,
 	);
 	if (legacyConfiguredInstanceId) {
 		return {
@@ -230,7 +238,8 @@ export function resolveMachineInstanceId(
 	}
 
 	const instanceIdFilePath =
-		options.instanceIdFilePath ?? resolveDefaultInstanceIdPath(process.platform, env);
+		validatedOptions.instanceIdFilePath ??
+		resolveDefaultInstanceIdPath(process.platform, env);
 	const persisted = readPersistedInstanceId(instanceIdFilePath);
 	if (persisted) {
 		return {

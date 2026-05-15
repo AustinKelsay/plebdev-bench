@@ -124,10 +124,7 @@ export function TestDifficultyChart({ items }: TestDifficultyChartProps) {
 						layout="vertical"
 						margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
 					>
-						<CartesianGrid
-							strokeDasharray="3 3"
-							stroke="hsl(213, 23%, 15%)"
-						/>
+						<CartesianGrid strokeDasharray="3 3" stroke="hsl(213, 23%, 15%)" />
 						<XAxis
 							type="number"
 							stroke="hsl(210, 12%, 63%)"

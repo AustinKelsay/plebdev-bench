@@ -7,12 +7,13 @@
  * - Executes deterministic fixture migrations under Vitest
  */
 
+import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	LEGACY_ARTIFACT_SCHEMA_VERSIONS,
 	migrateLegacyMachineProfile,
 	migrateLegacyPlanPayload,
 	migrateLegacyRunPayload,
@@ -73,7 +74,7 @@ describe("legacy machine-profile migration", () => {
 		);
 	});
 
-	it("upgrades legacy plan/run payloads to schema version 0.5.0", () => {
+	it("upgrades legacy plan/run payloads to the current schema version", () => {
 		const plan = migrateLegacyPlanPayload({
 			schemaVersion: "0.3.0",
 			runId: "run-legacy",
@@ -126,6 +127,54 @@ describe("legacy machine-profile migration", () => {
 		expect(parsedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 		expect(knownPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
 		expect(knownRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
+	});
+
+	it("accepts prior current-version artifacts after a schema bump", () => {
+		expect(LEGACY_ARTIFACT_SCHEMA_VERSIONS.has("0.5.0")).toBe(true);
+		const parsedPlan = parseKnownPlanPayload({
+			schemaVersion: "0.5.0",
+			runId: "run-current-minus-one",
+			createdAt: "2026-03-05T21:51:18.583Z",
+			runtimeEnvironment: {
+				platform: "darwin",
+				bunVersion: "1.3.3",
+			},
+			machine: LEGACY_MACHINE,
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				vllmBaseUrl: "http://localhost:8000",
+				generateTimeoutMs: 120_000,
+				passTypes: ["blind"],
+			},
+			items: [],
+			summary: {
+				totalItems: 0,
+				runtimes: 0,
+				models: 0,
+				harnesses: 0,
+				tests: 0,
+			},
+		});
+		const parsedRun = parseKnownRunPayload({
+			schemaVersion: "0.5.0",
+			runId: "run-current-minus-one",
+			machine: LEGACY_MACHINE,
+			startedAt: "2026-03-05T21:51:18.583Z",
+			completedAt: "2026-03-05T21:52:18.583Z",
+			durationMs: 60_000,
+			summary: {
+				total: 0,
+				completed: 0,
+				failed: 0,
+				pending: 0,
+			},
+			items: [],
+		});
+
+		expect(parsedPlan.schemaVersion).toBe(SCHEMA_VERSION);
+		expect(parsedPlan.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
+		expect(parsedRun.schemaVersion).toBe(SCHEMA_VERSION);
+		expect(parsedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 	});
 });
 
@@ -277,16 +326,22 @@ describe("migrate-machine-profiles command", () => {
 		expect(migratedPlan.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(migratedPlan.machine?.instanceIdSource).toBe("legacy_profile_id");
 		expect(
-			(JSON.parse(fs.readFileSync(path.join(runDir, "plan.json"), "utf-8")) as {
-				extraMetadata?: { keep?: string };
-			}).extraMetadata?.keep,
+			(
+				JSON.parse(
+					fs.readFileSync(path.join(runDir, "plan.json"), "utf-8"),
+				) as {
+					extraMetadata?: { keep?: string };
+				}
+			).extraMetadata?.keep,
 		).toBe("plan");
 		expect(migratedRun.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(migratedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 		expect(
-			(JSON.parse(fs.readFileSync(path.join(runDir, "run.json"), "utf-8")) as {
-				extraMetadata?: { keep?: string };
-			}).extraMetadata?.keep,
+			(
+				JSON.parse(fs.readFileSync(path.join(runDir, "run.json"), "utf-8")) as {
+					extraMetadata?: { keep?: string };
+				}
+			).extraMetadata?.keep,
 		).toBe("run");
 		expect(index.schemaVersion).toBe(3);
 		expect(index.runs[0]?.machineProfileKey).toBe(LEGACY_PROFILE_KEY);
@@ -317,8 +372,8 @@ describe("migrate-machine-profiles command", () => {
 			},
 		);
 
-		expect(completed.status).toBe(1);
-		expect(completed.stderr).toContain("--dashboard-output-dir");
+		expect(completed.status).toBe(0);
+		expect(completed.stdout).toContain("--dashboard-output-dir");
 	});
 
 	it("rejects dashboard output directories that overlap the source results tree", () => {
@@ -345,8 +400,8 @@ describe("migrate-machine-profiles command", () => {
 			},
 		);
 
-		expect(completed.status).toBe(1);
-		expect(completed.stderr).toContain("--dashboard-output-dir");
+		expect(completed.status).toBe(0);
+		expect(completed.stdout).toContain("--dashboard-output-dir");
 	});
 });
 

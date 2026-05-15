@@ -108,13 +108,12 @@ Note: `listModels()` and `getModelInfo()` have moved from Harness to Runtime.
 
 - **CLI Command**:
   ```bash
-  goose run --no-session --provider ollama --model <model> -q --output-format json -i -
+  goose run --no-session -q --output-format json -i -
   # Prompt piped via stdin
   ```
 
-- **Critical CLI Flags** (override config file):
-  - `--provider ollama` - Force Ollama provider (ignores `~/.config/goose/config.yaml`)
-  - `--model <model>` - Specify exact model (e.g., `llama3.2:3b`)
+- **Critical CLI Flags**:
+  - `--provider` / `--model` - Deprecated for benchmark rows; provider and model are selected by generated per-item provider config instead of CLI flags
   - `-q` - Quiet mode (faster output, less overhead)
   - `--output-format json` - Structured output for reliable parsing
   - `--no-session` - Don't persist session state
@@ -136,11 +135,11 @@ Note: `listModels()` and `getModelInfo()` have moved from Harness to Runtime.
 - **Debug logging**: logs command execution, completion, and stderr
 - **Timeout**: via execa with 1 minute overhead for CLI startup
 
-**Why `--provider` and `--model` flags are critical**: Without explicit CLI flags, Goose reads from its config file (`~/.config/goose/config.yaml`) which may specify a different provider (e.g., OpenAI). The CLI flags override the config file, ensuring Ollama is always used.
+**Why per-item provider config is critical**: Without generated per-item config, Goose may read global settings (`~/.config/goose/config.yaml`) that point at a different provider (e.g., OpenAI). The adapter invokes `goose run` with isolated benchmark configuration so Ollama is always used. Per-item provider config is the authoritative control path for benchmark runs; do not pass `--provider` or `--model` for normal benchmark execution.
 
 ### Tool-Calling Mode (Goose)
 
-When running with `--with-builtin developer`, Goose can write code directly to files using the `text_editor` tool instead of outputting text.
+Goose tool mode uses `goose run` with per-item provider config and permission rules so it can write code directly to files instead of only outputting text. The generated per-item config selects the provider/model; `--provider` and `--model` are intentionally omitted so CLI flags do not drift from the benchmark plan.
 
 **File-Based Code Extraction:**
 
@@ -201,25 +200,41 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 1. **Command Structure**:
    ```bash
-   opencode run "<prompt>" --model ollama/<model> --format json --log-level ERROR
+   opencode run --model ollama/<transport-model-key> --format json --log-level ERROR [--pure] --dir <workspace> "<prompt>"
    ```
    - `--format json` - Structured JSONL output for reliable parsing
    - `--log-level ERROR` - Reduces noise in output
+   - `--pure` (when supported) - Runs without external plugins
+   - `--dir <workspace>` - Forces OpenCode to run from the exact benchmark workspace
    - No `--attach` flag - runs directly without server
+   - Older OpenCode builds may not expose `--pure`; the adapter detects supported run features and omits the flag automatically.
 
 2. **Work Directory Setup**:
    ```typescript
-   // Create unique temp directory in OpenCode's tool-output root
-   const toolOutputRoot = resolveOpenCodeToolOutputRoot(); // ~/.local/share/opencode/tool-output
-   const workDir = path.join(toolOutputRoot, `plebdev-bench-opencode-${runId}`);
+   const workspaceRoot = getWorkspaceRoot(); // XDG data home tool-output root
+   const workspaceDir = path.join(
+     workspaceRoot,
+     `plebdev-bench-opencode-${runId}`,
+   );
+   const configDir = path.join(
+     workspaceRoot,
+     `plebdev-bench-opencode-config-${runId}`,
+   );
+   await fs.promises.mkdir(workspaceDir, { recursive: true });
+   await fs.promises.mkdir(configDir, { recursive: true });
+   const executionWorkspaceDir = await fs.promises.realpath(workspaceDir);
+   // opencode run ... --dir executionWorkspaceDir
    ```
-   - Uses XDG_DATA_HOME location to avoid permission prompts
-   - Initializes as git repo (OpenCode expects git context)
-   - Creates local `opencode.json` config to enable tools
+   - Code-output mode creates an isolated generated workspace under XDG data home
+   - Workspace mode uses the runner-provided seeded workspace and still canonicalizes it with `realpath()` before `--dir`
+   - Config files are written into a separate generated config directory outside the execution workspace
+   - No git initialization is required by the adapter
 
-3. **Local Config File** (`opencode.json` in workDir):
+3. **Local Config File** (`opencode.json` in the per-run config directory):
    ```json
    {
+     "enabled_providers": ["ollama"],
+     "model": "ollama/model:tag",
      "provider": {
        "ollama": {
          "npm": "@ai-sdk/openai-compatible",
@@ -227,19 +242,28 @@ OpenCode now runs directly in a unique work directory per generation, using tool
          "models": { "model:tag": { "name": "model:tag", "tools": true } }
        }
      },
-     "permission": { "edit": "allow", "write": "allow", "read": "allow", "bash": "allow" },
-     "tools": {
-       "edit": true,
-       "write": true,
-       "read": true,
-       "bash": true,
-       "glob": true,
-       "grep": true
+     "permission": {
+       "*": "allow",
+       "external_directory": "deny",
+       "question": "deny",
+       "task": "deny",
+       "skill": "deny",
+       "webfetch": "deny",
+       "websearch": "deny",
+       "codesearch": "deny",
+       "lsp": "deny"
      }
    }
    ```
+   - `enabled_providers` prevents user-global provider bleed
+   - Slash-containing runtime model IDs use a slash-safe transport key while preserving the real runtime model name in `models`
+   - Top-level deprecated `tools` config is not emitted; tool access requires both the top-level `permission` policy and model-level `"tools": true` in the generated `models` provider entry
+   - `enabled_providers`, slash-safe transport keys for runtime model IDs, and the `external_directory` denial remain unchanged
 
 4. **Environment Variables** (headless optimization):
+   - `OPENCODE_CONFIG_DIR=<per-run-config-dir>`
+   - `OPENCODE_CONFIG=<per-run-opencode.json>`
+   - `OPENCODE_CONFIG_CONTENT=<inline JSON config>`
    - `OPENCODE_DISABLE_AUTOUPDATE=true`
    - `OPENCODE_DISABLE_LSP_DOWNLOAD=true`
    - `OPENCODE_DISABLE_DEFAULT_PLUGINS=true`
@@ -252,10 +276,12 @@ OpenCode now runs directly in a unique work directory per generation, using tool
 
 5. **Tool-Calling Flow**:
    - Prompt uses `buildToolPrompt()` to instruct tool usage
-   - OpenCode writes code to `solution.ts` via edit/write tool
-   - Workspace-mode prompts switch to `buildWorkspaceToolPrompt()` and explicitly advertise `read`, `glob`, `grep`, and `bash`
+   - Code-output prompts ask OpenCode to write `solution.ts` with the `write` tool
+   - Workspace-mode prompts switch through `buildWorkspacePrompt()` into `buildWorkspaceToolPrompt()` and explicitly advertise the adapter toolset: `read`, `edit`, `write`, `glob`, `grep`, and `bash`
+   - Workspace prompts use relative paths only; absolute workspace paths are not included in the prompt
    - Code read from file after execution
-   - Fallback: extract tool call from JSON output if file not created
+   - Fallback: if no file is created but assistant text contains usable code, persist it to `solution.ts` and mark the row tainted for output-contract violation
+   - Workspace mode does not require chat output; the workspace scorer decides semantic success
    - Fails with `tool_missing` if no code produced
 
 6. **Stale Output Detection**:
@@ -277,9 +303,12 @@ OpenCode uses its built-in `write` tool to write code directly to files instead 
    Use the write tool to write your code to "solution.ts" in the current directory.
    ```
 
-2. **Execution creates temp directory** per generation:
+2. **Execution creates a tool-output workspace** per generation:
    ```typescript
-   const workDir = path.join(os.tmpdir(), `plebdev-bench-opencode-${runId}`);
+   const workDir = path.join(
+     workspaceRoot,
+     `plebdev-bench-opencode-${runId}`,
+   );
    ```
 
 3. **After execution**, adapter checks for file:
@@ -307,16 +336,17 @@ OpenCode uses its built-in `write` tool to write code directly to files instead 
 
 ### OpenCode Tool Calling Requirements
 
-**CRITICAL**: Unlike Goose (which uses `--with-builtin developer` CLI flag), OpenCode requires explicit tool enablement in the config file for **EACH model**.
+Unlike Goose, OpenCode uses generated provider config plus `permission` rules rather than a CLI flag like `--with-builtin developer`.
 
 | Harness | Tool Enabling Method |
 |---------|---------------------|
-| Goose | CLI flag: `--with-builtin developer` |
-| OpenCode | Config file: `"tools": true` per model |
+| Goose | Per-item provider config + permission rules via `goose run` |
+| OpenCode | Generated per-item provider config + `permission` policy |
 
-**Configuration** (`~/.config/opencode/opencode.json`):
+The benchmark no longer requires users to add benchmark models to `~/.config/opencode/opencode.json`. The adapter generates the model entry inline for each item:
 ```json
 {
+  "enabled_providers": ["ollama"],
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -334,10 +364,10 @@ OpenCode uses its built-in `write` tool to write code directly to files instead 
 }
 ```
 
-Without `"tools": true`, OpenCode will NOT pass tool calls to the model, and `solution.ts` will never be created.
+The model-level `"tools": true` entry remains in the generated provider model entry, but top-level deprecated `tools` config is not emitted.
 
 **Troubleshooting:**
-- If "solution.ts not created" appears in logs, check model config has `tools: true`
+- If "solution.ts not created" appears in logs, inspect the row's generated config/debug output first; user-global OpenCode config should not be required
 - If tools still don't work, try increasing `num_ctx` in Ollama (16k-32k minimum recommended)
 - Verify the model supports tool/function calling (not all models do)
 
@@ -346,7 +376,7 @@ Without `"tools": true`, OpenCode will NOT pass tool calls to the model, and `so
 The repo no longer carries the old `--attach` server helper. The current implementation runs OpenCode directly without a server, which provides:
 - Simpler architecture (no server lifecycle management)
 - Reliable tool execution (server mode had tool call issues)
-- Per-generation isolation (unique work directory)
+- Per-generation isolation (unique workspace/config directories)
 
 ### Tool Prompt Builder
 
@@ -478,19 +508,29 @@ All harnesses share the same Ollama model pool:
   - Goose: `GOOSE_PROVIDER=ollama GOOSE_MODEL=llama3.2:3b`
   - OpenCode: `--model ollama/llama3.2:3b`
 
-**OpenCode Model Configuration**: OpenCode requires models to be registered in its config file (`~/.config/opencode/opencode.json`). If a model exists in Ollama but not in OpenCode's config, it will fail with empty output. Add models to the config:
+**OpenCode Model Configuration**: OpenCode model registration is generated per benchmark item. Do not edit `~/.config/opencode/opencode.json` for benchmark rows; inspect the generated row config/debug output when troubleshooting model wiring. The adapter emits provider `models` entries with model-level `"tools": true` and does not emit deprecated top-level `tools` config:
 
 ```json
 {
+  "enabled_providers": ["ollama"],
   "provider": {
     "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
       "models": {
-        "your-model:tag": { "name": "your-model:tag" }
+        "your-model:tag": {
+          "name": "your-model:tag",
+          "tools": true
+        }
       }
     }
   }
 }
 ```
+
+If tool calls still fail after the generated config is correct, verify the model supports tool/function calling and increase Ollama `num_ctx` when needed.
 
 ## Dynamic Timeouts
 

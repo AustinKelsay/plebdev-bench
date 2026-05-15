@@ -110,9 +110,7 @@ export function createRowBackground(onRowClick?: (name: string) => void) {
 				onKeyDown={handleKeyDown}
 				role={isInteractive ? "button" : undefined}
 				tabIndex={isInteractive ? 0 : undefined}
-				aria-label={
-					isInteractive ? `Select ${payload?.raw?.name}` : undefined
-				}
+				aria-label={isInteractive ? `Select ${payload?.raw?.name}` : undefined}
 				style={{ cursor: isInteractive ? "pointer" : "default" }}
 				className="hover:fill-opacity-5 transition-all"
 			/>

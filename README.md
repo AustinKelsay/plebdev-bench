@@ -58,15 +58,8 @@ Current benchmark tests:
 ## Status
 
 **MVP complete + hardening applied.** Multi-harness runs, automated scoring, frontier eval, compare, and dashboard are implemented.
+The active benchmark runtime is currently **Ollama only**. Historical artifacts that contain `runtime: "vllm"` remain readable for compare/debug flows, but new runs no longer execute or auto-discover non-Ollama runtimes.
 Authoritative docs live in `llm/project/` and `llm/implementation/`.
-
-### Multi-Runtime MVP Checkpoint (2026-02-08)
-
-- Runtime matrix validated across `ollama` and `vllm` with harnesses `direct`, `goose`, and `opencode`.
-- Benchmark run `20260208-122510-cb6911` completed `53/54` items with `91.2%` overall pass rate.
-- Dashboard can be hosted as a static frontend that reads published run data from `apps/dashboard/public/results/index.json`.
-- Implementation details and operational notes: `llm/implementation/multi-runtime-mvp-implementation.md`.
-- `vllm` remains supported as an externally managed OpenAI-compatible runtime at `--vllm-url` (default `http://localhost:8000`).
 
 ### Computer-Use Hardening Checkpoint (2026-03-13)
 
@@ -74,8 +67,9 @@ Authoritative docs live in `llm/project/` and `llm/implementation/`.
 - Capability modeling now distinguishes plain workspace write access from directory creation via `workspace-mkdir`.
 - Preflight coverage now includes `tool-smoke`, `workspace-tool-smoke`, `file-search-smoke`, and `file-delete-smoke`.
 - Goose has separate workspace turn budgets so computer-use tasks are no longer constrained by the old code-output defaults.
-- Workspace prompts now include the resolved workspace root path so tool harnesses are explicitly anchored inside the seeded fixture.
+- Workspace prompts now anchor tool harnesses inside the seeded fixture; Goose includes the resolved workspace root path, while OpenCode omits the absolute root and uses relative-only path instructions.
 - OpenCode workspace runs expose `read`, `glob`, `grep`, and `bash`, so search/delete benchmarks now measure model behavior instead of missing tool affordances.
+- OpenCode now runs with per-item generated config, `--pure`, explicit `--dir`, `enabled_providers`, denied `external_directory` access, and prompts use relative-only paths (no absolute workspace root) so benchmark rows do not depend on user-global OpenCode config.
 - Generation now retries a single `harness_error` once on a fresh workspace before the row is recorded as failed.
 - Tests can declare `timeoutMultiplier` in `test.meta.json`, and the longer coding tasks now ship with higher calibrated multipliers so valid slow generations are less likely to be recorded as timeouts.
 - Run summaries now distinguish semantic scored-check pass rate from full item success rate and scored-row coverage.
@@ -145,7 +139,7 @@ See `llm/project/project-rules.md` and `AGENTS.md`.
 # Install dependencies
 bun install
 
-# Run benchmarks (auto-discovers models and tests)
+# Run benchmarks (Ollama-only; auto-discovers models, harnesses, and tests)
 bun pb
 
 # Run with specific options
@@ -160,14 +154,8 @@ bun pb --categories coding
 # Run only computer-use tests on tool harnesses
 bun pb --categories computer-use --harnesses goose opencode
 
-# Run with specific runtime and harness
+# Run with explicit runtime and harness
 bun pb --runtimes ollama --harnesses direct
-
-# Run one canonical model across multiple runtimes via a model profile file
-bun pb \
-  --runtimes ollama vllm \
-  --models qwen3-27b-instruct \
-  --model-config models.example.json
 ```
 
 ## Dashboard: publish runs for hosting
@@ -190,29 +178,15 @@ To run locally (unpublished output in `results/`):
 bun pb
 ```
 
-### vLLM Runtime
-
-`vllm` is supported as an OpenAI-compatible runtime. `plebdev-bench` now expects that server to already be running; it does not manage Docker or OrbStack lifecycle inside the repo.
-
-```bash
-bun pb \
-  --runtimes vllm \
-  --harnesses direct goose opencode \
-  --vllm-url http://localhost:8000 \
-  --models "Qwen/Qwen2.5-14B-Instruct"
-```
-
-Run `vllm` however you prefer outside the bench, then point the CLI at that endpoint.
-
 ### Model Profiles
 
-Use `--model-config <file>` to define one canonical benchmark model with multiple runtime-specific variants. The canonical profile gives you one stable model identity in plans, run artifacts, compare output, and future dashboard grouping, while each variant preserves runtime-specific details like format and quantization.
+Use `--model-config <file>` to define canonical benchmark models and preserve richer metadata for the Ollama model names you execute. The canonical profile gives you one stable model identity in plans, run artifacts, compare output, and dashboard grouping.
 
 Example file:
 
 ```json
 {
-  "schemaVersion": "0.5.0",
+  "schemaVersion": "0.5.2",
   "models": {
     "qwen3-27b-instruct": {
       "profileLabel": "Qwen 3 27B Instruct",
@@ -222,12 +196,8 @@ Example file:
       "variants": {
         "ollama": {
           "modelName": "qwen3:27b",
-          "variantLabel": "Qwen 3 27B Ollama"
-        },
-        "vllm": {
-          "modelName": "Qwen/Qwen3-27B-Instruct-MLX-4bit",
-          "format": "MLX",
-          "quantization": "4-bit"
+          "variantLabel": "Qwen 3 27B Ollama",
+          "format": "GGUF"
         }
       }
     }
@@ -245,6 +215,7 @@ Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work.
 - During execution, the runner writes periodic snapshots to `results/<run-id>/run.partial.json` and removes it after a successful final write.
 - If the process crashes, inspect `run.partial.json` for recovered progress.
 - Harness-level `harness_error` rows are retried once automatically. For workspace rows, the retry runs on a freshly seeded workspace.
+- OpenCode rows generate isolated config per item and should not require manually adding benchmark models to `~/.config/opencode/opencode.json`.
 - Goose headless turn controls:
   - `--goose-max-turns <n>` controls first attempt turns (default: `1`)
   - `--goose-retry-max-turns <n>` controls retry turns after off-task/turn-limit output (default: `3`)
@@ -314,7 +285,7 @@ Model metadata now splits:
 - `llm/implementation/review-and-hardening-implementation.md` — threat model + hardening notes
 - `llm/implementation/computer-use-hardening.md` — current computer-use scheduling, preflight, and scoring-interpretation rules
 - `llm/implementation/release-readiness-checklist.md` — release checklist and sign-off
-- `llm/implementation/multi-runtime-mvp-implementation.md` — detailed multi-runtime MVP implementation and validation notes
+- `llm/implementation/multi-runtime-mvp-implementation.md` — historical multi-runtime MVP notes (kept for artifact context only)
 
 ## Hosted dashboard (how it works)
 

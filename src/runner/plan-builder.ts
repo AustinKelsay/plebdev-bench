@@ -13,8 +13,8 @@ import * as os from "node:os";
 import {
 	type HarnessName,
 	TOOL_CALLING_HARNESS_NAMES,
-	doesHarnessSupportCapabilities,
 	discoverHarnesses,
+	doesHarnessSupportCapabilities,
 	isHarnessCompatibleWithRuntime,
 	isValidHarnessName,
 	normalizeHarnessName,
@@ -37,17 +37,21 @@ import {
 	RUNTIME_NAMES,
 	type RuntimeName,
 	createRuntime,
-	discoverRuntimes,
 } from "../runtimes/index.js";
 import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
+import { listAvailableModelsByRuntime } from "./model-availability.js";
+import { filterGenerativeModels } from "./model-eligibility.js";
 
 /**
  * Gets the current Bun version.
  */
 function getBunVersion(): string {
-	// Bun exposes version info
 	return typeof Bun !== "undefined" ? Bun.version : "unknown";
+}
+
+function isExecutableRuntimeName(runtime: string): runtime is RuntimeName {
+	return (RUNTIME_NAMES as readonly string[]).includes(runtime);
 }
 
 /**
@@ -56,7 +60,7 @@ function getBunVersion(): string {
  * @param config - Benchmark configuration
  * @returns The complete run plan ready for execution
  *
- * @throws {Error} If no runtimes available or no models/tests found
+ * @throws {Error} If Ollama is unreachable, no models/tests are found, requested model selectors are missing, requested harnesses are unavailable, discovered models are all excluded, or matrix expansion yields zero items
  */
 export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const runId = generateRunId();
@@ -95,34 +99,18 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		"Computed benchmark checkpoint",
 	);
 
-	// Discover runtimes if not specified
-	let runtimes: RuntimeName[];
-	if (config.runtimes.length === 0) {
-		log.info("Auto-discovering runtimes...");
-		runtimes = await discoverRuntimes({
-			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
-			timeoutMs: config.generateTimeoutMs,
-		});
-		if (runtimes.length === 0) {
-			throw new Error(
-				`No runtimes available. Is Ollama running at ${config.ollamaBaseUrl}? Try: ollama serve`,
-			);
-		}
-		log.info({ runtimes }, `Found ${runtimes.length} runtime(s)`);
-	} else {
-		// Validate requested runtimes
-		const invalid = config.runtimes.filter(
-			(r) => !RUNTIME_NAMES.includes(r as RuntimeName),
+	const configuredRuntimes =
+		config.runtimes.length > 0 ? config.runtimes : [...RUNTIME_NAMES];
+	const invalidRuntimes = configuredRuntimes.filter(
+		(runtime) => !isExecutableRuntimeName(runtime),
+	);
+	if (invalidRuntimes.length > 0) {
+		throw new Error(
+			`Invalid runtime selection: ${invalidRuntimes.join(", ")}. Active runtime support is limited to: ${RUNTIME_NAMES.join(", ")}`,
 		);
-		if (invalid.length > 0) {
-			throw new Error(
-				`Unknown runtimes: ${invalid.join(", ")}. Available: ${RUNTIME_NAMES.join(", ")}`,
-			);
-		}
-		runtimes = config.runtimes as RuntimeName[];
-		log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 	}
+	const runtimes = configuredRuntimes as RuntimeName[];
+	log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 
 	// Discover models per runtime
 	const runtimeModels = new Map<RuntimeName, string[]>();
@@ -136,8 +124,8 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const modelProfiles = config.modelProfiles;
 	const hasModelProfiles = Object.keys(modelProfiles).length > 0;
 	const matchedModelSelectors = new Set<string>();
-	let reachableRuntimeCount = 0;
-
+	const modelExclusions: NonNullable<RunPlan["modelExclusions"]> = [];
+	let discoveredModelCount = 0;
 	if (hasModelProfiles) {
 		log.info(
 			{ profiles: Object.keys(modelProfiles) },
@@ -148,19 +136,18 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	for (const runtimeName of runtimes) {
 		const runtime = createRuntime(runtimeName, {
 			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
 			defaultTimeoutMs: config.generateTimeoutMs,
 		});
 
 		const available = await runtime.ping();
 		if (!available) {
-			log.warn({ runtime: runtimeName }, "Runtime not reachable, skipping");
-			runtimeModels.set(runtimeName, []);
-			continue;
+			throw new Error(
+				`Ollama is not reachable at ${config.ollamaBaseUrl}. Try: ollama serve`,
+			);
 		}
-		reachableRuntimeCount += 1;
 
 		const discovered = await runtime.listModels();
+		discoveredModelCount += discovered.length;
 
 		// Apply --models filter if provided (with alias resolution)
 		let filtered: string[];
@@ -201,17 +188,32 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 								requestedModel: modelSpec,
 								runtime: runtimeName,
 								resolved: resolvedSelection.runtimeModelName,
-								profileKey:
-									resolvedSelection.modelProfile.canonical.profileKey,
+								profileKey: resolvedSelection.modelProfile.canonical.profileKey,
 							},
 							"Resolved model selector",
 						);
 					}
 				}
 			}
+			const eligibility = await filterGenerativeModels({
+				runtimeName,
+				runtime,
+				models: filtered,
+				mode: "throw",
+				log,
+			});
+			filtered = eligibility.models;
 		} else {
-			filtered = discovered;
-			for (const discoveredModel of discovered) {
+			const eligibility = await filterGenerativeModels({
+				runtimeName,
+				runtime,
+				models: discovered,
+				mode: "record",
+				log,
+			});
+			filtered = eligibility.models;
+			modelExclusions.push(...eligibility.exclusions);
+			for (const discoveredModel of filtered) {
 				const modelProfile = buildResolvedModelProfile(
 					runtimeName,
 					discoveredModel,
@@ -254,13 +256,18 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		);
 	}
 
-	if (config.models.length > 0 && reachableRuntimeCount > 0) {
+	if (config.models.length > 0) {
 		const unresolvedSelectors = config.models.filter(
 			(modelSpec) => !matchedModelSelectors.has(modelSpec),
 		);
 		if (unresolvedSelectors.length > 0) {
+			const availableByRuntime = await listAvailableModelsByRuntime(
+				runtimes,
+				config,
+			);
 			throw new Error(
-				`Requested model selectors not found: ${unresolvedSelectors.join(", ")}`,
+				`Requested model selectors not found: ${unresolvedSelectors.join(", ")}\n` +
+					`Available models:\n  ${availableByRuntime.join("\n  ") || "None found"}`,
 			);
 		}
 	}
@@ -268,23 +275,24 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	// Validate at least one model exists
 	const allModels = [...runtimeModels.values()].flat();
 	if (allModels.length === 0) {
+		if (discoveredModelCount > 0 && modelExclusions.length > 0) {
+			const exclusionSummary = modelExclusions
+				.map(
+					(exclusion) =>
+						`${exclusion.runtime}:${exclusion.model} (${exclusion.reason})`,
+				)
+				.join(", ");
+			throw new Error(
+				`Models were discovered but all were excluded by filterGenerativeModels() before matrix expansion. Excluded models: ${exclusionSummary}. modelExclusions=${JSON.stringify(modelExclusions)}. Remove exclusions or choose text-generation-capable models for text-generation benchmarks, or run an embeddings benchmark if you only want embedding-capable models.`,
+			);
+		}
 		// Provide helpful error message
 		if (config.models.length > 0) {
 			// User specified models but none matched - show what's available
-			const availableByRuntime: string[] = [];
-			for (const runtimeName of runtimes) {
-				const runtime = createRuntime(runtimeName, {
-					ollamaBaseUrl: config.ollamaBaseUrl,
-					vllmBaseUrl: config.vllmBaseUrl,
-					defaultTimeoutMs: config.generateTimeoutMs,
-				});
-				const available = await runtime.listModels();
-				if (available.length > 0) {
-					availableByRuntime.push(
-						`${runtimeName}: ${available.slice(0, 5).join(", ")}${available.length > 5 ? ` (+${available.length - 5} more)` : ""}`,
-					);
-				}
-			}
+			const availableByRuntime = await listAvailableModelsByRuntime(
+				runtimes,
+				config,
+			);
 			throw new Error(
 				`No models matched filter: ${config.models.join(", ")}\n` +
 					`Available models:\n  ${availableByRuntime.join("\n  ") || "None found"}`,
@@ -477,7 +485,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		},
 		config: {
 			ollamaBaseUrl: config.ollamaBaseUrl,
-			vllmBaseUrl: config.vllmBaseUrl,
 			generateTimeoutMs: config.generateTimeoutMs,
 			gooseMaxTurns: config.gooseMaxTurns,
 			gooseRetryMaxTurns: config.gooseRetryMaxTurns,
@@ -487,6 +494,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			categories: config.categories,
 		},
 		items,
+		...(modelExclusions.length > 0 ? { modelExclusions } : {}),
 		summary: {
 			totalItems: items.length,
 			runtimes: summaryRuntimes.size,

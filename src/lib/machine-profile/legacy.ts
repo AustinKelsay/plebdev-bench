@@ -1,6 +1,7 @@
 /**
  * Purpose: Migrate legacy run/plan machine payloads to the current schema shape.
- * Exports: migrateLegacyMachineProfile, migrateLegacyPlanPayload, migrateLegacyRunPayload,
+ * Exports: LEGACY_ARTIFACT_SCHEMA_VERSIONS, migrateLegacyMachineProfile,
+ *          migrateLegacyPlanPayload, migrateLegacyRunPayload,
  *          normalizeKnownPlanPayload, normalizeKnownRunPayload,
  *          parseKnownPlanPayload, parseKnownRunPayload
  *
@@ -29,7 +30,15 @@ import {
 	normalizeMachineProfile,
 } from "./normalization.js";
 
-const LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set(["0.2.2", "0.3.0", "0.4.0"]);
+const _LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set([
+	"0.2.2",
+	"0.3.0",
+	"0.4.0",
+	"0.5.0",
+]);
+
+export const LEGACY_ARTIFACT_SCHEMA_VERSIONS: ReadonlySet<string> =
+	_LEGACY_ARTIFACT_SCHEMA_VERSIONS;
 
 /**
  * Type guard for plain object records.
@@ -110,7 +119,9 @@ function buildLegacyInstanceId(legacyProfileId: string): string {
  * @param machine - Valid current-schema machine payload
  * @returns Normalized current-schema machine payload
  */
-function normalizeCurrentMachineProfile(machine: MachineProfile): MachineProfile {
+function normalizeCurrentMachineProfile(
+	machine: MachineProfile,
+): MachineProfile {
 	const normalizedProfile = normalizeMachineProfile(machine.observedHardware);
 	return {
 		...machine,
@@ -156,14 +167,12 @@ export function migrateLegacyMachineProfile(
 	return {
 		instanceId: buildLegacyInstanceId(legacyMachine.profileId),
 		instanceIdSource: "legacy_profile_id",
-		...(typeof legacyMachine.label === "string" && legacyMachine.label.length > 0
+		...(typeof legacyMachine.label === "string" &&
+		legacyMachine.label.length > 0
 			? { displayLabel: legacyMachine.label }
 			: {}),
 		profileKey: buildMachineProfileKey(normalizedProfile),
-		profileLabel: buildMachineProfileLabel(
-			observedHardware,
-			normalizedProfile,
-		),
+		profileLabel: buildMachineProfileLabel(observedHardware, normalizedProfile),
 		normalizedProfile,
 		observedHardware,
 	};

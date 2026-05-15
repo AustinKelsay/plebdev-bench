@@ -122,6 +122,94 @@ describe("OllamaRuntime", () => {
 		});
 	});
 
+	describe("getModelInfo", () => {
+		it("marks unrecognized non-embedding models as unknown and generative-capable", async () => {
+			mockFetch.mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						details: {
+							parameter_size: "8B",
+							family: "mystery-family",
+						},
+						model_info: {
+							"general.architecture": "totally-unknown-architecture",
+						},
+					}),
+					{ status: 200 },
+				),
+			);
+
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const info = await runtime.getModelInfo("mystery-model:8b");
+
+			expect(info.modelKind).toBe("unknown");
+			expect(info.capabilities).toEqual({
+				generateText: true,
+				embedText: false,
+			});
+		});
+
+		it("marks known text-generation architectures as generative", async () => {
+			mockFetch.mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						details: {
+							parameter_size: "8B",
+							family: "llama",
+						},
+						model_info: {
+							"general.architecture": "llama",
+						},
+					}),
+					{ status: 200 },
+				),
+			);
+
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const info = await runtime.getModelInfo("llama3.2:8b");
+
+			expect(info.modelKind).toBe("text-generation");
+			expect(info.capabilities).toEqual({
+				generateText: true,
+				embedText: false,
+			});
+		});
+
+		it("still identifies embedding models from metadata", async () => {
+			mockFetch.mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						details: {
+							parameter_size: "300M",
+						},
+						model_info: {
+							"general.architecture": "nomic-bert",
+						},
+					}),
+					{ status: 200 },
+				),
+			);
+
+			const runtime = createOllamaRuntime({
+				baseUrl,
+				defaultTimeoutMs: timeoutMs,
+			});
+			const info = await runtime.getModelInfo("nomic-embed-text:latest");
+
+			expect(info.modelKind).toBe("embedding");
+			expect(info.capabilities).toEqual({
+				generateText: false,
+				embedText: true,
+			});
+		});
+	});
+
 	describe("runtime interface", () => {
 		it("should have correct name and baseUrl", () => {
 			const runtime = createOllamaRuntime({
@@ -177,6 +265,23 @@ describe("DirectAdapter", () => {
 	});
 
 	describe("generate", () => {
+		it("throws when runtime is named 'ollama' but apiFormat is not 'ollama' (non-Ollama apiFormat)", async () => {
+			const adapter = createDirectAdapter();
+
+			await expect(
+				adapter.generate({
+					model: "llama3.2:3b",
+					prompt: "Write an add function",
+					timeoutMs,
+					runtime: {
+						...mockRuntime,
+						name: "ollama",
+						apiFormat: "openai-compatible" as never,
+					},
+				}),
+			).rejects.toThrow("Direct adapter requires an Ollama runtime");
+		});
+
 		it("should generate completion using runtime baseUrl", async () => {
 			// Ollama uses NDJSON streaming format - multiple JSON lines
 			const mockNdjson = [

@@ -1,8 +1,11 @@
 /**
- * Purpose: Model alias resolution for cross-runtime model mapping.
- * Exports: loadModelAliases, resolveModelForRuntime, parseInlineAlias, isAlias
+ * Purpose: Legacy model alias resolution helpers retained for migration.
+ * Exports: loadModelAliases, parseInlineAlias, parseInlineAliases, isAlias,
+ *          resolveModelForRuntime, resolveModelsForRuntime, mergeAliases
  *
  * Resolves canonical model names to runtime-specific identifiers.
+ * New live config should prefer model profiles and active execution only uses Ollama,
+ * but legacy alias files are still accepted for migration.
  * Supports loading from JSON file or parsing inline CLI definitions.
  *
  * Invariants:
@@ -72,7 +75,7 @@ export function loadModelAliases(filePath: string): ModelAliasMap {
  * Parses an inline alias definition from CLI.
  *
  * Format: "alias-name=runtime1:model1,runtime2:model2"
- * Example: "qwen3-8b=ollama:qwen3:8b,vllm:Qwen/Qwen3-8B"
+ * Example: "qwen3-8b=ollama:qwen3:8b"
  *
  * @param inline - Inline alias definition string
  * @returns Parsed alias map with single entry

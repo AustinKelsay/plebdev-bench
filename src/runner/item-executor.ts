@@ -11,6 +11,7 @@
  */
 
 import * as fs from "node:fs";
+import { z } from "zod";
 import { createHarness } from "../harnesses/index.js";
 import { extractCode } from "../lib/code-extractor.js";
 import {
@@ -23,16 +24,25 @@ import {
 	getOpenRouterKey,
 } from "../lib/openrouter-client.js";
 import { loadRubric } from "../lib/scoring-spec.js";
-import { finalizeItemSignalAssessment } from "../lib/signal-assessment.js";
+import {
+	finalizeItemSignalAssessment,
+	mergeSignalAssessments,
+} from "../lib/signal-assessment.js";
 import { prepareTestWorkspace } from "../lib/test-workspace.js";
 import { createRuntime } from "../runtimes/index.js";
 import type {
 	AutomatedScore,
 	FrontierEval,
+	GenerationFailureType,
 	GenerationResult,
 	MatrixItem,
 	MatrixItemResult,
 	ScoringMetrics,
+	SignalAssessment,
+} from "../schemas/index.js";
+import {
+	SignalAssessmentSchema,
+	generationFailureTypes,
 } from "../schemas/index.js";
 import { runGenerationWithInfraRetry } from "./generation-retry.js";
 import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
@@ -40,11 +50,93 @@ import { loadPrompt, runScoringWithCompileRetry } from "./item-retry.js";
 /** Runtime and harness configuration for item execution. */
 interface RuntimeUrls {
 	ollamaBaseUrl: string;
-	vllmBaseUrl: string;
 	gooseMaxTurns: number;
 	gooseRetryMaxTurns: number;
 	gooseWorkspaceMaxTurns: number;
 	gooseWorkspaceRetryMaxTurns: number;
+}
+
+const GENERATION_FAILURE_TYPE_SET = new Set(generationFailureTypes);
+
+const GenerationFailurePayloadSchema = z
+	.object({
+		message: z.string().optional(),
+		failureType: z
+			.custom<GenerationFailureType>((value) => isGenerationFailureType(value))
+			.optional(),
+		durationMs: z.number().finite().nonnegative().optional().catch(undefined),
+		output: z.string().optional(),
+		signalAssessment: z.unknown().optional(),
+	})
+	.passthrough();
+
+/**
+ * Narrows artifact runtime values to the runtime set supported by live execution.
+ *
+ * Historical artifacts may contain additional runtime labels, but the runner only
+ * executes Ollama-backed plans.
+ *
+ * @param runtime - Runtime value from the plan item
+ * @returns Executable runtime name accepted by createRuntime
+ * @throws {Error} When an unsupported runtime appears in a live execution path
+ */
+function getExecutableRuntimeName(
+	runtime: MatrixItem["runtime"],
+): Parameters<typeof createRuntime>[0] {
+	if (runtime !== "ollama") {
+		throw new Error(
+			`Unsupported runtime "${runtime}" in live execution. Only "ollama" is supported.`,
+		);
+	}
+	return runtime;
+}
+
+/**
+ * Returns whether an unknown value is a valid generation failure type.
+ *
+ * @param value - Unknown candidate
+ * @returns True when the value is a supported generation failure literal
+ */
+function isGenerationFailureType(
+	value: unknown,
+): value is GenerationFailureType {
+	return (
+		typeof value === "string" &&
+		GENERATION_FAILURE_TYPE_SET.has(value as GenerationFailureType)
+	);
+}
+
+/**
+ * Extracts structured generation failure details from an unknown thrown value.
+ *
+ * @param error - Thrown value from harness/runtime execution
+ * @returns Normalized generation failure details
+ */
+function extractGenerationFailureDetails(error: unknown): {
+	errorMessage: string;
+	failureType: GenerationFailureType;
+	durationMs: number;
+	output: string | undefined;
+	signalAssessment: SignalAssessment | undefined;
+} {
+	const parsed = GenerationFailurePayloadSchema.safeParse(error);
+	const errorMessage =
+		parsed.success && parsed.data.message ? parsed.data.message : String(error);
+	const failureType =
+		parsed.success && parsed.data.failureType
+			? parsed.data.failureType
+			: classifyGenerationError(errorMessage);
+	return {
+		errorMessage,
+		failureType,
+		durationMs: parsed.success ? (parsed.data.durationMs ?? 0) : 0,
+		output: parsed.success ? parsed.data.output : undefined,
+		signalAssessment:
+			parsed.success &&
+			SignalAssessmentSchema.safeParse(parsed.data.signalAssessment).success
+				? SignalAssessmentSchema.parse(parsed.data.signalAssessment)
+				: undefined,
+	};
 }
 
 /**
@@ -55,6 +147,7 @@ interface RuntimeUrls {
  * @param timeoutMs - Generation timeout in milliseconds
  * @param unloadAfter - If true, unload model after generation (Ollama-specific)
  * @returns The execution result
+ * @throws {Error} If runtime-name validation rejects an unsupported runtime label
  *
  * Note: This function does NOT throw on generation failures.
  * Instead, failures are recorded in the result.
@@ -77,9 +170,24 @@ export async function executeItem(
 	});
 
 	const startedAt = new Date().toISOString();
+	const runtime = createRuntime(getExecutableRuntimeName(item.runtime), {
+		ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
+		defaultTimeoutMs: timeoutMs,
+	});
+	log.debug({ harness: item.harness }, "Creating harness...");
+	const harness = createHarness(item.harness, {
+		goose: {
+			maxTurns: runtimeConfig.gooseMaxTurns,
+			retryMaxTurns: runtimeConfig.gooseRetryMaxTurns,
+			workspaceMaxTurns: runtimeConfig.gooseWorkspaceMaxTurns,
+			workspaceRetryMaxTurns: runtimeConfig.gooseWorkspaceRetryMaxTurns,
+		},
+	});
 	let workspace: Awaited<ReturnType<typeof prepareTestWorkspace>> | undefined;
 	let generationAttempts = 0;
 	try {
+		log.debug("Loading prompt...");
+		const prompt = await loadPrompt(item.test, item.passType);
 		if (item.scoringMode === "workspace") {
 			workspace = await prepareTestWorkspace(item.test);
 		}
@@ -87,32 +195,12 @@ export async function executeItem(
 		let generation: GenerationResult;
 		let generationFailure: MatrixItemResult["generationFailure"];
 		let signalAssessment: MatrixItemResult["signalAssessment"];
-		let promptForRetry = "";
-		let runtimeForRetry: ReturnType<typeof createRuntime> | undefined;
-		let harnessForRetry: ReturnType<typeof createHarness> | undefined;
+		const runtimeForRetry: ReturnType<typeof createRuntime> | undefined =
+			runtime;
+		const harnessForRetry: ReturnType<typeof createHarness> | undefined =
+			harness;
 
 		try {
-			log.debug("Loading prompt...");
-			const prompt = await loadPrompt(item.test, item.passType);
-			promptForRetry = prompt;
-
-			const runtime = createRuntime(item.runtime, {
-				ollamaBaseUrl: runtimeConfig.ollamaBaseUrl,
-				vllmBaseUrl: runtimeConfig.vllmBaseUrl,
-				defaultTimeoutMs: timeoutMs,
-			});
-			runtimeForRetry = runtime;
-
-			log.debug({ harness: item.harness }, "Creating harness...");
-			const harness = createHarness(item.harness, {
-				goose: {
-					maxTurns: runtimeConfig.gooseMaxTurns,
-					retryMaxTurns: runtimeConfig.gooseRetryMaxTurns,
-					workspaceMaxTurns: runtimeConfig.gooseWorkspaceMaxTurns,
-					workspaceRetryMaxTurns: runtimeConfig.gooseWorkspaceRetryMaxTurns,
-				},
-			});
-			harnessForRetry = harness;
 			const generationOutcome = await runGenerationWithInfraRetry({
 				item,
 				prompt,
@@ -136,24 +224,30 @@ export async function executeItem(
 			signalAssessment = generationOutcome.signalAssessment;
 			workspace = generationOutcome.workspace;
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			const failureType = classifyGenerationError(errorMessage);
+			const {
+				errorMessage,
+				failureType,
+				durationMs,
+				output,
+				signalAssessment: existingSignalAssessment,
+			} = extractGenerationFailureDetails(error);
 			generation = {
 				success: false,
 				error: errorMessage,
 				failureType,
-				durationMs: 0,
+				durationMs,
+				...(output !== undefined ? { output } : {}),
 			};
 			generationFailure = {
 				type: failureType,
 				message: errorMessage,
 			};
 			signalAssessment = finalizeItemSignalAssessment({
-				existing: undefined,
-				scoringMode: item.scoringMode,
+				existing: existingSignalAssessment,
 				automatedScore: undefined,
+				rowFailed: true,
 				output: generation.output,
+				outputSource: "harness",
 			});
 			log.warn(
 				{ error: errorMessage, failureType, harness: item.harness },
@@ -168,15 +262,13 @@ export async function executeItem(
 			try {
 				log.debug("Running automated scoring...");
 				const scoringStartTime = performance.now();
-				const supportsCompileRetry =
-					item.scoringMode === "code-module" &&
-					(item.harness === "goose" || item.harness === "opencode");
+				const supportsCompileRetry = item.scoringMode === "code-module";
 				const scoringOutcome = await runScoringWithCompileRetry({
 					item,
 					generation,
 					harnessForRetry,
 					runtimeForRetry,
-					promptForRetry,
+					promptForRetry: prompt,
 					timeoutMs,
 					unloadAfter,
 					log,
@@ -184,7 +276,10 @@ export async function executeItem(
 					supportsCompileRetry,
 				});
 				generation = scoringOutcome.generation;
-				signalAssessment = scoringOutcome.signalAssessment;
+				signalAssessment = mergeSignalAssessments(
+					signalAssessment,
+					scoringOutcome.signalAssessment,
+				);
 				const scoringResult = scoringOutcome.scoringResult;
 				const scoringOnlyDurationMsRounded = Math.round(
 					scoringOutcome.scoringOnlyDurationMs,
@@ -203,8 +298,13 @@ export async function executeItem(
 				scoringMetrics = {
 					durationMs: scoringDurationMs,
 					scoringDurationMs: scoringOnlyDurationMsRounded,
-					...(scoringOutcome.retryGenerationDurationMs > 0
+					...(scoringOutcome.retryAttempted &&
+					scoringOutcome.retryGenerationDurationMs > 0
 						? {
+								retryAttempted: scoringOutcome.retryAttempted,
+								retryKind: scoringOutcome.retryKind,
+								retryReason: scoringOutcome.retryReason,
+								retryPromoted: scoringOutcome.retryPromoted,
 								retryGenerationDurationMs:
 									scoringOutcome.retryGenerationDurationMs,
 							}
@@ -301,9 +401,13 @@ export async function executeItem(
 		const completedAt = new Date().toISOString();
 		signalAssessment = finalizeItemSignalAssessment({
 			existing: signalAssessment,
-			scoringMode: item.scoringMode,
 			automatedScore,
+			rowFailed:
+				!generation.success ||
+				(automatedScore?.failed ?? 0) > 0 ||
+				scoringFailure !== undefined,
 			output: generation.output,
+			outputSource: generation.success ? "artifact" : "harness",
 		});
 
 		return {
@@ -333,9 +437,14 @@ export async function executeItem(
 			signalAssessment,
 		};
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const {
+			errorMessage,
+			failureType,
+			durationMs,
+			output,
+			signalAssessment: existingSignalAssessment,
+		} = extractGenerationFailureDetails(error);
 		const completedAt = new Date().toISOString();
-		const failureType = classifyGenerationError(errorMessage);
 		log.warn({ error: errorMessage, failureType }, "Item execution failed");
 		return {
 			id: item.id,
@@ -354,7 +463,8 @@ export async function executeItem(
 				success: false,
 				error: errorMessage,
 				failureType,
-				durationMs: 0,
+				durationMs,
+				...(output !== undefined ? { output } : {}),
 			},
 			...(generationAttempts > 0 ? { generationAttempts } : {}),
 			generationFailure: {
@@ -362,10 +472,11 @@ export async function executeItem(
 				message: errorMessage,
 			},
 			signalAssessment: finalizeItemSignalAssessment({
-				existing: undefined,
-				scoringMode: item.scoringMode,
+				existing: existingSignalAssessment,
 				automatedScore: undefined,
-				output: undefined,
+				rowFailed: true,
+				output,
+				outputSource: "harness",
 			}),
 		};
 	} finally {

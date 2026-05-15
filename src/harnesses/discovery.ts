@@ -5,13 +5,38 @@
  * Checks for:
  * - direct: Always available (runtime availability checked separately)
  * - goose: CLI available via `which goose`
- * - opencode: CLI available via `which opencode`
+ * - opencode: CLI available and `opencode run` exposes required flags
  *
  * Note: Runtime availability (e.g., Ollama) is checked separately.
  */
 
 import { execa } from "execa";
+import { logger } from "../lib/logger.js";
 import type { HarnessName } from "./harness.js";
+import {
+	getOpenCodeRunFeatures,
+	isOpenCodeRunCompatible,
+} from "./opencode-cli.js";
+
+/** Returns true for expected command-not-found probe failures. */
+function isCommandMissingError(error: unknown): boolean {
+	const code =
+		error && typeof error === "object" && "code" in error
+			? (error as { code?: unknown }).code
+			: undefined;
+	if (code === "ENOENT") return true;
+	const message =
+		error instanceof Error
+			? error.message.toLowerCase()
+			: typeof error === "string"
+				? error.toLowerCase()
+				: "";
+	return (
+		message.includes("enoent") ||
+		message.includes("not found") ||
+		message.includes("command not found")
+	);
+}
 
 /**
  * Check if a specific CLI is available on the system.
@@ -24,6 +49,31 @@ async function isCliAvailable(cli: string): Promise<boolean> {
 		await execa("which", [cli], { timeout: 5000 });
 		return true;
 	} catch {
+		return false;
+	}
+}
+
+/**
+ * Checks whether the installed OpenCode CLI supports benchmark run mode.
+ *
+ * @returns True when OpenCode is installed and exposes required run flags
+ */
+async function isOpenCodeAvailable(): Promise<boolean> {
+	try {
+		const features = await getOpenCodeRunFeatures();
+		return isOpenCodeRunCompatible(features);
+	} catch (error) {
+		if (isCommandMissingError(error)) {
+			logger.debug(
+				{ err: error, probe: "opencode", functionName: "isOpenCodeAvailable" },
+				"OpenCode CLI not installed",
+			);
+			return false;
+		}
+		logger.warn(
+			{ err: error, probe: "opencode", functionName: "isOpenCodeAvailable" },
+			"OpenCode probe failed",
+		);
 		return false;
 	}
 }
@@ -42,7 +92,7 @@ export async function isHarnessAvailable(name: HarnessName): Promise<boolean> {
 		case "goose":
 			return isCliAvailable("goose");
 		case "opencode":
-			return isCliAvailable("opencode");
+			return isOpenCodeAvailable();
 		default:
 			return false;
 	}
@@ -62,7 +112,7 @@ export async function discoverHarnesses(): Promise<HarnessName[]> {
 	// Check CLI harnesses in parallel
 	const [gooseAvailable, opencodeAvailable] = await Promise.all([
 		isCliAvailable("goose"),
-		isCliAvailable("opencode"),
+		isOpenCodeAvailable(),
 	]);
 
 	if (gooseAvailable) {

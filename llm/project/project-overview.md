@@ -48,13 +48,13 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 
 ## Architecture & Stack (High Level)
 - **Language:** TypeScript
-- **Runtimes:** inference backends (e.g., Ollama, vLLM)
+- **Runtimes:** inference backends (currently Ollama only for active execution)
 - **Harnesses:** adapters (direct, goose, opencode) that call CLIs/APIs
 - **Results:** JSON files per run
 - **Runner:** orchestrates generation + automated tests + frontier eval
 
 ## File Structure
-- `src/runtimes/` — Runtime adapters (inference backends: Ollama, vLLM)
+- `src/runtimes/` — Runtime adapters (inference backends: Ollama)
 - `src/harnesses/` — Harness adapters (direct, goose, opencode) + tool-prompt builder
 - `src/tests/{test-name}/` — Benchmark tests (metadata, prompts, scoring specs, rubrics)
 - `src/runner/` — Orchestration, plan building, item execution

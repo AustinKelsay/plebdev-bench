@@ -37,12 +37,66 @@ const ShowResponseSchema = z
 		details: z
 			.object({
 				parameter_size: z.string().optional(),
+				family: z.string().trim().min(1).optional(),
+				families: z.array(z.string().trim().min(1)).optional(),
 			})
 			.passthrough()
 			.optional(),
 		model_info: z.record(z.unknown()).optional(),
 	})
 	.passthrough();
+
+/**
+ * Architecture tokens and family names commonly used by embedding-only models.
+ *
+ * Heuristics are based on Ollama `/api/show` metadata, popular vendor naming
+ * conventions, and the benchmark's need to exclude embedding-only models from
+ * text-generation rows. This list is intentionally small and may still miss
+ * edge cases; update it when new embedding families appear in benchmark runs.
+ */
+const EMBEDDING_ARCHITECTURES = new Set(["bert", "nomic-bert", "nomic_bert"]);
+const EMBEDDING_NAME_PATTERNS = [
+	/(^|[-_:])embed($|[-_:])/i,
+	/(^|[-_:])embedding($|[-_:])/i,
+	/^nomic-embed/i,
+	/^bge[-_:]/i,
+	/^e5[-_:]/i,
+] as const;
+/**
+ * Architecture tokens and family names commonly used by text-generation models.
+ *
+ * These heuristics cover current benchmark families such as Llama, Qwen,
+ * Mistral, Gemma, DeepSeek, and GPT-OSS. They are derived from vendor naming
+ * conventions and observed Ollama metadata rather than a formal registry.
+ * Update TEXT_GENERATION_ARCHITECTURES and TEXT_GENERATION_NAME_PATTERNS when
+ * new benchmarked model families appear; add entries only for families with
+ * confirmed text-generation behavior so novel architectures still fall back to
+ * `"unknown"`.
+ */
+const TEXT_GENERATION_ARCHITECTURES = new Set([
+	"llama",
+	"qwen2",
+	"qwen3",
+	"mistral",
+	"mixtral",
+	"gemma",
+	"gemma2",
+	"gemma3",
+	"deepseek",
+	"phi3",
+	"phi4",
+	"gpt-oss",
+]);
+const TEXT_GENERATION_NAME_PATTERNS = [
+	/^llama/i,
+	/^qwen/i,
+	/^mistral/i,
+	/^mixtral/i,
+	/^gemma/i,
+	/^deepseek/i,
+	/^phi[-_:]?/i,
+	/^gpt-oss/i,
+] as const;
 
 /** Configuration for the Ollama runtime. */
 export interface OllamaRuntimeConfig {
@@ -86,6 +140,58 @@ async function fetchWithTimeout(
 	} finally {
 		clearTimeout(timeoutId);
 	}
+}
+
+/**
+ * Reads a string value from Ollama model_info metadata.
+ *
+ * @param modelInfo - Parsed model_info record
+ * @param key - Metadata key
+ * @returns Non-empty string value when present
+ */
+function readModelInfoString(
+	modelInfo: Record<string, unknown> | undefined,
+	key: string,
+): string | undefined {
+	const value = modelInfo?.[key];
+	return typeof value === "string" && value.trim().length > 0
+		? value.trim()
+		: undefined;
+}
+
+/**
+ * Infers whether a model is suitable for text generation benchmarks.
+ *
+ * @param model - Runtime model name
+ * @param details - Ollama `/api/show` details object
+ * @param modelInfo - Ollama `/api/show` model_info object
+ * @returns Coarse model kind for benchmark eligibility
+ */
+function inferModelKind(
+	model: string,
+	details: z.infer<typeof ShowResponseSchema>["details"],
+	modelInfo: Record<string, unknown> | undefined,
+): "text-generation" | "embedding" | "unknown" {
+	const architecture = readModelInfoString(modelInfo, "general.architecture");
+	const families = [
+		...(details?.family ? [details.family] : []),
+		...(details?.families ?? []),
+		...(architecture ? [architecture] : []),
+	].map((value) => value.toLowerCase());
+
+	if (families.some((family) => EMBEDDING_ARCHITECTURES.has(family))) {
+		return "embedding";
+	}
+	if (EMBEDDING_NAME_PATTERNS.some((pattern) => pattern.test(model))) {
+		return "embedding";
+	}
+	if (families.some((family) => TEXT_GENERATION_ARCHITECTURES.has(family))) {
+		return "text-generation";
+	}
+	if (TEXT_GENERATION_NAME_PATTERNS.some((pattern) => pattern.test(model))) {
+		return "text-generation";
+	}
+	return "unknown";
 }
 
 /**
@@ -181,11 +287,29 @@ export function createOllamaRuntime(config: OllamaRuntimeConfig): Runtime {
 
 			// Estimate size in bytes (rough: ~0.5-1 byte per parameter for quantized)
 			const sizeBytes = parametersBillions * 1e9 * 0.6;
+			const architecture = readModelInfoString(
+				data.model_info,
+				"general.architecture",
+			);
+			const modelKind = inferModelKind(model, data.details, data.model_info);
 
 			return {
 				name: model,
 				sizeBytes,
 				parametersBillions,
+				modelKind,
+				capabilities: {
+					generateText:
+						modelKind === "text-generation" || modelKind === "unknown",
+					embedText: modelKind === "embedding",
+				},
+				metadata: {
+					...(data.details?.family ? { family: data.details.family } : {}),
+					...(data.details?.families
+						? { families: data.details.families }
+						: {}),
+					...(architecture ? { architecture } : {}),
+				},
 			};
 		},
 	};

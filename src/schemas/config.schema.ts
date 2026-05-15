@@ -3,16 +3,18 @@
  * Exports: BenchConfigSchema, BenchConfig, defaultConfig, migrateBenchConfigAliases
  *
  * Invariants:
- * - Empty arrays mean "auto-discover all" for models/tests/harnesses/runtimes/categories
- * - Use flags to limit which models/tests/harnesses/runtimes/categories to run
+ * - Runtime selection is Ollama-only for active benchmark execution
+ * - Empty arrays mean "select all available" for models/tests/harnesses/categories
+ * - Use flags to limit which models/tests/harnesses/categories to run
  */
 
 import { z } from "zod";
 import {
 	PassTypeSchema,
-	RuntimeNameSchema,
 	SCHEMA_VERSION,
+	SupportedRuntimeNameSchema,
 	TestCategorySchema,
+	migrateLegacySupportedRuntimeNames,
 } from "./common.schema.js";
 import { ModelAliasMapSchema } from "./model-alias.schema.js";
 import { ModelProfileRegistrySchema } from "./model-profile.schema.js";
@@ -65,10 +67,23 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 	}
 
 	const config = { ...(raw as Record<string, unknown>) };
+	if (
+		config.schemaVersion !== undefined &&
+		config.schemaVersion !== SCHEMA_VERSION &&
+		Array.isArray(config.runtimes)
+	) {
+		config.runtimes =
+			config.runtimes.length === 0
+				? ["ollama"]
+				: migrateLegacySupportedRuntimeNames(config.runtimes);
+	}
 	const machineProfileId = readNonEmptyString(config.machineProfileId);
 	const machineLabel = readNonEmptyString(config.machineLabel);
 
-	if (config.machineInstanceId === undefined && machineProfileId !== undefined) {
+	if (
+		config.machineInstanceId === undefined &&
+		machineProfileId !== undefined
+	) {
 		config.machineInstanceId = machineProfileId;
 	}
 	if (config.machineDisplayLabel === undefined && machineLabel !== undefined) {
@@ -82,7 +97,7 @@ export function migrateBenchConfigAliases(raw: unknown): unknown {
 		const migratedModelAliases = migrateLegacyModelAliases(config.modelAliases);
 		if (migratedModelAliases !== undefined) {
 			config.modelProfiles = migratedModelAliases;
-			delete config.modelAliases;
+			config.modelAliases = undefined;
 		}
 	}
 
@@ -94,8 +109,11 @@ const BenchConfigObjectSchema = z
 		/** Schema version for config evolution. */
 		schemaVersion: z.string().default(SCHEMA_VERSION),
 
-		/** Runtimes to use. Empty array triggers auto-discovery. */
-		runtimes: z.array(RuntimeNameSchema).default([]),
+		/** Runtimes to use. Ollama is the only supported runtime. */
+		runtimes: z
+			.array(SupportedRuntimeNameSchema)
+			.nonempty("runtimes must include at least one runtime")
+			.default(["ollama"]),
 
 		/** Models to benchmark. Empty array triggers auto-discovery from runtime. */
 		models: z.array(z.string()).default([]),
@@ -115,8 +133,11 @@ const BenchConfigObjectSchema = z
 		/** Ollama API base URL. */
 		ollamaBaseUrl: z.string().url().default("http://localhost:11434"),
 
-		/** vLLM API base URL. */
-		vllmBaseUrl: z.string().url().default("http://localhost:8000"),
+		/** Removed runtime configuration retained only to emit a targeted validation error. */
+		vllmBaseUrl: z.preprocess(
+			(value) => (typeof value === "string" ? value.trim() : value),
+			z.unknown().optional(),
+		),
 
 		/** Generation timeout in milliseconds (5 min default for large models). */
 		generateTimeoutMs: z.number().positive().default(300_000),
@@ -163,8 +184,7 @@ const BenchConfigObjectSchema = z
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["machineProfileId"],
-				message:
-					`Conflicting bench config machine IDs: machineInstanceId="${config.machineInstanceId}" does not match deprecated machineProfileId="${config.machineProfileId}"`,
+				message: `Conflicting bench config machine IDs: machineInstanceId="${config.machineInstanceId}" does not match deprecated machineProfileId="${config.machineProfileId}"`,
 			});
 		}
 
@@ -176,8 +196,7 @@ const BenchConfigObjectSchema = z
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["machineLabel"],
-				message:
-					`Conflicting bench config machine labels: machineDisplayLabel="${config.machineDisplayLabel}" does not match deprecated machineLabel="${config.machineLabel}"`,
+				message: `Conflicting bench config machine labels: machineDisplayLabel="${config.machineDisplayLabel}" does not match deprecated machineLabel="${config.machineLabel}"`,
 			});
 		}
 
@@ -187,6 +206,15 @@ const BenchConfigObjectSchema = z
 				path: ["modelAliases"],
 				message:
 					'Bench config must not specify both "modelProfiles" and deprecated "modelAliases"',
+			});
+		}
+
+		if (config.vllmBaseUrl !== undefined) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["vllmBaseUrl"],
+				message:
+					'Bench config no longer supports "vllmBaseUrl". Remove it and run with Ollama only.',
 			});
 		}
 
@@ -210,8 +238,13 @@ const BenchConfigObjectSchema = z
 	});
 
 const BenchConfigOutputSchema = BenchConfigObjectSchema.transform(
-	({ machineProfileId: _machineProfileId, machineLabel: _machineLabel, modelAliases: _modelAliases, ...config }) =>
-		config,
+	({
+		machineProfileId: _machineProfileId,
+		machineLabel: _machineLabel,
+		modelAliases: _modelAliases,
+		vllmBaseUrl: _vllmBaseUrl,
+		...config
+	}) => config,
 );
 
 /** Zod schema for benchmark configuration. */

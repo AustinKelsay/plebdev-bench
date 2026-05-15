@@ -27,7 +27,10 @@ export interface CodeOutputToolPromptConfig extends BaseToolPromptConfig {
 }
 
 /** Prompt config for workspace tool mode. */
-export interface WorkspaceToolPromptConfig extends BaseToolPromptConfig {}
+export interface WorkspaceToolPromptConfig extends BaseToolPromptConfig {
+	/** Path strategy for tool instructions. */
+	pathMode?: "absolute-anchor" | "relative-only";
+}
 
 /**
  * Formats tool names for human-readable instructions.
@@ -86,24 +89,58 @@ export function buildToolPrompt(config: CodeOutputToolPromptConfig): string {
  * @returns Combined prompt with workspace safety instructions
  *
  * @throws {Error} If toolNames is empty
+ * @throws {Error} If pathMode is not "absolute-anchor" or "relative-only";
+ * message reports the invalid `pathMode` contract
+ * @throws {Error} If pathMode is "absolute-anchor" and workspaceRootPath is
+ * missing or blank; message is "absolute-anchor requires workspaceRootPath"
  */
 export function buildWorkspaceToolPrompt(
 	config: WorkspaceToolPromptConfig,
 ): string {
-	const { toolNames, taskPrompt, toolUsageHint, workspaceRootPath } = config;
+	const {
+		toolNames,
+		taskPrompt,
+		toolUsageHint,
+		workspaceRootPath,
+		pathMode = "absolute-anchor",
+	} = config;
+	const trimmedWorkspaceRootPath = workspaceRootPath?.trim();
 	if (!Array.isArray(toolNames) || toolNames.length === 0) {
 		throw new Error("toolNames must include at least one tool name");
 	}
+	if (pathMode !== "absolute-anchor" && pathMode !== "relative-only") {
+		throw new Error(
+			'pathMode must be either "absolute-anchor" or "relative-only"',
+		);
+	}
+	if (
+		pathMode === "absolute-anchor" &&
+		(trimmedWorkspaceRootPath === undefined ||
+			trimmedWorkspaceRootPath.length === 0)
+	) {
+		throw new Error("absolute-anchor requires workspaceRootPath");
+	}
 
 	const toolLabel = formatToolNames(toolNames);
+	const pathLines =
+		pathMode === "relative-only"
+			? [
+					"- Use relative paths only. Do not pass absolute paths to tools.",
+					'- For searches, use path "." or "./".',
+					'- For reads, edits, and writes, use paths like "src/app-config.ts" and "reports/found-values.json".',
+					"- Do not copy absolute paths from tool output into later tool calls.",
+					'- Do not inspect "/" or parent directories.',
+				]
+			: [
+					`- Workspace root: "${trimmedWorkspaceRootPath}". Treat that directory as the only allowed project root.`,
+					'- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect "/" or parent directories.',
+				];
 	const lines = [
 		"IMPORTANT: Workspace benchmark mode.",
 		`- You are already inside the isolated benchmark workspace. Use the ${toolLabel} tool for file operations.`,
-		...(workspaceRootPath
-			? [
-					`- Workspace root: "${workspaceRootPath}". Treat that directory as the only allowed project root.`,
-					"- Use relative paths from the workspace root or absolute paths under that root only. Do not inspect \"/\" or parent directories.",
-				]
+		...pathLines,
+		...(toolUsageHint && toolUsageHint.trim().length > 0
+			? [`- Tool hint: ${toolUsageHint.trim()}`]
 			: []),
 		"- Operate only on files inside the current directory.",
 		"- Do not ask for confirmation, approval, or more context.",
@@ -114,8 +151,5 @@ export function buildWorkspaceToolPrompt(
 		"TASK:",
 		taskPrompt.trim(),
 	];
-	if (toolUsageHint && toolUsageHint.trim().length > 0) {
-		lines.splice(5, 0, `- Tool hint: ${toolUsageHint.trim()}`);
-	}
 	return lines.join("\n");
 }

@@ -32,6 +32,48 @@ function buildTestPromptPath(
 }
 
 describe("workspace prompt parity", () => {
+	it("workspace-smoke blind prompt declares the exact overwrite contract", () => {
+		const prompt = fs.readFileSync(
+			buildTestPromptPath("workspace-smoke", "blind"),
+			"utf-8",
+		);
+
+		expect(prompt).toContain(
+			[
+				"1. Create `logs/session.log` with the exact contents below, ending with a trailing newline:",
+				"   ```text",
+				"   session-started",
+				"   workspace-smoke",
+				"   ```",
+			].join("\n"),
+		);
+		expect(prompt).toContain(
+			[
+				"2. Overwrite `checklist/steps.txt` so its exact contents are the three lines below, ending with a trailing newline:",
+				"   ```text",
+				"   bootstrap",
+				"   verify-inputs",
+				"   archive-results",
+				"   ```",
+			].join("\n"),
+		);
+		expect(prompt).toContain(
+			[
+				"3. Create `artifacts/summary.json` so its exact contents are the JSON below, with no additional whitespace or fields:",
+				'   `{"status":"ready","createdBy":"workspace-smoke","steps":3}`',
+			].join("\n"),
+		);
+		expect(prompt).toContain(
+			"Only perform the requested writes to `logs/session.log`, `checklist/steps.txt`, and `artifacts/summary.json`.",
+		);
+		expect(prompt).toContain(
+			"You may read other files, including `docs/notes.txt`, but must not modify them.",
+		);
+		expect(prompt).toContain(
+			"Do not create, delete, or modify any other files.",
+		);
+	});
+
 	it("file-locator informed prompt includes every scored JSON field", () => {
 		const promptPath = buildTestPromptPath("file-locator", "informed");
 		const prompt = fs.readFileSync(promptPath, "utf-8");
@@ -83,18 +125,26 @@ describe("workspace prompt parity", () => {
 		expect(calculatorPrompt).toContain("`memoryClear()`");
 		expect(calculatorPrompt).toContain("`memoryRecall()`");
 		expect(calculatorPrompt).toContain("`result()` returns the current value");
-		expect(calculatorPrompt).toContain("`memoryRecall()` returns the current memory value");
+		expect(calculatorPrompt).toContain(
+			"`memoryRecall()` returns the current memory value",
+		);
 		expect(calculatorPrompt).toContain("the other methods remain chainable");
 		expect(emitterPrompt).toContain("`listenerCount(event)`");
 		expect(emitterPrompt).toContain("`on(event, listener)`");
 		expect(emitterPrompt).toContain("`once(event, listener)`");
 		expect(emitterPrompt).toContain("`off(event, listener)`");
 		expect(emitterPrompt).toContain("`emit(event, payload)`");
-		expect(emitterPrompt).toContain("`on` and `once` return the current listener count");
+		expect(emitterPrompt).toContain(
+			"`on` and `once` return the current listener count",
+		);
 		expect(emitterPrompt).toContain("`off` returns `true`");
-		expect(emitterPrompt).toContain("`emit` should return listener return values in call order");
+		expect(emitterPrompt).toContain(
+			"`emit` should return listener return values in call order",
+		);
 		expect(rateLimiterPrompt).toContain("`allow(key: string, nowMs: number)`");
-		expect(rateLimiterPrompt).toContain("`remaining(key: string, nowMs: number)`");
+		expect(rateLimiterPrompt).toContain(
+			"`remaining(key: string, nowMs: number)`",
+		);
 		expect(rateLimiterPrompt).toContain("`reset(key: string)`");
 		expect(rateLimiterPrompt).toContain("never go below 0");
 	});

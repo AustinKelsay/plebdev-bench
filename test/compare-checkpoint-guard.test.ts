@@ -14,9 +14,11 @@ import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	assertComparableCheckpoints,
+	formatTimestamp,
 	readPlanBestEffort,
 	resolveCheckpointId,
-} from "../src/cli/compare-command.js";
+	truncate,
+} from "../src/cli/compare-utils.js";
 import { SCHEMA_VERSION } from "../src/schemas/index.js";
 import type { RunPlan, RunResult } from "../src/schemas/index.js";
 
@@ -62,6 +64,29 @@ describe("assertComparableCheckpoints", () => {
 				true,
 			),
 		).not.toThrow();
+	});
+});
+
+describe("formatTimestamp", () => {
+	it("renders timestamps in UTC for deterministic CLI output", () => {
+		expect(formatTimestamp("2026-01-02T03:04:00.000Z")).toBe("Jan 02, 03:04");
+	});
+
+	it("throws on invalid timestamps", () => {
+		expect(() => formatTimestamp("not-a-date")).toThrow(
+			"Invalid timestamp: not-a-date",
+		);
+	});
+});
+
+describe("truncate", () => {
+	it("throws for non-positive display widths", () => {
+		expect(() => truncate("abcdef", 0)).toThrow(
+			"maxLen must be a positive integer",
+		);
+		expect(() => truncate("abcdef", -1)).toThrow(
+			"maxLen must be a positive integer",
+		);
 	});
 });
 

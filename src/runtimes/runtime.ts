@@ -2,7 +2,12 @@
  * Purpose: Runtime interface and types for inference backends.
  * Exports: Runtime, RuntimeName, RUNTIME_NAMES, ModelInfo
  *
- * A Runtime represents an inference backend (e.g., Ollama, Llamafile, vLLM).
+ * Invariants:
+ * - RUNTIME_NAMES contains stable active RuntimeName identifiers.
+ * - Runtime implementations provide ping, listModels, and getModelInfo.
+ * - ModelInfo values are serializable metadata snapshots.
+ *
+ * A Runtime represents an inference backend for active benchmark execution.
  * Runtimes are responsible for:
  * - Health checks (ping)
  * - Model discovery (listModels)
@@ -11,15 +16,12 @@
  * Harnesses use runtimes to perform inference via different interfaces.
  */
 
-import { runtimeNames } from "../schemas/common.schema.js";
-import type { RuntimeName } from "../schemas/common.schema.js";
-
 /** Supported runtime names. */
-export const RUNTIME_NAMES = runtimeNames;
-export type { RuntimeName };
+export const RUNTIME_NAMES = ["ollama"] as const;
+export type RuntimeName = (typeof RUNTIME_NAMES)[number];
 
 /** API formats for generation requests. */
-export const API_FORMATS = ["ollama", "openai-compat"] as const;
+export const API_FORMATS = ["ollama"] as const;
 export type ApiFormat = (typeof API_FORMATS)[number];
 
 /** Model information from a runtime. */
@@ -30,6 +32,19 @@ export interface ModelInfo {
 	sizeBytes: number;
 	/** Estimated parameter count in billions. */
 	parametersBillions: number;
+	/** Coarse model kind for benchmark eligibility decisions. */
+	modelKind?: "text-generation" | "embedding" | "unknown";
+	/** Runtime-reported or inferred model capabilities. */
+	capabilities?: {
+		generateText?: boolean;
+		embedText?: boolean;
+	};
+	/** Best-effort raw metadata used for diagnostics and plan exclusions. */
+	metadata?: {
+		family?: string;
+		families?: string[];
+		architecture?: string;
+	};
 }
 
 /**

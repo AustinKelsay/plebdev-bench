@@ -1,6 +1,6 @@
 /**
  * Purpose: Zod schemas for dashboard API boundary validation.
- * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema, RunListSchema, DashboardCheckpointSummarySchema, DashboardIndexSchema, DashboardIndexLegacyOrCurrentSchema, LeaderboardAggregateSchema
+ * Exports: RunResultSchema, RunPlanSchema, RunListItemSchema, RunListSchema, MatrixItemResultSchema, DashboardCheckpointSummarySchema, DashboardIndexSchema, DashboardIndexLegacyOrCurrentSchema, LeaderboardAggregateSchema
  *
  * These schemas validate JSON fetched from the results directory.
  * They mirror the CLI schemas but are kept local to avoid cross-package imports.
@@ -10,11 +10,11 @@ import { z } from "zod";
 /** Pass type schema. */
 const PassTypeSchema = z.enum(["blind", "informed"]);
 
-/** Runtime name schema. */
-const RuntimeNameSchema = z.enum(["ollama", "vllm"]);
-
 /** Test category schema. */
 const TestCategorySchema = z.enum(["coding", "computer-use"]);
+
+/** Runtime name schema. */
+const RuntimeNameSchema = z.enum(["ollama", "vllm"]);
 
 /** Item status schema. */
 const ItemStatusSchema = z.enum(["pending", "running", "completed", "failed"]);
@@ -71,6 +71,8 @@ const SignalAssessmentReasonSchema = z.enum([
 	"tool_permission_denied",
 	"tool_call_not_executed",
 	"confirmation_without_artifact",
+	"internal_tool_transcript",
+	"agent_requested_input",
 ]);
 
 /** Signal assessment schema. */
@@ -126,6 +128,29 @@ const ModelVariantSchema = z.object({
 	sourceId: z.string().min(1).optional(),
 });
 
+/** Model exclusion reason schema. */
+const ModelExclusionReasonSchema = z.literal("non_generative_model");
+
+/** Evidence attached to an excluded discovered model. */
+const ModelExclusionEvidenceSchema = z
+	.object({
+		family: z.string().optional(),
+		families: z.array(z.string()).optional(),
+		architecture: z.string().optional(),
+	})
+	.passthrough()
+	.optional();
+
+/** Discovered model omitted from a run plan before matrix expansion. */
+const ModelExclusionSchema = z
+	.object({
+		runtime: RuntimeNameSchema,
+		model: z.string(),
+		reason: ModelExclusionReasonSchema,
+		evidence: ModelExclusionEvidenceSchema,
+	})
+	.passthrough();
+
 /** Resolved model-profile schema. */
 const ModelProfileSchema = z.object({
 	canonical: CanonicalModelProfileSchema,
@@ -162,9 +187,51 @@ const FrontierEvalSchema = z.object({
 });
 
 /** Scoring metrics schema. */
-const ScoringMetricsSchema = z.object({
-	durationMs: z.number(),
-});
+const ScoringMetricsSchema = z
+	.object({
+		durationMs: z.number(),
+		scoringDurationMs: z.number().optional(),
+		retryGenerationDurationMs: z.number().optional(),
+		retryKind: z.enum(["compile-feedback", "opencode-workspace"]).optional(),
+		retryReason: z.string().optional(),
+		retryAttempted: z.boolean().optional(),
+		retryPromoted: z.boolean().optional(),
+	})
+	.refine(
+		(metrics) => {
+			const hasAnyRetryField =
+				metrics.retryKind !== undefined ||
+				metrics.retryReason !== undefined ||
+				metrics.retryAttempted !== undefined ||
+				metrics.retryPromoted !== undefined ||
+				metrics.retryGenerationDurationMs !== undefined;
+			if (!hasAnyRetryField) return true;
+			if (metrics.retryAttempted === true) {
+				return (
+					metrics.retryKind !== undefined &&
+					typeof metrics.retryReason === "string" &&
+					metrics.retryReason.trim().length > 0 &&
+					typeof metrics.retryPromoted === "boolean" &&
+					typeof metrics.retryGenerationDurationMs === "number" &&
+					metrics.retryGenerationDurationMs >= 0
+				);
+			}
+			if (metrics.retryAttempted === false) {
+				return (
+					metrics.retryKind === undefined &&
+					metrics.retryReason === undefined &&
+					metrics.retryPromoted === undefined &&
+					metrics.retryGenerationDurationMs === undefined
+				);
+			}
+			return false;
+		},
+		{
+			message:
+				"retry metrics must be fully absent, or when retryAttempted is true include retryKind, non-empty retryReason, retryPromoted, and non-negative retryGenerationDurationMs; when retryAttempted is false the other retry fields must be absent",
+			path: ["retryKind"],
+		},
+	);
 
 /** Benchmark checkpoint schema. */
 const BenchmarkCheckpointSchema = z.object({
@@ -335,9 +402,9 @@ const FrontierEvalFailureSchema = z.object({
 });
 
 /** Matrix item result schema. */
-const MatrixItemResultSchema = z.object({
+export const MatrixItemResultSchema = z.object({
 	id: z.string(),
-	runtime: z.string(),
+	runtime: RuntimeNameSchema,
 	model: z.string(),
 	modelAlias: z.string().optional(),
 	modelProfile: ModelProfileSchema.optional(),
@@ -381,49 +448,93 @@ export const RunResultSchema = z.object({
 });
 
 /** Matrix item schema (for plan). */
-const MatrixItemSchema = z.object({
-	id: z.string(),
-	runtime: z.string(),
-	model: z.string(),
-	modelAlias: z.string().optional(),
-	modelProfile: ModelProfileSchema.optional(),
-	harness: z.string(),
-	test: z.string(),
-	category: TestCategorySchema.optional(),
-	passType: PassTypeSchema,
-});
+const MatrixItemSchema = z
+	.object({
+		id: z.string(),
+		runtime: z.string(),
+		model: z.string(),
+		modelAlias: z.string().optional(),
+		modelProfile: ModelProfileSchema.optional(),
+		harness: z.string(),
+		test: z.string(),
+		category: TestCategorySchema.optional(),
+		passType: PassTypeSchema,
+	})
+	.passthrough();
+
+/**
+ * Normalizes dashboard plan payloads with an explicit schemaVersion hook.
+ *
+ * @param payload - Unknown plan JSON payload
+ * @returns Payload to parse without dropping additive fields
+ */
+function normalizeDashboardRunPlanPayload(payload: unknown): unknown {
+	if (
+		typeof payload === "object" &&
+		payload !== null &&
+		!Array.isArray(payload)
+	) {
+		const schemaVersion = (payload as Record<string, unknown>).schemaVersion;
+		if (typeof schemaVersion === "string") {
+			// Future dashboard-only migrations should branch on schemaVersion here.
+			return payload;
+		}
+	}
+	return payload;
+}
 
 /** Run plan schema (plan.json). */
-export const RunPlanSchema = z.object({
-	schemaVersion: z.string(),
-	runId: z.string(),
-	createdAt: z.string(),
-	runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
-	machine: MachineProfileSchema.optional(),
-	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
-	provenance: RunProvenanceSchema.optional(),
-	// Legacy pre-0.3.0 field
-	environment: z
-		.object({
-			platform: z.string(),
-			bunVersion: z.string(),
-		})
-		.optional(),
-	config: z.object({
-		ollamaBaseUrl: z.string(),
-		vllmBaseUrl: z.string(),
-		generateTimeoutMs: z.number(),
-		passTypes: z.array(PassTypeSchema),
-	}),
-	items: z.array(MatrixItemSchema),
-	summary: z.object({
-		totalItems: z.number(),
-		runtimes: z.number(),
-		models: z.number(),
-		harnesses: z.number(),
-		tests: z.number(),
-	}),
-});
+const RunPlanObjectSchema = z
+	.object({
+		schemaVersion: z.string(),
+		runId: z.string(),
+		createdAt: z.string(),
+		runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
+		machine: MachineProfileSchema.optional(),
+		benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
+		provenance: RunProvenanceSchema.optional(),
+		// Legacy pre-0.3.0 field
+		environment: z
+			.object({
+				platform: z.string(),
+				bunVersion: z.string(),
+			})
+			.passthrough()
+			.optional(),
+		config: z
+			.object({
+				ollamaBaseUrl: z.string(),
+				// Legacy plan field. TODO: remove after adding explicit schemaVersion migrations.
+				vllmBaseUrl: z.string().optional(),
+				generateTimeoutMs: z.number(),
+				gooseMaxTurns: z.number().int().positive().optional(),
+				gooseRetryMaxTurns: z.number().int().positive().optional(),
+				gooseWorkspaceMaxTurns: z.number().int().positive().optional(),
+				gooseWorkspaceRetryMaxTurns: z.number().int().positive().optional(),
+				categories: z.array(TestCategorySchema).optional(),
+				passTypes: z.array(PassTypeSchema),
+			})
+			.passthrough(),
+		items: z.array(MatrixItemSchema),
+		modelExclusions: z.array(ModelExclusionSchema).optional(),
+		summary: z
+			.object({
+				totalItems: z.number(),
+				runtimes: z.number(),
+				models: z.number(),
+				harnesses: z.number(),
+				tests: z.number(),
+				categories: z.number().optional(),
+			})
+			.passthrough(),
+	})
+	.passthrough();
+
+/** Run plan schema (plan.json). */
+export const RunPlanSchema = z.preprocess(
+	normalizeDashboardRunPlanPayload,
+	RunPlanObjectSchema,
+);
 
 /** Run list item schema (index.json entries). */
 export const RunListItemSchema = z.object({
