@@ -220,6 +220,8 @@ describe("compare formatters", () => {
 		printHeader(buildCompareFixture());
 
 		const output = readLoggedOutput(logSpy);
+		expect(output).toContain("Run Comparison");
+		expect(output).toContain("Compatible Run Results");
 		expect(output).toContain("Run A: run-a (Jan 02, 03:04)");
 		expect(output).toContain("Run B: run-b (Jan 03, 04:05)");
 	});

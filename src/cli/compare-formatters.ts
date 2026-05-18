@@ -82,8 +82,9 @@ function renderFixedWidthTable(items: readonly ComparableDisplayRow[]): void {
  */
 export function printHeader(result: CompareResult): void {
 	console.log("");
-	console.log("Compare Benchmark Runs");
+	console.log("Run Comparison");
 	console.log("=".repeat(60));
+	console.log("Compatible Run Results");
 	console.log(
 		`Run A: ${result.runA.runId} (${formatTimestamp(result.runA.timestamp)})`,
 	);

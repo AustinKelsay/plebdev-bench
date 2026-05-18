@@ -12,7 +12,7 @@ maps cleanly to a UI view + state machine.
 
 ### Persona A — Local LLM Builder (Model Comparer)
 - **Primary goal**: Compare local models on real tasks with repeatable runs and comparable scores.
-- **Success looks like**: A clear ranking/score breakdown per model/harness/test; easy reruns after tweaks.
+- **Success looks like**: A clear ranking/score breakdown per Runtime Model/Harness/Benchmark Test; easy reruns after tweaks.
 - **Typical cadence**: Frequent reruns (same tests) after model, prompt, or harness changes.
 
 ### Persona B — Tooling Developer (Harness Evaluator)
@@ -21,7 +21,7 @@ maps cleanly to a UI view + state machine.
 - **Typical cadence**: Many small runs, focused on a single harness across models/tests.
 
 ### Persona C — Experimenter (Progress Tracker)
-- **Primary goal**: Track progress over time and spot trends across runs (weekly/monthly baselines).
+- **Primary goal**: Track progress over time and spot trends across Benchmark Runs (weekly/monthly baselines).
 - **Success looks like**: Longitudinal comparisons and stable result formats for downstream analysis.
 - **Typical cadence**: Scheduled runs; standardized config; automated export to charts/notebooks later.
 
@@ -45,53 +45,53 @@ progress output, and generated artifacts on disk.
 - **Decision points**:
   - Should OpenRouter frontier-eval be enabled (auto-enabled when API key is present)?
 
-### State S2 — Catalog Browse (Tests / Fixed Runtime / Harnesses / Models)
-- **User sees**: Lists of available tests, the active runtime (`ollama`), harness adapters, and discoverable local models.
+### State S2 — Catalog Browse (Benchmark Tests / Fixed Runtime / Harnesses / Runtime Models)
+- **User sees**: Lists of available Benchmark Tests, the active Runtime (`ollama`), Harness adapters, and discoverable local Runtime Models.
 - **Artifacts**: Optional cached discovery output.
 - **Note**: Runtime is fixed to `ollama` for the MVP.
 - **Decision points**:
-  - Select test(s) to run.
-  - Choose category/categories (`coding`, `computer-use`).
-  - Pick harness(es) to execute.
-  - Select model(s) to benchmark.
+  - Select Benchmark Test(s) to run.
+  - Choose Benchmark Category/categories (`coding`, `computer-use`).
+  - Pick Harness(es) to execute.
+  - Select Runtime Model(s) to benchmark.
 
 ### State S3 — Run Plan (Matrix + Pass Types)
 - **User sees**: A concrete execution plan before running:
-  - All combinations of the fixed `ollama` runtime × harness × model × test × pass type (blind/informed)
-  - Estimated runtime and costs (if frontier eval is enabled)
+  - All combinations of the fixed `ollama` Runtime × Harness × Runtime Model × Benchmark Test × Pass Type (blind/informed)
+  - Estimated runtime and costs (if Frontier Eval is enabled)
 - **Artifacts**:
-  - A saved “run plan” metadata blob (recommended) for reproducibility.
+  - A saved **Run Plan** metadata blob for reproducibility.
 - **Decision points**:
-  - **Pass types**: blind only, informed only, or both (default: both).
-  - **Scoring**: automated tests only vs automated + frontier-eval rubric.
+  - **Pass Types**: blind only, informed only, or both (default: both).
+  - **Scoring**: Automated Score only vs Automated Score + Frontier Eval rubric.
   - **Reproducibility**: fixed seeds/timeouts vs “best effort”.
   - **Output mode**: quiet/verbose; progress format (human vs JSON lines). (MVP: non-interactive.)
 
 ### State S4 — Execution (Generate → Test → Evaluate → Record)
-This is the core loop executed per matrix item.
+This is the core loop executed per **Matrix Item**.
 
 - **User sees (per item)**:
   - “Generating code…” with streaming output (optional)
-  - “Running automated tests…” with pass/fail summary
-  - “Frontier eval…” with status (if enabled)
+  - “Running Automated Score…” with pass/fail summary
+  - “Frontier Eval…” with status (if enabled)
   - “Recording results…” with output path
 - **Artifacts (per item)**:
   - Generated code snapshot (inline in JSON and/or separate file)
-  - Automated test results (passed/failed/total + logs)
-  - Frontier eval score + reasoning (if enabled)
+  - Automated Score results (passed/failed/total + logs)
+  - Frontier Eval score + reasoning (if enabled)
   - Timing, token counts, and failure metadata when available
 - **Decision points**:
-  - On generation failure: retry with sensible defaults, then mark item failed and continue.
-  - On test failure: record failure and continue matrix.
-  - On frontier eval failure (rate limit/network): record frontier-eval failure and continue.
+  - On Generation Failure: retry with sensible defaults, then mark the Matrix Item failed and continue.
+  - On Scoring Failure: record failure and continue Matrix execution.
+  - On Frontier Eval Failure (rate limit/network): record failure and continue.
 
 ### State S5 — Run Summary (Immediate Feedback)
 - **User sees**:
-  - A table summarizing results by model/harness/test/pass type
+  - A table summarizing results by Runtime Model/Harness/Benchmark Test/Pass Type
   - Pointers to detailed result files
   - A clear exit code policy (MVP: non-zero only on crashes)
 - **Artifacts**:
-  - Top-level run directory under `results/` (timestamped) containing a single run JSON.
+  - Top-level run directory under `results/` (timestamped) containing a single **Run Result**.
 - **Decision points**:
   - Is the user satisfied with the run, or do they need to drill into failures?
 
@@ -99,33 +99,33 @@ This is the core loop executed per matrix item.
 - **User sees**:
   - Generated code
   - Failing tests + logs
-  - Frontier eval reasoning (if present)
-  - Metadata (model, harness, durations, tokens, checkpoint/machine info)
+  - Frontier Eval reasoning (if present)
+  - Metadata (Runtime Model, Harness, durations, tokens, Benchmark Checkpoint, Machine Profile, Machine Instance)
 - **Artifacts**: None new (read-only), unless exporting subsets.
 - **Decision points**:
   - If a regression is found: rerun with a narrower plan? pin versions? open an issue?
 
-### State S7 — Compare / Analyze (Across Runs)
+### State S7 — Run Comparison / Analyze (Across Runs)
 - **User sees**:
-  - Diffs between two runs (score deltas, failure deltas, duration deltas)
-  - Aggregations (best-of per model, stability across harnesses, etc.)
+  - Diffs between two compatible Run Results (score deltas, failure deltas, duration deltas)
+  - Aggregations (best-of per Model Profile, stability across Harnesses, etc.)
 - **Artifacts**:
-  - Terminal diff output and optional raw JSON from the compare command.
+  - Terminal diff output and optional raw JSON from the Run Comparison command.
 - **Decision points**:
-  - Which dimension is the “control” (model vs harness vs test vs pass type)?
-  - Which metrics matter most (pass rate vs frontier eval vs duration)?
+  - Which dimension is the “control” (Model Profile vs Harness vs Benchmark Test vs Pass Type)?
+  - Which metrics matter most (pass rate vs Frontier Eval vs duration)?
 
 ## Core Journey (Shared Happy Path)
 
 This is the canonical “end-to-end” flow that all personas use, with different defaults.
 
 1. **S0 → S1 (Start)**: user invokes CLI → config is resolved/loaded.
-2. **S1 → S2 (Discover)**: user lists available tests/harnesses/models (or relies on defaults).
-3. **S2 → S3 (Select)**: user selects tests, harnesses, models; chooses blind/informed pass strategy.
-4. **S3 → S4 (Execute)**: runner iterates the full matrix; records JSON results for each item.
+2. **S1 → S2 (Discover)**: user lists available Benchmark Tests/Harnesses/Runtime Models (or relies on defaults).
+3. **S2 → S3 (Select)**: user selects Benchmark Tests, Harnesses, Runtime Models; chooses blind/informed Pass Type strategy.
+4. **S3 → S4 (Execute)**: runner iterates the full Matrix; records JSON results for each Matrix Item.
 5. **S4 → S5 (Summarize)**: CLI prints the overall summary and points to `results/<run-id>/...`.
 6. **S5 → S6 (Inspect)**: user opens a failing/interesting item for details.
-7. **S6 → S7 (Compare)**: user compares against a baseline run (optional, but common).
+7. **S6 → S7 (Run Comparison)**: user compares against a baseline Benchmark Run (optional, but common).
 8. **S7 → S3 (Iterate)**: user narrows/sweeps parameters and reruns.
 
 ## Persona-Specific Flows (With Decision Points)
@@ -134,14 +134,14 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 
 - **Entry**: Typically begins at **S2** with a known test suite (“todo app”) and a set of candidate models.
 - **Default decisions**:
-  - **Run both passes** (blind + informed) to detect “prompt sensitivity”.
-  - **Include frontier eval** to get a qualitative score even when tests are noisy.
+  - **Run both Pass Types** (blind + informed) to detect prompt-context sensitivity.
+  - **Include Frontier Eval** to get qualitative evidence when Automated Score is noisy.
 - **Key decision points**:
-  - If two models tie on tests, use frontier eval as tie-breaker.
+  - If two Model Profiles tie on Automated Score, use Frontier Eval as supporting evidence.
   - If a model is much slower on the same matrix, decide whether the quality gain is worth it.
 - **Typical transitions**:
-  - **S2 → S3**: choose “all models” × “all harnesses” for one test.
-  - **S4 → S6**: inspect failures to understand whether issues are model competence vs harness quirks.
+  - **S2 → S3**: choose “all Runtime Models” × “all Harnesses” for one Benchmark Test.
+  - **S4 → S6**: inspect failures to understand whether issues are Runtime Model competence vs Harness quirks.
   - **S7 → S3**: rerun a narrowed matrix after adjusting model parameters or prompts.
 
 ### Persona B Flow — Tooling Developer (Harness Evaluator)
@@ -149,12 +149,12 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 - **Entry**: Often starts at **S1/S2** with a target harness and a small model set.
 - **Default decisions**:
   - **Prefer automated tests** first (fast feedback).
-  - **Run a minimal matrix** to isolate harness behavior (one test, one pass type).
+  - **Run a minimal Matrix** to isolate Harness behavior (one Benchmark Test, one Pass Type).
 - **Key decision points**:
-  - If failures cluster on one harness across models, treat as harness regression.
-  - If failures are model-specific on one harness, check adapter prompt formatting / tool wiring.
+  - If failures cluster on one Harness across Runtime Models, treat as Harness regression.
+  - If failures are Runtime Model-specific on one Harness, check adapter prompt formatting / tool wiring.
 - **Typical transitions**:
-  - **S3 → S4**: run only the suspected harness across a controlled baseline model.
+  - **S3 → S4**: run only the suspected Harness across a controlled baseline Runtime Model.
   - **S4 → S6**: drill into logs and generated code to identify adapter-level issues.
   - **S6 → S3**: change one variable (harness version, flags, prompt template) and rerun.
 
@@ -163,10 +163,10 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 - **Entry**: Begins at **S1** with standardized configs and a stored baseline run to compare against.
 - **Default decisions**:
   - **Fixed run plans** (same tests/harnesses/models each time).
-  - Frontier eval optional; enable only if costs are acceptable and the rubric is stable.
+  - Frontier Eval optional; enable only if costs are acceptable and the rubric is stable.
 - **Key decision points**:
-  - If results drift, decide whether drift is “real improvement” vs “harness/test instability”.
-  - If format changes are needed, decide on migration strategy for old result JSON.
+  - If Run Results drift, decide whether drift is “real improvement” vs “Harness/Benchmark Test instability”.
+  - If format changes are needed, decide on migration strategy for old Run Results.
 - **Typical transitions**:
   - **S1 → S3**: load a saved plan or “standard suite” preset.
   - **S5 → S7**: compare against last week/month baseline.
@@ -184,9 +184,9 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 ### Frontier Eval Not Configured (S1/S3 → Degraded)
 - **Symptoms**: missing OpenRouter API key, request failure, rate limiting.
 - **User decisions**:
-  - Disable frontier eval for this run, or retry later, or provide credentials.
+  - Disable Frontier Eval for this Benchmark Run, or retry later, or provide credentials.
 - **Transition**:
-  - S3 continues with automated tests only; result metadata records “frontier eval disabled/failed”.
+  - S3 continues with Automated Score only; result metadata records “Frontier Eval disabled/failed”.
 
 ### Partial Run Failure (S4 → S5 with Warnings)
 - **Symptoms**: some matrix items fail due to timeouts, flaky tests, transient tool errors.
@@ -197,26 +197,26 @@ This is the canonical “end-to-end” flow that all personas use, with differen
 
 ## Result Artifacts (What Users Expect to Find)
 
-- **Per run (directory under `results/`)**:
-  - `plan.json` with checkpoint, machine metadata, config snapshot, and full matrix plan
-  - `run.json` with a run-level summary and all matrix items
-  - `run.partial.json` checkpoints during long runs until final write succeeds
+- **Per Benchmark Run (directory under `results/`)**:
+  - `plan.json` with Benchmark Checkpoint, Machine Profile, Machine Instance, config snapshot, and full Run Plan
+  - `run.json` with a run-level summary and all Matrix Items
+  - `run.partial.json` as a Partial Run Result during long runs until final write succeeds
 
 ## MVP Defaults (Resolved)
 
 - **Command model**: single primary command (no multi-step interactive wizard).
 - **Interactivity**: non-interactive by default; no “confirm plan” prompt in MVP.
 - **Discovery**: models/harnesses are auto-discovered by default; runtime is fixed to `ollama` for the MVP.
-- **Run plan persistence**: save an explicit plan artifact per run for reproducibility.
-- **Results format**: one JSON per run (structured for easy aggregation/analysis).
-- **Exit codes**: non-zero only on crashes (failed tests/items are recorded but do not fail the process).
+- **Run Plan persistence**: save an explicit plan artifact per Benchmark Run for reproducibility.
+- **Run Result format**: one JSON per Benchmark Run (structured for easy aggregation/analysis).
+- **Exit codes**: non-zero only on crashes (failed Benchmark Tests/Matrix Items are recorded but do not fail the process).
 - **Failure handling**:
   - Generation errors: retry (bounded), then mark item failed and continue.
   - Automated test failures: record and continue.
-  - Frontier eval failures: record and continue.
-- **Frontier eval**: enabled by default when OpenRouter API key is present.
+  - Frontier Eval failures: record and continue.
+- **Frontier Eval**: enabled by default when OpenRouter API key is present.
 - **Resource metrics**: best-effort capture in MVP (do not fail runs if unavailable).
-- **Compare**: include a first-class compare flow/command in MVP.
+- **Run Comparison**: include a first-class compare flow/command in MVP.
 - **Baseline naming**: not included for now.
 
 ## Remaining Questions (Nice-to-Have, Can Defer)

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 /**
  * Purpose: Dialog component for displaying detailed information about a matrix item.
- * Shows generation output, scores, and frontier eval reasoning.
+ * Shows generation output, scores, and Frontier Eval reasoning.
  */
 import {
 	Dialog,

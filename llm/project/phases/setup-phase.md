@@ -2,16 +2,16 @@ Purpose: Setup phase plan (barebones but running) for `plebdev-bench`.
 
 # Setup Phase
 
-Ship a minimal, running CLI that can execute a single-item benchmark and write reproducible artifacts (`plan.json` + one `run.json`).
+Ship a minimal, running CLI that can execute a single-item Benchmark Run and write reproducible artifacts: one Run Plan (`plan.json`) and one Run Result (`run.json`).
 
 ## Goals
 - Establish the Bun-first repo, scripts, and local dev workflow.
-- Implement a thin vertical slice: `bench run` → generate (Ollama) → write `results/<run-id>/{plan.json,run.json}`.
+- Implement a thin vertical slice: `bench run` → generate (Ollama Runtime) → write `results/<run-id>/{plan.json,run.json}`.
 - Lock in the result schema and directory conventions early (schema-first).
 
 ## Scope
-- In scope: CLI skeleton, schemas, runtime adapters (Ollama), three harnesses (direct HTTP, Goose CLI, OpenCode CLI), a minimal test stub, file output.
-- Out of scope: full matrix runs, frontier eval via OpenRouter, rich compare UX, performance tuning.
+- In scope: CLI skeleton, schemas, Runtime adapters (Ollama), three Harnesses (direct HTTP, Goose CLI, OpenCode CLI), a minimal Benchmark Test stub, file output.
+- Out of scope: full Matrix Benchmark Runs, Frontier Eval via OpenRouter, rich Run Comparison UX, performance tuning.
 
 ## Steps (per feature)
 
@@ -24,8 +24,8 @@ Ship a minimal, running CLI that can execute a single-item benchmark and write r
 ### Feature B — Schemas + domain model (Zod as source of truth)
 1. Define Zod schemas for:
    - `BenchConfig` (local-only config, auto-discovery toggles)
-   - `RunPlan` (expanded matrix plan)
-   - `RunResult` (one `run.json` per run, with summary + item list)
+   - `RunPlan` (expanded Matrix plan)
+   - `RunResult` (one `run.json` per Benchmark Run, with summary + Matrix Item list)
 2. Add `schemaVersion` fields immediately and document the stability expectations.
 3. Create typed helpers: parse config, generate plan, and validate written results.
 

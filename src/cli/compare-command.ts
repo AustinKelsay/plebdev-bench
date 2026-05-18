@@ -1,12 +1,12 @@
 /**
- * Purpose: `bench compare` command wiring for comparing two benchmark runs.
+ * Purpose: `bench compare` command wiring for Run Comparison.
  * Exports: compareCommand
  *
  * Reads two run.json files, validates checkpoint compatibility, delegates
  * comparison to result helpers, and prints terminal-native output.
  *
  * Invariants:
- * - Checkpoint mismatches are user-facing validation messages in CLI flow.
+ * - Benchmark Checkpoint mismatches are user-facing validation messages in CLI flow.
  * - Invalid run or plan artifacts still fail the command.
  */
 
@@ -43,7 +43,7 @@ const RunCompareSchema = z.object({
 
 /** CLI compare command. */
 export const compareCommand = new Command("compare")
-	.description("Compare two benchmark runs")
+	.description("Run Comparison across Compatible Run Results")
 	.argument("<run-a>", "First run ID or path (baseline)")
 	.argument("<run-b>", "Second run ID or path (comparison)")
 	.option(
@@ -53,7 +53,7 @@ export const compareCommand = new Command("compare")
 	)
 	.option(
 		"--allow-cross-checkpoint",
-		"Allow comparisons when benchmark checkpoint metadata is missing or mismatched",
+		"Force a cross-checkpoint Run Comparison when Benchmark Checkpoint metadata is missing or mismatched",
 		false,
 	)
 	.option("--json", "Output raw JSON instead of formatted table")

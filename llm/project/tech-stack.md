@@ -3,17 +3,17 @@ Purpose: Define the chosen, minimal, local-first tech stack for `plebdev-bench` 
 # Tech Stack
 
 This project is a **CLI-driven local benchmark runner** (single command, non-interactive), orchestrating:
-- Harness calls (Ollama / Goose / OpenCode via CLI or API)
-- Two-pass runs (blind + informed)
-- Automated test scoring
-- Optional frontier-eval via **OpenRouter** (auto-enabled when API key is present)
-- Stable results stored as **one `run.json` per run**
+- **Harness** calls (direct / Goose / OpenCode via CLI or API)
+- Two **Pass Types** (blind + informed)
+- **Automated Score**
+- Optional **Frontier Eval** via **OpenRouter** (auto-enabled when API key is present)
+- Stable **Run Results** stored as **one `run.json` per Benchmark Run**
 
 ## Design Goals (Stack Drivers)
 - **Simple MVP**: minimal dependencies, boring defaults, easy to run locally.
-- **Reproducible runs**: explicit run plan artifact + stable JSON schema.
-- **Swappable harnesses**: adapters should be isolated behind interfaces.
-- **Fast feedback**: quick iteration on tests and harness integrations.
+- **Reproducible Benchmark Runs**: explicit Run Plan artifact + stable JSON schema.
+- **Swappable Harnesses**: adapters should be isolated behind interfaces.
+- **Fast feedback**: quick iteration on Benchmark Tests and Harness integrations.
 
 ## Chosen Stack (MVP)
 
@@ -25,9 +25,9 @@ This project is a **CLI-driven local benchmark runner** (single command, non-int
 - **vitest** for harness/test-infra tests
 - **pino** for logs
 - OpenRouter via **direct `fetch`** (auto-enabled when API key present)
-- Results written to `results/<run-id>/run.json` + `results/<run-id>/plan.json`
-- `compare` implemented as a built-in CLI path that reads two run files and prints deltas
-- **Dashboard** for visual result browsing (Vite + React + shadcn/ui + Recharts)
+- Run Results written to `results/<run-id>/run.json` alongside Run Plans at `results/<run-id>/plan.json`
+- `compare` implemented as a built-in CLI path that reads two Run Results and prints Run Comparison deltas
+- **Dashboard** for visual Run Result browsing (Vite + React + shadcn/ui + Recharts)
 
 ## Best Practices, Pitfalls, and Usage Conventions
 
@@ -48,7 +48,7 @@ This section captures “how we use the stack” so the codebase stays consisten
 - **Best practices**:
   - Model core domain objects explicitly (RunPlan, MatrixItem, RunResult) and keep them stable.
   - Use `unknown` at boundaries (CLI args, file IO, network) and validate/parse immediately.
-  - Favor small pure functions and data-first transforms for aggregation/compare.
+  - Favor small pure functions and data-first transforms for aggregation/Run Comparison.
 - **Common pitfalls**:
   - Letting “any” creep in at boundaries; it will poison result aggregation quickly.
   - Over-engineering types early; start with stable schemas and iterate.
@@ -58,7 +58,7 @@ This section captures “how we use the stack” so the codebase stays consisten
 
 ### Zod (schema validation)
 - **Best practices**:
-  - Treat Zod schemas as the **source of truth** for config and `run.json` structure.
+  - Treat Zod schemas as the **source of truth** for config and Run Result structure.
   - Use `safeParse` at runtime boundaries and convert failures into structured errors.
   - Version result schemas early (e.g., `schemaVersion`) to enable future migrations.
 - **Common pitfalls**:
@@ -72,14 +72,14 @@ This section captures “how we use the stack” so the codebase stays consisten
 - **Best practices**:
   - Centralize HTTP calls in a tiny client module per provider (OpenRouter, Ollama).
   - Enforce: timeouts, retries (bounded), and consistent error objects.
-  - Record request metadata needed for reproducibility (model name, endpoint, latency), but never log secrets.
+  - Record request metadata needed for reproducibility (Runtime Model name, endpoint, latency), but never log secrets.
 - **Common pitfalls**:
   - No timeout ⇒ hung runs. Always set an abort timeout for every request.
   - Treating non-2xx as “success” and failing later; handle HTTP status explicitly.
   - Streaming complexity: start non-streaming for MVP unless streaming is required.
 - **Conventions**:
-  - OpenRouter is auto-enabled when an API key is present; failures must not crash the whole run.
-  - Ollama is local-only; connection failures should mark items failed and continue.
+  - OpenRouter is auto-enabled when an API key is present; Frontier Eval Failures must not crash the whole Benchmark Run.
+  - Ollama is local-only; connection failures should mark Matrix Items failed and continue.
 
 ### Execa (process execution)
 - **Best practices**:
@@ -94,9 +94,9 @@ This section captures “how we use the stack” so the codebase stays consisten
 
 ### Vitest (tests + scoring harness)
 - **Best practices**:
-  - Keep “bench runner tests” separate from “generated-code scoring tests”.
+  - Keep “Benchmark Run infrastructure tests” separate from “generated-code scoring tests”.
   - Make tests deterministic; avoid network and time-based flakiness.
-  - Prefer snapshot tests for stable textual outputs (compare output, schemas), not for large generated code blobs.
+  - Prefer snapshot tests for stable textual outputs (Run Comparison output, schemas), not for large generated code blobs.
 - **Common pitfalls**:
   - Flaky tests turn benchmark results into noise; treat flakes as failures and fix promptly.
   - Over-coupling tests to exact logs; assert on structured output instead.
@@ -105,7 +105,7 @@ This section captures “how we use the stack” so the codebase stays consisten
 
 ### Pino (logging)
 - **Best practices**:
-  - Use structured fields (runId, model, harness, testName, passType) for every log line.
+  - Use structured fields (runId, model, harness, testName, passType) for every log line; these map to Benchmark Run, Runtime Model, Harness, Benchmark Test, and Pass Type.
   - Use log levels intentionally: `info` for milestones, `debug` for per-item detail, `error` for failures.
   - Keep human output concise; store full details in `run.json`.
 - **Common pitfalls**:
@@ -116,19 +116,19 @@ This section captures “how we use the stack” so the codebase stays consisten
 
 ### Results + Reproducibility (files)
 - **Best practices**:
-  - Write **one `run.json` per run** with a stable schema and a summary section for quick comparisons.
-  - Always write a `plan.json` (resolved config + matrix expansion) alongside `run.json`.
+  - Write **one Run Result per Benchmark Run** with a stable schema and a summary section for quick Run Comparisons.
+  - Always write a Run Plan (resolved config + Matrix expansion) alongside the Run Result.
   - Include environment metadata (OS, Bun version, harness versions when possible).
 - **Common pitfalls**:
-  - Mixing per-item JSON files and run JSON early; stick to one format in MVP.
-  - Letting results grow unbounded; prefer references/paths for very large blobs if needed later.
+  - Mixing per-item JSON files and Run Result JSON early; stick to one format in MVP.
+  - Letting Run Results grow unbounded; prefer references/paths for very large blobs if needed later.
 - **Conventions**:
-  - Exit code is non-zero **only on crashes**; failures are recorded in results.
-  - Compare operates on `run.json` inputs and outputs deltas deterministically.
+  - Exit code is non-zero **only on crashes**; failures are recorded in Run Results.
+  - Run Comparison operates on `run.json` inputs and outputs deltas deterministically.
 
 ## Dashboard Stack (`apps/dashboard/`)
 
-The dashboard provides a visual interface for browsing benchmark results, inspecting latest-checkpoint aggregates, and explaining benchmark semantics.
+The dashboard provides a visual interface for browsing Run Results, inspecting latest-Benchmark-Checkpoint aggregates, and explaining benchmark semantics.
 
 - **Vite** - Build tool with React plugin, hot module replacement
 - **React 18** - UI framework with hooks
@@ -156,9 +156,9 @@ The dashboard provides a visual interface for browsing benchmark results, inspec
 - BlindVsInformedChart (paired bar comparison)
 - PassRateChart (dimension breakdowns)
 - TimingDistribution (histogram with p50/p90)
-- FrontierEvalScatter (pass rate vs score)
+- FrontierEvalScatter (pass rate vs Frontier Eval score)
 
 ## Open Decisions (Small, MVP-Safe)
 - **Config file name**: `bench.config.json` vs `plebdev-bench.config.json`
-- **Compare UX**: compare by run ID (search under `results/`) vs explicit file paths
+- **Run Comparison UX**: compare by run ID (search under `results/`) vs explicit file paths
 - **Result schema versioning**: add `schemaVersion` early to avoid future migrations

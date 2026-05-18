@@ -4,17 +4,17 @@
 - **Project:** plebdev-bench — local LLM benchmark runner
 - **Type:** CLI-driven test harness + scoring pipeline
 - **Scope:** Local models on M4 Pro Mac mini (64GB) only (for now)
-- **Modeling:** Blind vs informed runs for each test
+- **Modeling:** Blind vs informed **Pass Types** for each **Benchmark Test**
 
 ## Mission & Outcomes
-Build a simple, repeatable way to benchmark local LLMs across multiple harnesses and test types. Success means consistent runs, comparable scores, and clean, inspectable results for every model/harness/test combination.
+Build a simple, repeatable way to benchmark local LLMs across multiple **Harnesses** and **Benchmark Categories**. Success means consistent **Benchmark Runs**, comparable scores, and clean, inspectable **Run Results** for every Runtime Model/Harness/Benchmark Test/Pass Type combination.
 
 ## Core Objectives
-- Test every model against every harness for each test
-- Support category-based test selection (`coding`, `computer-use`)
-- Run two passes per test: **blind** (no hints) and **informed** (test name/definition)
-- Score with both automated test suites and a frontier-eval rubric
-- Store results in a stable, machine-readable format for analysis
+- Test every **Runtime Model** against every compatible **Harness** for each **Benchmark Test**
+- Support **Benchmark Category** selection (`coding`, `computer-use`)
+- Run two **Pass Types** per Benchmark Test: **blind** (no hints) and **informed** (test name/definition)
+- Score with both **Automated Score** suites and optional **Frontier Eval** rubric evidence
+- Store **Run Results** in a stable, machine-readable format for analysis
 
 ## Audience
 - **Local LLM builders** comparing models on real tasks
@@ -22,7 +22,7 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
 - **Experimenters** tracking progress over time
 
 ## What It Tests
-- **13 benchmark tests:**
+- **13 Benchmark Tests:**
   - `smoke` - Basic add() function (simplest possible test)
   - `calculator-basic` - Stateless arithmetic functions
   - `calculator-stateful` - Calculator with memory operations
@@ -38,60 +38,60 @@ Build a simple, repeatable way to benchmark local LLMs across multiple harnesses
   - `safe-cleanup` - Delete only approved files and emit an audit report
 - Expandable test catalog over time
 
-## Test Categories
+## Benchmark Categories
 - `coding` — implementation-focused developer tasks (current catalog default)
 - `computer-use` — bounded machine/sandbox orchestration tasks
 
 ## Scoring & Evaluation
-- **Automated:** either import generated code and run scoring-spec test cases, or compare a seeded workspace against exact filesystem assertions → pass/fail/total
-- **Frontier eval:** send code + rubric to GPT-5.4 via OpenRouter for code-module tests → score 1–10 + reasoning
+- **Automated Score:** either import generated code and run scoring-spec test cases, or compare a seeded workspace against exact filesystem assertions → pass/fail/total
+- **Frontier Eval:** send code + rubric to GPT-5.4 via OpenRouter for code-module Benchmark Tests → score 1–10 + reasoning
 
 ## Architecture & Stack (High Level)
 - **Language:** TypeScript
-- **Runtimes:** inference backends (currently Ollama only for active execution)
-- **Harnesses:** adapters (direct, goose, opencode) that call CLIs/APIs
-- **Results:** JSON files per run
-- **Runner:** orchestrates generation + automated tests + frontier eval
+- **Runtimes:** inference backends that expose Runtime Models (currently Ollama only for active execution)
+- **Harnesses:** adapters (direct, goose, opencode) that ask Runtime Models to perform Benchmark Tests
+- **Results:** Run Plan and Run Result JSON files per Benchmark Run
+- **Runner:** orchestrates generation + Automated Score + Frontier Eval
 
 ## File Structure
 - `src/runtimes/` — Runtime adapters (inference backends: Ollama)
 - `src/harnesses/` — Harness adapters (direct, goose, opencode) + tool-prompt builder
-- `src/tests/{test-name}/` — Benchmark tests (metadata, prompts, scoring specs, rubrics)
+- `src/tests/{test-name}/` — Benchmark Tests (metadata, prompts, scoring specs, rubrics)
 - `src/runner/` — Orchestration, plan building, item execution
 - `src/lib/` — Scoring, code extraction, failure classification, utilities
 - `src/schemas/` — Zod schemas (config, plan, result, scoring)
-- `src/results/` — Result reading, writing, comparison
+- `src/results/` — Run Result reading, writing, Run Comparison
 - `apps/dashboard/` — React dashboard for browsing results
 - `results/` — Timestamped JSON runs (plan.json + run.json per run)
 
-## Result Captures (per run)
-- Model, harness, test name, pass type (blind/informed)
+## Result Captures (per Benchmark Run)
+- Runtime Model, Harness, Benchmark Test, Pass Type (blind/informed)
 - Generated code (or codeFilePath for tool-calling)
-- Automated score (passed/failed/total)
-- Frontier eval (score, reasoning, model used)
+- Automated Score (passed/failed/total)
+- Frontier Eval (score, reasoning, model used)
 - Duration, tokens generated
 - Failure tracking (generationFailure, scoringFailure, frontierEvalFailure)
 
 ## Guardrails & Constraints
 - Single-machine focus (M4 Pro Mac mini, 64GB) until expanded
-- Harnesses must be swappable and comparable
-- Results must include full metadata for reproducibility
+- Harnesses must be swappable and comparable without blurring Runtime behavior
+- Run Results must include full metadata for reproducibility
 
 ## Success Criteria
 - All 13 tests run end-to-end with tool-required computer-use tests limited to tool-calling harnesses
-- Both blind and informed passes captured per model/harness/test
-- Automated tests run and score correctly
-- Frontier eval returns score + reasoning and is logged
-- Dashboard displays runs with full scoring plus latest-checkpoint leaderboard views
-- CLI compare reports cross-run deltas with checkpoint guardrails
+- Both blind and informed Pass Types captured per Runtime Model/Harness/Benchmark Test
+- Automated Score runs correctly
+- Frontier Eval returns score + reasoning and is logged when enabled
+- Dashboard displays Benchmark Runs with full scoring plus latest-Benchmark-Checkpoint leaderboard views
+- CLI Run Comparison reports cross-run deltas with Benchmark Checkpoint guardrails
 
 ## Dashboard
 
-React-based visual dashboard at `apps/dashboard/` for browsing benchmark results, inspecting latest-checkpoint aggregates, and explaining benchmark semantics.
+React-based visual dashboard at `apps/dashboard/` for browsing Run Results, inspecting latest-Benchmark-Checkpoint aggregates, and explaining benchmark semantics.
 
 **Views:**
-- **Leaderboard** - Latest-checkpoint aggregate with filters, charts, and machine-aware ranking
-- **Run List** - Browse all runs with summary cards
+- **Leaderboard** - Latest-Benchmark-Checkpoint aggregate with filters, charts, and Machine Profile-aware ranking
+- **Run List** - Browse all Benchmark Runs with summary cards
 - **Run Detail** - Matrix table, scoring breakdown, timing stats, failure/tooling analysis
 - **About** - Explains benchmark mechanics, scoring, aggregation, and test catalog details
 

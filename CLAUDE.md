@@ -64,3 +64,16 @@ Assume the project uses:
 - Prefer minimal, reversible MVP decisions.
 - Leave “hooks” (interfaces + schemas) so later improvements don’t require rewrites.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live in GitHub Issues for `AustinKelsay/plebdev-bench`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Agent workflow uses the default triage label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repo with root `CONTEXT.md` and root `docs/adr/`. See `docs/agents/domain.md`.

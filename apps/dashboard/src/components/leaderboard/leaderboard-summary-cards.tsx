@@ -47,7 +47,7 @@ export function LeaderboardSummaryCards({
 	filteredItems,
 	passRate,
 }: LeaderboardSummaryCardsProps) {
-	// Frontier coverage: % of items with frontier eval
+	// Frontier coverage: % of items with Frontier Eval
 	const frontierCount = filteredItems.filter((i) => i.frontierEval).length;
 	const frontierCoverage =
 		filteredItemCount > 0 ? frontierCount / filteredItemCount : 0;
