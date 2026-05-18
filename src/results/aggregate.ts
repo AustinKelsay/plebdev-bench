@@ -172,6 +172,7 @@ export function resolveRunMetadata(input: AggregateRunInput): ResolvedRunMetadat
  *
  * @param runs - Run inputs containing run and optional plan artifacts
  * @param checkpointId - Target checkpoint to aggregate
+ * @param options - Aggregate behavior, including `signalFilter` for all runs or trusted-only analysis
  * @returns Checkpoint aggregate payload
  */
 export function aggregateRunsForCheckpoint(

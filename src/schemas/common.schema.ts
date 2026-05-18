@@ -216,9 +216,9 @@ export type VerificationStatus = z.infer<typeof VerificationStatusSchema>;
 
 export const RunArtifactPairTamperEvidenceSchema = z.object({
 	algorithm: z.literal("sha256v1"),
-	planHash: z.string().min(1),
-	resultHash: z.string().min(1),
-	pairHash: z.string().min(1),
+	planHash: z.string().regex(/^[0-9a-f]{64}$/),
+	resultHash: z.string().regex(/^[0-9a-f]{64}$/),
+	pairHash: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
 /** Run Artifact Pair tamper-evidence hash metadata. */
