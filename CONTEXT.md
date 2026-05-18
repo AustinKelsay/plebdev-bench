@@ -22,9 +22,17 @@ _Avoid_: Machine profile, runtime, harness
 The origin and verification information recorded for a **Benchmark Run**.
 _Avoid_: Machine profile, runtime environment, source
 
+**Tamper Evidence**:
+Evidence that a **Run Artifact Pair** has not changed since it was recorded or published.
+_Avoid_: Verification, redaction, trust score
+
 **Run Result**:
 The persisted outcome artifact for a **Benchmark Run**.
 _Avoid_: Benchmark run, result
+
+**Run Artifact Pair**:
+The **Run Plan** and **Run Result** that together form the canonical artifact set for one **Benchmark Run**.
+_Avoid_: Run directory, artifact folder, logs
 
 **Compatible Run Results**:
 **Run Results** that can be compared or ranked without mixing incompatible benchmark definitions or execution contexts.
@@ -52,6 +60,10 @@ _Avoid_: Compare, delta
 A ranked analysis view over **Compatible Run Results**, scoped by **Benchmark Checkpoint** and **Machine Profile**.
 _Avoid_: Dashboard ranking, aggregate table
 
+**Best Observed Item**:
+The strongest recorded **Matrix Item** outcome selected for one leaderboard aggregation key within a **Benchmark Checkpoint** and **Machine Profile**.
+_Avoid_: Latest item, current item, deduped row
+
 **Composite Score**:
 A derived ranking metric that combines multiple **Run Result** signals for leaderboard analysis.
 _Avoid_: Automated score, frontier score, pass rate
@@ -61,7 +73,7 @@ The temporary persisted progress artifact for an incomplete **Benchmark Run**.
 _Avoid_: Checkpoint, snapshot, recovery artifact
 
 **Run Plan**:
-The persisted pre-execution artifact that describes exactly what a **Benchmark Run** intends to execute.
+The durable pre-execution artifact that describes exactly what a **Benchmark Run** intends to execute.
 _Avoid_: Benchmark plan, matrix plan
 
 **Run Config**:
@@ -91,8 +103,8 @@ The required shape or location of **Generated Output** for a **Matrix Item** to 
 _Avoid_: Prompt, scoring spec, generated output
 
 **Retry Attempt**:
-A repeated execution attempt for the same **Matrix Item** after a recoverable generation or scoring problem.
-_Avoid_: Pass type, rerun, replacement item
+A repeated execution attempt recorded as **Benchmark Evidence** for the same **Matrix Item** after a recoverable generation or scoring problem.
+_Avoid_: Pass type, rerun, replacement item, matrix item
 
 ### Benchmark Content
 
@@ -166,6 +178,10 @@ _Avoid_: Model profile, benchmark model
 The canonical benchmark identity used to group equivalent model variants for comparison.
 _Avoid_: Runtime model, model alias
 
+**Model Profile Resolution**:
+The provenance of how a **Runtime Model** was assigned to a **Model Profile**.
+_Avoid_: Model discovery, model alias, profile trust
+
 **Model Variant**:
 A specific packaged or runtime-specific form of a **Model Profile**, including runtime naming, format, and quantization details.
 _Avoid_: Model profile, runtime model
@@ -194,11 +210,11 @@ _Avoid_: Item failure, scoring failure
 
 **Signal Assessment**:
 The classification of whether a **Matrix Item** provides trustworthy benchmark evidence.
-_Avoid_: Validity, quality flag, trust classification
+_Avoid_: Validity, quality flag, trust classification, exclusion rule
 
 **Benchmark Checkpoint**:
-The benchmark-content identity used to group runs that executed against the same benchmark definition.
-_Avoid_: Suite version, manifest hash, benchmark version
+The benchmark-definition and execution-semantics identity used to group runs that measured the same benchmark meaning.
+_Avoid_: Suite version, manifest hash, benchmark version, content hash
 
 ### Machine And Provenance
 
@@ -213,6 +229,9 @@ _Avoid_: Machine profile, hardware profile
 ## Relationships
 
 - A **Run Plan** belongs to exactly one **Benchmark Run**.
+- A **Run Plan** is preserved as a durable reproducibility artifact for one **Benchmark Run**.
+- A **Run Artifact Pair** includes exactly one **Run Plan** and exactly one **Run Result**.
+- A **Run Artifact Pair** belongs to exactly one **Benchmark Run**.
 - A **Benchmark Run** has exactly one **Run ID**.
 - A **Run Plan** records exactly one **Run ID**.
 - A **Run Result** records exactly one **Run ID**.
@@ -224,6 +243,7 @@ _Avoid_: Machine profile, hardware profile
 - A **Run Plan** may reference one **Machine Instance**.
 - A **Run Plan** may reference one **Runtime Environment**.
 - A **Run Plan** may reference one **Run Provenance**.
+- **Run Provenance** may include **Tamper Evidence**.
 - A **Run Plan** contains exactly one **Matrix**.
 - A **Matrix** contains one or more **Matrix Items**.
 - A **Matrix Item** uses exactly one **Runtime**.
@@ -233,11 +253,13 @@ _Avoid_: Machine profile, hardware profile
 - A **Matrix Item** may produce one **Generated Output**.
 - A **Generated Output** may satisfy or violate an **Output Contract**.
 - A **Matrix Item** may have zero or more **Retry Attempts**.
+- A **Retry Attempt** does not create a new **Matrix Item**.
 - A **Matrix Item** may use one **Benchmark Workspace**.
 - A **Run Result** records **Benchmark Evidence** for each completed or failed **Matrix Item**.
 - A **Run Result** may preserve **Generated Output** inline or by reference.
 - A **Runtime Model** may resolve to one **Model Variant**.
 - A **Model Profile** has one or more **Model Variants**.
+- A **Model Profile Resolution** explains whether a **Model Profile** came from configuration, legacy aliasing, or runtime-name fallback.
 - A **Matrix Item** references exactly one **Benchmark Test**.
 - A **Benchmark Test** has one **Benchmark Prompt** per supported **Pass Type**.
 - A **Benchmark Test** has exactly one **Benchmark Metadata** record.
@@ -255,20 +277,26 @@ _Avoid_: Machine profile, hardware profile
 - A **Matrix Item** may record one **Scoring Failure**.
 - A **Matrix Item** may record one **Frontier Eval Failure**.
 - A **Matrix Item** may have one **Signal Assessment**.
+- A **Signal Assessment** may be used to filter trusted-only analysis views.
+- A **Signal Assessment** does not remove a **Matrix Item** from the canonical **Run Result**.
 - A **Benchmark Run** produces exactly one **Run Result**.
 - A **Benchmark Run** may produce one **Partial Run Result** before it completes.
 - A **Run Plan** records one **Schema Version**.
 - A **Run Result** records one **Schema Version**.
 - A **Published Run** includes exactly one **Run Result** and exactly one **Run Plan**.
+- A **Published Run** shares one **Run Artifact Pair** for analysis.
 - A **Published Run** may require **Published Redaction**.
+- A **Published Run** does not imply verified **Run Provenance**.
 - A **Run Comparison** compares two or more **Compatible Run Results**.
 - A **Leaderboard** ranks **Compatible Run Results** within one **Benchmark Checkpoint** and one **Machine Profile**.
+- A **Leaderboard** may represent duplicate aggregation keys with one **Best Observed Item**.
 - A **Leaderboard** may rank entries by **Composite Score**.
 - A **Benchmark Checkpoint** changes when **Benchmark Prompts** change.
 - A **Benchmark Checkpoint** changes when **Benchmark Fixtures** change.
 - A **Benchmark Checkpoint** changes when **Scoring Specs** change.
 - A **Benchmark Checkpoint** changes when **Eval Rubrics** change.
 - A **Benchmark Checkpoint** changes when **Benchmark Metadata** changes.
+- A **Benchmark Checkpoint** changes when benchmark execution or scoring semantics change.
 
 ## Example dialogue
 
@@ -278,6 +306,9 @@ _Avoid_: Machine profile, hardware profile
 > **Dev:** "Is the `run.json` file the **Benchmark Run**?"
 > **Domain expert:** "No. The **Benchmark Run** is the execution event; `run.json` is the **Run Result** it produces."
 >
+> **Dev:** "Is the whole results directory the canonical artifact?"
+> **Domain expert:** "No. The **Run Artifact Pair** is the canonical pair of **Run Plan** and **Run Result**; auxiliary files may provide supporting evidence."
+>
 > **Dev:** "Is the **Run ID** just the directory name?"
 > **Domain expert:** "No. **Run ID** identifies the **Benchmark Run** and its persisted files; a directory name is only one storage representation."
 >
@@ -286,6 +317,9 @@ _Avoid_: Machine profile, hardware profile
 >
 > **Dev:** "Is every local result a **Published Run**?"
 > **Domain expert:** "No. A **Published Run** is made available for shared dashboard or leaderboard analysis."
+>
+> **Dev:** "Does publishing a run mean it is verified?"
+> **Domain expert:** "No. A **Published Run** may still be self-reported; verification belongs to **Run Provenance**."
 >
 > **Dev:** "Is redacting local paths just cleanup?"
 > **Domain expert:** "No. **Published Redaction** is the privacy boundary before a **Run Result** becomes part of a **Published Run**."
@@ -302,6 +336,9 @@ _Avoid_: Machine profile, hardware profile
 > **Dev:** "Is the dashboard the **Leaderboard**?"
 > **Domain expert:** "No. The dashboard is a surface that may display a **Leaderboard**; the **Leaderboard** is the ranked analysis view."
 >
+> **Dev:** "Should a **Leaderboard** show the latest result when the same model row has been run multiple times?"
+> **Domain expert:** "No. A **Leaderboard** may use the **Best Observed Item** for capability ranking; latest-result semantics belong to trend or history analysis."
+>
 > **Dev:** "Is **Composite Score** the same as **Automated Score**?"
 > **Domain expert:** "No. **Composite Score** is derived for ranking; **Automated Score** is deterministic local scoring evidence for a **Matrix Item**."
 >
@@ -316,6 +353,9 @@ _Avoid_: Machine profile, hardware profile
 >
 > **Dev:** "Does **Run Provenance** decide whether a row's output is trustworthy?"
 > **Domain expert:** "No. **Run Provenance** records run origin and verification; **Signal Assessment** classifies evidence quality for a **Matrix Item**."
+>
+> **Dev:** "Is **Tamper Evidence** the same as verification?"
+> **Domain expert:** "No. **Tamper Evidence** shows whether recorded artifacts changed; verification says whether their source or process is accepted."
 >
 > **Dev:** "Is a benchmark task the same as a **Matrix Item**?"
 > **Domain expert:** "No. A **Matrix Item** is the benchmark row; the task is what the selected **Benchmark Test** asks the model to do."
@@ -356,11 +396,17 @@ _Avoid_: Machine profile, hardware profile
 > **Dev:** "If a row retries after a timeout, is that a new **Pass Type**?"
 > **Domain expert:** "No. **Pass Type** only describes prompt context; a **Retry Attempt** is execution behavior for the same **Matrix Item**."
 >
+> **Dev:** "Does a compile-feedback retry create another row in the **Matrix**?"
+> **Domain expert:** "No. It is **Benchmark Evidence** attached to the same **Matrix Item**, but retry policy still affects the **Benchmark Checkpoint**."
+>
 > **Dev:** "Is OpenCode a **Runtime** because it can call a model?"
 > **Domain expert:** "No. OpenCode is a **Harness**; the **Runtime** is the backend that exposes the model being benchmarked."
 >
 > **Dev:** "Does **Model Discovery** define **Model Profiles**?"
 > **Domain expert:** "No. **Model Discovery** finds **Runtime Models**; **Model Profiles** are canonical identities used for comparison."
+>
+> **Dev:** "Can a runtime-name fallback profile be treated the same as a configured profile?"
+> **Domain expert:** "No. Runtime-name fallback can support local exploration, but **Model Profile Resolution** must remain visible for trusted or published comparison."
 >
 > **Dev:** "Is an excluded embedding model a **Generation Failure**?"
 > **Domain expert:** "No. A **Model Exclusion** happens before execution and explains why a discovered **Runtime Model** was omitted from the **Run Plan**."
@@ -380,8 +426,14 @@ _Avoid_: Machine profile, hardware profile
 > **Dev:** "If a row passes automated scoring but violates the expected output contract, is it still trustworthy?"
 > **Domain expert:** "Not necessarily. The **Signal Assessment** can mark benchmark evidence as tainted separately from the score."
 >
+> **Dev:** "Does a tainted **Signal Assessment** delete a row from the **Leaderboard**?"
+> **Domain expert:** "No. It annotates trust by default; trusted-only analysis views may filter tainted rows explicitly."
+>
 > **Dev:** "Can we compare two **Benchmark Runs** after editing a prompt or scoring spec?"
 > **Domain expert:** "Only with caution. The **Benchmark Checkpoint** identifies whether runs used the same benchmark definition."
+>
+> **Dev:** "Can we keep the **Benchmark Checkpoint** unchanged when only harness or scoring pipeline code changes?"
+> **Domain expert:** "No. If execution or scoring semantics change, the **Benchmark Checkpoint** changes even when benchmark prompts and fixtures are identical."
 >
 > **Dev:** "Are two M4 Pro machines automatically the same producer?"
 > **Domain expert:** "No. They may share a **Machine Profile**, but each producer should have its own **Machine Instance**."
@@ -393,10 +445,16 @@ _Avoid_: Machine profile, hardware profile
 
 - "context map" was considered for multiple bounded contexts; resolved: use one root **Plebdev Bench Context** until a genuinely separate domain emerges.
 - "model" may mean a runtime identifier, canonical comparison identity, or packaged form; resolved: use **Runtime Model**, **Model Profile**, and **Model Variant** respectively.
+- "profiled model" could hide whether grouping was explicit or inferred; resolved: use **Model Profile Resolution** to distinguish configured profiles from runtime-name fallback.
 - "modelAlias" is deprecated artifact compatibility language; resolved: use **Model Profile** for canonical comparison identity and keep `modelAlias` only when reading older persisted fields.
 - "machine" may mean an execution environment class or a specific producer; resolved: use **Machine Profile** and **Machine Instance** respectively.
 - "machineProfileId" and "machineLabel" are deprecated artifact compatibility language; resolved: use **Machine Profile** for comparable machine grouping and **Machine Instance** for the specific producer.
 - "environment" may mean software provenance or machine capability; resolved: use **Runtime Environment** for software context and **Machine Profile** for comparable machine capability.
 - "artifact" may mean a result file, dashboard file, or model-produced content; resolved: use **Generated Output** only for model-produced content.
+- "run artifact" may mean a directory or logs; resolved: use **Run Artifact Pair** for the canonical **Run Plan** plus **Run Result** trust unit.
 - "config" may mean user run settings or benchmark metadata; resolved: use **Run Config** for run selection settings and **Benchmark Metadata** for benchmark-test content.
 - "bad output" may mean missing content, wrong location, wrong shape, or failed scoring; resolved: use **Output Contract** when the produced content is not evaluable as intended.
+- "tainted" could imply automatic deletion from analysis; resolved: **Signal Assessment** annotates trust by default and supports explicit trusted-only views.
+- "benchmark content" was too narrow for **Benchmark Checkpoint**; resolved: **Benchmark Checkpoint** covers benchmark definition plus execution and scoring semantics that affect measured meaning.
+- "deduped row" hid leaderboard selection semantics; resolved: use **Best Observed Item** when a **Leaderboard** selects the strongest duplicate row for capability ranking.
+- "published" could imply public trust; resolved: **Published Run** means shared for analysis, while verification and **Tamper Evidence** remain separate provenance concerns.

@@ -214,6 +214,18 @@ export const VerificationStatusSchema = z.enum(verificationStatusTypes);
 /** Verification status for run provenance. */
 export type VerificationStatus = z.infer<typeof VerificationStatusSchema>;
 
+export const RunArtifactPairTamperEvidenceSchema = z.object({
+	algorithm: z.literal("sha256v1"),
+	planHash: z.string().min(1),
+	resultHash: z.string().min(1),
+	pairHash: z.string().min(1),
+});
+
+/** Run Artifact Pair tamper-evidence hash metadata. */
+export type RunArtifactPairTamperEvidence = z.infer<
+	typeof RunArtifactPairTamperEvidenceSchema
+>;
+
 /** Zod schema for benchmark checkpoint identity metadata. */
 export const BenchmarkCheckpointSchema = z.object({
 	/** Stable checkpoint identifier (derived from manifest hash). */
@@ -470,6 +482,9 @@ export const RunProvenanceSchema = z.object({
 
 	/** Optional submit timestamp (future use). */
 	submittedAt: z.string().datetime().optional(),
+
+	/** Optional tamper evidence for the Run Artifact Pair. */
+	tamperEvidence: RunArtifactPairTamperEvidenceSchema.optional(),
 
 	/** Optional free-form provenance notes. */
 	notes: z.string().min(1).optional(),

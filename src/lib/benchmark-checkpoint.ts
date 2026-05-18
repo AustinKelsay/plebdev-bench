@@ -1,11 +1,12 @@
 /**
- * Purpose: Compute deterministic benchmark checkpoint metadata from benchmark-defining assets.
+ * Purpose: Compute deterministic Benchmark Checkpoint metadata from benchmark meaning assets.
  * Exports: CORE_BENCHMARK_LIB_ASSETS, computeBenchmarkCheckpoint,
  *          collectBenchmarkAssetPaths, buildBenchmarkManifest
  *
  * Invariants:
- * - Asset list is deterministic (sorted by normalized relative path)
- * - Missing required benchmark assets are treated as configuration/programmer errors
+ * - Asset list covers benchmark definition plus execution and scoring semantics.
+ * - Asset list is deterministic (sorted by normalized relative path).
+ * - Missing required benchmark assets are treated as configuration/programmer errors.
  */
 
 import { createHash } from "node:crypto";
@@ -140,10 +141,10 @@ function collectFilesUnderDirectory(rootDir: string, relDir: string): string[] {
 }
 
 /**
- * Lists benchmark-defining asset paths relative to the project root.
+ * Lists Benchmark Checkpoint asset paths relative to the project root.
  *
  * @param rootDir - Project root containing `src/tests`
- * @returns Sorted relative file paths
+ * @returns Sorted relative file paths covering benchmark meaning
  * @throws {Error} If required benchmark assets are missing
  */
 export function collectBenchmarkAssetPaths(

@@ -28,7 +28,7 @@ Outputs (per **Benchmark Run**):
   - **Benchmark Checkpoint** metadata (`checkpointId`, manifest identifier, asset count)
   - **Machine Instance** identity + canonical **Machine Profile** metadata
   - run provenance metadata (`verificationStatus`, source)
-- **Benchmark Checkpoint** identity changes when **Benchmark Prompts**, **Benchmark Fixtures**, **Scoring Specs**, **Eval Rubrics**, or **Benchmark Metadata** change.
+- **Benchmark Checkpoint** identity changes when benchmark meaning changes: **Benchmark Prompts**, **Benchmark Fixtures**, **Scoring Specs**, **Eval Rubrics**, **Benchmark Metadata**, or execution/scoring semantics such as harnesses, runtimes, runner behavior, extraction, workspace scoring, retry behavior, and signal assessment.
 
 Built-ins:
 - **compare**: produce a **Run Comparison** across **Compatible Run Results**
@@ -316,7 +316,7 @@ Design constraints:
 - The dashboard validates fetched JSON at the boundary (Zod) and fails loudly on schema mismatch.
 - Dashboard detail views show Published Runs as preserved Benchmark Evidence, not editable summaries.
 - Latest leaderboard view is strict to the currently computed **Benchmark Checkpoint**. See [ADR-0006](docs/adr/0006-require-matching-benchmark-checkpoints-for-comparable-runs.md).
-- Benchmark Checkpoint aggregates group by **Machine Profile** + **Runtime** + **Model Profile** + **Harness** + **Benchmark Test** + **Pass Type**, prefer the strongest result for each key, and only use recency as a later tiebreaker. See [ADR-0007](docs/adr/0007-group-leaderboards-by-machine-profile.md).
+- Benchmark Checkpoint aggregates group by **Machine Profile** + **Runtime** + **Model Profile** + **Harness** + **Benchmark Test** + **Pass Type**, use **Best Observed Item** selection for each key, and only use recency as a later tiebreaker. See [ADR-0007](docs/adr/0007-group-leaderboards-by-machine-profile.md).
 - Legacy runs missing **Benchmark Checkpoint** or **Machine Profile** metadata remain visible in run history and are excluded from latest-checkpoint leaderboard aggregation.
 
 ## Hosted dashboard (what we implemented)

@@ -49,6 +49,8 @@ export {
 	verificationStatusTypes,
 	VerificationStatusSchema,
 	type VerificationStatus,
+	RunArtifactPairTamperEvidenceSchema,
+	type RunArtifactPairTamperEvidence,
 	BenchmarkCheckpointSchema,
 	type BenchmarkCheckpoint,
 	RuntimeEnvironmentSchema,

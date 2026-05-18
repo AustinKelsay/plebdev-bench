@@ -145,6 +145,27 @@ describe("benchmark checkpoint", () => {
 		expect(after.checkpointId).not.toBe(before.checkpointId);
 	});
 
+	it("changes manifest hash when runtime or runner semantics change", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		fs.writeFileSync(
+			path.join(root, "src", "runtimes", "ollama-runtime.ts"),
+			"export const ollamaRuntime = 2;\n",
+		);
+		const afterRuntimeChange = computeBenchmarkCheckpoint(root);
+		expect(afterRuntimeChange.manifestHash).not.toBe(before.manifestHash);
+
+		fs.writeFileSync(
+			path.join(root, "src", "runner", "index.ts"),
+			"export const runnerIndex = 2;\n",
+		);
+		const afterRunnerChange = computeBenchmarkCheckpoint(root);
+		expect(afterRunnerChange.manifestHash).not.toBe(
+			afterRuntimeChange.manifestHash,
+		);
+	});
+
 	it("changes manifest hash when signal assessment changes", () => {
 		const root = createBenchmarkRoot();
 		const before = computeBenchmarkCheckpoint(root);
