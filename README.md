@@ -16,20 +16,22 @@ Benchmark Categories:
 - `computer-use`
 
 Scoring:
-- **Automated Score**: either imports generated code and runs scoring cases, or scores a seeded workspace against exact filesystem assertions.
+- **Automated Score**: deterministic local **Benchmark Evidence** from generated code imports, export checks, scoring cases, or exact workspace filesystem assertions.
 - **Optional Frontier Eval**: rubric scoring via **OpenRouter** for code-module tests when an API key is present.
+- **Output Contract**: the required shape of the generated module or workspace state for a **Benchmark Test**.
 
 Outputs (per **Benchmark Run**):
 - `results/<run-id>/plan.json` — **Run Plan** with resolved config and expanded **Matrix**
 - `results/<run-id>/run.json` — **Run Result** with summary and **Matrix Item** details
 - `results/<run-id>/run.partial.json` — periodic crash-safe **Partial Run Result** during execution (removed on success)
-- each artifact now includes:
-  - **Benchmark Checkpoint** metadata (`checkpointId`, manifest hash, asset count)
+- each persisted file declares its **Schema Version** and now includes:
+  - **Benchmark Checkpoint** metadata (`checkpointId`, manifest identifier, asset count)
   - **Machine Instance** identity + canonical **Machine Profile** metadata
   - run provenance metadata (`verificationStatus`, source)
+- **Benchmark Checkpoint** identity changes when **Benchmark Prompts**, **Benchmark Fixtures**, **Scoring Specs**, **Eval Rubrics**, or **Benchmark Metadata** change.
 
 Built-ins:
-- **compare**: produce a **Run Comparison** across compatible **Run Results**
+- **compare**: produce a **Run Comparison** across **Compatible Run Results**
 - **checkpointed aggregation**: `dashboard:index` builds latest **Benchmark Checkpoint** leaderboard artifacts with **Machine Profile**-aware best-result selection
 
 Model identity:
@@ -293,8 +295,9 @@ The hosted dashboard is a static frontend that reads run data from static JSON f
 
 High level:
 - Benchmark Runs produce a Run Plan (`plan.json`) and Run Result (`run.json`) in an output directory.
-- Published runs live in `apps/dashboard/public/results/<runId>/`.
-- An index (`apps/dashboard/public/results/index.json`) is generated from the published runs.
+- A **Published Run** is the static dashboard copy under `apps/dashboard/public/results/<runId>/`.
+- **Published Redaction** runs before dashboard publication to remove host-specific paths and other local-only details; it names the boundary and does not define a permanent redaction policy.
+- An index (`apps/dashboard/public/results/index.json`) is generated from the Published Runs.
   - `machineProfileKey` is the canonical Machine Profile identifier; `machineProfileId` is still emitted as a deprecated compatibility alias and will be removed in a future release.
 - Checkpoint aggregate artifacts are generated in `apps/dashboard/public/results/aggregates/`:
   - `<checkpointId>.json` for each discovered checkpoint
@@ -311,6 +314,7 @@ Local vs hosted:
 Design constraints:
 - Runs are treated as append-only facts: publishing is a copy/commit action, not a mutation of prior runs.
 - The dashboard validates fetched JSON at the boundary (Zod) and fails loudly on schema mismatch.
+- Dashboard detail views show Published Runs as preserved Benchmark Evidence, not editable summaries.
 - Latest leaderboard view is strict to the currently computed **Benchmark Checkpoint**. See [ADR-0006](docs/adr/0006-require-matching-benchmark-checkpoints-for-comparable-runs.md).
 - Benchmark Checkpoint aggregates group by **Machine Profile** + **Runtime** + **Model Profile** + **Harness** + **Benchmark Test** + **Pass Type**, prefer the strongest result for each key, and only use recency as a later tiebreaker. See [ADR-0007](docs/adr/0007-group-leaderboards-by-machine-profile.md).
 - Legacy runs missing **Benchmark Checkpoint** or **Machine Profile** metadata remain visible in run history and are excluded from latest-checkpoint leaderboard aggregation.

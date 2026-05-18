@@ -2,6 +2,8 @@
 
 This note records how the benchmark glossary is being adopted across existing schemas, dashboard payloads, docs, and agent workflow setup. It is intentionally not an artifact migration plan.
 
+Publication language now distinguishes a local **Run Result** from a **Published Run** copied into the static dashboard. **Published Redaction** is the named privacy boundary before publication; it removes local-only details today, but this note does not define a permanent redaction policy.
+
 ## Scope
 
 - Canonical glossary: `CONTEXT.md`
@@ -29,6 +31,11 @@ This note records how the benchmark glossary is being adopted across existing sc
 | `machineProfileId` | Deprecated **Machine Profile** compatibility alias | Migration-worthy only if dashboard artifact schemas are intentionally bumped | Keep as deprecated alias until a future compatibility-managed removal. |
 | `machineLabel` | Deprecated display alias | Harmless compatibility alias with documentation drift risk | Keep as dashboard compatibility field; prefer `machineDisplayLabel` or `machineProfileLabel` in new code. |
 | `run.partial.json` | **Partial Run Result** | User-facing documentation drift risk | Keep filename. Explain it as the Partial Run Result, not a checkpoint or snapshot. |
+| `schemaVersion` | **Schema Version** | Harmless internal/persisted naming | Keep. Use it to make compatibility and migration discussions explicit. |
+| generated module/workspace shape | **Output Contract** | User-facing documentation drift risk | Prefer Output Contract in docs instead of generic scoring expectations. |
+| result evidence | **Benchmark Evidence** | User-facing documentation drift risk | Prefer Benchmark Evidence when describing preserved generation, scoring, and eval facts. |
+| published dashboard copy | **Published Run** | User-facing documentation drift risk | Prefer Published Run for static dashboard copies. |
+| dashboard sanitization | **Published Redaction** | Policy-boundary term | Name the boundary without locking in a permanent privacy policy. |
 | `frontierEval` | **Frontier Eval** | Harmless internal/persisted naming | Keep. It matches the glossary except for code casing. |
 | `automatedScore` | **Automated Score** | Harmless internal/persisted naming | Keep. It matches the glossary except for code casing. |
 | `signalAssessment` | **Signal Assessment** | Harmless internal/persisted naming | Keep. It matches the glossary except for code casing. |

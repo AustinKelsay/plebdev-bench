@@ -1,10 +1,10 @@
 /**
- * Purpose: RunResult schema for completed benchmark runs.
+ * Purpose: RunResult schema for completed Benchmark Runs.
  * Exports: GenerationResultSchema, GenerationResult,
  *          MatrixItemResultSchema, MatrixItemResult,
  *          RunResultSchema, RunResult
  *
- * The result is written to results/<runId>/run.json after execution.
+ * The Run Result preserves Benchmark Evidence in results/<runId>/run.json after execution.
  */
 
 import { z } from "zod";
@@ -24,12 +24,12 @@ import {
 } from "./common.schema.js";
 import { ModelProfileSchema } from "./model-profile.schema.js";
 
-/** Zod schema for generation output from a harness. */
+/** Zod schema for Generated Output from a Harness. */
 export const GenerationResultSchema = z.object({
 	/** Whether generation succeeded. */
 	success: z.boolean(),
 
-	/** Generated text output. */
+	/** Generated Output text. */
 	output: z.string().optional(),
 
 	/** Error message if generation failed. */
@@ -47,17 +47,17 @@ export const GenerationResultSchema = z.object({
 	/** Completion token count (if available from harness). */
 	completionTokens: z.number().optional(),
 
-	/** Path to code file written by tool-calling harness (e.g., Goose developer extension). */
+	/** Path to code file written by a tool-calling Harness. */
 	codeFilePath: z.string().optional(),
 
-	/** Redacted path token preserved in published artifacts for source traceability. */
+	/** Published Redaction path token preserved for source traceability. */
 	sourcePathToken: z.string().optional(),
 });
 
-/** Generation result from a harness call. */
+/** Generated Output result from a Harness call. */
 export type GenerationResult = z.infer<typeof GenerationResultSchema>;
 
-/** Zod schema for automated test scoring (placeholder for MVP). */
+/** Zod schema for Automated Score Benchmark Evidence. */
 export const AutomatedScoreSchema = z.object({
 	/** Number of tests passed. */
 	passed: z.number(),
@@ -69,7 +69,7 @@ export const AutomatedScoreSchema = z.object({
 	total: z.number(),
 });
 
-/** Automated test score type. */
+/** Automated Score type. */
 export type AutomatedScore = z.infer<typeof AutomatedScoreSchema>;
 
 /** Zod schema for frontier evaluation. */
@@ -203,7 +203,7 @@ export const FrontierEvalFailureSchema = z.object({
 /** Frontier eval failure record type. */
 export type FrontierEvalFailure = z.infer<typeof FrontierEvalFailureSchema>;
 
-/** Zod schema for a single matrix item result. */
+/** Zod schema for one Matrix Item result and its Benchmark Evidence. */
 export const MatrixItemResultSchema = z.object({
 	/** Unique item ID (matches plan). */
 	id: z.string(),
@@ -211,7 +211,7 @@ export const MatrixItemResultSchema = z.object({
 	/** Runtime name. */
 	runtime: ArtifactRuntimeNameSchema,
 
-	/** Model name. */
+	/** Runtime Model name. */
 	model: z.string(),
 
 	/** Deprecated compatibility alias for canonical model grouping. */
@@ -223,13 +223,13 @@ export const MatrixItemResultSchema = z.object({
 	/** Harness adapter name. */
 	harness: z.string(),
 
-	/** Test slug. */
+	/** Benchmark Test slug. */
 	test: z.string(),
 
-	/** Test category (e.g., 'coding', 'computer-use'). */
+	/** Benchmark Category (e.g., 'coding', 'computer-use'). */
 	category: TestCategorySchema.optional(),
 
-	/** Pass type. */
+	/** Pass Type. */
 	passType: PassTypeSchema,
 
 	/** Execution status. */
@@ -241,7 +241,7 @@ export const MatrixItemResultSchema = z.object({
 	/** ISO 8601 timestamp when execution completed. */
 	completedAt: z.string().datetime().optional(),
 
-	/** Generation result from harness. */
+	/** Generated Output result from Harness. */
 	generation: GenerationResultSchema.optional(),
 
 	/** Number of generation attempts used for this item, including infra retries. */
@@ -250,7 +250,7 @@ export const MatrixItemResultSchema = z.object({
 	/** Structured generation failure record (when generation fails). */
 	generationFailure: GenerationFailureSchema.optional(),
 
-	/** Automated test scoring. */
+	/** Automated Score from the Benchmark Test Output Contract. */
 	automatedScore: AutomatedScoreSchema.optional(),
 
 	/** Scoring metrics (timing). */
@@ -265,16 +265,16 @@ export const MatrixItemResultSchema = z.object({
 	/** Structured frontier eval failure record (when eval fails). */
 	frontierEvalFailure: FrontierEvalFailureSchema.optional(),
 
-	/** Benchmark signal assessment for this row. */
+	/** Signal Assessment for this row. */
 	signalAssessment: SignalAssessmentSchema.optional(),
 });
 
-/** Result for a single matrix item execution. */
+/** Result for a single Matrix Item execution. */
 export type MatrixItemResult = z.infer<typeof MatrixItemResultSchema>;
 
 /** Zod schema for the complete run result. */
 export const RunResultSchema = z.object({
-	/** Schema version for migrations. */
+	/** Schema Version for migrations. */
 	schemaVersion: z.string().default(SCHEMA_VERSION),
 
 	/** Unique run identifier (matches plan). */
@@ -283,7 +283,7 @@ export const RunResultSchema = z.object({
 	/** Machine profile metadata snapshot. */
 	machine: MachineProfileSchema.optional(),
 
-	/** Benchmark checkpoint metadata for this run. */
+	/** Benchmark Checkpoint metadata, distinct from Schema Version. */
 	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
 
 	/** Provenance metadata for this run. */
@@ -306,9 +306,9 @@ export const RunResultSchema = z.object({
 		pending: z.number(),
 	}),
 
-	/** All item results. */
+	/** All Matrix Item results. */
 	items: z.array(MatrixItemResultSchema),
 });
 
-/** The run result written to run.json. */
+/** The Run Result written to run.json. */
 export type RunResult = z.infer<typeof RunResultSchema>;

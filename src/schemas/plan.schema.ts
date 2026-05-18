@@ -5,7 +5,7 @@
  *
  * Invariants:
  * - Plans serialize the exact expanded benchmark matrix for reproducibility.
- * - Runtime, harness, test, category, and pass-type values are schema-limited.
+ * - Runtime, harness, Benchmark Test, Benchmark Category, and Pass Type values are schema-limited.
  * - Additive metadata must be represented explicitly before becoming required.
  */
 
@@ -24,10 +24,10 @@ import {
 } from "./common.schema.js";
 import { ModelProfileSchema } from "./model-profile.schema.js";
 
-/** Model exclusion reason codes emitted during plan construction. */
+/** Model Exclusion reason codes emitted during plan construction. */
 const ModelExclusionReasonSchema = z.literal("non_generative_model");
 
-/** Evidence captured when a discovered runtime model is excluded. */
+/** Evidence captured when a discovered Runtime Model is excluded. */
 const ModelExclusionEvidenceSchema = z
 	.object({
 		family: z.string().optional(),
@@ -36,12 +36,12 @@ const ModelExclusionEvidenceSchema = z
 	})
 	.optional();
 
-/** Zod schema for models omitted from generative benchmark plans. */
+/** Zod schema for Model Exclusions omitted from generative benchmark plans. */
 export const ModelExclusionSchema = z.object({
 	/** Runtime where the model was discovered. */
 	runtime: ExecutableArtifactRuntimeNameSchema,
 
-	/** Runtime model name that was excluded. */
+	/** Runtime Model name that was excluded. */
 	model: z.string(),
 
 	/** Stable exclusion reason. */
@@ -51,10 +51,10 @@ export const ModelExclusionSchema = z.object({
 	evidence: ModelExclusionEvidenceSchema,
 });
 
-/** Model omitted from a run plan before matrix expansion. */
+/** Model Exclusion omitted from a Run Plan before Matrix expansion. */
 export type ModelExclusion = z.infer<typeof ModelExclusionSchema>;
 
-/** Zod schema for a single matrix item (one runtime/harness/model/test/passType combo). */
+/** Zod schema for a Matrix Item (Runtime, Harness, Runtime Model, Benchmark Test, Pass Type). */
 export const MatrixItemSchema = z.object({
 	/** Unique item ID within the run (e.g., '01', '02'). */
 	id: z.string(),
@@ -62,7 +62,7 @@ export const MatrixItemSchema = z.object({
 	/** Runtime name (e.g., 'ollama'). */
 	runtime: ExecutableArtifactRuntimeNameSchema,
 
-	/** Model name (e.g., 'llama3.2:3b'). */
+	/** Runtime Model name (e.g., 'llama3.2:3b'). */
 	model: z.string(),
 
 	/** Deprecated compatibility alias for canonical model grouping. */
@@ -74,13 +74,13 @@ export const MatrixItemSchema = z.object({
 	/** Harness adapter name (e.g., 'direct'). */
 	harness: z.string(),
 
-	/** Test slug (e.g., 'smoke'). */
+	/** Benchmark Test slug (e.g., 'smoke'). */
 	test: z.string(),
 
-	/** Test category (e.g., 'coding', 'computer-use'). */
+	/** Benchmark Category (e.g., 'coding', 'computer-use'). */
 	category: TestCategorySchema.optional(),
 
-	/** Test scoring mode (e.g., 'code-module', 'workspace'). */
+	/** Benchmark Test scoring mode (e.g., 'code-module', 'workspace'). */
 	scoringMode: TestScoringModeSchema.default("code-module"),
 
 	/** Whether this test requires a tool-calling harness. */
@@ -89,22 +89,22 @@ export const MatrixItemSchema = z.object({
 	/** Explicit harness capabilities required for representative execution. */
 	requiredHarnessCapabilities: z.array(HarnessCapabilitySchema).default([]),
 
-	/** Test tags copied from metadata for ordering and preflight logic. */
+	/** Benchmark Test tags copied from metadata for ordering and preflight logic. */
 	tags: z.array(z.string()).default([]),
 
 	/** Per-test timeout multiplier copied from metadata for reproducible timeout policy. */
 	timeoutMultiplier: z.number().positive().default(1),
 
-	/** Pass type: 'blind' or 'informed'. */
+	/** Pass Type: 'blind' or 'informed'. */
 	passType: PassTypeSchema,
 });
 
-/** A single matrix item representing one benchmark execution. */
+/** A Matrix Item representing one benchmark execution. */
 export type MatrixItem = z.infer<typeof MatrixItemSchema>;
 
 /** Zod schema for the run plan. */
 export const RunPlanSchema = z.object({
-	/** Schema version for migrations. */
+	/** Schema Version for migrations. */
 	schemaVersion: z.string().default(SCHEMA_VERSION),
 
 	/** Unique run identifier (e.g., '20260114-143052-abc123'). */
@@ -113,19 +113,19 @@ export const RunPlanSchema = z.object({
 	/** ISO 8601 timestamp when plan was created. */
 	createdAt: z.string().datetime(),
 
-	/** Runtime environment metadata snapshot. */
+	/** Runtime Environment metadata snapshot, distinct from Machine Profile. */
 	runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
 
 	/** Machine profile metadata snapshot. */
 	machine: MachineProfileSchema.optional(),
 
-	/** Benchmark checkpoint metadata for this run plan. */
+	/** Benchmark Checkpoint metadata, distinct from Schema Version. */
 	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
 
 	/** Provenance metadata for this run plan. */
 	provenance: RunProvenanceSchema.optional(),
 
-	/** Resolved configuration snapshot (subset relevant to reproducibility). */
+	/** Resolved Run Config snapshot, distinct from Benchmark Metadata. */
 	config: z.object({
 		ollamaBaseUrl: z.string().url(),
 		generateTimeoutMs: z.number(),
@@ -137,10 +137,10 @@ export const RunPlanSchema = z.object({
 		categories: z.array(TestCategorySchema).optional(),
 	}),
 
-	/** Expanded matrix items to execute. */
+	/** Expanded Matrix Items to execute. */
 	items: z.array(MatrixItemSchema),
 
-	/** Discovered models omitted before matrix expansion. */
+	/** Discovered Model Exclusions omitted before Matrix expansion. */
 	modelExclusions: z.array(ModelExclusionSchema).optional(),
 
 	/** Summary counts for display. */

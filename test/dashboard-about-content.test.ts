@@ -42,6 +42,11 @@ describe("dashboard About content glossary alignment", () => {
 		expect(content).toContain("Run Plan");
 		expect(content).toContain("Run Result");
 		expect(content).toContain("Partial Run Result");
+		expect(content).toContain("Benchmark Evidence");
+		expect(content).toContain("Output Contract");
+		expect(content).toContain("Compatible Run Results");
+		expect(content).toContain("Published Run");
+		expect(content).toContain("Composite Score");
 		expect(content).toContain("Benchmark Checkpoint");
 		expect(content).toContain("Machine Profile");
 		expect(content).toContain("Model Profile");

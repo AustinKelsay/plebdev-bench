@@ -54,19 +54,20 @@ export const aboutFacts: AboutFact[] = [
 	{
 		label: "Matrix",
 		value: "Runtime x Harness x Runtime Model x Benchmark Test x Pass Type",
-		detail: "Reproducible Matrix so Run Results are comparable.",
+		detail:
+			"Reproducible Matrix so Run Results can be treated as Compatible Run Results when checkpoint and execution context match.",
 	},
 	{
-		label: "Artifacts",
+		label: "Run files",
 		value: "Run Plan + Run Result per Benchmark Run",
 		detail:
-			"Resolved Run Plan + fact-only Run Result. Crash-safe Partial Run Result in flight.",
+			"Resolved Run Plan + Benchmark Evidence in the Run Result. Crash-safe Partial Run Result in flight.",
 	},
 	{
 		label: "Automated Score",
 		value: "passed / total automated tests",
 		detail:
-			"Deterministic local evidence from imports, export checks, and scoring specs.",
+			"Deterministic local Benchmark Evidence from imports, export checks, and Scoring Specs.",
 	},
 	{
 		label: "Failures",
@@ -96,7 +97,7 @@ export const benchmarkDimensions: BenchmarkDimension[] = [
 	{
 		name: "Benchmark Test",
 		description:
-			"Packaged benchmark definition with prompts, scoring expectations, fixtures, metadata, and optional rubric.",
+			"Packaged benchmark definition with Benchmark Prompts, Output Contract, Scoring Specs, Benchmark Fixtures, Benchmark Metadata, and optional Eval Rubric.",
 	},
 	{
 		name: "Pass Type",
@@ -117,14 +118,14 @@ export const workflowSteps: WorkflowStep[] = [
 	{
 		step: "Generate",
 		description:
-			"Each Harness loads the prompt, calls the Runtime Model, records output + timing.",
+			"Each Harness loads the Benchmark Prompt, calls the Runtime Model, records Generated Output and timing.",
 		detail:
 			"Generation Failures are classified as timeout, api_error, tool_missing, or harness_error.",
 	},
 	{
 		step: "Score",
 		description:
-			"Extract code, import it, validate exports, run `scoring.spec.ts` tests.",
+			"Evaluate Generated Output against the Output Contract and `scoring.spec.ts` tests.",
 		detail:
 			"Automated Score = export checks + test assertions. Import/export failures reduce score.",
 	},
@@ -137,16 +138,17 @@ export const workflowSteps: WorkflowStep[] = [
 	},
 	{
 		step: "Frontier Eval",
-		description: "Optional rubric grading via OpenRouter if API key is set.",
+		description:
+			"Optional Eval Rubric grading via OpenRouter if API key is set.",
 		detail:
 			"Best-effort: auth/timeout/rate-limit Frontier Eval Failures are recorded without crashing.",
 	},
 	{
 		step: "Persist",
 		description:
-			"Write the Run Result with all Matrix Item results, scores, and failures.",
+			"Write the Run Result with all Matrix Item results, scores, failures, and evidence.",
 		detail:
-			"Append-only evidence. Dashboard reads artifacts; never mutates past runs.",
+			"Append-only Benchmark Evidence. Dashboard reads Published Runs; never mutates past Run Results.",
 	},
 ];
 
@@ -169,7 +171,7 @@ export const scoringSystems: ScoringSystem[] = [
 			"Optional rubric grading via OpenRouter. Separate from Automated Score.",
 	},
 	{
-		name: "Effective score",
+		name: "Composite Score",
 		scale: "0-100%",
 		description:
 			"Ranking metric: 40% pass rate + 30% completion + 30% tool success.",
@@ -194,12 +196,13 @@ export const artifactRows: ArtifactRow[] = [
 	},
 	{
 		path: "public/results/index.json",
-		purpose: "Dashboard run index built by `bun dashboard:index`.",
+		purpose:
+			"Published Run index built by `bun dashboard:index` after Published Redaction.",
 	},
 	{
 		path: "public/results/aggregates/<checkpoint>.json",
 		purpose:
-			"Leaderboard aggregate for Run Comparison within a Benchmark Checkpoint.",
+			"Leaderboard aggregate for Run Comparison across Compatible Run Results within a Benchmark Checkpoint.",
 	},
 ];
 

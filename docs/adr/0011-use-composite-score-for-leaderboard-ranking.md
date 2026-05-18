@@ -1,0 +1,3 @@
+# Use composite score for leaderboard ranking
+
+Plebdev Bench uses **Composite Score** as a derived leaderboard ranking metric that combines pass rate, completion rate, tool success, and optional frontier evidence instead of ranking by **Automated Score** alone. Ranking only by deterministic local pass rate would be simpler, but it would over-reward narrow successes that fail to complete the full matrix or cannot execute tool-dependent **Benchmark Tests** reliably; the composite metric keeps **Leaderboards** aligned with the benchmark's goal of measuring useful, complete local model performance.
