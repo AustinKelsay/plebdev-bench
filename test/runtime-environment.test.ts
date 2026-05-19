@@ -15,7 +15,7 @@ import {
 	RuntimeToolVersionSchema,
 } from "../src/schemas/index.js";
 
-const runExecFileMock = vi.fn();
+const runExecFileMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../src/lib/exec.js", () => ({
 	runExecFile: runExecFileMock,

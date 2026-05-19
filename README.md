@@ -240,7 +240,7 @@ bun run src/index.ts compare <run-a> <run-b> --allow-cross-checkpoint
 bun run src/index.ts migrate-machine-profiles --dir apps/dashboard/public/results --rebuild-dashboard-index --dashboard-output-dir apps/dashboard/public/results
 
 # Run tests
-bun test
+bun run test
 
 # Type check
 bun run typecheck
