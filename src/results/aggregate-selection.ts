@@ -129,25 +129,10 @@ export function compareAggregateCandidates(
 		(incumbent.aggregated.automatedScore?.total ?? -1);
 	if (totalDelta !== 0) return totalDelta;
 
-	const frontierDelta =
-		(candidate.aggregated.frontierEval?.score ?? -1) -
-		(incumbent.aggregated.frontierEval?.score ?? -1);
-	if (frontierDelta !== 0) return frontierDelta;
-
 	const generationSuccessDelta =
 		Number(candidate.aggregated.generation?.success === true) -
 		Number(incumbent.aggregated.generation?.success === true);
 	if (generationSuccessDelta !== 0) return generationSuccessDelta;
-
-	const candidateDuration = candidate.aggregated.generation?.durationMs;
-	const incumbentDuration = incumbent.aggregated.generation?.durationMs;
-	if (
-		candidateDuration !== undefined &&
-		incumbentDuration !== undefined &&
-		candidateDuration !== incumbentDuration
-	) {
-		return incumbentDuration - candidateDuration;
-	}
 
 	if (candidate.timestamp !== incumbent.timestamp) {
 		return candidate.timestamp - incumbent.timestamp;

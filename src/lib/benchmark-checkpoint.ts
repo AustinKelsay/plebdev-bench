@@ -13,6 +13,7 @@ import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { BenchmarkCheckpoint } from "../schemas/index.js";
+import { TestMetadataSchema } from "../schemas/test-catalog.schema.js";
 
 /** Checkpoint algorithm identifier. */
 const CHECKPOINT_ALGORITHM = "sha256v1";
@@ -87,6 +88,51 @@ function hashBuffer(value: Buffer): string {
  */
 function hashString(value: string): string {
 	return createHash("sha256").update(value).digest("hex");
+}
+
+/**
+ * Builds the checkpoint-affecting projection of test metadata.
+ *
+ * @param content - Raw test.meta.json bytes
+ * @param relPath - Relative metadata path for diagnostics
+ * @returns Stable JSON containing benchmark semantics but excluding analysis labels
+ * @throws {Error} If metadata is invalid JSON or fails schema validation
+ */
+function buildCheckpointMetadataPayload(
+	content: Buffer,
+	relPath: string,
+): string {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(content.toString("utf8"));
+	} catch (error) {
+		throw new Error(`Invalid benchmark metadata JSON at ${relPath}`, {
+			cause: error,
+		});
+	}
+
+	const metadata = TestMetadataSchema.parse(parsed);
+	return JSON.stringify({
+		schemaVersion: metadata.schemaVersion,
+		scoringMode: metadata.scoringMode,
+		requiresTools: metadata.requiresTools,
+		requiredHarnessCapabilities: metadata.requiredHarnessCapabilities,
+		timeoutMultiplier: metadata.timeoutMultiplier,
+	});
+}
+
+/**
+ * Computes the checkpoint hash for a benchmark asset.
+ *
+ * @param content - Raw file bytes
+ * @param relPath - Normalized relative asset path
+ * @returns Content hash for benchmark checkpoint derivation
+ */
+function hashBenchmarkAsset(content: Buffer, relPath: string): string {
+	if (relPath.endsWith("/test.meta.json")) {
+		return hashString(buildCheckpointMetadataPayload(content, relPath));
+	}
+	return hashBuffer(content);
 }
 
 /**
@@ -222,9 +268,10 @@ export function buildBenchmarkManifest(
 	const entries: BenchmarkManifestEntry[] = relativePaths.map((relPath) => {
 		const absolutePath = path.join(rootDir, relPath);
 		const content = fs.readFileSync(absolutePath);
+		const normalizedPath = normalizeRelativePath(relPath);
 		return {
-			path: normalizeRelativePath(relPath),
-			contentHash: hashBuffer(content),
+			path: normalizedPath,
+			contentHash: hashBenchmarkAsset(content, normalizedPath),
 		};
 	});
 

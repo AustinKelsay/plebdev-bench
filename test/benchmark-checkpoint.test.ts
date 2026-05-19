@@ -128,6 +128,58 @@ describe("benchmark checkpoint", () => {
 		expect(after.checkpointId).not.toBe(before.checkpointId);
 	});
 
+	it("does not change manifest hash when category label changes", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		const metadataPath = path.join(
+			root,
+			"src",
+			"tests",
+			"smoke",
+			"test.meta.json",
+		);
+		fs.writeFileSync(
+			metadataPath,
+			JSON.stringify({ schemaVersion: 1, category: "computer-use" }, null, 2),
+		);
+
+		const after = computeBenchmarkCheckpoint(root);
+		expect(after.manifestHash).toBe(before.manifestHash);
+		expect(after.checkpointId).toBe(before.checkpointId);
+	});
+
+	it("changes manifest hash when scoring mode changes", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		const metadataPath = path.join(
+			root,
+			"src",
+			"tests",
+			"smoke",
+			"test.meta.json",
+		);
+		fs.writeFileSync(
+			metadataPath,
+			JSON.stringify(
+				{
+					schemaVersion: 1,
+					category: "coding",
+					scoringMode: "workspace",
+					requiresTools: true,
+					requiredHarnessCapabilities: ["workspace-read"],
+				},
+				null,
+				2,
+			),
+		);
+
+		const after = computeBenchmarkCheckpoint(root);
+		expect(after.manifestHash).not.toBe(before.manifestHash);
+		expect(after.checkpointId).not.toBe(before.checkpointId);
+	});
+
 	it("changes manifest hash when harness implementation changes", () => {
 		const root = createBenchmarkRoot();
 		const before = computeBenchmarkCheckpoint(root);

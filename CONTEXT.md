@@ -15,11 +15,11 @@ The stable identifier assigned to one **Benchmark Run** and its persisted files.
 _Avoid_: Directory name, timestamp, artifact ID
 
 **Runtime Environment**:
-The software execution context captured for a **Benchmark Run**.
+The software execution context captured for a **Benchmark Run**, including runtime and harness tool versions.
 _Avoid_: Machine profile, runtime, harness
 
 **Run Provenance**:
-The origin and verification information recorded for a **Benchmark Run**.
+The origin and verification status recorded for a **Benchmark Run**.
 _Avoid_: Machine profile, runtime environment, source
 
 **Tamper Evidence**:
@@ -35,7 +35,7 @@ The **Run Plan** and **Run Result** that together form the canonical artifact se
 _Avoid_: Run directory, artifact folder, logs
 
 **Compatible Run Results**:
-**Run Results** that can be compared or ranked without mixing incompatible benchmark definitions or execution contexts.
+**Run Results** that share the same benchmark meaning and can be compared without mixing incompatible benchmark definitions.
 _Avoid_: Same schema, matching runs, comparable artifacts
 
 **Schema Version**:
@@ -56,13 +56,17 @@ _Avoid_: Cleanup, migration, filtering
 An analysis of differences between **Compatible Run Results**.
 _Avoid_: Compare, delta
 
+**Comparison Space**:
+The full active analysis scope used by a **Run Comparison** or **Leaderboard**, including checkpoint, machine, dimension, and trust filters.
+_Avoid_: Filter, run config, selected rows
+
 **Leaderboard**:
 A ranked analysis view over **Compatible Run Results**, scoped by **Benchmark Checkpoint** and **Machine Profile**.
 _Avoid_: Dashboard ranking, aggregate table
 
 **Best Observed Item**:
-The strongest recorded **Matrix Item** outcome selected for one leaderboard aggregation key within a **Benchmark Checkpoint** and **Machine Profile**.
-_Avoid_: Latest item, current item, deduped row
+The strongest recorded **Matrix Item** outcome selected for one leaderboard aggregation key, including **Pass Type**, within a **Benchmark Checkpoint** and **Machine Profile**.
+_Avoid_: Fastest item, latest item, current item, deduped row
 
 **Composite Score**:
 A derived ranking metric that combines multiple **Run Result** signals for leaderboard analysis.
@@ -77,8 +81,8 @@ The durable pre-execution artifact that describes exactly what a **Benchmark Run
 _Avoid_: Benchmark plan, matrix plan
 
 **Run Config**:
-The user-provided and resolved settings that select and parameterize a **Benchmark Run**.
-_Avoid_: Benchmark metadata, run plan, environment
+The resolved settings that select and parameterize a **Benchmark Run** before matrix expansion.
+_Avoid_: Raw CLI args, benchmark metadata, run plan, environment
 
 ### Execution And Model Identity
 
@@ -91,11 +95,11 @@ One executable combination of runtime, harness, model, benchmark test, and pass 
 _Avoid_: Task, case, benchmark item
 
 **Benchmark Evidence**:
-The recorded facts that explain a **Matrix Item** outcome.
-_Avoid_: Artifact, logs, result blob
+The persisted or referenced facts that explain a **Matrix Item** outcome.
+_Avoid_: Incidental logs, artifact, result blob
 
 **Generated Output**:
-The content produced by a **Runtime Model** through a **Harness** for a **Matrix Item**.
+The model-produced content or workspace changes created through a **Harness** for a **Matrix Item**.
 _Avoid_: Artifact, response, completion
 
 **Output Contract**:
@@ -105,6 +109,10 @@ _Avoid_: Prompt, scoring spec, generated output
 **Retry Attempt**:
 A repeated execution attempt recorded as **Benchmark Evidence** for the same **Matrix Item** after a recoverable generation or scoring problem.
 _Avoid_: Pass type, rerun, replacement item, matrix item
+
+**Retry Policy**:
+The resolved execution rule that determines when a **Matrix Item** may produce one or more **Retry Attempts**.
+_Avoid_: Retry attempt, pass type, failure handling
 
 ### Benchmark Content
 
@@ -162,13 +170,17 @@ _Avoid_: Model availability, model config, model profile
 A recorded decision to omit a discovered **Runtime Model** from a **Run Plan**.
 _Avoid_: Missing model, failure, filter
 
+**Combination Exclusion**:
+A recorded decision to omit an incompatible planned combination before **Matrix** expansion.
+_Avoid_: Failed item, skipped item, matrix item
+
 **Harness**:
 The interface used to ask a benchmark model to perform a **Benchmark Test**.
-_Avoid_: Runtime, model provider
+_Avoid_: Runtime, model provider, tool version
 
 **Harness Capability**:
-A specific affordance a **Harness** provides for executing benchmark tests.
-_Avoid_: Tool capability, workspace capability, requirement
+A specific benchmark-relevant affordance a **Harness** provides for representative **Benchmark Test** execution.
+_Avoid_: Tool feature, product capability, requirement
 
 **Runtime Model**:
 The exact executable model identifier exposed by a **Runtime**.
@@ -190,11 +202,15 @@ _Avoid_: Model profile, runtime model
 
 **Automated Score**:
 The deterministic local scoring outcome for a **Matrix Item**.
-_Avoid_: Test result, score
+_Avoid_: Test result, score, composite score
 
 **Frontier Eval**:
 An optional rubric-based judgment of a **Matrix Item** by an external frontier model.
 _Avoid_: Score, automated score, judge score, judge model
+
+**Frontier Eval Model**:
+The external model used to produce one **Frontier Eval** judgment.
+_Avoid_: Runtime model, model profile, benchmark model
 
 **Generation Failure**:
 A recorded failure to obtain usable benchmark output from the selected runtime, harness, and model for a **Matrix Item**.
@@ -213,17 +229,17 @@ The classification of whether a **Matrix Item** provides trustworthy benchmark e
 _Avoid_: Validity, quality flag, trust classification, exclusion rule
 
 **Benchmark Checkpoint**:
-The benchmark-definition and execution-semantics identity used to group runs that measured the same benchmark meaning.
+The derived benchmark-definition and execution-semantics identity used to group runs that measured the same benchmark meaning.
 _Avoid_: Suite version, manifest hash, benchmark version, content hash
 
 ### Machine And Provenance
 
 **Machine Profile**:
 The canonical machine capability grouping used to compare runs from similar execution environments.
-_Avoid_: Hardware profile, runner machine
+_Avoid_: Hardware profile, runner machine, runtime environment
 
 **Machine Instance**:
-The specific physical or logical machine that produced a **Benchmark Run**.
+The specific producer identity that created a **Benchmark Run**.
 _Avoid_: Machine profile, hardware profile
 
 ## Relationships
@@ -232,33 +248,52 @@ _Avoid_: Machine profile, hardware profile
 - A **Run Plan** is preserved as a durable reproducibility artifact for one **Benchmark Run**.
 - A **Run Artifact Pair** includes exactly one **Run Plan** and exactly one **Run Result**.
 - A **Run Artifact Pair** belongs to exactly one **Benchmark Run**.
+- A **Partial Run Result** is not part of the canonical **Run Artifact Pair**.
 - A **Benchmark Run** has exactly one **Run ID**.
 - A **Run Plan** records exactly one **Run ID**.
 - A **Run Result** records exactly one **Run ID**.
 - A **Run Config** is resolved into one **Run Plan**.
+- Raw user inputs are resolved into one **Run Config** before creating a **Run Plan**.
+- A **Run Config** may include one **Retry Policy**.
 - **Model Discovery** may inform which **Runtime Models** appear in a **Run Plan**.
 - A **Run Plan** may record zero or more **Model Exclusions**.
+- A **Run Plan** may record zero or more **Combination Exclusions**.
+- A **Model Exclusion** removes a discovered **Runtime Model** before planned combinations are considered.
+- A **Combination Exclusion** removes an incompatible planned combination before **Matrix** expansion.
 - A **Run Plan** may reference one **Benchmark Checkpoint**.
 - A **Run Plan** may reference one **Machine Profile**.
 - A **Run Plan** may reference one **Machine Instance**.
 - A **Run Plan** may reference one **Runtime Environment**.
+- A **Machine Profile** captures comparable machine capability, while software versions belong to the **Runtime Environment**.
+- A **Machine Instance** may change when producer provenance continuity is broken, even if **Machine Profile** stays the same.
 - A **Run Plan** may reference one **Run Provenance**.
 - **Run Provenance** may include **Tamper Evidence**.
+- **Run Provenance** describes run origin and verification status; **Tamper Evidence** describes artifact integrity.
+- **Tamper Evidence** may cover the local **Run Artifact Pair** or a redacted publication representation as distinct integrity claims.
 - A **Run Plan** contains exactly one **Matrix**.
 - A **Matrix** contains one or more **Matrix Items**.
+- A **Matrix** contains executable **Matrix Items**, not incompatible combinations.
 - A **Matrix Item** uses exactly one **Runtime**.
 - A **Matrix Item** uses exactly one **Harness**.
+- A **Harness** names a logical interface, while its concrete tool version belongs to the **Runtime Environment**.
 - A **Harness** provides zero or more **Harness Capabilities**.
 - A **Matrix Item** executes exactly one **Runtime Model**.
 - A **Matrix Item** may produce one **Generated Output**.
+- **Generated Output** may be represented as inline text, file paths, or workspace state.
 - A **Generated Output** may satisfy or violate an **Output Contract**.
+- A **Benchmark Test** defines the **Output Contract** for its **Generated Output**.
 - A **Matrix Item** may have zero or more **Retry Attempts**.
 - A **Retry Attempt** does not create a new **Matrix Item**.
+- A **Retry Attempt** records observed execution behavior, while **Retry Policy** records planned execution intent.
 - A **Matrix Item** may use one **Benchmark Workspace**.
+- A **Benchmark Workspace** is the isolated area where workspace-form **Generated Output** may appear.
+- A **Benchmark Workspace** may contain **Benchmark Fixtures** that are not **Generated Output**.
 - A **Run Result** records **Benchmark Evidence** for each completed or failed **Matrix Item**.
+- **Benchmark Evidence** belongs to the **Run Result** unless the **Run Result** explicitly references supporting files.
 - A **Run Result** may preserve **Generated Output** inline or by reference.
 - A **Runtime Model** may resolve to one **Model Variant**.
 - A **Model Profile** has one or more **Model Variants**.
+- A **Leaderboard** groups by **Model Profile** by default and may expose **Model Variant** filtering or drilldown.
 - A **Model Profile Resolution** explains whether a **Model Profile** came from configuration, legacy aliasing, or runtime-name fallback.
 - A **Matrix Item** references exactly one **Benchmark Test**.
 - A **Benchmark Test** has one **Benchmark Prompt** per supported **Pass Type**.
@@ -268,35 +303,60 @@ _Avoid_: Machine profile, hardware profile
 - A **Benchmark Test** may have one **Eval Rubric**.
 - A **Benchmark Test** may include zero or more **Benchmark Fixtures**.
 - A **Benchmark Test** belongs to exactly one **Benchmark Category**.
+- A **Benchmark Category** labels selection and analysis; it does not define **Compatible Run Results**.
 - A **Benchmark Test** may require one or more **Harness Capabilities**.
 - A **Harness Capability** may describe an operation available inside a **Benchmark Workspace**.
 - A **Matrix Item** uses exactly one **Pass Type**.
 - A **Matrix Item** may produce one **Automated Score**.
 - A **Matrix Item** may produce one **Frontier Eval**.
+- A **Frontier Eval** records one **Frontier Eval Model**.
+- A **Frontier Eval** applies to code-module **Scoring Modes** unless a workspace evidence contract is explicitly defined.
 - A **Matrix Item** may record one **Generation Failure**.
 - A **Matrix Item** may record one **Scoring Failure**.
 - A **Matrix Item** may record one **Frontier Eval Failure**.
+- A **Matrix Item** may record multiple stage-specific failures when multiple stages ran.
+- A **Scoring Failure** normally requires usable **Generated Output** from the generation stage.
 - A **Matrix Item** may have one **Signal Assessment**.
 - A **Signal Assessment** may be used to filter trusted-only analysis views.
 - A **Signal Assessment** does not remove a **Matrix Item** from the canonical **Run Result**.
+- A **Signal Assessment** does not change the numeric **Composite Score**.
 - A **Benchmark Run** produces exactly one **Run Result**.
 - A **Benchmark Run** may produce one **Partial Run Result** before it completes.
 - A **Run Plan** records one **Schema Version**.
 - A **Run Result** records one **Schema Version**.
 - A **Published Run** includes exactly one **Run Result** and exactly one **Run Plan**.
 - A **Published Run** shares one **Run Artifact Pair** for analysis.
+- A **Published Run** requires a final **Run Result**, not a **Partial Run Result**.
 - A **Published Run** may require **Published Redaction**.
+- **Published Redaction** creates a publication representation without mutating the original local **Run Result**.
 - A **Published Run** does not imply verified **Run Provenance**.
 - A **Run Comparison** compares two or more **Compatible Run Results**.
+- A **Run Comparison** has one **Comparison Space**.
+- A default **Run Comparison** requires **Compatible Run Results** with the same **Benchmark Checkpoint**.
+- A **Run Comparison** may compare different **Run Config** selections when the **Run Results** are compatible.
+- A **Run Comparison** may label or group differing **Machine Profiles** without making the **Run Results** incompatible.
 - A **Leaderboard** ranks **Compatible Run Results** within one **Benchmark Checkpoint** and one **Machine Profile**.
+- A **Leaderboard** has one **Comparison Space**.
+- A **Leaderboard** may include **Run Results** from partial **Run Config** selections when coverage is visible.
 - A **Leaderboard** may represent duplicate aggregation keys with one **Best Observed Item**.
+- A **Best Observed Item** is selected within one **Pass Type**, not across pass types.
+- A **Best Observed Item** is not selected by **Frontier Eval** score.
+- A **Best Observed Item** is not selected by generation duration.
 - A **Leaderboard** may rank entries by **Composite Score**.
+- The default **Composite Score** does not include **Frontier Eval**.
+- The default **Composite Score** accounts for completion coverage.
+- **Composite Score** completion coverage is scoped to the **Comparison Space**, not only a run's own **Run Plan**.
+- Trusted-only filtering changes the **Comparison Space** and its completion denominator.
+- A **Benchmark Checkpoint** is derived from benchmark content and benchmark-affecting semantics.
 - A **Benchmark Checkpoint** changes when **Benchmark Prompts** change.
 - A **Benchmark Checkpoint** changes when **Benchmark Fixtures** change.
 - A **Benchmark Checkpoint** changes when **Scoring Specs** change.
 - A **Benchmark Checkpoint** changes when **Eval Rubrics** change.
-- A **Benchmark Checkpoint** changes when **Benchmark Metadata** changes.
+- A **Benchmark Checkpoint** changes when benchmark-affecting **Benchmark Metadata** changes.
+- A **Benchmark Checkpoint** changes when **Scoring Mode** changes.
+- A **Benchmark Checkpoint** changes when **Signal Assessment** logic changes.
 - A **Benchmark Checkpoint** changes when benchmark execution or scoring semantics change.
+- A **Retry Policy** change may change the **Benchmark Checkpoint** when it affects benchmark execution semantics.
 
 ## Example dialogue
 
@@ -307,139 +367,40 @@ _Avoid_: Machine profile, hardware profile
 > **Domain expert:** "No. The **Benchmark Run** is the execution event; `run.json` is the **Run Result** it produces."
 >
 > **Dev:** "Is the whole results directory the canonical artifact?"
-> **Domain expert:** "No. The **Run Artifact Pair** is the canonical pair of **Run Plan** and **Run Result**; auxiliary files may provide supporting evidence."
+> **Domain expert:** "No. The **Run Artifact Pair** is exactly one **Run Plan** and one final **Run Result**; a **Partial Run Result** is only recovery/progress evidence."
 >
-> **Dev:** "Is the **Run ID** just the directory name?"
-> **Domain expert:** "No. **Run ID** identifies the **Benchmark Run** and its persisted files; a directory name is only one storage representation."
+> **Dev:** "Can I publish by redacting `run.json` in place?"
+> **Domain expert:** "No. **Published Redaction** creates a publication representation without mutating the local **Run Result**."
 >
-> **Dev:** "Is `run.partial.json` a **Benchmark Checkpoint**?"
-> **Domain expert:** "No. It is a **Partial Run Result**; a **Benchmark Checkpoint** identifies benchmark content."
+> **Dev:** "Are two `run.json` files comparable if their schemas match?"
+> **Domain expert:** "No. Default **Run Comparison** requires the same **Benchmark Checkpoint**; **Machine Profile** differences are visible context, not incompatibility."
 >
-> **Dev:** "Is every local result a **Published Run**?"
-> **Domain expert:** "No. A **Published Run** is made available for shared dashboard or leaderboard analysis."
+> **Dev:** "Should a category-only run get 100% leaderboard completion?"
+> **Domain expert:** "No. **Composite Score** completion coverage is scoped to the active **Comparison Space**, while run-detail completion can use the run's own plan."
 >
-> **Dev:** "Does publishing a run mean it is verified?"
-> **Domain expert:** "No. A **Published Run** may still be self-reported; verification belongs to **Run Provenance**."
+> **Dev:** "Can the **Best Observed Item** choose an informed, frontier-favored, or faster row over an equivalent blind row?"
+> **Domain expert:** "No. **Pass Type** is part of the aggregation key, and optional **Frontier Eval** plus duration remain separate analysis."
 >
-> **Dev:** "Is redacting local paths just cleanup?"
-> **Domain expert:** "No. **Published Redaction** is the privacy boundary before a **Run Result** becomes part of a **Published Run**."
->
-> **Dev:** "Is a score delta the whole comparison?"
-> **Domain expert:** "No. A delta is one metric difference inside a **Run Comparison**."
->
-> **Dev:** "Are two parsed `run.json` files automatically **Compatible Run Results**?"
-> **Domain expert:** "No. They must avoid incompatible benchmark definitions and execution contexts, not merely share a schema."
->
-> **Dev:** "Is **Schema Version** the same as **Benchmark Checkpoint**?"
-> **Domain expert:** "No. **Schema Version** identifies artifact format compatibility; **Benchmark Checkpoint** identifies benchmark content."
->
-> **Dev:** "Is the dashboard the **Leaderboard**?"
-> **Domain expert:** "No. The dashboard is a surface that may display a **Leaderboard**; the **Leaderboard** is the ranked analysis view."
->
-> **Dev:** "Should a **Leaderboard** show the latest result when the same model row has been run multiple times?"
-> **Domain expert:** "No. A **Leaderboard** may use the **Best Observed Item** for capability ranking; latest-result semantics belong to trend or history analysis."
->
-> **Dev:** "Is **Composite Score** the same as **Automated Score**?"
-> **Domain expert:** "No. **Composite Score** is derived for ranking; **Automated Score** is deterministic local scoring evidence for a **Matrix Item**."
->
-> **Dev:** "Can we call the expanded combinations the **Run Plan**?"
-> **Domain expert:** "No. The **Run Plan** includes the **Matrix**, plus the resolved context needed to reproduce it."
->
-> **Dev:** "Is the config file the **Run Plan**?"
-> **Domain expert:** "No. **Run Config** is user-provided or resolved settings; the **Run Plan** is the persisted execution intent derived from it."
->
-> **Dev:** "Is Bun version part of the **Machine Profile**?"
-> **Domain expert:** "No. Software provenance belongs to the **Runtime Environment**; **Machine Profile** describes comparable machine capability."
->
-> **Dev:** "Does **Run Provenance** decide whether a row's output is trustworthy?"
-> **Domain expert:** "No. **Run Provenance** records run origin and verification; **Signal Assessment** classifies evidence quality for a **Matrix Item**."
->
-> **Dev:** "Is **Tamper Evidence** the same as verification?"
-> **Domain expert:** "No. **Tamper Evidence** shows whether recorded artifacts changed; verification says whether their source or process is accepted."
->
-> **Dev:** "Is a benchmark task the same as a **Matrix Item**?"
-> **Domain expert:** "No. A **Matrix Item** is the benchmark row; the task is what the selected **Benchmark Test** asks the model to do."
->
-> **Dev:** "Is generated code an artifact?"
-> **Domain expert:** "Use **Generated Output** for what the model produced; an artifact is only how that output or result evidence is stored."
->
-> **Dev:** "Can we delete failure details after computing scores?"
-> **Domain expert:** "No. Preserve **Benchmark Evidence** so the **Matrix Item** outcome remains explainable."
->
-> **Dev:** "If the model writes code in the wrong file, did generation succeed?"
-> **Domain expert:** "It may have produced **Generated Output**, but it violated the **Output Contract**, so scoring or **Signal Assessment** must reflect that."
->
-> **Dev:** "Is `src/tests/todo-app` a unit test?"
-> **Domain expert:** "No. It is a **Benchmark Test**; its scoring spec may contain executable test cases, but the package is the benchmark definition."
->
-> **Dev:** "Is `prompt.blind.md` just documentation?"
-> **Domain expert:** "No. It is a **Benchmark Prompt** for a **Pass Type**, so changing it changes the **Benchmark Checkpoint**."
->
-> **Dev:** "Is `test.meta.json` incidental config?"
-> **Domain expert:** "No. It is **Benchmark Metadata**; it can shape the **Run Plan** and change the **Benchmark Checkpoint**."
->
-> **Dev:** "Is `scoring.spec.ts` the **Benchmark Test**?"
-> **Domain expert:** "No. It is the **Scoring Spec** for the **Benchmark Test**."
->
-> **Dev:** "Can the same rubric drive the **Automated Score**?"
-> **Domain expert:** "No. Use **Scoring Spec** for deterministic local scoring and **Eval Rubric** for **Frontier Eval** judgment."
->
-> **Dev:** "Is `workspace` a **Benchmark Category**?"
-> **Domain expert:** "No. `workspace` is a **Scoring Mode**; **Benchmark Category** describes the kind of challenge being selected or analyzed."
->
-> **Dev:** "Can a **Benchmark Workspace** mean the repository checkout?"
-> **Domain expert:** "No. A **Benchmark Workspace** is the isolated filesystem prepared for one **Matrix Item**."
->
-> **Dev:** "Can we update fixture files without changing benchmark meaning?"
-> **Domain expert:** "No. **Benchmark Fixtures** are benchmark content, so changing them changes the **Benchmark Checkpoint**."
->
-> **Dev:** "If a row retries after a timeout, is that a new **Pass Type**?"
-> **Domain expert:** "No. **Pass Type** only describes prompt context; a **Retry Attempt** is execution behavior for the same **Matrix Item**."
->
-> **Dev:** "Does a compile-feedback retry create another row in the **Matrix**?"
-> **Domain expert:** "No. It is **Benchmark Evidence** attached to the same **Matrix Item**, but retry policy still affects the **Benchmark Checkpoint**."
+> **Dev:** "Does changing `category` or tags in **Benchmark Metadata** change the **Benchmark Checkpoint**?"
+> **Domain expert:** "No. Analysis labels do not define benchmark meaning; **Scoring Mode**, prompts, fixtures, scoring specs, rubrics, and signal logic do."
 >
 > **Dev:** "Is OpenCode a **Runtime** because it can call a model?"
-> **Domain expert:** "No. OpenCode is a **Harness**; the **Runtime** is the backend that exposes the model being benchmarked."
+> **Domain expert:** "No. OpenCode is a **Harness**; concrete tool versions belong to the **Runtime Environment**."
 >
-> **Dev:** "Does **Model Discovery** define **Model Profiles**?"
-> **Domain expert:** "No. **Model Discovery** finds **Runtime Models**; **Model Profiles** are canonical identities used for comparison."
->
-> **Dev:** "Can a runtime-name fallback profile be treated the same as a configured profile?"
-> **Domain expert:** "No. Runtime-name fallback can support local exploration, but **Model Profile Resolution** must remain visible for trusted or published comparison."
+> **Dev:** "If OpenCode edits files instead of returning text, is that still **Generated Output**?"
+> **Domain expert:** "Yes. **Generated Output** includes model-produced workspace changes, while the **Benchmark Workspace** also contains fixtures and untouched context."
 >
 > **Dev:** "Is an excluded embedding model a **Generation Failure**?"
-> **Domain expert:** "No. A **Model Exclusion** happens before execution and explains why a discovered **Runtime Model** was omitted from the **Run Plan**."
+> **Domain expert:** "No. **Model Exclusion** happens after **Model Discovery**; **Combination Exclusion** happens before **Matrix** expansion; failures happen during item execution."
 >
-> **Dev:** "Should `qwen3:32b-q4_K_M` and `qwen3:32b-q8_0` be separate **Model Profiles**?"
-> **Domain expert:** "No. Treat quantization as **Model Variant** metadata by default; split profiles only when the benchmark intentionally treats them as different logical models."
+> **Dev:** "Can **Frontier Eval** replace **Automated Score** or change the default **Composite Score**?"
+> **Domain expert:** "No. **Automated Score** is deterministic local evidence; **Frontier Eval** is optional qualitative evidence with one **Frontier Eval Model**."
 >
-> **Dev:** "Can the **Frontier Eval** replace the **Automated Score**?"
-> **Domain expert:** "No. The **Automated Score** is deterministic local evidence; the **Frontier Eval** is optional qualitative evidence."
->
-> **Dev:** "Is `computer-use` a harness capability?"
-> **Domain expert:** "No. It is a **Benchmark Category**; specific workspace affordances are harness capability requirements."
->
-> **Dev:** "Should we include a **Matrix Item** when the **Harness** lacks a required **Harness Capability**?"
-> **Domain expert:** "No. That combination is not representative and should be excluded from the **Run Plan**."
->
-> **Dev:** "If a row passes automated scoring but violates the expected output contract, is it still trustworthy?"
-> **Domain expert:** "Not necessarily. The **Signal Assessment** can mark benchmark evidence as tainted separately from the score."
->
-> **Dev:** "Does a tainted **Signal Assessment** delete a row from the **Leaderboard**?"
-> **Domain expert:** "No. It annotates trust by default; trusted-only analysis views may filter tainted rows explicitly."
->
-> **Dev:** "Can we compare two **Benchmark Runs** after editing a prompt or scoring spec?"
-> **Domain expert:** "Only with caution. The **Benchmark Checkpoint** identifies whether runs used the same benchmark definition."
->
-> **Dev:** "Can we keep the **Benchmark Checkpoint** unchanged when only harness or scoring pipeline code changes?"
-> **Domain expert:** "No. If execution or scoring semantics change, the **Benchmark Checkpoint** changes even when benchmark prompts and fixtures are identical."
+> **Dev:** "Does a tainted **Signal Assessment** lower the **Composite Score**?"
+> **Domain expert:** "No. **Signal Assessment** annotates trust and can define trusted-only views, but does not numerically mutate scores."
 >
 > **Dev:** "Are two M4 Pro machines automatically the same producer?"
-> **Domain expert:** "No. They may share a **Machine Profile**, but each producer should have its own **Machine Instance**."
->
-> **Dev:** "Can we just call every problem an item failure?"
-> **Domain expert:** "No. Use **Generation Failure**, **Scoring Failure**, or **Frontier Eval Failure** so the failed stage remains visible."
+> **Domain expert:** "No. They may share a **Machine Profile**, but each producer has its own **Machine Instance**."
 
 ## Flagged ambiguities
 
@@ -455,6 +416,6 @@ _Avoid_: Machine profile, hardware profile
 - "config" may mean user run settings or benchmark metadata; resolved: use **Run Config** for run selection settings and **Benchmark Metadata** for benchmark-test content.
 - "bad output" may mean missing content, wrong location, wrong shape, or failed scoring; resolved: use **Output Contract** when the produced content is not evaluable as intended.
 - "tainted" could imply automatic deletion from analysis; resolved: **Signal Assessment** annotates trust by default and supports explicit trusted-only views.
-- "benchmark content" was too narrow for **Benchmark Checkpoint**; resolved: **Benchmark Checkpoint** covers benchmark definition plus execution and scoring semantics that affect measured meaning.
+- "benchmark content" was too narrow for **Benchmark Checkpoint**; resolved: **Benchmark Checkpoint** covers benchmark definition plus execution and scoring semantics that affect measured meaning, excluding pure analysis labels like **Benchmark Category**, tags, and descriptions.
 - "deduped row" hid leaderboard selection semantics; resolved: use **Best Observed Item** when a **Leaderboard** selects the strongest duplicate row for capability ranking.
 - "published" could imply public trust; resolved: **Published Run** means shared for analysis, while verification and **Tamper Evidence** remain separate provenance concerns.

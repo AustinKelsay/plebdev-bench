@@ -96,7 +96,7 @@ React-based visual dashboard at `apps/dashboard/` for browsing Run Results, insp
 - **About** - Explains benchmark mechanics, scoring, aggregation, and test catalog details
 
 **Charts:**
-- Composite score (effective score + pass rate + tool success + frontier)
+- Composite score (effective score + pass rate + tool success) with Frontier Eval shown as separate qualitative evidence
 - Blind vs informed comparison
 - Pass rate by dimension (model/harness/test)
 - Timing distribution histogram
