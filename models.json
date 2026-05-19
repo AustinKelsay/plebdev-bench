@@ -1,14 +1,84 @@
 {
-	"schemaVersion": "0.5.0",
+	"schemaVersion": "0.5.3",
 	"models": {
-		"qwen3-8b-instruct": {
-			"profileLabel": "Qwen 3 8B Instruct",
-			"family": "qwen3",
-			"parametersBillions": 8,
+		"qwen3.6-35b-instruct": {
+			"profileLabel": "Qwen 3.6 35B Instruct",
+			"family": "qwen3.6",
+			"parametersBillions": 35,
 			"tuning": "instruct",
 			"variants": {
-				"ollama": "qwen3:8b",
-				"vllm": "Qwen/Qwen3-8B-Instruct"
+				"ollama": "qwen3.6:35b"
+			}
+		},
+		"qwen3.6-27b-instruct": {
+			"profileLabel": "Qwen 3.6 27B Instruct",
+			"family": "qwen3.6",
+			"parametersBillions": 27,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "qwen3.6:27b"
+			}
+		},
+		"qwen3.5-35b-instruct": {
+			"profileLabel": "Qwen 3.5 35B Instruct",
+			"family": "qwen3.5",
+			"parametersBillions": 35,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "qwen3.5:35b"
+			}
+		},
+		"qwen3.5-27b-instruct": {
+			"profileLabel": "Qwen 3.5 27B Instruct",
+			"family": "qwen3.5",
+			"parametersBillions": 27,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "qwen3.5:27b"
+			}
+		},
+		"gemma4-4b-instruct": {
+			"profileLabel": "Gemma 4 4B Instruct",
+			"family": "gemma4",
+			"parametersBillions": 4,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "gemma4:e4b"
+			}
+		},
+		"gemma4-2b-instruct": {
+			"profileLabel": "Gemma 4 2B Instruct",
+			"family": "gemma4",
+			"parametersBillions": 2,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "gemma4:e2b"
+			}
+		},
+		"gemma4-26b-instruct": {
+			"profileLabel": "Gemma 4 26B Instruct",
+			"family": "gemma4",
+			"parametersBillions": 26,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "gemma4:26b"
+			}
+		},
+		"gemma4-31b-instruct": {
+			"profileLabel": "Gemma 4 31B Instruct",
+			"family": "gemma4",
+			"parametersBillions": 31,
+			"tuning": "instruct",
+			"variants": {
+				"ollama": "gemma4:31b"
+			}
+		},
+		"gpt-oss-20b": {
+			"profileLabel": "GPT OSS 20B",
+			"family": "gpt-oss",
+			"parametersBillions": 20,
+			"variants": {
+				"ollama": "gpt-oss:20b"
 			}
 		}
 	}

@@ -39,6 +39,26 @@ describe("parseInlineModelProfile", () => {
 });
 
 describe("model-profile registry provenance", () => {
+	it("loads the checked-in machine model profiles for current Ollama models", () => {
+		const registry = loadModelProfiles("models.json");
+
+		expect(Object.keys(registry).sort()).toEqual([
+			"gemma4-26b-instruct",
+			"gemma4-2b-instruct",
+			"gemma4-31b-instruct",
+			"gemma4-4b-instruct",
+			"gpt-oss-20b",
+			"qwen3.5-27b-instruct",
+			"qwen3.5-35b-instruct",
+			"qwen3.6-27b-instruct",
+			"qwen3.6-35b-instruct",
+		]);
+		expect(registry["qwen3.6-35b-instruct"]?.variants.ollama).toBe(
+			"qwen3.6:35b",
+		);
+		expect(registry["gemma4-4b-instruct"]?.variants.ollama).toBe("gemma4:e4b");
+	});
+
 	it("marks legacy alias-derived selections explicitly", () => {
 		const tempDir = fs.mkdtempSync(
 			path.join(os.tmpdir(), "plebdev-bench-model-profiles-"),
