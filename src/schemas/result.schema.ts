@@ -17,6 +17,7 @@ import {
 	MachineProfileSchema,
 	PassTypeSchema,
 	RunProvenanceSchema,
+	RuntimeEnvironmentSchema,
 	SCHEMA_VERSION,
 	ScoringFailureTypeSchema,
 	SignalAssessmentSchema,
@@ -288,6 +289,9 @@ export const RunResultSchema = z.object({
 
 	/** Provenance metadata for this run. */
 	provenance: RunProvenanceSchema.optional(),
+
+	/** Runtime Environment software provenance snapshot. */
+	runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
 
 	/** ISO 8601 timestamp when run started. */
 	startedAt: z.string().datetime(),

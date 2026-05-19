@@ -10,7 +10,7 @@ export const summary = {
 	passRate:
 		"Percentage of automated tests passed across all items. Green >= 80%, yellow >= 50%, red < 50%.",
 	frontierEval:
-		"Average score from frontier AI evaluation (0-10 scale). A frontier model grades code quality.",
+		"Optional qualitative evidence from Frontier Eval (0-10 scale), with Frontier Eval Model provenance.",
 	environment:
 		"Machine/runtime metadata for this run (machine profile, platform, Bun version, checkpoint).",
 } as const;
@@ -27,7 +27,7 @@ export const matrix = {
 	pass: "Prompt type: blind (no hints) or informed (includes guidance and examples).",
 	tests:
 		"Automated test results: passed/total. Shows how many spec tests the generated code passed.",
-	eval: "Frontier evaluation score (0-10). A frontier model grades the generated code for correctness and quality.",
+	eval: "Optional Frontier Eval evidence (0-10) from the Frontier Eval Model judging generated code quality.",
 	time: "Generation duration - how long the model took to produce the output.",
 } as const;
 
@@ -106,7 +106,8 @@ export const composite = {
 		"Weighted composite score for ranking. Balances pass rate, completion, and tool usage.",
 	passRate: "Percentage of tests passed.",
 	toolSuccess: "Percentage of items with correct tool usage.",
-	frontier: "Frontier evaluation score (scaled to 100% for comparison).",
+	frontier:
+		"Optional Frontier Eval evidence, scaled to 100% for visual comparison only.",
 } as const;
 
 /** Blind vs Informed chart explanations */
@@ -151,7 +152,7 @@ export const itemDetail = {
 	automatedTests:
 		"Results from running the test specification against generated code.",
 	frontierEval:
-		"Evaluation by a frontier AI model scoring code quality and correctness.",
+		"Optional Frontier Eval evidence from the Frontier Eval Model, shown with reasoning and not used for default ranking.",
 	failures:
 		"Any errors that occurred during generation, scoring, or evaluation.",
 } as const;

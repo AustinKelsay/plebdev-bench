@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SCHEMA_VERSION } from "../src/schemas/index.js";
+import { type BenchConfig, SCHEMA_VERSION } from "../src/schemas/index.js";
 import {
 	createWorkspaceCapabilityCatalog,
 	fallbackCollectMachineProfile,
@@ -93,6 +93,27 @@ function createRuntimeStub(overrides: Record<string, unknown> = {}) {
 	};
 }
 
+function createBenchConfig(overrides: Partial<BenchConfig> = {}): BenchConfig {
+	return {
+		schemaVersion: SCHEMA_VERSION,
+		runtimes: ["ollama"],
+		models: ["qwen3.5:4b"],
+		harnesses: ["direct"],
+		tests: [],
+		categories: [],
+		passTypes: ["blind"],
+		ollamaBaseUrl: "http://localhost:11434",
+		generateTimeoutMs: 300_000,
+		gooseMaxTurns: 1,
+		gooseRetryMaxTurns: 3,
+		gooseWorkspaceMaxTurns: 8,
+		gooseWorkspaceRetryMaxTurns: 12,
+		outputDir: "results",
+		modelProfiles: {},
+		...overrides,
+	};
+}
+
 describe("buildRunPlan", () => {
 	afterEach(() => {
 		collectMachineProfileMock.mockReset();
@@ -165,23 +186,12 @@ describe("buildRunPlan", () => {
 		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
 
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
-		const plan = await buildRunPlan({
-			schemaVersion: SCHEMA_VERSION,
-			runtimes: ["ollama"],
-			models: ["qwen3.5:4b"],
-			harnesses: ["direct", "goose", "opencode"],
-			tests: [],
-			categories: [],
-			passTypes: ["blind", "informed"],
-			ollamaBaseUrl: "http://localhost:11434",
-			generateTimeoutMs: 300_000,
-			gooseMaxTurns: 1,
-			gooseRetryMaxTurns: 3,
-			gooseWorkspaceMaxTurns: 8,
-			gooseWorkspaceRetryMaxTurns: 12,
-			outputDir: "results",
-			modelProfiles: {},
-		});
+		const plan = await buildRunPlan(
+			createBenchConfig({
+				harnesses: ["direct", "goose", "opencode"],
+				passTypes: ["blind", "informed"],
+			}),
+		);
 
 		const rows = plan.items.map((item) => ({
 			harness: item.harness,
@@ -221,6 +231,27 @@ describe("buildRunPlan", () => {
 					row.harness === "direct" && row.test === "workspace-tool-smoke",
 			),
 		).toBe(false);
+		expect(plan.combinationExclusions).toContainEqual({
+			runtime: "ollama",
+			harness: "direct",
+			model: "qwen3.5:4b",
+			test: "workspace-tool-smoke",
+			reason: "missing_tool_harness",
+			requiredHarnessCapabilities: ["workspace-read", "workspace-write"],
+		});
+		expect(plan.combinationExclusions).toContainEqual({
+			runtime: "ollama",
+			harness: "goose",
+			model: "qwen3.5:4b",
+			test: "file-search-smoke",
+			reason: "missing_harness_capability",
+			requiredHarnessCapabilities: [
+				"workspace-read",
+				"workspace-write",
+				"workspace-mkdir",
+				"workspace-search",
+			],
+		});
 
 		expect(
 			rows.filter((row) => row.test === "workspace-tool-smoke"),
@@ -259,33 +290,22 @@ describe("buildRunPlan", () => {
 		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
 
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
-		const plan = await buildRunPlan({
-			schemaVersion: SCHEMA_VERSION,
-			runtimes: ["ollama"],
-			models: ["qwen3-27b-instruct"],
-			harnesses: ["direct"],
-			tests: [],
-			categories: [],
-			passTypes: ["blind"],
-			ollamaBaseUrl: "http://localhost:11434",
-			generateTimeoutMs: 300_000,
-			gooseMaxTurns: 1,
-			gooseRetryMaxTurns: 3,
-			gooseWorkspaceMaxTurns: 8,
-			gooseWorkspaceRetryMaxTurns: 12,
-			outputDir: "results",
-			modelProfiles: {
-				"qwen3-27b-instruct": {
-					profileLabel: "Qwen 3 27B Instruct",
-					family: "qwen3",
-					parametersBillions: 27,
-					tuning: "instruct",
-					variants: {
-						ollama: "qwen3:27b",
+		const plan = await buildRunPlan(
+			createBenchConfig({
+				models: ["qwen3-27b-instruct"],
+				modelProfiles: {
+					"qwen3-27b-instruct": {
+						profileLabel: "Qwen 3 27B Instruct",
+						family: "qwen3",
+						parametersBillions: 27,
+						tuning: "instruct",
+						variants: {
+							ollama: "qwen3:27b",
+						},
 					},
 				},
-			},
-		});
+			}),
+		);
 
 		expect(plan.summary.models).toBe(1);
 		expect(plan.items).toHaveLength(1);
@@ -319,33 +339,22 @@ describe("buildRunPlan", () => {
 		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
 
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
-		const plan = await buildRunPlan({
-			schemaVersion: SCHEMA_VERSION,
-			runtimes: ["ollama"],
-			models: ["qwen3-27b-instruct", "qwen3:27b"],
-			harnesses: ["direct"],
-			tests: [],
-			categories: [],
-			passTypes: ["blind"],
-			ollamaBaseUrl: "http://localhost:11434",
-			generateTimeoutMs: 300_000,
-			gooseMaxTurns: 1,
-			gooseRetryMaxTurns: 3,
-			gooseWorkspaceMaxTurns: 8,
-			gooseWorkspaceRetryMaxTurns: 12,
-			outputDir: "results",
-			modelProfiles: {
-				"qwen3-27b-instruct": {
-					profileLabel: "Qwen 3 27B Instruct",
-					family: "qwen3",
-					parametersBillions: 27,
-					tuning: "instruct",
-					variants: {
-						ollama: "qwen3:27b",
+		const plan = await buildRunPlan(
+			createBenchConfig({
+				models: ["qwen3-27b-instruct", "qwen3:27b"],
+				modelProfiles: {
+					"qwen3-27b-instruct": {
+						profileLabel: "Qwen 3 27B Instruct",
+						family: "qwen3",
+						parametersBillions: 27,
+						tuning: "instruct",
+						variants: {
+							ollama: "qwen3:27b",
+						},
 					},
 				},
-			},
-		});
+			}),
+		);
 
 		expect(plan.items).toHaveLength(1);
 		expect(plan.items[0]?.model).toBe("qwen3:27b");
@@ -371,31 +380,20 @@ describe("buildRunPlan", () => {
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 
 		await expect(
-			buildRunPlan({
-				schemaVersion: SCHEMA_VERSION,
-				runtimes: ["ollama"],
-				models: ["qwen3-27b-instruct"],
-				harnesses: ["direct"],
-				tests: [],
-				categories: [],
-				passTypes: ["blind"],
-				ollamaBaseUrl: "http://localhost:11434",
-				generateTimeoutMs: 300_000,
-				gooseMaxTurns: 1,
-				gooseRetryMaxTurns: 3,
-				gooseWorkspaceMaxTurns: 8,
-				gooseWorkspaceRetryMaxTurns: 12,
-				outputDir: "results",
-				modelProfiles: {
-					"qwen3-27b-instruct": {
-						profileLabel: "Qwen 3 27B Instruct",
-						family: "qwen3",
-						parametersBillions: 27,
-						tuning: "instruct",
-						variants: {},
+			buildRunPlan(
+				createBenchConfig({
+					models: ["qwen3-27b-instruct"],
+					modelProfiles: {
+						"qwen3-27b-instruct": {
+							profileLabel: "Qwen 3 27B Instruct",
+							family: "qwen3",
+							parametersBillions: 27,
+							tuning: "instruct",
+							variants: {},
+						},
 					},
-				},
-			}),
+				}),
+			),
 		).rejects.toThrow(
 			'Configured model profile "qwen3-27b-instruct" does not define a variant for runtime "ollama"',
 		);
@@ -426,23 +424,11 @@ describe("buildRunPlan", () => {
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 
 		await expect(
-			buildRunPlan({
-				schemaVersion: SCHEMA_VERSION,
-				runtimes: ["ollama"],
-				models: ["missing-model"],
-				harnesses: ["direct"],
-				tests: [],
-				categories: [],
-				passTypes: ["blind"],
-				ollamaBaseUrl: "http://localhost:11434",
-				generateTimeoutMs: 300_000,
-				gooseMaxTurns: 1,
-				gooseRetryMaxTurns: 3,
-				gooseWorkspaceMaxTurns: 8,
-				gooseWorkspaceRetryMaxTurns: 12,
-				outputDir: "results",
-				modelProfiles: {},
-			}),
+			buildRunPlan(
+				createBenchConfig({
+					models: ["missing-model"],
+				}),
+			),
 		).rejects.toThrow("Requested model selectors not found: missing-model");
 	});
 
@@ -462,23 +448,12 @@ describe("buildRunPlan", () => {
 		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 		await expect(
-			buildRunPlan({
-				schemaVersion: SCHEMA_VERSION,
-				runtimes: ["ollama"],
-				models: [],
-				harnesses: [],
-				tests: [],
-				categories: [],
-				passTypes: ["blind"],
-				ollamaBaseUrl: "http://localhost:11434",
-				generateTimeoutMs: 300_000,
-				gooseMaxTurns: 1,
-				gooseRetryMaxTurns: 3,
-				gooseWorkspaceMaxTurns: 8,
-				gooseWorkspaceRetryMaxTurns: 12,
-				outputDir: "results",
-				modelProfiles: {},
-			}),
+			buildRunPlan(
+				createBenchConfig({
+					models: [],
+					harnesses: [],
+				}),
+			),
 		).rejects.toThrow("Models were discovered but all were excluded");
 	});
 
@@ -495,23 +470,12 @@ describe("buildRunPlan", () => {
 		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
 
 		await expect(
-			buildRunPlan({
-				schemaVersion: SCHEMA_VERSION,
-				runtimes: ["ollama"],
-				models: [],
-				harnesses: [],
-				tests: [],
-				categories: [],
-				passTypes: ["blind"],
-				ollamaBaseUrl: "http://localhost:11434",
-				generateTimeoutMs: 300_000,
-				gooseMaxTurns: 1,
-				gooseRetryMaxTurns: 3,
-				gooseWorkspaceMaxTurns: 8,
-				gooseWorkspaceRetryMaxTurns: 12,
-				outputDir: "results",
-				modelProfiles: {},
-			}),
+			buildRunPlan(
+				createBenchConfig({
+					models: [],
+					harnesses: [],
+				}),
+			),
 		).rejects.toThrow(/Ollama is not reachable/);
 	});
 });

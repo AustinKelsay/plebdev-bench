@@ -97,6 +97,7 @@ export function compareRuns(
 	}
 
 	const onlyInA = Array.from(mapA.values());
+	const comparisonSpaceItems = matched.length + onlyInA.length + onlyInB.length;
 
 	let improved = 0;
 	let regressed = 0;
@@ -150,6 +151,13 @@ export function compareRuns(
 			totalMatched: matched.length,
 			totalOnlyInA: onlyInA.length,
 			totalOnlyInB: onlyInB.length,
+			coverage: {
+				comparisonSpaceItems,
+				matchedItems: matched.length,
+				unmatchedItems: onlyInA.length + onlyInB.length,
+				matchedCoverageRate:
+					comparisonSpaceItems > 0 ? matched.length / comparisonSpaceItems : 0,
+			},
 			statusChanges: { improved, regressed },
 			scoringDelta,
 			frontierEvalDelta,

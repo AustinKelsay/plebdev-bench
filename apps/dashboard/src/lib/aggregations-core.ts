@@ -57,18 +57,31 @@ export function computeItemPassRate(score: AutomatedScore | undefined): number {
 }
 
 /**
- * Groups items by model name.
+ * Returns the default dashboard grouping identity for a model row.
+ *
+ * @param item - Matrix item
+ * @returns Canonical Model Profile label, alias, or runtime model name
+ */
+export function getModelProfileGroupName(item: MatrixItemResult): string {
+	return (
+		item.modelProfile?.canonical.profileLabel ?? item.modelAlias ?? item.model
+	);
+}
+
+/**
+ * Groups items by Model Profile display identity.
  *
  * @param items - Matrix items
- * @returns Map keyed by model string
+ * @returns Map keyed by Model Profile label or runtime-model fallback
  */
 export function groupByModel(
 	items: MatrixItemResult[],
 ): Map<string, MatrixItemResult[]> {
 	return items.reduce((map, item) => {
-		const group = map.get(item.model) || [];
+		const key = getModelProfileGroupName(item);
+		const group = map.get(key) || [];
 		group.push(item);
-		map.set(item.model, group);
+		map.set(key, group);
 		return map;
 	}, new Map<string, MatrixItemResult[]>());
 }

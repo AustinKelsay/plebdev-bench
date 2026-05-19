@@ -55,7 +55,7 @@ export function LeaderboardChartGallery({
 			</div>
 
 			{/* 1. Composite Score — primary ranking: which model is best */}
-			<CompositeScoreChart items={items} />
+			<CompositeScoreChart items={items} completionScope="comparison-space" />
 
 			{/* 2. Test Type Split — category specialization view */}
 			<TestTypeSplitChart items={items} />

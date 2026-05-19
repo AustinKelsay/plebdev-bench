@@ -145,6 +145,11 @@ export type CompositeExpectedTotals =
 	| Map<string, number>
 	| Record<string, number>;
 
+/** Groups dashboard items for composite metric rows. */
+export type CompositeGroupFn = (
+	items: MatrixItemResult[],
+) => Map<string, MatrixItemResult[]>;
+
 /** Composite metric computation options. */
 export interface CompositeMetricsOptions {
 	expectedTotals?: CompositeExpectedTotals;
@@ -189,6 +194,26 @@ function resolveExpectedTotal(
 }
 
 /**
+ * Computes expected group totals from the active leaderboard Comparison Space.
+ *
+ * @param items - Items already filtered to the active Comparison Space
+ * @param groupFn - Grouping function used by a composite leaderboard tab
+ * @returns Map from group name to expected item count for completion coverage
+ */
+export function computeComparisonSpaceExpectedTotals(
+	items: MatrixItemResult[],
+	groupFn: CompositeGroupFn,
+): Map<string, number> {
+	const groups = groupFn(items);
+	const expectedTotal = Math.max(
+		0,
+		...[...groups.values()].map((g) => g.length),
+	);
+
+	return new Map([...groups.keys()].map((name) => [name, expectedTotal]));
+}
+
+/**
  * Computes composite metrics for grouped items and sorts by effectiveScore.
  *
  * Weights:
@@ -204,7 +229,7 @@ function resolveExpectedTotal(
  */
 export function computeCompositeMetrics(
 	items: MatrixItemResult[],
-	groupFn: (items: MatrixItemResult[]) => Map<string, MatrixItemResult[]>,
+	groupFn: CompositeGroupFn,
 	toolHarnesses: Set<string> = inferToolHarnesses(items),
 	options: CompositeMetricsOptions = {},
 ): CompositeMetrics[] {

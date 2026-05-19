@@ -25,10 +25,8 @@ export type {
 /** Current Schema Version for all Run Plan and Run Result files. */
 export const SCHEMA_VERSION = "0.5.3";
 
-/** Valid pass types for benchmark runs. */
 export const passTypes = ["blind", "informed"] as const;
 
-/** Zod schema for pass types. */
 export const PassTypeSchema = z.enum(passTypes);
 
 /** Pass type: 'blind' (no hints) or 'informed' (with context). */
@@ -81,7 +79,6 @@ export const ItemStatusSchema = z.enum(itemStatusTypes);
 /** Status of a matrix item during/after execution. */
 export type ItemStatus = z.infer<typeof ItemStatusSchema>;
 
-/** Valid generation failure types. */
 export const generationFailureTypes = [
 	"timeout",
 	"api_error",
@@ -91,7 +88,6 @@ export const generationFailureTypes = [
 	"unknown",
 ] as const;
 
-/** Zod schema for generation failure types. */
 export const GenerationFailureTypeSchema = z.enum(generationFailureTypes);
 
 /** Generation failure type. */
@@ -247,13 +243,21 @@ export const BenchmarkCheckpointSchema = z.object({
 /** Benchmark checkpoint identity metadata. */
 export type BenchmarkCheckpoint = z.infer<typeof BenchmarkCheckpointSchema>;
 
+export const RuntimeToolVersionSchema = z.object({
+	status: z.union([z.literal("detected"), z.literal("unavailable")]),
+	version: z.string().min(1).optional(),
+	detail: z.string().min(1).optional(),
+});
+
+export type RuntimeToolVersion = z.infer<typeof RuntimeToolVersionSchema>;
+
 /** Zod schema for runtime environment metadata. */
 export const RuntimeEnvironmentSchema = z.object({
-	/** Runtime platform name (e.g., darwin, linux). */
 	platform: z.string().min(1),
 
-	/** Bun version used by the runner. */
 	bunVersion: z.string().min(1),
+
+	toolVersions: z.record(RuntimeToolVersionSchema).optional(),
 });
 
 /** Runtime environment metadata. */

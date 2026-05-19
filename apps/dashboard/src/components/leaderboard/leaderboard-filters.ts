@@ -2,6 +2,7 @@
  * Purpose: Shared filter state and selectors for leaderboard aggregation views.
  * Exports: ALL_FILTER_VALUE, FilterState, MachineFilterOption,
  *          createDefaultFilterState, uniqueValues, buildMachineFilterOptions,
+ *          buildModelVariantFilterOptions, buildModelQuantizationFilterOptions,
  *          filterItems
  *
  * Invariants:
@@ -18,6 +19,8 @@ export const ALL_FILTER_VALUE = "all";
 export interface FilterState {
 	machine: string;
 	models: string[];
+	modelVariant: string;
+	modelQuantization: string;
 	runtime: string;
 	harness: string;
 	passType: string;
@@ -31,6 +34,12 @@ export interface MachineFilterOption {
 	label: string;
 }
 
+/** Generic dropdown option resolved from aggregate items. */
+export interface LeaderboardFilterOption {
+	value: string;
+	label: string;
+}
+
 /**
  * Returns default filter values for leaderboard controls.
  *
@@ -40,6 +49,8 @@ export function createDefaultFilterState(): FilterState {
 	return {
 		machine: ALL_FILTER_VALUE,
 		models: [],
+		modelVariant: ALL_FILTER_VALUE,
+		modelQuantization: ALL_FILTER_VALUE,
 		runtime: ALL_FILTER_VALUE,
 		harness: ALL_FILTER_VALUE,
 		passType: ALL_FILTER_VALUE,
@@ -60,6 +71,98 @@ export function uniqueValues(
 	selector: (item: LeaderboardAggregatedItem) => string,
 ): string[] {
 	return [...new Set(items.map(selector))].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Returns the display identity used for default Model Profile grouping.
+ *
+ * @param item - Aggregated leaderboard item
+ * @returns Canonical Model Profile label, alias, or runtime model name
+ */
+export function getModelProfileDisplayName(
+	item: LeaderboardAggregatedItem,
+): string {
+	return (
+		item.modelProfile?.canonical.profileLabel ?? item.modelAlias ?? item.model
+	);
+}
+
+/**
+ * Returns the stable filter value for a row's Model Variant.
+ *
+ * @param item - Aggregated leaderboard item
+ * @returns Variant key when available, otherwise runtime model name
+ */
+export function getModelVariantFilterValue(
+	item: LeaderboardAggregatedItem,
+): string {
+	return item.modelProfile?.variant.variantKey ?? item.model;
+}
+
+/**
+ * Returns the display label for a row's Model Variant.
+ *
+ * @param item - Aggregated leaderboard item
+ * @returns Variant label with runtime model fallback
+ */
+export function getModelVariantFilterLabel(
+	item: LeaderboardAggregatedItem,
+): string {
+	return item.modelProfile?.variant.variantLabel ?? item.model;
+}
+
+/**
+ * Returns the quantization filter value for a row's Model Variant.
+ *
+ * @param item - Aggregated leaderboard item
+ * @returns Quantization label or explicit unspecified sentinel
+ */
+export function getModelQuantizationFilterValue(
+	item: LeaderboardAggregatedItem,
+): string {
+	return item.modelProfile?.variant.quantization ?? "unspecified";
+}
+
+/**
+ * Builds Model Variant options keyed by stable variant identity.
+ *
+ * @param items - Aggregated leaderboard items
+ * @returns Variant options for filter dropdowns
+ */
+export function buildModelVariantFilterOptions(
+	items: LeaderboardAggregatedItem[],
+): LeaderboardFilterOption[] {
+	const optionMap = new Map<string, string>();
+	for (const item of items) {
+		const value = getModelVariantFilterValue(item);
+		const label = getModelVariantFilterLabel(item);
+		if (!optionMap.has(value)) {
+			optionMap.set(value, label);
+		}
+	}
+
+	return [...optionMap.entries()]
+		.map(([value, label]) => ({ value, label }))
+		.sort((a, b) =>
+			a.label === b.label
+				? a.value.localeCompare(b.value)
+				: a.label.localeCompare(b.label),
+		);
+}
+
+/**
+ * Builds Model Variant quantization options.
+ *
+ * @param items - Aggregated leaderboard items
+ * @returns Quantization options for filter dropdowns
+ */
+export function buildModelQuantizationFilterOptions(
+	items: LeaderboardAggregatedItem[],
+): LeaderboardFilterOption[] {
+	return uniqueValues(items, getModelQuantizationFilterValue).map((value) => ({
+		value,
+		label: value === "unspecified" ? "Unspecified" : value,
+	}));
 }
 
 /**
@@ -128,6 +231,18 @@ export function filterItems(
 			if (item.machineProfileKey !== filters.machine) return false;
 		}
 		if (filters.models.length > 0 && !filters.models.includes(item.model)) {
+			return false;
+		}
+		if (
+			filters.modelVariant !== ALL_FILTER_VALUE &&
+			getModelVariantFilterValue(item) !== filters.modelVariant
+		) {
+			return false;
+		}
+		if (
+			filters.modelQuantization !== ALL_FILTER_VALUE &&
+			getModelQuantizationFilterValue(item) !== filters.modelQuantization
+		) {
 			return false;
 		}
 		if (

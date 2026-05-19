@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+	computeComparisonSpaceExpectedTotals,
 	computeCompositeMetrics,
 	groupByModel,
 } from "../apps/dashboard/src/lib/aggregations.js";
@@ -63,5 +64,33 @@ describe("computeCompositeMetrics", () => {
 		expect(metrics[0]?.totalItems).toBe(4);
 		expect(metrics[0]?.completionRate).toBe(0.25);
 		expect(metrics[0]?.effectiveScore).toBe(0.775);
+	});
+
+	it("derives expected totals from the active Comparison Space", () => {
+		const comparisonSpaceItems = [
+			createCompletedItem("01", "complete-model"),
+			createCompletedItem("02", "complete-model"),
+			createCompletedItem("03", "complete-model"),
+			createCompletedItem("04", "complete-model"),
+			createCompletedItem("05", "partial-model"),
+		];
+
+		const expectedTotals = computeComparisonSpaceExpectedTotals(
+			comparisonSpaceItems,
+			groupByModel,
+		);
+		const metrics = computeCompositeMetrics(
+			comparisonSpaceItems,
+			groupByModel,
+			new Set(),
+			{ expectedTotals },
+		);
+
+		const partial = metrics.find((metric) => metric.name === "partial-model");
+
+		expect(expectedTotals.get("partial-model")).toBe(4);
+		expect(partial?.completedItems).toBe(1);
+		expect(partial?.totalItems).toBe(4);
+		expect(partial?.completionRate).toBe(0.25);
 	});
 });

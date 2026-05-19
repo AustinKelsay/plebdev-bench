@@ -243,9 +243,17 @@ const BenchmarkCheckpointSchema = z.object({
 });
 
 /** Runtime environment schema. */
+const RuntimeToolVersionSchema = z.object({
+	status: z.enum(["detected", "unavailable"]),
+	version: z.string().optional(),
+	detail: z.string().optional(),
+});
+
+/** Runtime environment schema. */
 const RuntimeEnvironmentSchema = z.object({
 	platform: z.string(),
 	bunVersion: z.string(),
+	toolVersions: z.record(RuntimeToolVersionSchema).optional(),
 });
 
 /** Observed accelerator kind schema. */
@@ -440,6 +448,7 @@ export const RunResultSchema = z.object({
 	machine: MachineProfileSchema.optional(),
 	benchmarkCheckpoint: BenchmarkCheckpointSchema.optional(),
 	provenance: RunProvenanceSchema.optional(),
+	runtimeEnvironment: RuntimeEnvironmentSchema.optional(),
 	startedAt: z.string(),
 	completedAt: z.string(),
 	durationMs: z.number(),

@@ -27,6 +27,7 @@ Outputs (per **Benchmark Run**):
 - each persisted file declares its **Schema Version** and now includes:
   - **Benchmark Checkpoint** metadata (`checkpointId`, manifest identifier, asset count)
   - **Machine Instance** identity + canonical **Machine Profile** metadata
+  - **Runtime Environment** metadata (`platform`, `bunVersion`, optional tool-version probes)
   - run provenance metadata (`verificationStatus`, source)
 - **Benchmark Checkpoint** identity changes when benchmark meaning changes: **Benchmark Prompts**, **Benchmark Fixtures**, **Scoring Specs**, **Eval Rubrics**, **Benchmark Metadata**, or execution/scoring semantics such as harnesses, runtimes, runner behavior, extraction, workspace scoring, retry behavior, and signal assessment.
 
@@ -256,6 +257,11 @@ Machine metadata now splits:
 - `machine.instanceId` — stable **Machine Instance** identity, never derived from hardware
 - `machine.profileKey` — canonical **Machine Profile** used for aggregation
 - `machine.observedHardware` — exact sanitized hardware facts retained for audit/debug
+
+Runtime environment metadata now includes:
+- `runtimeEnvironment.platform` — OS platform observed by the runner
+- `runtimeEnvironment.bunVersion` — Bun version used to execute the run
+- `runtimeEnvironment.toolVersions` — optional per-tool `detected` or `unavailable` version probes for active runtimes and CLIs
 
 Model metadata now splits:
 - `item.model` — exact **Runtime Model** identifier used for generation

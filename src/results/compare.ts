@@ -2,9 +2,7 @@
  * Purpose: Compare two benchmark runs and compute deltas.
  * Exports: compareRuns, CompareResult, MatchedItem
  *
- * Performs an outer join on matrix items by composite key:
- * canonicalModel|runtime|harness|test|passType
- *
+ * Performs an outer join on matrix items by composite key.
  * Outputs:
  * - Matched items with deltas
  * - Items only in run A
@@ -23,7 +21,6 @@ import {
 	isTaintedItem,
 } from "../lib/signal-assessment.js";
 
-/** Composite key for matching items between runs. */
 function buildCompareKey(item: {
 	model: string;
 	runtime: string;
@@ -42,35 +39,24 @@ function buildCompareKey(item: {
 	return `${modelKey}|${item.runtime}|${runtimeVariantKey}|${item.harness}|${item.test}|${item.passType}`;
 }
 
-/** Delta for automated score. */
 export interface ScoreDelta {
 	passedDelta: number;
 	failedDelta: number;
 	totalDelta: number;
-	passRateDelta: number; // Percentage points
+	passRateDelta: number;
 }
 
-/** Delta for frontier eval. */
 export interface EvalDelta {
 	scoreDelta: number;
 }
 
-/** Deltas for a matched item. */
 export interface ItemDeltas {
-	/** Status change (null if same). */
 	status: { a: string; b: string } | null;
-
-	/** Automated score delta (null if neither has score). */
 	automatedScore: ScoreDelta | null;
-
-	/** Frontier eval delta (null if neither has eval). */
 	frontierEval: EvalDelta | null;
-
-	/** Duration delta in ms (b - a, null if missing). */
 	durationMs: number | null;
 }
 
-/** A matched item with its deltas. */
 export interface MatchedItem {
 	key: string;
 	model: string;
@@ -82,17 +68,22 @@ export interface MatchedItem {
 	deltas: ItemDeltas;
 }
 
-/** Summary statistics for comparison. */
 export interface CompareSummary {
 	totalMatched: number;
 	totalOnlyInA: number;
 	totalOnlyInB: number;
+	coverage: {
+		comparisonSpaceItems: number;
+		matchedItems: number;
+		unmatchedItems: number;
+		matchedCoverageRate: number;
+	};
 	statusChanges: {
-		improved: number; // failed -> completed
-		regressed: number; // completed -> failed
+		improved: number;
+		regressed: number;
 	};
 	scoringDelta: {
-		passRateDelta: number; // Overall pass rate change
+		passRateDelta: number;
 		totalTestsDelta: number;
 	} | null;
 	trustedScoringDelta: {
@@ -124,7 +115,6 @@ export interface CompareSummary {
 	};
 }
 
-/** Complete comparison result. */
 export interface CompareResult {
 	runA: {
 		runId: string;
@@ -140,22 +130,17 @@ export interface CompareResult {
 	onlyInB: MatrixItemResult[];
 }
 
-/** Aggregate scoring totals across matched items. */
 interface AggregateScoring {
 	passedTests: number;
 	totalTests: number;
 	passRate: number;
 }
 
-/** Aggregate frontier totals across matched items. */
 interface AggregateFrontier {
 	avgScore: number;
 	itemCount: number;
 }
 
-/**
- * Calculates pass rate as a percentage.
- */
 function calculatePassRate(score: AutomatedScore | undefined): number | null {
 	if (!score || score.total === 0) return null;
 	return (score.passed / score.total) * 100;
@@ -220,15 +205,10 @@ function computeAggregateFrontier(
 	};
 }
 
-/**
- * Computes deltas between two matched items.
- */
 function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
-	// Status change
 	const statusChanged = a.status !== b.status;
 	const status = statusChanged ? { a: a.status, b: b.status } : null;
 
-	// Automated score delta
 	let automatedScore: ScoreDelta | null = null;
 	if (a.automatedScore && b.automatedScore) {
 		const scoreA = a.automatedScore;
@@ -244,7 +224,6 @@ function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
 		};
 	}
 
-	// Frontier eval delta
 	let frontierEval: EvalDelta | null = null;
 	if (a.frontierEval && b.frontierEval) {
 		const scoreA = a.frontierEval.score;
@@ -254,7 +233,6 @@ function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
 		};
 	}
 
-	// Duration delta
 	let durationMs: number | null = null;
 	const durA = a.generation?.durationMs;
 	const durB = b.generation?.durationMs;
@@ -265,9 +243,6 @@ function computeDeltas(a: MatrixItemResult, b: MatrixItemResult): ItemDeltas {
 	return { status, automatedScore, frontierEval, durationMs };
 }
 
-/**
- * Computes summary statistics from matched items.
- */
 function computeSummary(
 	matched: MatchedItem[],
 	onlyInA: MatrixItemResult[],
@@ -275,7 +250,6 @@ function computeSummary(
 	runAItems: MatrixItemResult[],
 	runBItems: MatrixItemResult[],
 ): CompareSummary {
-	// Count status changes
 	let improved = 0;
 	let regressed = 0;
 	for (const m of matched) {
@@ -288,7 +262,6 @@ function computeSummary(
 		}
 	}
 
-	// Overall scoring delta
 	let scoringDelta: CompareSummary["scoringDelta"] = null;
 	let trustedScoringDelta: CompareSummary["trustedScoringDelta"] = null;
 	const matchedWithScoring = matched.filter(
@@ -310,7 +283,6 @@ function computeSummary(
 		};
 	}
 
-	// Overall frontier eval delta
 	let frontierEvalDelta: CompareSummary["frontierEvalDelta"] = null;
 	let trustedFrontierEvalDelta: CompareSummary["trustedFrontierEvalDelta"] = null;
 	const matchedWithFrontierEval = matched.filter(
@@ -385,6 +357,15 @@ function computeSummary(
 		totalMatched: matched.length,
 		totalOnlyInA: onlyInA.length,
 		totalOnlyInB: onlyInB.length,
+		coverage: {
+			comparisonSpaceItems: matched.length + onlyInA.length + onlyInB.length,
+			matchedItems: matched.length,
+			unmatchedItems: onlyInA.length + onlyInB.length,
+			matchedCoverageRate:
+				matched.length + onlyInA.length + onlyInB.length > 0
+					? matched.length / (matched.length + onlyInA.length + onlyInB.length)
+					: 0,
+		},
 		statusChanges: { improved, regressed },
 		scoringDelta,
 		trustedScoringDelta,
@@ -437,15 +418,8 @@ function computeSummary(
  * @param resultB - Second run result (comparison)
  * @returns Comparison result with deltas
  *
- * @example
- * ```typescript
- * const comparison = compareRuns(runA, runB);
- * console.log(`Matched: ${comparison.summary.totalMatched}`);
- * console.log(`Pass rate delta: ${comparison.summary.scoringDelta?.passRateDelta}%`);
- * ```
  */
 export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResult {
-	// Build maps by composite key
 	const mapA = new Map<string, MatrixItemResult>();
 	const mapB = new Map<string, MatrixItemResult>();
 
@@ -465,12 +439,10 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 		mapB.set(key, item);
 	}
 
-	// Find matched items
 	const matched: MatchedItem[] = [];
 	const onlyInA: MatrixItemResult[] = [];
 	const onlyInB: MatrixItemResult[] = [];
 
-	// Process items in A
 	for (const [key, itemA] of mapA) {
 		const itemB = mapB.get(key);
 		if (itemB) {
@@ -492,19 +464,16 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 		}
 	}
 
-	// Find items only in B
 	for (const [key, itemB] of mapB) {
 		if (!mapA.has(key)) {
 			onlyInB.push(itemB);
 		}
 	}
 
-	// Sort matched by key for deterministic output
 	matched.sort((a, b) => a.key.localeCompare(b.key));
 	onlyInA.sort((a, b) => buildCompareKey(a).localeCompare(buildCompareKey(b)));
 	onlyInB.sort((a, b) => buildCompareKey(a).localeCompare(buildCompareKey(b)));
 
-	// Compute summary
 	const summary = computeSummary(
 		matched,
 		onlyInA,
@@ -527,22 +496,4 @@ export function compareRuns(resultA: RunResult, resultB: RunResult): CompareResu
 		onlyInA,
 		onlyInB,
 	};
-}
-
-/**
- * Formats a delta value with sign and color hint.
- *
- * @param value - Delta value
- * @param suffix - Optional suffix (e.g., "%", "ms")
- * @param invert - If true, negative is good (e.g., for duration)
- * @returns Formatted string with delta symbol
- */
-export function formatDelta(
-	value: number,
-	suffix = "",
-	invert = false,
-): string {
-	const sign = value > 0 ? "+" : "";
-	const formatted = `${sign}${value.toFixed(1)}${suffix}`;
-	return `Δ ${formatted}`;
 }

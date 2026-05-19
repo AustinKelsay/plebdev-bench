@@ -27,6 +27,12 @@ import { ModelProfileSchema } from "./model-profile.schema.js";
 /** Model Exclusion reason codes emitted during plan construction. */
 const ModelExclusionReasonSchema = z.literal("non_generative_model");
 
+/** Combination Exclusion reason codes emitted during matrix expansion. */
+const CombinationExclusionReasonSchema = z.union([
+	z.literal("missing_tool_harness"),
+	z.literal("missing_harness_capability"),
+]);
+
 /** Evidence captured when a discovered Runtime Model is excluded. */
 const ModelExclusionEvidenceSchema = z
 	.object({
@@ -53,6 +59,30 @@ export const ModelExclusionSchema = z.object({
 
 /** Model Exclusion omitted from a Run Plan before Matrix expansion. */
 export type ModelExclusion = z.infer<typeof ModelExclusionSchema>;
+
+/** Zod schema for incompatible planned combinations omitted before Matrix expansion. */
+export const CombinationExclusionSchema = z.object({
+	/** Runtime selected for the planned combination. */
+	runtime: ExecutableArtifactRuntimeNameSchema,
+
+	/** Harness selected for the planned combination. */
+	harness: z.string(),
+
+	/** Runtime Model selected for the planned combination. */
+	model: z.string(),
+
+	/** Benchmark Test slug selected for the planned combination. */
+	test: z.string(),
+
+	/** Stable exclusion reason. */
+	reason: CombinationExclusionReasonSchema,
+
+	/** Capabilities required by the Benchmark Test for representative execution. */
+	requiredHarnessCapabilities: z.array(HarnessCapabilitySchema).default([]),
+});
+
+/** Incompatible planned combination omitted from a Run Plan before Matrix expansion. */
+export type CombinationExclusion = z.infer<typeof CombinationExclusionSchema>;
 
 /** Zod schema for a Matrix Item (Runtime, Harness, Runtime Model, Benchmark Test, Pass Type). */
 export const MatrixItemSchema = z.object({
@@ -142,6 +172,9 @@ export const RunPlanSchema = z.object({
 
 	/** Discovered Model Exclusions omitted before Matrix expansion. */
 	modelExclusions: z.array(ModelExclusionSchema).optional(),
+
+	/** Incompatible planned combinations omitted before Matrix expansion. */
+	combinationExclusions: z.array(CombinationExclusionSchema).optional(),
 
 	/** Summary counts for display. */
 	summary: z.object({

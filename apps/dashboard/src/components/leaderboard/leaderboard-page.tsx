@@ -33,6 +33,8 @@ import {
 	ALL_FILTER_VALUE,
 	type FilterState,
 	buildMachineFilterOptions,
+	buildModelQuantizationFilterOptions,
+	buildModelVariantFilterOptions,
 	createDefaultFilterState,
 	filterItems,
 	uniqueValues,
@@ -115,6 +117,14 @@ export function LeaderboardPage() {
 		() => uniqueValues(items, (item) => item.model),
 		[items],
 	);
+	const modelVariantOptions = useMemo(
+		() => buildModelVariantFilterOptions(items),
+		[items],
+	);
+	const modelQuantizationOptions = useMemo(
+		() => buildModelQuantizationFilterOptions(items),
+		[items],
+	);
 	const harnessOptions = useMemo(
 		() => uniqueValues(items, (item) => item.harness),
 		[items],
@@ -187,7 +197,7 @@ export function LeaderboardPage() {
 					<CardTitle className="text-base">Filters</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
+					<div className="grid gap-3 md:grid-cols-3 xl:grid-cols-9">
 						<Select
 							value={filters.machine}
 							onValueChange={(value) =>
@@ -214,6 +224,49 @@ export function LeaderboardPage() {
 								setFilters((prev) => ({ ...prev, models }))
 							}
 						/>
+
+						<Select
+							value={filters.modelVariant}
+							onValueChange={(value) =>
+								setFilters((prev) => ({ ...prev, modelVariant: value }))
+							}
+						>
+							<SelectTrigger aria-label="Model variant filter">
+								<SelectValue placeholder="Model Variant" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={ALL_FILTER_VALUE}>All variants</SelectItem>
+								{modelVariantOptions.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+
+						<Select
+							value={filters.modelQuantization}
+							onValueChange={(value) =>
+								setFilters((prev) => ({
+									...prev,
+									modelQuantization: value,
+								}))
+							}
+						>
+							<SelectTrigger aria-label="Model quantization filter">
+								<SelectValue placeholder="Quantization" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={ALL_FILTER_VALUE}>
+									All quantizations
+								</SelectItem>
+								{modelQuantizationOptions.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 
 						<Select
 							value={filters.runtime}

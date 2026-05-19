@@ -304,6 +304,26 @@ function sanitizePublishedPlan(plan: RunPlan): RunPlan {
 	};
 }
 
+/**
+ * Verifies a Run Result is final enough to publish.
+ *
+ * @param run - Parsed run artifact
+ * @throws {Error} When the run still contains pending/running items
+ */
+function assertPublishableRun(run: RunResult): void {
+	const hasOpenItems =
+		run.summary.pending > 0 ||
+		run.summary.completed + run.summary.failed !== run.summary.total ||
+		run.items.some(
+			(item) => item.status === "pending" || item.status === "running",
+		);
+	if (hasOpenItems) {
+		throw new Error(
+			`Partial Run Result cannot be published: ${run.runId}. Finish or discard the partial run before building Published Runs.`,
+		);
+	}
+}
+
 interface PublishedRunBundle extends AggregateRunInput {
 	runDirName: string;
 }
@@ -401,9 +421,9 @@ async function readRunBundle(
 	});
 	let run: RunResult;
 	try {
-		run = sanitizePublishedRun(
-			parseKnownRunPayload(JSON.parse(runContent) as unknown),
-		);
+		run = parseKnownRunPayload(JSON.parse(runContent) as unknown);
+		assertPublishableRun(run);
+		run = sanitizePublishedRun(run);
 	} catch (error) {
 		throw new Error(
 			`readRunBundle failed to parse run.json for ${runDirName}: ${(error as Error).message}`,

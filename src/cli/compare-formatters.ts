@@ -8,7 +8,8 @@
  * - Color is not required to understand status changes.
  */
 
-import { type CompareResult, formatDelta } from "../results/compare.js";
+import { formatDelta } from "../results/compare-format.js";
+import type { CompareResult } from "../results/compare.js";
 import { formatTimestamp, pad, truncate } from "./compare-utils.js";
 
 const STATUS_CHANGE_COLUMN_WIDTHS = {
@@ -109,6 +110,9 @@ export function printSummary(result: CompareResult): void {
 	console.log(`  Matched items:  ${summary.totalMatched}`);
 	console.log(`  Only in A:      ${summary.totalOnlyInA}`);
 	console.log(`  Only in B:      ${summary.totalOnlyInB}`);
+	console.log(
+		`  Coverage:       ${summary.coverage.matchedItems}/${summary.coverage.comparisonSpaceItems} matched (${(summary.coverage.matchedCoverageRate * 100).toFixed(1)}%)`,
+	);
 	console.log("");
 
 	if (

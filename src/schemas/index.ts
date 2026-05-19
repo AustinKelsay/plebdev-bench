@@ -117,6 +117,8 @@ export {
 	type MatrixItem,
 	ModelExclusionSchema,
 	type ModelExclusion,
+	CombinationExclusionSchema,
+	type CombinationExclusion,
 	RunPlanSchema,
 	type RunPlan,
 } from "./plan.schema.js";
