@@ -71,6 +71,7 @@ export function resolveItemTimestamp(
  *
  * @param status - Item execution status
  * @returns Numeric rank where larger means better
+ * @throws {Error} If status is not one of the known item statuses
  */
 function getStatusRank(status: MatrixItemResult["status"]): number {
 	switch (status) {
@@ -82,6 +83,8 @@ function getStatusRank(status: MatrixItemResult["status"]): number {
 			return 1;
 		case "pending":
 			return 0;
+		default:
+			throw new Error(`Unhandled status: ${String(status)}`);
 	}
 }
 

@@ -129,12 +129,26 @@ function withTamperEvidence(
 	tamperEvidence: RunArtifactPairHash,
 ): RunProvenance {
 	return {
+		...withDefaultProvenance(provenance),
+		tamperEvidence,
+	};
+}
+
+/**
+ * Applies default provenance metadata without tamper evidence.
+ *
+ * @param provenance - Existing provenance metadata
+ * @returns Provenance metadata with publication defaults
+ */
+function withDefaultProvenance(
+	provenance: RunProvenance | undefined,
+): RunProvenance {
+	return {
 		verificationStatus: provenance?.verificationStatus ?? "self_reported",
 		source: provenance?.source ?? "local_cli",
 		...(provenance?.submittedBy ? { submittedBy: provenance.submittedBy } : {}),
 		...(provenance?.submittedAt ? { submittedAt: provenance.submittedAt } : {}),
 		...(provenance?.notes ? { notes: provenance.notes } : {}),
-		tamperEvidence,
 	};
 }
 
@@ -220,11 +234,17 @@ function redactResultPaths(
 export function preparePublishedRun(
 	input: PreparePublishedRunInput,
 ): PreparedPublishedRun {
-	const plan = RunPlanSchema.parse(input.plan);
-	const result = redactResultPaths(
-		RunResultSchema.parse(input.result),
-		input.redaction,
-	);
+	const plan = RunPlanSchema.parse({
+		...cloneJson(input.plan),
+		provenance: withDefaultProvenance(input.plan.provenance),
+	});
+	const result = RunResultSchema.parse({
+		...redactResultPaths(
+			RunResultSchema.parse(input.result),
+			input.redaction,
+		),
+		provenance: withDefaultProvenance(input.result.provenance),
+	});
 	const tamperEvidence = computeRunArtifactPairHash({ plan, result });
 	const publishedPlan = RunPlanSchema.parse({
 		...cloneJson(plan),

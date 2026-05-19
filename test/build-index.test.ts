@@ -303,7 +303,7 @@ describe("buildDashboardIndexArtifacts", () => {
 				startedAt: "2026-03-03T10:00:00.000Z",
 				completedAt: "2026-03-03T10:01:00.000Z",
 				durationMs: 60_000,
-				summary: { total: 1, completed: 1, failed: 0, pending: 0 },
+				summary: { total: 0, completed: 0, failed: 0, pending: 0 },
 				items: [],
 			},
 			{
@@ -483,7 +483,7 @@ describe("buildDashboardIndexArtifacts", () => {
 				startedAt: "2026-03-04T10:00:00.000Z",
 				completedAt: "2026-03-04T10:01:00.000Z",
 				durationMs: 60_000,
-				summary: { total: 1, completed: 1, failed: 0, pending: 0 },
+				summary: { total: 0, completed: 0, failed: 0, pending: 0 },
 				items: [],
 			},
 			{
@@ -562,8 +562,8 @@ describe("buildDashboardIndexArtifacts", () => {
 				completedAt: "2026-03-05T10:01:00.000Z",
 				durationMs: 60_000,
 				summary: {
-					total: 1,
-					completed: 1,
+					total: 0,
+					completed: 0,
 					failed: 0,
 					pending: 0,
 				},

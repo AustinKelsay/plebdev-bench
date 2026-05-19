@@ -308,18 +308,21 @@ function sanitizePublishedPlan(plan: RunPlan): RunPlan {
  * Verifies a Run Result is final enough to publish.
  *
  * @param run - Parsed run artifact
- * @throws {Error} When the run still contains pending/running items
+ * @throws {Error} When summary counters do not match item statuses or the run still contains pending/running items
  */
 function assertPublishableRun(run: RunResult): void {
-	const hasOpenItems =
-		run.summary.pending > 0 ||
-		run.summary.completed + run.summary.failed !== run.summary.total ||
-		run.items.some(
-			(item) => item.status === "pending" || item.status === "running",
-		);
-	if (hasOpenItems) {
+	const actual = { completed: 0, failed: 0, pending: 0, running: 0 };
+	for (const item of run.items) {
+		actual[item.status] += 1;
+	}
+	const hasInconsistentSummary =
+		run.summary.total !== run.items.length ||
+		run.summary.completed !== actual.completed ||
+		run.summary.failed !== actual.failed ||
+		run.summary.pending !== actual.pending;
+	if (hasInconsistentSummary || actual.pending > 0 || actual.running > 0) {
 		throw new Error(
-			`Partial Run Result cannot be published: ${run.runId}. Finish or discard the partial run before building Published Runs.`,
+			`Partial Run Result cannot be published: ${run.runId}. Summary counters must match item statuses and all items must be final before building Published Runs.`,
 		);
 	}
 }

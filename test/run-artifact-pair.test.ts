@@ -311,6 +311,21 @@ describe("preparePublishedRun", () => {
 		);
 	});
 
+	it("computes tamper evidence from the finalized published provenance", () => {
+		const published = preparePublishedRun({
+			plan: buildPlan(),
+			result: buildResult(),
+			redaction: { pathTokens: {} },
+		});
+
+		expect(
+			computeRunArtifactPairHash({
+				plan: published.plan,
+				result: published.result,
+			}),
+		).toEqual(published.tamperEvidence);
+	});
+
 	it("rejects publication for mismatched Run Artifact Pairs", () => {
 		expect(() =>
 			preparePublishedRun({

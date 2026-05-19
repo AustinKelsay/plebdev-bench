@@ -27,6 +27,7 @@ function parseVersion(output: string): string | undefined {
  *
  * @param options - Platform, Bun version, and optional tool names to probe
  * @returns Runtime Environment metadata suitable for run artifacts
+ * @throws {never} Unavailable tool probes are captured as explicit provenance records
  */
 export async function collectRuntimeEnvironment(
 	options: RuntimeEnvironmentCollectionOptions,

@@ -13,6 +13,7 @@ import {
 	RunPlanSchema,
 	RunResultSchema,
 	RuntimeToolVersionSchema,
+	SCHEMA_VERSION,
 } from "../src/schemas/index.js";
 
 const runExecFileMock = vi.hoisted(() => vi.fn());
@@ -42,7 +43,7 @@ describe("Runtime Environment tool versions", () => {
 		});
 		expect(
 			RunPlanSchema.parse({
-				schemaVersion: "0.3.0",
+				schemaVersion: SCHEMA_VERSION,
 				runId: "run-123",
 				createdAt: "2026-05-19T10:00:00.000Z",
 				runtimeEnvironment,
@@ -63,7 +64,7 @@ describe("Runtime Environment tool versions", () => {
 		).toBe("0.9.1");
 		expect(
 			RunResultSchema.parse({
-				schemaVersion: "0.3.0",
+				schemaVersion: SCHEMA_VERSION,
 				runId: "run-123",
 				runtimeEnvironment,
 				startedAt: "2026-05-19T10:00:00.000Z",

@@ -102,4 +102,59 @@ describe("Published Redaction", () => {
 		expect(fs.readFileSync(runJsonPath, "utf-8")).toBe(originalRunJson);
 		expect(fs.existsSync(outputResultsDir)).toBe(false);
 	});
+
+	it("rejects final-looking Run Results with mismatched summary counters", async () => {
+		const root = createTempRoot();
+		const sourceResultsDir = path.join(root, "results");
+		const outputResultsDir = path.join(root, "published-results");
+		const runDir = path.join(sourceResultsDir, "run-inconsistent");
+
+		writeJson(path.join(runDir, "run.json"), {
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-inconsistent",
+			startedAt: "2026-05-19T10:00:00.000Z",
+			completedAt: "2026-05-19T10:01:00.000Z",
+			durationMs: 60_000,
+			summary: { total: 1, completed: 1, failed: 0, pending: 0 },
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "qwen3:8b",
+					harness: "direct",
+					test: "smoke",
+					passType: "blind",
+					status: "failed",
+				},
+			],
+		});
+		writeJson(path.join(runDir, "plan.json"), {
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-inconsistent",
+			createdAt: "2026-05-19T10:00:00.000Z",
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 120_000,
+				passTypes: ["blind"],
+			},
+			items: [],
+			summary: {
+				totalItems: 0,
+				runtimes: 0,
+				models: 0,
+				harnesses: 0,
+				tests: 0,
+			},
+		});
+
+		await expect(
+			buildDashboardIndexArtifacts({
+				sourceResultsDir,
+				outputResultsDir,
+				projectRoot: root,
+				latestCheckpointId: "chk_test",
+			}),
+		).rejects.toThrow("run-inconsistent");
+		expect(fs.existsSync(outputResultsDir)).toBe(false);
+	});
 });

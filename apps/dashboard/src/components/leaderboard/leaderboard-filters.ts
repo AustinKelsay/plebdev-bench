@@ -78,6 +78,7 @@ export function uniqueValues(
  *
  * @param item - Aggregated leaderboard item
  * @returns Canonical Model Profile label, alias, or runtime model name
+ * @throws {never}
  */
 export function getModelProfileDisplayName(
 	item: LeaderboardAggregatedItem,
@@ -92,6 +93,7 @@ export function getModelProfileDisplayName(
  *
  * @param item - Aggregated leaderboard item
  * @returns Variant key when available, otherwise runtime model name
+ * @throws {never}
  */
 export function getModelVariantFilterValue(
 	item: LeaderboardAggregatedItem,
@@ -104,6 +106,7 @@ export function getModelVariantFilterValue(
  *
  * @param item - Aggregated leaderboard item
  * @returns Variant label with runtime model fallback
+ * @throws {never}
  */
 export function getModelVariantFilterLabel(
 	item: LeaderboardAggregatedItem,
@@ -116,6 +119,7 @@ export function getModelVariantFilterLabel(
  *
  * @param item - Aggregated leaderboard item
  * @returns Quantization label or explicit unspecified sentinel
+ * @throws {never}
  */
 export function getModelQuantizationFilterValue(
 	item: LeaderboardAggregatedItem,
@@ -128,6 +132,7 @@ export function getModelQuantizationFilterValue(
  *
  * @param items - Aggregated leaderboard items
  * @returns Variant options for filter dropdowns
+ * @throws {never}
  */
 export function buildModelVariantFilterOptions(
 	items: LeaderboardAggregatedItem[],
@@ -155,6 +160,7 @@ export function buildModelVariantFilterOptions(
  *
  * @param items - Aggregated leaderboard items
  * @returns Quantization options for filter dropdowns
+ * @throws {never}
  */
 export function buildModelQuantizationFilterOptions(
 	items: LeaderboardAggregatedItem[],

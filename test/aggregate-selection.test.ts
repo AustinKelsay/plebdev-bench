@@ -101,4 +101,21 @@ describe("compareAggregateCandidates", () => {
 
 		expect(compareAggregateCandidates(candidate, incumbent)).toBeGreaterThan(0);
 	});
+
+	it("fails fast for unknown item statuses", () => {
+		const candidate = {
+			timestamp: 200,
+			aggregated: createAggregatedItem({
+				status: "cancelled" as AggregatedMatrixItem["status"],
+			}),
+		};
+		const incumbent = {
+			timestamp: 100,
+			aggregated: createAggregatedItem(),
+		};
+
+		expect(() => compareAggregateCandidates(candidate, incumbent)).toThrow(
+			"Unhandled status: cancelled",
+		);
+	});
 });

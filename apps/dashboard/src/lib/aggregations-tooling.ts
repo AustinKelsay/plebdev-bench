@@ -235,6 +235,7 @@ export function computeComparisonSpaceExpectedTotals(
  * @param toolHarnesses - Set of harness names expected to use tools
  * @param options - Optional expected totals for leaderboard-scope completion coverage
  * @returns Composite metrics per group sorted by effectiveScore
+ * @throws {Error} If options.expectedTotals contains a non-finite or negative total for a group
  */
 export function computeCompositeMetrics(
 	items: MatrixItemResult[],
