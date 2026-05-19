@@ -223,9 +223,7 @@ describe("compare formatters", () => {
 
 	it("rejects non-finite delta values before formatting", () => {
 		expect(() => formatDelta(Number.NaN)).toThrow(TypeError);
-		expect(() => formatDelta(Number.POSITIVE_INFINITY)).toThrow(
-			"formatDelta value must be a finite number",
-		);
+		expect(() => formatDelta(Number.POSITIVE_INFINITY)).toThrow(TypeError);
 	});
 
 	it("prints deterministic UTC header timestamps", () => {

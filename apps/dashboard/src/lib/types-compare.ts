@@ -61,7 +61,14 @@ export interface CompareSummary {
 		passRateDelta: number;
 		totalTestsDelta: number;
 	} | null;
+	trustedScoringDelta: {
+		passRateDelta: number;
+		totalTestsDelta: number;
+	} | null;
 	frontierEvalDelta: {
+		avgScoreDelta: number;
+	} | null;
+	trustedFrontierEvalDelta: {
 		avgScoreDelta: number;
 	} | null;
 	metricAvailability: {
@@ -75,6 +82,11 @@ export interface CompareSummary {
 			comparedRows: number;
 			trustedComparedRows: number | null;
 		};
+	};
+	signal: {
+		trustedMetricsAvailable: boolean;
+		taintedInA: number | null;
+		taintedInB: number | null;
 	};
 }
 

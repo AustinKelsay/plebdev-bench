@@ -160,7 +160,9 @@ export function compareRuns(
 			},
 			statusChanges: { improved, regressed },
 			scoringDelta,
+			trustedScoringDelta: null,
 			frontierEvalDelta,
+			trustedFrontierEvalDelta: null,
 			metricAvailability: {
 				scoring: {
 					matchedRows: matched.length,
@@ -172,6 +174,11 @@ export function compareRuns(
 					comparedRows: matchedWithFrontierEval.length,
 					trustedComparedRows: null,
 				},
+			},
+			signal: {
+				trustedMetricsAvailable: false,
+				taintedInA: null,
+				taintedInB: null,
 			},
 		},
 		matched,

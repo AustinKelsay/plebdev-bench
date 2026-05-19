@@ -243,11 +243,18 @@ const BenchmarkCheckpointSchema = z.object({
 });
 
 /** Runtime environment schema. */
-const RuntimeToolVersionSchema = z.object({
-	status: z.enum(["detected", "unavailable"]),
-	version: z.string().optional(),
-	detail: z.string().optional(),
-});
+const RuntimeToolVersionSchema = z.discriminatedUnion("status", [
+	z.object({
+		status: z.literal("detected"),
+		version: z.string(),
+		detail: z.string().optional(),
+	}),
+	z.object({
+		status: z.literal("unavailable"),
+		detail: z.string(),
+		version: z.string().optional(),
+	}),
+]);
 
 /** Runtime environment schema. */
 const RuntimeEnvironmentSchema = z.object({
