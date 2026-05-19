@@ -16,6 +16,7 @@ import {
 	printScoringDeltas,
 	printSummary,
 } from "../src/cli/compare-formatters.js";
+import { formatDelta } from "../src/results/compare-format.js";
 import type { CompareResult } from "../src/results/compare.js";
 import type { MatrixItemResult } from "../src/schemas/index.js";
 
@@ -218,6 +219,13 @@ function readLoggedOutput(logSpy: ReturnType<typeof vi.spyOn>): string {
 describe("compare formatters", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	it("rejects non-finite delta values before formatting", () => {
+		expect(() => formatDelta(Number.NaN)).toThrow(TypeError);
+		expect(() => formatDelta(Number.POSITIVE_INFINITY)).toThrow(
+			"formatDelta value must be a finite number",
+		);
 	});
 
 	it("prints deterministic UTC header timestamps", () => {

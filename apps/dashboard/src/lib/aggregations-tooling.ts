@@ -190,6 +190,15 @@ function resolveExpectedTotal(
 			? expectedTotals.get(name)
 			: expectedTotals[name];
 	if (expected === undefined) return observedTotal;
+	if (
+		typeof expected !== "number" ||
+		!Number.isFinite(expected) ||
+		expected < 0
+	) {
+		throw new Error(
+			`Invalid expected total for "${name}": ${String(expected)}. Expected a finite non-negative number.`,
+		);
+	}
 	return Math.max(expected, observedTotal);
 }
 

@@ -53,6 +53,8 @@ export {
 	type RunArtifactPairTamperEvidence,
 	BenchmarkCheckpointSchema,
 	type BenchmarkCheckpoint,
+	RuntimeToolVersionSchema,
+	type RuntimeToolVersion,
 	RuntimeEnvironmentSchema,
 	type RuntimeEnvironment,
 	machinePlatformFamilies,

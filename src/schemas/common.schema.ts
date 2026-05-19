@@ -243,11 +243,18 @@ export const BenchmarkCheckpointSchema = z.object({
 /** Benchmark checkpoint identity metadata. */
 export type BenchmarkCheckpoint = z.infer<typeof BenchmarkCheckpointSchema>;
 
-export const RuntimeToolVersionSchema = z.object({
-	status: z.union([z.literal("detected"), z.literal("unavailable")]),
-	version: z.string().min(1).optional(),
-	detail: z.string().min(1).optional(),
-});
+export const RuntimeToolVersionSchema = z.discriminatedUnion("status", [
+	z.object({
+		status: z.literal("detected"),
+		version: z.string().min(1),
+		detail: z.string().min(1).optional(),
+	}),
+	z.object({
+		status: z.literal("unavailable"),
+		detail: z.string().min(1),
+		version: z.string().min(1).optional(),
+	}),
+]);
 
 export type RuntimeToolVersion = z.infer<typeof RuntimeToolVersionSchema>;
 

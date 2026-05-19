@@ -61,6 +61,7 @@ export function computeItemPassRate(score: AutomatedScore | undefined): number {
  *
  * @param item - Matrix item
  * @returns Canonical Model Profile label, alias, or runtime model name
+ * @throws {TypeError} If item is null or undefined or missing expected properties
  */
 export function getModelProfileGroupName(item: MatrixItemResult): string {
 	return (

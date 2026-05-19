@@ -9,7 +9,11 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { collectRuntimeEnvironment } from "../src/lib/runtime-environment.js";
-import { RunPlanSchema, RunResultSchema } from "../src/schemas/index.js";
+import {
+	RunPlanSchema,
+	RunResultSchema,
+	RuntimeToolVersionSchema,
+} from "../src/schemas/index.js";
 
 const runExecFileMock = vi.fn();
 
@@ -69,5 +73,14 @@ describe("Runtime Environment tool versions", () => {
 				items: [],
 			}).runtimeEnvironment?.toolVersions?.goose?.status,
 		).toBe("unavailable");
+	});
+
+	it("rejects tool-version records without status-specific evidence", () => {
+		expect(() =>
+			RuntimeToolVersionSchema.parse({ status: "detected" }),
+		).toThrow();
+		expect(() =>
+			RuntimeToolVersionSchema.parse({ status: "unavailable" }),
+		).toThrow();
 	});
 });

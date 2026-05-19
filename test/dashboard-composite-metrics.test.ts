@@ -66,6 +66,19 @@ describe("computeCompositeMetrics", () => {
 		expect(metrics[0]?.effectiveScore).toBe(0.775);
 	});
 
+	it("rejects invalid expected totals before computing completion coverage", () => {
+		expect(() =>
+			computeCompositeMetrics(
+				[createCompletedItem("01", "partial-model")],
+				groupByModel,
+				new Set(),
+				{ expectedTotals: { "partial-model": Number.NaN } },
+			),
+		).toThrow(
+			'Invalid expected total for "partial-model": NaN. Expected a finite non-negative number.',
+		);
+	});
+
 	it("derives expected totals from the active Comparison Space", () => {
 		const comparisonSpaceItems = [
 			createCompletedItem("01", "complete-model"),

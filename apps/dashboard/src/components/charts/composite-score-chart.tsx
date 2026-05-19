@@ -280,7 +280,11 @@ function CompositeBarChart({
  * Renders a composite-score chart grouped by benchmark dimension.
  *
  * @param props - Component props
+ * @param props.items - Matrix items used to compute composite metrics
+ * @param props.completionScope - Completion denominator mode; defaults to `"observed"`
+ * @param props.onDimensionClick - Optional click handler for selected dimension rows
  * @returns Chart card with dimension tabs
+ * @throws {Error} If metric computation receives invalid chart data or props
  */
 export function CompositeScoreChart({
 	items,
