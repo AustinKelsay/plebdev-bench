@@ -140,6 +140,21 @@ export function partitionToolSmoke(items: MatrixItemResult[]): {
 	return { toolSmoke, regular };
 }
 
+/** Expected completion totals by composite group name. */
+export type CompositeExpectedTotals =
+	| Map<string, number>
+	| Record<string, number>;
+
+/** Groups dashboard items for composite metric rows. */
+export type CompositeGroupFn = (
+	items: MatrixItemResult[],
+) => Map<string, MatrixItemResult[]>;
+
+/** Composite metric computation options. */
+export interface CompositeMetricsOptions {
+	expectedTotals?: CompositeExpectedTotals;
+}
+
 /** Composite metrics for a group (pass rate + tool success + frontier). */
 export interface CompositeMetrics {
 	name: string;
@@ -157,6 +172,57 @@ export interface CompositeMetrics {
 }
 
 /**
+ * Resolves expected completion total for a group.
+ *
+ * @param expectedTotals - Optional expected totals map or record
+ * @param name - Group name to look up
+ * @param observedTotal - Observed item count fallback
+ * @returns Expected total used for completion coverage
+ */
+function resolveExpectedTotal(
+	expectedTotals: CompositeExpectedTotals | undefined,
+	name: string,
+	observedTotal: number,
+): number {
+	if (!expectedTotals) return observedTotal;
+	const expected =
+		expectedTotals instanceof Map
+			? expectedTotals.get(name)
+			: expectedTotals[name];
+	if (expected === undefined) return observedTotal;
+	if (
+		typeof expected !== "number" ||
+		!Number.isFinite(expected) ||
+		expected < 0
+	) {
+		throw new Error(
+			`Invalid expected total for "${name}": ${String(expected)}. Expected a finite non-negative number.`,
+		);
+	}
+	return Math.max(expected, observedTotal);
+}
+
+/**
+ * Computes expected group totals from the active leaderboard Comparison Space.
+ *
+ * @param items - Items already filtered to the active Comparison Space
+ * @param groupFn - Grouping function used by a composite leaderboard tab
+ * @returns Map from group name to expected item count for completion coverage
+ */
+export function computeComparisonSpaceExpectedTotals(
+	items: MatrixItemResult[],
+	groupFn: CompositeGroupFn,
+): Map<string, number> {
+	const groups = groupFn(items);
+	const expectedTotal = Math.max(
+		0,
+		...[...groups.values()].map((g) => g.length),
+	);
+
+	return new Map([...groups.keys()].map((name) => [name, expectedTotal]));
+}
+
+/**
  * Computes composite metrics for grouped items and sorts by effectiveScore.
  *
  * Weights:
@@ -167,12 +233,15 @@ export interface CompositeMetrics {
  * @param items - Matrix items
  * @param groupFn - Grouping function
  * @param toolHarnesses - Set of harness names expected to use tools
+ * @param options - Optional expected totals for leaderboard-scope completion coverage
  * @returns Composite metrics per group sorted by effectiveScore
+ * @throws {Error} If options.expectedTotals contains a non-finite or negative total for a group
  */
 export function computeCompositeMetrics(
 	items: MatrixItemResult[],
-	groupFn: (items: MatrixItemResult[]) => Map<string, MatrixItemResult[]>,
+	groupFn: CompositeGroupFn,
 	toolHarnesses: Set<string> = inferToolHarnesses(items),
+	options: CompositeMetricsOptions = {},
 ): CompositeMetrics[] {
 	const groups = groupFn(items);
 	const metrics: CompositeMetrics[] = [];
@@ -184,7 +253,11 @@ export function computeCompositeMetrics(
 				: groupItems.filter((item) => item.test !== TOOL_SMOKE_TEST_SLUG);
 		const { passRate, passed, total } = computePassRate(nonToolSmoke);
 
-		const totalItems = groupItems.length;
+		const totalItems = resolveExpectedTotal(
+			options.expectedTotals,
+			name,
+			groupItems.length,
+		);
 		const completedItems = groupItems.filter(
 			(i) => i.status === "completed",
 		).length;

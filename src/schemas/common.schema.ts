@@ -25,10 +25,8 @@ export type {
 /** Current Schema Version for all Run Plan and Run Result files. */
 export const SCHEMA_VERSION = "0.5.3";
 
-/** Valid pass types for benchmark runs. */
 export const passTypes = ["blind", "informed"] as const;
 
-/** Zod schema for pass types. */
 export const PassTypeSchema = z.enum(passTypes);
 
 /** Pass type: 'blind' (no hints) or 'informed' (with context). */
@@ -81,7 +79,6 @@ export const ItemStatusSchema = z.enum(itemStatusTypes);
 /** Status of a matrix item during/after execution. */
 export type ItemStatus = z.infer<typeof ItemStatusSchema>;
 
-/** Valid generation failure types. */
 export const generationFailureTypes = [
 	"timeout",
 	"api_error",
@@ -91,7 +88,6 @@ export const generationFailureTypes = [
 	"unknown",
 ] as const;
 
-/** Zod schema for generation failure types. */
 export const GenerationFailureTypeSchema = z.enum(generationFailureTypes);
 
 /** Generation failure type. */
@@ -214,6 +210,18 @@ export const VerificationStatusSchema = z.enum(verificationStatusTypes);
 /** Verification status for run provenance. */
 export type VerificationStatus = z.infer<typeof VerificationStatusSchema>;
 
+export const RunArtifactPairTamperEvidenceSchema = z.object({
+	algorithm: z.literal("sha256v1"),
+	planHash: z.string().regex(/^[0-9a-f]{64}$/),
+	resultHash: z.string().regex(/^[0-9a-f]{64}$/),
+	pairHash: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
+/** Run Artifact Pair tamper-evidence hash metadata. */
+export type RunArtifactPairTamperEvidence = z.infer<
+	typeof RunArtifactPairTamperEvidenceSchema
+>;
+
 /** Zod schema for benchmark checkpoint identity metadata. */
 export const BenchmarkCheckpointSchema = z.object({
 	/** Stable checkpoint identifier (derived from manifest hash). */
@@ -235,13 +243,28 @@ export const BenchmarkCheckpointSchema = z.object({
 /** Benchmark checkpoint identity metadata. */
 export type BenchmarkCheckpoint = z.infer<typeof BenchmarkCheckpointSchema>;
 
+export const RuntimeToolVersionSchema = z.discriminatedUnion("status", [
+	z.object({
+		status: z.literal("detected"),
+		version: z.string().min(1),
+		detail: z.string().min(1).optional(),
+	}),
+	z.object({
+		status: z.literal("unavailable"),
+		detail: z.string().min(1),
+		version: z.string().min(1).optional(),
+	}),
+]);
+
+export type RuntimeToolVersion = z.infer<typeof RuntimeToolVersionSchema>;
+
 /** Zod schema for runtime environment metadata. */
 export const RuntimeEnvironmentSchema = z.object({
-	/** Runtime platform name (e.g., darwin, linux). */
 	platform: z.string().min(1),
 
-	/** Bun version used by the runner. */
 	bunVersion: z.string().min(1),
+
+	toolVersions: z.record(RuntimeToolVersionSchema).optional(),
 });
 
 /** Runtime environment metadata. */
@@ -470,6 +493,9 @@ export const RunProvenanceSchema = z.object({
 
 	/** Optional submit timestamp (future use). */
 	submittedAt: z.string().datetime().optional(),
+
+	/** Optional tamper evidence for the Run Artifact Pair. */
+	tamperEvidence: RunArtifactPairTamperEvidenceSchema.optional(),
 
 	/** Optional free-form provenance notes. */
 	notes: z.string().min(1).optional(),

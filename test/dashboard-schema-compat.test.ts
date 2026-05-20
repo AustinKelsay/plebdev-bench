@@ -217,6 +217,27 @@ describe("RunResultSchema", () => {
 		expect(parsed.items[0]?.signalAssessment?.classification).toBe("tainted");
 	});
 
+	it("rejects runtime tool-version records without status-specific evidence", () => {
+		expect(() =>
+			RunResultSchema.parse({
+				schemaVersion: SCHEMA_VERSION,
+				runId: "run-test",
+				runtimeEnvironment: {
+					platform: "darwin",
+					bunVersion: "1.3.3",
+					toolVersions: {
+						ollama: { status: "detected" },
+					},
+				},
+				startedAt: "2026-03-25T12:00:00.000Z",
+				completedAt: "2026-03-25T12:01:00.000Z",
+				durationMs: 60_000,
+				summary: { total: 0, completed: 0, failed: 0, pending: 0 },
+				items: [],
+			}),
+		).toThrow();
+	});
+
 	it("rejects trustworthy signal assessments that include taint reasons", () => {
 		expect(() =>
 			RunResultSchema.parse({

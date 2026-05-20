@@ -7,6 +7,7 @@ import { WithInfoTooltip } from "@/components/ui/info-tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	type CompositeMetrics,
+	computeComparisonSpaceExpectedTotals,
 	computeCompositeMetrics,
 	groupByHarness,
 	groupByModel,
@@ -34,6 +35,7 @@ import { ClickableYAxisTick, createRowBackground } from "./chart-primitives";
 
 interface CompositeScoreChartProps {
 	items: MatrixItemResult[];
+	completionScope?: "observed" | "comparison-space";
 	onDimensionClick?: (
 		dimension: "model" | "runtime" | "harness" | "test" | "testType",
 		name: string,
@@ -278,30 +280,54 @@ function CompositeBarChart({
  * Renders a composite-score chart grouped by benchmark dimension.
  *
  * @param props - Component props
+ * @param props.items - Matrix items used to compute composite metrics
+ * @param props.completionScope - Completion denominator mode; defaults to `"observed"`
+ * @param props.onDimensionClick - Optional click handler for selected dimension rows
  * @returns Chart card with dimension tabs
+ * @throws {Error} If metric computation receives invalid chart data or props
  */
 export function CompositeScoreChart({
 	items,
+	completionScope = "observed",
 	onDimensionClick,
 }: CompositeScoreChartProps) {
 	const toolHarnesses = inferToolHarnesses(items);
+	const metricOptionsFor = (
+		groupFn: (items: MatrixItemResult[]) => Map<string, MatrixItemResult[]>,
+	) =>
+		completionScope === "comparison-space"
+			? { expectedTotals: computeComparisonSpaceExpectedTotals(items, groupFn) }
+			: {};
 
-	const byModel = computeCompositeMetrics(items, groupByModel, toolHarnesses);
+	const byModel = computeCompositeMetrics(
+		items,
+		groupByModel,
+		toolHarnesses,
+		metricOptionsFor(groupByModel),
+	);
 	const byRuntime = computeCompositeMetrics(
 		items,
 		groupByRuntime,
 		toolHarnesses,
+		metricOptionsFor(groupByRuntime),
 	);
 	const byHarness = computeCompositeMetrics(
 		items,
 		groupByHarness,
 		toolHarnesses,
+		metricOptionsFor(groupByHarness),
 	);
-	const byTest = computeCompositeMetrics(items, groupByTest, toolHarnesses);
+	const byTest = computeCompositeMetrics(
+		items,
+		groupByTest,
+		toolHarnesses,
+		metricOptionsFor(groupByTest),
+	);
 	const byTestType = computeCompositeMetrics(
 		items,
 		groupByTestType,
 		toolHarnesses,
+		metricOptionsFor(groupByTestType),
 	);
 
 	const modelData = prepareChartData(byModel);

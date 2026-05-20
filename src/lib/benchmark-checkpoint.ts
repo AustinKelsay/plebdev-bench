@@ -1,17 +1,19 @@
 /**
- * Purpose: Compute deterministic benchmark checkpoint metadata from benchmark-defining assets.
+ * Purpose: Compute deterministic Benchmark Checkpoint metadata from benchmark meaning assets.
  * Exports: CORE_BENCHMARK_LIB_ASSETS, computeBenchmarkCheckpoint,
  *          collectBenchmarkAssetPaths, buildBenchmarkManifest
  *
  * Invariants:
- * - Asset list is deterministic (sorted by normalized relative path)
- * - Missing required benchmark assets are treated as configuration/programmer errors
+ * - Asset list covers benchmark definition plus execution and scoring semantics.
+ * - Asset list is deterministic (sorted by normalized relative path).
+ * - Missing required benchmark assets are treated as configuration/programmer errors.
  */
 
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { BenchmarkCheckpoint } from "../schemas/index.js";
+import { TestMetadataSchema } from "../schemas/test-catalog.schema.js";
 
 /** Checkpoint algorithm identifier. */
 const CHECKPOINT_ALGORITHM = "sha256v1";
@@ -89,6 +91,51 @@ function hashString(value: string): string {
 }
 
 /**
+ * Builds the checkpoint-affecting projection of test metadata.
+ *
+ * @param content - Raw test.meta.json bytes
+ * @param relPath - Relative metadata path for diagnostics
+ * @returns Stable JSON containing benchmark semantics but excluding analysis labels
+ * @throws {Error} If metadata is invalid JSON or fails schema validation
+ */
+function buildCheckpointMetadataPayload(
+	content: Buffer,
+	relPath: string,
+): string {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(content.toString("utf8"));
+	} catch (error) {
+		throw new Error(`Invalid benchmark metadata JSON at ${relPath}`, {
+			cause: error,
+		});
+	}
+
+	const metadata = TestMetadataSchema.parse(parsed);
+	return JSON.stringify({
+		schemaVersion: metadata.schemaVersion,
+		scoringMode: metadata.scoringMode,
+		requiresTools: metadata.requiresTools,
+		requiredHarnessCapabilities: metadata.requiredHarnessCapabilities,
+		timeoutMultiplier: metadata.timeoutMultiplier,
+	});
+}
+
+/**
+ * Computes the checkpoint hash for a benchmark asset.
+ *
+ * @param content - Raw file bytes
+ * @param relPath - Normalized relative asset path
+ * @returns Content hash for benchmark checkpoint derivation
+ */
+function hashBenchmarkAsset(content: Buffer, relPath: string): string {
+	if (relPath.endsWith("/test.meta.json")) {
+		return hashString(buildCheckpointMetadataPayload(content, relPath));
+	}
+	return hashBuffer(content);
+}
+
+/**
  * Normalizes a relative path to POSIX separators for deterministic hashing.
  *
  * @param relPath - Relative path to normalize
@@ -140,10 +187,10 @@ function collectFilesUnderDirectory(rootDir: string, relDir: string): string[] {
 }
 
 /**
- * Lists benchmark-defining asset paths relative to the project root.
+ * Lists Benchmark Checkpoint asset paths relative to the project root.
  *
  * @param rootDir - Project root containing `src/tests`
- * @returns Sorted relative file paths
+ * @returns Sorted relative file paths covering benchmark meaning
  * @throws {Error} If required benchmark assets are missing
  */
 export function collectBenchmarkAssetPaths(
@@ -221,9 +268,10 @@ export function buildBenchmarkManifest(
 	const entries: BenchmarkManifestEntry[] = relativePaths.map((relPath) => {
 		const absolutePath = path.join(rootDir, relPath);
 		const content = fs.readFileSync(absolutePath);
+		const normalizedPath = normalizeRelativePath(relPath);
 		return {
-			path: normalizeRelativePath(relPath),
-			contentHash: hashBuffer(content),
+			path: normalizedPath,
+			contentHash: hashBenchmarkAsset(content, normalizedPath),
 		};
 	});
 

@@ -69,7 +69,10 @@ describe("domain documentation", () => {
 			expect(docs).toContain(term);
 		}
 		expect(plainDocs).toContain(
-			"Benchmark Checkpoint identity changes when Benchmark Prompts, Benchmark Fixtures, Scoring Specs, Eval Rubrics, or Benchmark Metadata change.",
+			"Benchmark Checkpoint identity changes when benchmark meaning changes",
+		);
+		expect(plainDocs).toContain(
+			"execution/scoring semantics such as harnesses, runtimes, runner behavior, extraction, workspace scoring, retry behavior, and signal assessment",
 		);
 		expect(docs).toContain("does not define a permanent redaction policy");
 		expect(docs).not.toMatch(/\bcheckpoint hash\b/i);

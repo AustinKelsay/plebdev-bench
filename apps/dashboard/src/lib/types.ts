@@ -162,9 +162,17 @@ export interface BenchmarkCheckpoint {
 }
 
 /** Runtime environment metadata */
+export interface RuntimeToolVersion {
+	status: "detected" | "unavailable";
+	version?: string;
+	detail?: string;
+}
+
+/** Runtime environment metadata */
 export interface RuntimeEnvironment {
 	platform: string;
 	bunVersion: string;
+	toolVersions?: Record<string, RuntimeToolVersion>;
 }
 
 /** Accelerator detection status for observed hardware */
@@ -334,6 +342,7 @@ export interface RunResult {
 	machine?: MachineProfile;
 	benchmarkCheckpoint?: BenchmarkCheckpoint;
 	provenance?: RunProvenance;
+	runtimeEnvironment?: RuntimeEnvironment;
 	startedAt: string;
 	completedAt: string;
 	durationMs: number;
@@ -428,83 +437,14 @@ export interface LeaderboardAggregate {
 	items: LeaderboardAggregatedItem[];
 }
 
-// ============================================================
-// Compare types (mirroring src/results/compare.ts)
-// ============================================================
-
-/** Score delta between two items */
-export interface ScoreDelta {
-	passedDelta: number;
-	failedDelta: number;
-	totalDelta: number;
-	passRateDelta: number;
-}
-
-/** Frontier eval delta */
-export interface EvalDelta {
-	scoreDelta: number;
-}
-
-/** Deltas between matched items */
-export interface ItemDeltas {
-	status: { a: ItemStatus; b: ItemStatus } | null;
-	automatedScore: ScoreDelta | null;
-	frontierEval: EvalDelta | null;
-	durationMs: number | null;
-}
-
-/** Matched item in compare result */
-export interface MatchedItem {
-	key: string;
-	runtime: ArtifactRuntimeName;
-	model: string;
-	harness: string;
-	test: string;
-	passType: PassType;
-	itemA: MatrixItemResult;
-	itemB: MatrixItemResult;
-	deltas: ItemDeltas;
-}
-
-/** Compare result summary */
-export interface CompareSummary {
-	totalMatched: number;
-	totalOnlyInA: number;
-	totalOnlyInB: number;
-	statusChanges: {
-		improved: number;
-		regressed: number;
-	};
-	scoringDelta: {
-		passRateDelta: number;
-		totalTestsDelta: number;
-	} | null;
-	frontierEvalDelta: {
-		avgScoreDelta: number;
-	} | null;
-	metricAvailability: {
-		scoring: {
-			matchedRows: number;
-			comparedRows: number;
-			trustedComparedRows: number | null;
-		};
-		frontierEval: {
-			matchedRows: number;
-			comparedRows: number;
-			trustedComparedRows: number | null;
-		};
-	};
-}
-
-/** Full compare result */
-export interface CompareResult {
-	runA: { runId: string; timestamp: string };
-	runB: { runId: string; timestamp: string };
-	summary: CompareSummary;
-	matched: MatchedItem[];
-	onlyInA: MatrixItemResult[];
-	onlyInB: MatrixItemResult[];
-}
+export type {
+	CompareResult,
+	CompareSummary,
+	EvalDelta,
+	ItemDeltas,
+	MatchedItem,
+	ScoreDelta,
+} from "./types-compare.js";
 
 // ============================================================
 // Code extraction and tool-smoke types

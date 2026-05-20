@@ -39,6 +39,56 @@ function getStatusVariant(
 }
 
 /**
+ * Returns the Model Profile label displayed as the row's primary model identity.
+ *
+ * @param item - Aggregated leaderboard item
+ * @returns Model Profile label or runtime-model fallback
+ */
+function getModelProfileLabel(item: LeaderboardAggregatedItem): string {
+	return (
+		item.modelProfile?.canonical.profileLabel ?? item.modelAlias ?? item.model
+	);
+}
+
+/**
+ * Renders Model Variant provenance metadata for a leaderboard row.
+ *
+ * @param item - Aggregated leaderboard item
+ * @returns React fragment with runtime-specific variant details
+ */
+function renderModelVariantDetails(item: LeaderboardAggregatedItem) {
+	const profile = item.modelProfile;
+	if (!profile) {
+		return (
+			<span className="text-xs text-foreground-faint">
+				Runtime Model: {item.model}
+			</span>
+		);
+	}
+
+	return (
+		<>
+			<span className="text-xs text-foreground-faint">
+				Runtime Model: {profile.variant.runtimeModelName}
+			</span>
+			<span className="text-xs text-foreground-faint">
+				Variant: {profile.variant.variantLabel}
+			</span>
+			{profile.variant.quantization && (
+				<span className="text-xs text-foreground-faint">
+					Quantization: {profile.variant.quantization}
+				</span>
+			)}
+			{profile.resolutionSource === "runtime_name" && (
+				<Badge variant="warning" className="w-fit">
+					runtime-name fallback - lower trust
+				</Badge>
+			)}
+		</>
+	);
+}
+
+/**
  * Renders the filtered aggregate leaderboard table.
  *
  * @param props - Results-table props
@@ -92,8 +142,13 @@ export function LeaderboardResultsTable({
 									</div>
 								</TableCell>
 								<TableCell>{item.runtime}</TableCell>
-								<TableCell className="max-w-[240px] truncate">
-									{item.model}
+								<TableCell className="max-w-[280px]">
+									<div className="flex flex-col gap-1">
+										<span className="font-medium">
+											{getModelProfileLabel(item)}
+										</span>
+										{renderModelVariantDetails(item)}
+									</div>
 								</TableCell>
 								<TableCell>{item.harness}</TableCell>
 								<TableCell>{item.test}</TableCell>

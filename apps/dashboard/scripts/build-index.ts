@@ -304,6 +304,29 @@ function sanitizePublishedPlan(plan: RunPlan): RunPlan {
 	};
 }
 
+/**
+ * Verifies a Run Result is final enough to publish.
+ *
+ * @param run - Parsed run artifact
+ * @throws {Error} When summary counters do not match item statuses or the run still contains pending/running items
+ */
+function assertPublishableRun(run: RunResult): void {
+	const actual = { completed: 0, failed: 0, pending: 0, running: 0 };
+	for (const item of run.items) {
+		actual[item.status] += 1;
+	}
+	const hasInconsistentSummary =
+		run.summary.total !== run.items.length ||
+		run.summary.completed !== actual.completed ||
+		run.summary.failed !== actual.failed ||
+		run.summary.pending !== actual.pending;
+	if (hasInconsistentSummary || actual.pending > 0 || actual.running > 0) {
+		throw new Error(
+			`Partial Run Result cannot be published: ${run.runId}. Summary counters must match item statuses and all items must be final before building Published Runs.`,
+		);
+	}
+}
+
 interface PublishedRunBundle extends AggregateRunInput {
 	runDirName: string;
 }
@@ -401,9 +424,9 @@ async function readRunBundle(
 	});
 	let run: RunResult;
 	try {
-		run = sanitizePublishedRun(
-			parseKnownRunPayload(JSON.parse(runContent) as unknown),
-		);
+		run = parseKnownRunPayload(JSON.parse(runContent) as unknown);
+		assertPublishableRun(run);
+		run = sanitizePublishedRun(run);
 	} catch (error) {
 		throw new Error(
 			`readRunBundle failed to parse run.json for ${runDirName}: ${(error as Error).message}`,

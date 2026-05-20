@@ -27,8 +27,9 @@ Outputs (per **Benchmark Run**):
 - each persisted file declares its **Schema Version** and now includes:
   - **Benchmark Checkpoint** metadata (`checkpointId`, manifest identifier, asset count)
   - **Machine Instance** identity + canonical **Machine Profile** metadata
+  - **Runtime Environment** metadata (`platform`, `bunVersion`, optional tool-version probes)
   - run provenance metadata (`verificationStatus`, source)
-- **Benchmark Checkpoint** identity changes when **Benchmark Prompts**, **Benchmark Fixtures**, **Scoring Specs**, **Eval Rubrics**, or **Benchmark Metadata** change.
+- **Benchmark Checkpoint** identity changes when benchmark meaning changes: **Benchmark Prompts**, **Benchmark Fixtures**, **Scoring Specs**, **Eval Rubrics**, **Benchmark Metadata**, or execution/scoring semantics such as harnesses, runtimes, runner behavior, extraction, workspace scoring, retry behavior, and signal assessment.
 
 Built-ins:
 - **compare**: produce a **Run Comparison** across **Compatible Run Results**
@@ -239,7 +240,7 @@ bun run src/index.ts compare <run-a> <run-b> --allow-cross-checkpoint
 bun run src/index.ts migrate-machine-profiles --dir apps/dashboard/public/results --rebuild-dashboard-index --dashboard-output-dir apps/dashboard/public/results
 
 # Run tests
-bun test
+bun run test
 
 # Type check
 bun run typecheck
@@ -256,6 +257,11 @@ Machine metadata now splits:
 - `machine.instanceId` — stable **Machine Instance** identity, never derived from hardware
 - `machine.profileKey` — canonical **Machine Profile** used for aggregation
 - `machine.observedHardware` — exact sanitized hardware facts retained for audit/debug
+
+Runtime environment metadata now includes:
+- `runtimeEnvironment.platform` — OS platform observed by the runner
+- `runtimeEnvironment.bunVersion` — Bun version used to execute the run
+- `runtimeEnvironment.toolVersions` — optional per-tool `detected` or `unavailable` version probes for active runtimes and CLIs
 
 Model metadata now splits:
 - `item.model` — exact **Runtime Model** identifier used for generation
@@ -316,7 +322,7 @@ Design constraints:
 - The dashboard validates fetched JSON at the boundary (Zod) and fails loudly on schema mismatch.
 - Dashboard detail views show Published Runs as preserved Benchmark Evidence, not editable summaries.
 - Latest leaderboard view is strict to the currently computed **Benchmark Checkpoint**. See [ADR-0006](docs/adr/0006-require-matching-benchmark-checkpoints-for-comparable-runs.md).
-- Benchmark Checkpoint aggregates group by **Machine Profile** + **Runtime** + **Model Profile** + **Harness** + **Benchmark Test** + **Pass Type**, prefer the strongest result for each key, and only use recency as a later tiebreaker. See [ADR-0007](docs/adr/0007-group-leaderboards-by-machine-profile.md).
+- Benchmark Checkpoint aggregates group by **Machine Profile** + **Runtime** + **Model Profile** + **Harness** + **Benchmark Test** + **Pass Type**, use **Best Observed Item** selection for each key, and only use recency as a later tiebreaker. See [ADR-0007](docs/adr/0007-group-leaderboards-by-machine-profile.md).
 - Legacy runs missing **Benchmark Checkpoint** or **Machine Profile** metadata remain visible in run history and are excluded from latest-checkpoint leaderboard aggregation.
 
 ## Hosted dashboard (what we implemented)

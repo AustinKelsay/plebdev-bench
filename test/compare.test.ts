@@ -84,6 +84,27 @@ describe("compareRuns", () => {
 		expect(comparison2.onlyInA.map((item) => item.test)).toEqual(["todo-app"]);
 	});
 
+	it("reports full-vs-partial Run Config differences as coverage gaps", () => {
+		const smokeBlind = buildItem("01", "smoke", "blind", 1000);
+		const smokeInformed = buildItem("02", "smoke", "informed", 1200);
+		const todoBlind = buildItem("03", "todo-app", "blind", 1500);
+
+		const comparison = compareRuns(
+			buildRun("full-run", [smokeBlind, smokeInformed, todoBlind]),
+			buildRun("partial-run", [smokeBlind]),
+		);
+
+		expect(comparison.matched).toHaveLength(1);
+		expect(comparison.onlyInA).toHaveLength(2);
+		expect(comparison.onlyInB).toHaveLength(0);
+		expect(comparison.summary.coverage).toEqual({
+			comparisonSpaceItems: 3,
+			matchedItems: 1,
+			unmatchedItems: 2,
+			matchedCoverageRate: 1 / 3,
+		});
+	});
+
 	it("separates raw deltas from trusted deltas when runs include tainted rows", () => {
 		const runA = buildRun("run-a", [
 			{

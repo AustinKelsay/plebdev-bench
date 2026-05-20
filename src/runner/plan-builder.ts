@@ -2,19 +2,12 @@
  * Purpose: Build RunPlan from config by discovering runtimes/models/tests/harnesses and expanding the matrix.
  * Exports: buildRunPlan
  *
- * Discovery:
- * - Runtimes: check available inference backends (Ollama, etc.)
- * - Models: fetch from runtime API
- * - Tests: scan src/tests/ directory and load metadata from test.meta.json
- * - Harnesses: detect available CLIs
  */
 
 import * as os from "node:os";
 import {
 	type HarnessName,
-	TOOL_CALLING_HARNESS_NAMES,
 	discoverHarnesses,
-	doesHarnessSupportCapabilities,
 	isHarnessCompatibleWithRuntime,
 	isValidHarnessName,
 	normalizeHarnessName,
@@ -31,6 +24,7 @@ import {
 	resolveModelSelection,
 } from "../lib/model-profiles.js";
 import { generateRunId } from "../lib/run-id.js";
+import { collectRuntimeEnvironment } from "../lib/runtime-environment.js";
 import { discoverTestCatalog, selectTests } from "../lib/test-catalog.js";
 import { isPreflightTest, selectPreflightPassType } from "../lib/tool-smoke.js";
 import {
@@ -38,14 +32,17 @@ import {
 	type RuntimeName,
 	createRuntime,
 } from "../runtimes/index.js";
-import type { BenchConfig, MatrixItem, RunPlan } from "../schemas/index.js";
+import type {
+	BenchConfig,
+	CombinationExclusion,
+	MatrixItem,
+	RunPlan,
+} from "../schemas/index.js";
 import { SCHEMA_VERSION } from "../schemas/index.js";
+import { resolveCombinationExclusion } from "./combination-exclusions.js";
 import { listAvailableModelsByRuntime } from "./model-availability.js";
 import { filterGenerativeModels } from "./model-eligibility.js";
 
-/**
- * Gets the current Bun version.
- */
 function getBunVersion(): string {
 	return typeof Bun !== "undefined" ? Bun.version : "unknown";
 }
@@ -112,7 +109,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 	const runtimes = configuredRuntimes as RuntimeName[];
 	log.info({ runtimes }, `Using ${runtimes.length} runtime(s)`);
 
-	// Discover models per runtime
 	const runtimeModels = new Map<RuntimeName, string[]>();
 	const resolvedModelProfiles = new Map<
 		string,
@@ -149,7 +145,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		const discovered = await runtime.listModels();
 		discoveredModelCount += discovered.length;
 
-		// Apply --models filter if provided (with alias resolution)
 		let filtered: string[];
 		if (config.models.length > 0) {
 			filtered = [];
@@ -228,7 +223,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			}
 		}
 
-		// Ensure direct raw model selections still get profile metadata even when no config mapping exists.
 		if (config.models.length > 0) {
 			for (const runtimeModelName of filtered) {
 				const key = `${runtimeName}::${runtimeModelName}`;
@@ -272,7 +266,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		}
 	}
 
-	// Validate at least one model exists
 	const allModels = [...runtimeModels.values()].flat();
 	if (allModels.length === 0) {
 		if (discoveredModelCount > 0 && modelExclusions.length > 0) {
@@ -286,9 +279,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				`Models were discovered but all were excluded by filterGenerativeModels() before matrix expansion. Excluded models: ${exclusionSummary}. modelExclusions=${JSON.stringify(modelExclusions)}. Remove exclusions or choose text-generation-capable models for text-generation benchmarks, or run an embeddings benchmark if you only want embedding-capable models.`,
 			);
 		}
-		// Provide helpful error message
 		if (config.models.length > 0) {
-			// User specified models but none matched - show what's available
 			const availableByRuntime = await listAvailableModelsByRuntime(
 				runtimes,
 				config,
@@ -303,7 +294,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		);
 	}
 
-	// Load and select tests from catalog
 	log.info("Loading test catalog from src/tests/...");
 	const testCatalog = discoverTestCatalog();
 	const selectedTests = selectTests(
@@ -320,17 +310,14 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		`Using ${selectedTests.length} test(s) across ${selectedTestCategories.length} categor${selectedTestCategories.length === 1 ? "y" : "ies"}`,
 	);
 
-	// Discover available harnesses
 	const availableHarnesses = await discoverHarnesses();
 
-	// Auto-discover all harnesses if not specified, otherwise validate requested ones
 	let harnesses: HarnessName[];
 	if (config.harnesses.length === 0) {
 		log.info("Auto-discovering harnesses...");
 		harnesses = availableHarnesses;
 		log.info({ harnesses }, `Found ${harnesses.length} harness(es)`);
 	} else {
-		// Normalize and validate requested harnesses
 		const normalized = config.harnesses.map((h) => {
 			if (!isValidHarnessName(h)) {
 				throw new Error(
@@ -340,7 +327,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			return normalizeHarnessName(h);
 		});
 
-		// Check availability
 		const unavailable = normalized.filter(
 			(h) => !availableHarnesses.includes(h),
 		);
@@ -354,15 +340,14 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		log.info({ harnesses }, `Using ${harnesses.length} harness(es)`);
 	}
 
-	// Build matrix items: runtimes × harnesses (filtered by compatibility) × models (per-runtime) × tests × passTypes
 	const items: MatrixItem[] = [];
+	const combinationExclusions: CombinationExclusion[] = [];
 	let itemIndex = 0;
 
 	for (const runtime of runtimes) {
 		const modelsForRuntime = runtimeModels.get(runtime) ?? [];
 		if (modelsForRuntime.length === 0) continue;
 
-		// Filter harnesses to only those compatible with this runtime
 		const compatibleHarnesses = harnesses.filter((h) =>
 			isHarnessCompatibleWithRuntime(h, runtime),
 		);
@@ -388,22 +373,14 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 				const resolvedModel = resolvedModelProfiles.get(`${runtime}::${model}`);
 
 				for (const test of selectedTests) {
-					if (
-						test.requiresTools &&
-						!TOOL_CALLING_HARNESS_NAMES.includes(
-							harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
-						)
-					) {
-						continue;
-					}
-
-					if (
-						test.requiredHarnessCapabilities.length > 0 &&
-						!doesHarnessSupportCapabilities(
-							harness,
-							test.requiredHarnessCapabilities,
-						)
-					) {
+					const combinationExclusion = resolveCombinationExclusion({
+						runtime,
+						harness,
+						model,
+						test,
+					});
+					if (combinationExclusion) {
+						combinationExclusions.push(combinationExclusion);
 						continue;
 					}
 
@@ -450,7 +427,6 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		);
 	}
 
-	// Derive summary from actual expanded matrix items, not requested/discovered sets.
 	const summaryRuntimes = new Set(items.map((item) => item.runtime));
 	const summaryModels = new Set(
 		items.map((item) =>
@@ -467,16 +443,22 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 					category !== undefined,
 			),
 	);
+	const runtimeEnvironment = await collectRuntimeEnvironment({
+		platform: os.platform(),
+		bunVersion: getBunVersion(),
+		toolNames: [
+			...new Set([
+				...runtimes,
+				...harnesses.filter((harness) => harness !== "direct"),
+			]),
+		],
+	});
 
-	// Build the plan
 	const plan: RunPlan = {
 		schemaVersion: SCHEMA_VERSION,
 		runId,
 		createdAt: new Date().toISOString(),
-		runtimeEnvironment: {
-			platform: os.platform(),
-			bunVersion: getBunVersion(),
-		},
+		runtimeEnvironment,
 		machine: resolvedMachine.machine,
 		benchmarkCheckpoint,
 		provenance: {
@@ -495,6 +477,7 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 		},
 		items,
 		...(modelExclusions.length > 0 ? { modelExclusions } : {}),
+		...(combinationExclusions.length > 0 ? { combinationExclusions } : {}),
 		summary: {
 			totalItems: items.length,
 			runtimes: summaryRuntimes.size,

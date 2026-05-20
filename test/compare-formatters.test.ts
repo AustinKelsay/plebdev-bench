@@ -16,6 +16,7 @@ import {
 	printScoringDeltas,
 	printSummary,
 } from "../src/cli/compare-formatters.js";
+import { formatDelta } from "../src/results/compare-format.js";
 import type { CompareResult } from "../src/results/compare.js";
 import type { MatrixItemResult } from "../src/schemas/index.js";
 
@@ -89,6 +90,12 @@ function buildCompareFixture(): CompareResult {
 			totalMatched: 3,
 			totalOnlyInA: 11,
 			totalOnlyInB: 1,
+			coverage: {
+				comparisonSpaceItems: 15,
+				matchedItems: 3,
+				unmatchedItems: 12,
+				matchedCoverageRate: 0.2,
+			},
 			statusChanges: {
 				improved: 1,
 				regressed: 1,
@@ -214,6 +221,11 @@ describe("compare formatters", () => {
 		vi.restoreAllMocks();
 	});
 
+	it("rejects non-finite delta values before formatting", () => {
+		expect(() => formatDelta(Number.NaN)).toThrow(TypeError);
+		expect(() => formatDelta(Number.POSITIVE_INFINITY)).toThrow(TypeError);
+	});
+
 	it("prints deterministic UTC header timestamps", () => {
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -233,6 +245,7 @@ describe("compare formatters", () => {
 
 		const output = readLoggedOutput(logSpy);
 		expect(output).toContain("Matched items:  3");
+		expect(output).toContain("Coverage:       3/15 matched (20.0%)");
 		expect(output).toContain("Raw pass rate:      Δ +5.0%");
 		expect(output).toContain("Trusted pass rate:  Δ +2.0%");
 		expect(output).toContain("Raw avg score:      Δ +1.5/10");

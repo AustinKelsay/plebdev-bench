@@ -128,6 +128,58 @@ describe("benchmark checkpoint", () => {
 		expect(after.checkpointId).not.toBe(before.checkpointId);
 	});
 
+	it("does not change manifest hash when category label changes", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		const metadataPath = path.join(
+			root,
+			"src",
+			"tests",
+			"smoke",
+			"test.meta.json",
+		);
+		fs.writeFileSync(
+			metadataPath,
+			JSON.stringify({ schemaVersion: 1, category: "computer-use" }, null, 2),
+		);
+
+		const after = computeBenchmarkCheckpoint(root);
+		expect(after.manifestHash).toBe(before.manifestHash);
+		expect(after.checkpointId).toBe(before.checkpointId);
+	});
+
+	it("changes manifest hash when scoring mode changes", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		const metadataPath = path.join(
+			root,
+			"src",
+			"tests",
+			"smoke",
+			"test.meta.json",
+		);
+		fs.writeFileSync(
+			metadataPath,
+			JSON.stringify(
+				{
+					schemaVersion: 1,
+					category: "coding",
+					scoringMode: "workspace",
+					requiresTools: true,
+					requiredHarnessCapabilities: ["workspace-read"],
+				},
+				null,
+				2,
+			),
+		);
+
+		const after = computeBenchmarkCheckpoint(root);
+		expect(after.manifestHash).not.toBe(before.manifestHash);
+		expect(after.checkpointId).not.toBe(before.checkpointId);
+	});
+
 	it("changes manifest hash when harness implementation changes", () => {
 		const root = createBenchmarkRoot();
 		const before = computeBenchmarkCheckpoint(root);
@@ -143,6 +195,27 @@ describe("benchmark checkpoint", () => {
 		const after = computeBenchmarkCheckpoint(root);
 		expect(after.manifestHash).not.toBe(before.manifestHash);
 		expect(after.checkpointId).not.toBe(before.checkpointId);
+	});
+
+	it("changes manifest hash when runtime or runner semantics change", () => {
+		const root = createBenchmarkRoot();
+		const before = computeBenchmarkCheckpoint(root);
+
+		fs.writeFileSync(
+			path.join(root, "src", "runtimes", "ollama-runtime.ts"),
+			"export const ollamaRuntime = 2;\n",
+		);
+		const afterRuntimeChange = computeBenchmarkCheckpoint(root);
+		expect(afterRuntimeChange.manifestHash).not.toBe(before.manifestHash);
+
+		fs.writeFileSync(
+			path.join(root, "src", "runner", "index.ts"),
+			"export const runnerIndex = 2;\n",
+		);
+		const afterRunnerChange = computeBenchmarkCheckpoint(root);
+		expect(afterRunnerChange.manifestHash).not.toBe(
+			afterRuntimeChange.manifestHash,
+		);
 	});
 
 	it("changes manifest hash when signal assessment changes", () => {

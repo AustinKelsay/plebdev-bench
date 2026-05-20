@@ -9,18 +9,30 @@
  */
 
 import { migrateLegacyMachineProfile } from "../lib/machine-profile/legacy.js";
-import { getModelIdentityKey } from "../lib/model-profiles.js";
 import type {
 	MatrixItemResult,
+	ModelProfileResolutionSource,
 	RunPlan,
 	RunResult,
 	VerificationStatus,
 } from "../schemas/index.js";
+import {
+	buildAggregateKey,
+	compareAggregateCandidates,
+	resolveItemTimestamp,
+	resolveModelProfileResolutionSource,
+	sortAggregatedItems,
+} from "./aggregate-selection.js";
 
 /** Run input bundle used by index/aggregate generation. */
 export interface AggregateRunInput {
 	run: RunResult;
 	plan?: RunPlan;
+}
+
+/** Optional aggregate filters for derived analysis views. */
+export interface AggregateRunsForCheckpointOptions {
+	signalFilter?: "all" | "trusted_only";
 }
 
 /** Resolved metadata used for checkpoint and profile-aware aggregation. */
@@ -43,6 +55,7 @@ export type AggregatedMatrixItem = MatrixItemResult & {
 	machineInstanceId?: string;
 	machineDisplayLabel?: string;
 	verificationStatus: VerificationStatus;
+	modelProfileResolutionSource: ModelProfileResolutionSource;
 	sourceRunId: string;
 	sourceCompletedAt: string;
 };
@@ -69,6 +82,16 @@ export interface CheckpointAggregateSummary {
 	instances: number;
 	automatedScoreItems: number;
 	frontierEvalItems: number;
+	signalFilter: {
+		mode: "all" | "trusted_only";
+		excludedTaintedItems: number;
+	};
+}
+
+/** Leaderboard item-selection semantics for duplicate aggregate keys. */
+export interface CheckpointAggregateSelectionPolicy {
+	itemSelection: "best_observed_item";
+	tieBreaker: "latest_item";
 }
 
 /** Full aggregate payload for one checkpoint. */
@@ -76,6 +99,7 @@ export interface CheckpointAggregate {
 	schemaVersion: 2;
 	generatedAt: string;
 	checkpointId: string;
+	selectionPolicy: CheckpointAggregateSelectionPolicy;
 	summary: CheckpointAggregateSummary;
 	machines: MachineAggregateSummary[];
 	items: AggregatedMatrixItem[];
@@ -114,172 +138,6 @@ function mergeVerificationStatus(
 }
 
 /**
- * Builds the deterministic aggregation key for one matrix item.
- *
- * @param machineProfileKey - Machine profile key
- * @param item - Matrix item
- * @returns Stable aggregation key
- */
-function buildAggregateKey(
-	machineProfileKey: string,
-	item: MatrixItemResult,
-): string {
-	const canonicalModel = getModelIdentityKey(
-		item.model,
-		item.modelProfile,
-		item.modelAlias,
-	);
-	return `${machineProfileKey}|${item.runtime}|${canonicalModel}|${item.harness}|${item.test}|${item.passType}`;
-}
-
-/**
- * Converts timestamp fields into a comparable unix epoch value.
- *
- * @param value - ISO timestamp
- * @returns Epoch milliseconds, or 0 when invalid/missing
- */
-function toEpochMs(value: string | undefined): number {
-	if (!value) return 0;
-	const parsed = Date.parse(value);
-	return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-/**
- * Produces a deterministic primary timestamp for latest-wins comparisons.
- *
- * @param run - Run result containing fallback timestamps
- * @param item - Matrix item for per-item timestamps
- * @returns Comparable epoch value
- */
-function resolveItemTimestamp(run: RunResult, item: MatrixItemResult): number {
-	return Math.max(
-		toEpochMs(item.completedAt),
-		toEpochMs(item.startedAt),
-		toEpochMs(run.completedAt),
-		toEpochMs(run.startedAt),
-	);
-}
-
-/**
- * Assigns an ordering weight to item execution status for best-result selection.
- *
- * @param status - Item execution status
- * @returns Numeric rank where larger means better
- */
-function getStatusRank(status: MatrixItemResult["status"]): number {
-	switch (status) {
-		case "completed":
-			return 3;
-		case "failed":
-			return 2;
-		case "running":
-			return 1;
-		case "pending":
-			return 0;
-	}
-}
-
-/**
- * Produces a comparable pass-rate score for best-result selection.
- *
- * @param item - Matrix item candidate
- * @returns Pass-rate fraction in [0, 1], or -1 when unavailable
- */
-function getAutomatedPassRate(item: MatrixItemResult): number {
-	if (!item.automatedScore || item.automatedScore.total <= 0) {
-		return -1;
-	}
-	return item.automatedScore.passed / item.automatedScore.total;
-}
-
-/**
- * Compares two aggregate candidates for the same profile+matrix key.
- *
- * @param candidate - New candidate entry
- * @param incumbent - Existing entry
- * @returns Positive when candidate should replace incumbent
- */
-function compareAggregateCandidates(
-	candidate: { timestamp: number; aggregated: AggregatedMatrixItem },
-	incumbent: { timestamp: number; aggregated: AggregatedMatrixItem },
-): number {
-	const statusDelta =
-		getStatusRank(candidate.aggregated.status) -
-		getStatusRank(incumbent.aggregated.status);
-	if (statusDelta !== 0) return statusDelta;
-
-	const passRateDelta =
-		getAutomatedPassRate(candidate.aggregated) -
-		getAutomatedPassRate(incumbent.aggregated);
-	if (passRateDelta !== 0) return passRateDelta;
-
-	const passedDelta =
-		(candidate.aggregated.automatedScore?.passed ?? -1) -
-		(incumbent.aggregated.automatedScore?.passed ?? -1);
-	if (passedDelta !== 0) return passedDelta;
-
-	const totalDelta =
-		(candidate.aggregated.automatedScore?.total ?? -1) -
-		(incumbent.aggregated.automatedScore?.total ?? -1);
-	if (totalDelta !== 0) return totalDelta;
-
-	const frontierDelta =
-		(candidate.aggregated.frontierEval?.score ?? -1) -
-		(incumbent.aggregated.frontierEval?.score ?? -1);
-	if (frontierDelta !== 0) return frontierDelta;
-
-	const generationSuccessDelta =
-		Number(candidate.aggregated.generation?.success === true) -
-		Number(incumbent.aggregated.generation?.success === true);
-	if (generationSuccessDelta !== 0) return generationSuccessDelta;
-
-	const candidateDuration = candidate.aggregated.generation?.durationMs;
-	const incumbentDuration = incumbent.aggregated.generation?.durationMs;
-	if (
-		candidateDuration !== undefined &&
-		incumbentDuration !== undefined &&
-		candidateDuration !== incumbentDuration
-	) {
-		return incumbentDuration - candidateDuration;
-	}
-
-	if (candidate.timestamp !== incumbent.timestamp) {
-		return candidate.timestamp - incumbent.timestamp;
-	}
-	if (
-		candidate.aggregated.sourceCompletedAt !==
-		incumbent.aggregated.sourceCompletedAt
-	) {
-		return candidate.aggregated.sourceCompletedAt.localeCompare(
-			incumbent.aggregated.sourceCompletedAt,
-		);
-	}
-	return candidate.aggregated.sourceRunId.localeCompare(
-		incumbent.aggregated.sourceRunId,
-	);
-}
-
-/**
- * Sorts aggregated items into deterministic order.
- *
- * @param left - First aggregated item
- * @param right - Second aggregated item
- * @returns Sort comparator result
- */
-function sortAggregatedItems(
-	left: AggregatedMatrixItem,
-	right: AggregatedMatrixItem,
-): number {
-	const leftKey = buildAggregateKey(left.machineProfileKey, left);
-	const rightKey = buildAggregateKey(right.machineProfileKey, right);
-	if (leftKey !== rightKey) return leftKey.localeCompare(rightKey);
-	if (left.sourceCompletedAt !== right.sourceCompletedAt) {
-		return left.sourceCompletedAt.localeCompare(right.sourceCompletedAt);
-	}
-	return left.sourceRunId.localeCompare(right.sourceRunId);
-}
-
-/**
  * Resolves checkpoint/machine/provenance metadata from run/plan artifacts.
  *
  * @param input - Run plus optional plan artifact
@@ -314,12 +172,15 @@ export function resolveRunMetadata(input: AggregateRunInput): ResolvedRunMetadat
  *
  * @param runs - Run inputs containing run and optional plan artifacts
  * @param checkpointId - Target checkpoint to aggregate
+ * @param options - Aggregate behavior, including `signalFilter` for all runs or trusted-only analysis
  * @returns Checkpoint aggregate payload
  */
 export function aggregateRunsForCheckpoint(
 	runs: AggregateRunInput[],
 	checkpointId: string,
+	options: AggregateRunsForCheckpointOptions = {},
 ): CheckpointAggregate {
+	const signalFilter = options.signalFilter ?? "all";
 	const resolvedRuns = runs.map((input) => ({
 		input,
 		metadata: resolveRunMetadata(input),
@@ -333,6 +194,7 @@ export function aggregateRunsForCheckpoint(
 	);
 
 	let rawItems = 0;
+	let excludedTaintedItems = 0;
 	const profileRunSet = new Map<string, Set<string>>();
 	const profileInstanceSet = new Map<string, Set<string>>();
 
@@ -349,6 +211,13 @@ export function aggregateRunsForCheckpoint(
 
 		for (const item of input.run.items) {
 			rawItems++;
+			if (
+				signalFilter === "trusted_only" &&
+				item.signalAssessment?.classification === "tainted"
+			) {
+				excludedTaintedItems++;
+				continue;
+			}
 			const key = buildAggregateKey(machineProfileKey, item);
 			const timestamp = resolveItemTimestamp(input.run, item);
 			const aggregated: AggregatedMatrixItem = {
@@ -371,6 +240,7 @@ export function aggregateRunsForCheckpoint(
 					? { machineDisplayLabel: metadata.machineDisplayLabel }
 					: {}),
 				verificationStatus: metadata.verificationStatus,
+				modelProfileResolutionSource: resolveModelProfileResolutionSource(item),
 				sourceRunId: input.run.runId,
 				sourceCompletedAt:
 					item.completedAt ??
@@ -461,6 +331,10 @@ export function aggregateRunsForCheckpoint(
 		schemaVersion: 2,
 		generatedAt: new Date().toISOString(),
 		checkpointId,
+		selectionPolicy: {
+			itemSelection: "best_observed_item",
+			tieBreaker: "latest_item",
+		},
 		summary: {
 			runsConsidered: runs.length,
 			runsMatched: matchedRuns.length,
@@ -474,6 +348,10 @@ export function aggregateRunsForCheckpoint(
 			).size,
 			automatedScoreItems: items.filter((item) => item.automatedScore).length,
 			frontierEvalItems: items.filter((item) => item.frontierEval).length,
+			signalFilter: {
+				mode: signalFilter,
+				excludedTaintedItems,
+			},
 		},
 		machines,
 		items,

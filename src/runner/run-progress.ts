@@ -58,6 +58,9 @@ export function buildRunResultSnapshot(
 		...(plan.benchmarkCheckpoint
 			? { benchmarkCheckpoint: plan.benchmarkCheckpoint }
 			: {}),
+		...(plan.runtimeEnvironment
+			? { runtimeEnvironment: plan.runtimeEnvironment }
+			: {}),
 		provenance: {
 			...plan.provenance,
 			verificationStatus: "self_reported",
