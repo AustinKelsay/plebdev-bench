@@ -66,4 +66,14 @@ describe("runCommand", () => {
 			"Benchmark run crashed",
 		);
 	});
+
+	it("documents Hermes harness and turn-limit options in help text", () => {
+		const helpText = runCommand.helpInformation();
+
+		expect(helpText).toContain("direct, goose, hermes, opencode");
+		expect(helpText).toContain("--hermes-max-turns");
+		expect(helpText).toContain("--hermes-retry-max-turns");
+		expect(helpText).toContain("--hermes-workspace-max-turns");
+		expect(helpText).toContain("--hermes-workspace-retry-max-turns");
+	});
 });

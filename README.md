@@ -226,6 +226,13 @@ Legacy alias-only files and `--model-alias "name=runtime:model,..."` still work.
   - `--goose-workspace-max-turns <n>` controls first-attempt workspace turns (default: `8`)
   - `--goose-workspace-retry-max-turns <n>` controls workspace retry turns (default: `12`)
   - `--goose-workspace-retry-max-turns` must be greater than or equal to `--goose-workspace-max-turns`
+- Hermes headless turn controls:
+  - `--hermes-max-turns <n>` controls first attempt turns (default: `1`)
+  - `--hermes-retry-max-turns <n>` controls retry turns after harness-level retry (default: `3`)
+  - `--hermes-retry-max-turns` must be greater than or equal to `--hermes-max-turns`
+  - `--hermes-workspace-max-turns <n>` controls first-attempt workspace turns (default: `8`)
+  - `--hermes-workspace-retry-max-turns <n>` controls workspace retry turns (default: `12`)
+  - `--hermes-workspace-retry-max-turns` must be greater than or equal to `--hermes-workspace-max-turns`
 
 ## Core CLI Commands
 

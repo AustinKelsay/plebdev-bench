@@ -120,6 +120,10 @@ const CONFIG = {
 	gooseRetryMaxTurns: 3,
 	gooseWorkspaceMaxTurns: 8,
 	gooseWorkspaceRetryMaxTurns: 12,
+	hermesMaxTurns: 1,
+	hermesRetryMaxTurns: 3,
+	hermesWorkspaceMaxTurns: 8,
+	hermesWorkspaceRetryMaxTurns: 12,
 	outputDir: "results",
 	modelProfiles: {},
 } satisfies BenchConfig;

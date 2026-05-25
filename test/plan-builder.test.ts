@@ -10,6 +10,7 @@ import {
 } from "./utils/fixtures.js";
 
 const discoverHarnessesMock = vi.fn();
+const isHarnessAvailableMock = vi.fn();
 const createRuntimeMock = vi.fn();
 const discoverTestCatalogMock = vi.fn();
 const selectTestsMock = vi.fn();
@@ -21,8 +22,9 @@ collectMachineProfileMock.mockImplementation(fallbackCollectMachineProfile);
 
 vi.mock("../src/harnesses/index.js", () => {
 	return {
-		TOOL_CALLING_HARNESS_NAMES: ["goose", "opencode"],
+		TOOL_CALLING_HARNESS_NAMES: ["goose", "hermes", "opencode"],
 		discoverHarnesses: discoverHarnessesMock,
+		isHarnessAvailable: isHarnessAvailableMock,
 		isHarnessCompatibleWithRuntime: () => true,
 		isValidHarnessName: () => true,
 		normalizeHarnessName: (name: string) => name,
@@ -33,6 +35,13 @@ vi.mock("../src/harnesses/index.js", () => {
 			const supported: Record<string, string[]> = {
 				direct: [],
 				goose: ["workspace-read", "workspace-write"],
+				hermes: [
+					"workspace-read",
+					"workspace-write",
+					"workspace-mkdir",
+					"workspace-search",
+					"workspace-delete",
+				],
 				opencode: [
 					"workspace-read",
 					"workspace-write",
@@ -108,6 +117,10 @@ function createBenchConfig(overrides: Partial<BenchConfig> = {}): BenchConfig {
 		gooseRetryMaxTurns: 3,
 		gooseWorkspaceMaxTurns: 8,
 		gooseWorkspaceRetryMaxTurns: 12,
+		hermesMaxTurns: 1,
+		hermesRetryMaxTurns: 3,
+		hermesWorkspaceMaxTurns: 8,
+		hermesWorkspaceRetryMaxTurns: 12,
 		outputDir: "results",
 		modelProfiles: {},
 		...overrides,
@@ -122,6 +135,7 @@ describe("buildRunPlan", () => {
 
 	beforeEach(() => {
 		discoverHarnessesMock.mockReset();
+		isHarnessAvailableMock.mockReset();
 		createRuntimeMock.mockReset();
 		discoverTestCatalogMock.mockReset();
 		selectTestsMock.mockReset();
@@ -130,6 +144,9 @@ describe("buildRunPlan", () => {
 		generateRunIdMock.mockReset();
 
 		discoverHarnessesMock.mockResolvedValue(["direct", "goose", "opencode"]);
+		isHarnessAvailableMock.mockImplementation(async (harness: string) =>
+			["direct", "goose", "hermes", "opencode"].includes(harness),
+		);
 		createRuntimeMock.mockReturnValue(createRuntimeStub());
 		computeBenchmarkCheckpointMock.mockReturnValue({
 			checkpointId: "chk_test",
@@ -314,6 +331,40 @@ describe("buildRunPlan", () => {
 			plan.items.map((item) => item.modelProfile?.canonical.profileKey),
 		).toEqual(["qwen3-27b-instruct"]);
 		expect(plan.items[0].modelProfile?.variant.runtime).toBe("ollama");
+	});
+
+	it("plans explicit Hermes selections with workspace capability coverage", async () => {
+		const catalog = createWorkspaceCapabilityCatalog().filter((test) =>
+			["tool-smoke", "file-delete-smoke"].includes(test.slug),
+		);
+		discoverTestCatalogMock.mockReturnValue(catalog);
+		selectTestsMock.mockImplementation((selectedCatalog) => selectedCatalog);
+
+		const { buildRunPlan } = await import("../src/runner/plan-builder.js");
+		const plan = await buildRunPlan(
+			createBenchConfig({
+				harnesses: ["hermes"],
+				hermesMaxTurns: 2,
+				hermesRetryMaxTurns: 4,
+				hermesWorkspaceMaxTurns: 6,
+				hermesWorkspaceRetryMaxTurns: 9,
+			}),
+		);
+
+		expect(plan.items.map((item) => item.harness)).toEqual([
+			"hermes",
+			"hermes",
+		]);
+		expect(plan.items.map((item) => item.test)).toEqual([
+			"tool-smoke",
+			"file-delete-smoke",
+		]);
+		expect(plan.combinationExclusions).toBeUndefined();
+		expect(plan.config.hermesMaxTurns).toBe(2);
+		expect(plan.config.hermesRetryMaxTurns).toBe(4);
+		expect(plan.config.hermesWorkspaceMaxTurns).toBe(6);
+		expect(plan.config.hermesWorkspaceRetryMaxTurns).toBe(9);
+		expect(plan.runtimeEnvironment?.toolVersions?.hermes).toBeDefined();
 	});
 
 	it("dedupes overlapping model selectors that resolve to the same runtime model", async () => {

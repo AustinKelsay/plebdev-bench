@@ -102,7 +102,7 @@ export const runCommand = new Command("run")
 	)
 	.option(
 		"-H, --harnesses <harnesses...>",
-		"Limit to specific harnesses: direct, goose, opencode (default: all available). 'ollama' is accepted as alias for 'direct'.",
+		"Limit to specific harnesses: direct, goose, hermes, opencode (default: all available). 'ollama' is accepted as alias for 'direct'.",
 	)
 	.option("--ollama-url <url>", "Ollama API base URL", "http://localhost:11434")
 	.option(
@@ -124,6 +124,22 @@ export const runCommand = new Command("run")
 	.option(
 		"--goose-workspace-retry-max-turns <n>",
 		"Goose max turns for retry workspace attempt",
+		"12",
+	)
+	.option("--hermes-max-turns <n>", "Hermes max turns for initial attempt", "1")
+	.option(
+		"--hermes-retry-max-turns <n>",
+		"Hermes max turns for retry attempt",
+		"3",
+	)
+	.option(
+		"--hermes-workspace-max-turns <n>",
+		"Hermes max turns for initial workspace attempt",
+		"8",
+	)
+	.option(
+		"--hermes-workspace-retry-max-turns <n>",
+		"Hermes max turns for retry workspace attempt",
 		"12",
 	)
 	.option("-o, --output <dir>", "Output directory", "results")
@@ -268,6 +284,22 @@ export const runCommand = new Command("run")
 				gooseWorkspaceRetryMaxTurns: parseStrictIntegerOption(
 					"--goose-workspace-retry-max-turns",
 					options.gooseWorkspaceRetryMaxTurns,
+				),
+				hermesMaxTurns: parseStrictIntegerOption(
+					"--hermes-max-turns",
+					options.hermesMaxTurns,
+				),
+				hermesRetryMaxTurns: parseStrictIntegerOption(
+					"--hermes-retry-max-turns",
+					options.hermesRetryMaxTurns,
+				),
+				hermesWorkspaceMaxTurns: parseStrictIntegerOption(
+					"--hermes-workspace-max-turns",
+					options.hermesWorkspaceMaxTurns,
+				),
+				hermesWorkspaceRetryMaxTurns: parseStrictIntegerOption(
+					"--hermes-workspace-retry-max-turns",
+					options.hermesWorkspaceRetryMaxTurns,
 				),
 				outputDir: options.output,
 				machineInstanceId: resolvedMachineId,

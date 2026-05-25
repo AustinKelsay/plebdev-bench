@@ -54,6 +54,10 @@ interface RuntimeUrls {
 	gooseRetryMaxTurns: number;
 	gooseWorkspaceMaxTurns: number;
 	gooseWorkspaceRetryMaxTurns: number;
+	hermesMaxTurns: number;
+	hermesRetryMaxTurns: number;
+	hermesWorkspaceMaxTurns: number;
+	hermesWorkspaceRetryMaxTurns: number;
 }
 
 const GENERATION_FAILURE_TYPE_SET = new Set(generationFailureTypes);
@@ -181,6 +185,12 @@ export async function executeItem(
 			retryMaxTurns: runtimeConfig.gooseRetryMaxTurns,
 			workspaceMaxTurns: runtimeConfig.gooseWorkspaceMaxTurns,
 			workspaceRetryMaxTurns: runtimeConfig.gooseWorkspaceRetryMaxTurns,
+		},
+		hermes: {
+			maxTurns: runtimeConfig.hermesMaxTurns,
+			retryMaxTurns: runtimeConfig.hermesRetryMaxTurns,
+			workspaceMaxTurns: runtimeConfig.hermesWorkspaceMaxTurns,
+			workspaceRetryMaxTurns: runtimeConfig.hermesWorkspaceRetryMaxTurns,
 		},
 	});
 	let workspace: Awaited<ReturnType<typeof prepareTestWorkspace>> | undefined;

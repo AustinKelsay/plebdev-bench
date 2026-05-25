@@ -61,6 +61,14 @@ describe("classifyGenerationError", () => {
 		expect(classifyGenerationError("OpenCode exited with code 1")).toBe(
 			"harness_error",
 		);
+		expect(
+			classifyGenerationError("Hermes did not produce required solution.ts"),
+		).toBe("harness_error");
+		expect(
+			classifyGenerationError(
+				"Hermes printed textual tool-call syntax instead of invoking workspace tools",
+			),
+		).toBe("harness_error");
 	});
 
 	it("should return unknown for unrecognized errors", () => {

@@ -28,18 +28,22 @@ describe("Runtime Environment tool versions", () => {
 			if (command === "ollama") {
 				return { stdout: "ollama version is 0.9.1", stderr: "", exitCode: 0 };
 			}
+			if (command === "hermes") {
+				return { stdout: "hermes 1.2.3", stderr: "", exitCode: 0 };
+			}
 			return { stdout: "", stderr: "not found", exitCode: 127 };
 		});
 
 		const runtimeEnvironment = await collectRuntimeEnvironment({
 			platform: "darwin",
 			bunVersion: "1.3.3",
-			toolNames: ["ollama", "goose"],
+			toolNames: ["ollama", "goose", "hermes"],
 		});
 
 		expect(runtimeEnvironment.toolVersions).toEqual({
 			ollama: { status: "detected", version: "0.9.1" },
 			goose: { status: "unavailable", detail: "not found" },
+			hermes: { status: "detected", version: "1.2.3" },
 		});
 		expect(
 			RunPlanSchema.parse({

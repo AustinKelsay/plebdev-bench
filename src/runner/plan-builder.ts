@@ -8,6 +8,7 @@ import * as os from "node:os";
 import {
 	type HarnessName,
 	discoverHarnesses,
+	isHarnessAvailable,
 	isHarnessCompatibleWithRuntime,
 	isValidHarnessName,
 	normalizeHarnessName,
@@ -327,9 +328,15 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			return normalizeHarnessName(h);
 		});
 
-		const unavailable = normalized.filter(
-			(h) => !availableHarnesses.includes(h),
+		const availability = await Promise.all(
+			normalized.map(async (harness) => ({
+				harness,
+				isAvailable: await isHarnessAvailable(harness),
+			})),
 		);
+		const unavailable = availability
+			.filter((result) => !result.isAvailable)
+			.map((result) => result.harness);
 		if (unavailable.length > 0) {
 			throw new Error(
 				`Harnesses not available: ${unavailable.join(", ")}. ` +
@@ -472,6 +479,10 @@ export async function buildRunPlan(config: BenchConfig): Promise<RunPlan> {
 			gooseRetryMaxTurns: config.gooseRetryMaxTurns,
 			gooseWorkspaceMaxTurns: config.gooseWorkspaceMaxTurns,
 			gooseWorkspaceRetryMaxTurns: config.gooseWorkspaceRetryMaxTurns,
+			hermesMaxTurns: config.hermesMaxTurns,
+			hermesRetryMaxTurns: config.hermesRetryMaxTurns,
+			hermesWorkspaceMaxTurns: config.hermesWorkspaceMaxTurns,
+			hermesWorkspaceRetryMaxTurns: config.hermesWorkspaceRetryMaxTurns,
 			passTypes: config.passTypes,
 			categories: config.categories,
 		},

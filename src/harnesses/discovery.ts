@@ -5,6 +5,7 @@
  * Checks for:
  * - direct: Always available (runtime availability checked separately)
  * - goose: CLI available via `which goose`
+ * - hermes: CLI available and `hermes chat` exposes required flags
  * - opencode: CLI available and `opencode run` exposes required flags
  *
  * Note: Runtime availability (e.g., Ollama) is checked separately.
@@ -13,6 +14,7 @@
 import { execa } from "execa";
 import { logger } from "../lib/logger.js";
 import type { HarnessName } from "./harness.js";
+import { getHermesRunFeatures, isHermesRunCompatible } from "./hermes-cli.js";
 import {
 	getOpenCodeRunFeatures,
 	isOpenCodeRunCompatible,
@@ -79,6 +81,31 @@ async function isOpenCodeAvailable(): Promise<boolean> {
 }
 
 /**
+ * Checks whether the installed Hermes CLI supports benchmark run mode.
+ *
+ * @returns True when Hermes is installed and exposes required run flags
+ */
+async function isHermesAvailable(): Promise<boolean> {
+	try {
+		const features = await getHermesRunFeatures();
+		return isHermesRunCompatible(features);
+	} catch (error) {
+		if (isCommandMissingError(error)) {
+			logger.debug(
+				{ err: error, probe: "hermes", functionName: "isHermesAvailable" },
+				"Hermes CLI not installed",
+			);
+			return false;
+		}
+		logger.warn(
+			{ err: error, probe: "hermes", functionName: "isHermesAvailable" },
+			"Hermes probe failed",
+		);
+		return false;
+	}
+}
+
+/**
  * Check if a specific harness is available.
  *
  * @param name - Harness name to check
@@ -91,6 +118,8 @@ export async function isHarnessAvailable(name: HarnessName): Promise<boolean> {
 			return true;
 		case "goose":
 			return isCliAvailable("goose");
+		case "hermes":
+			return isHermesAvailable();
 		case "opencode":
 			return isOpenCodeAvailable();
 		default:
@@ -110,13 +139,19 @@ export async function discoverHarnesses(): Promise<HarnessName[]> {
 	available.push("direct");
 
 	// Check CLI harnesses in parallel
-	const [gooseAvailable, opencodeAvailable] = await Promise.all([
-		isCliAvailable("goose"),
-		isOpenCodeAvailable(),
-	]);
+	const [gooseAvailable, hermesAvailable, opencodeAvailable] =
+		await Promise.all([
+			isCliAvailable("goose"),
+			isHermesAvailable(),
+			isOpenCodeAvailable(),
+		]);
 
 	if (gooseAvailable) {
 		available.push("goose");
+	}
+
+	if (hermesAvailable) {
+		available.push("hermes");
 	}
 
 	if (opencodeAvailable) {
