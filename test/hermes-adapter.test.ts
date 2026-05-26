@@ -79,47 +79,38 @@ describe("createHermesAdapter", () => {
 			},
 		);
 
-		try {
-			const { createHermesAdapter } = await import(
-				"../src/harnesses/hermes-adapter.js"
-			);
-			const adapter = createHermesAdapter();
-			const result = await adapter.generate({
-				model: "qwen3.5:4b",
-				prompt: "Write an add function.",
-				timeoutMs: 5_000,
-				runtime: createRuntime(),
-			});
+		const { createHermesAdapter } = await import(
+			"../src/harnesses/hermes-adapter.js"
+		);
+		const adapter = createHermesAdapter();
+		const result = await adapter.generate({
+			model: "qwen3.5:4b",
+			prompt: "Write an add function.",
+			timeoutMs: 5_000,
+			runtime: createRuntime(),
+		});
 
-			expect(result.output).toBe(solution);
-			expect(generatedWorkspaceDir).toMatch(
-				process.platform === "darwin"
-					? /^\/tmp\/plebdev-bench-hermes-/
-					: /plebdev-bench-hermes-/,
-			);
-			expect(result.codeFilePath).toBe(
-				path.join(String(generatedWorkspaceDir), "solution.ts"),
-			);
-			expect(result.durationMs).toBeGreaterThanOrEqual(0);
-			const runCall = execaMock.mock.calls.find(
-				([command, args]) =>
-					command === "hermes" &&
-					(args as string[]).join(" ") !== "chat --help",
-			);
-			const runArgs = runCall?.[1] as string[];
-			expect(runArgs).toContain("file");
-			const query = runArgs[runArgs.indexOf("--query") + 1];
-			expect(query).toContain("Use the write_file tool to create solution.ts");
-			expect(query).toContain("Do not print a textual write_file(...) call");
-			expect(query).toContain("Write an add function.");
-		} finally {
-			if (generatedWorkspaceDir) {
-				await fs.promises.rm(generatedWorkspaceDir, {
-					recursive: true,
-					force: true,
-				});
-			}
-		}
+		expect(result.output).toBe(solution);
+		expect(generatedWorkspaceDir).toMatch(
+			process.platform === "darwin"
+				? /^\/tmp\/plebdev-bench-hermes-/
+				: /plebdev-bench-hermes-/,
+		);
+		expect(result.codeFilePath).toBeUndefined();
+		await expect(
+			fs.promises.access(String(generatedWorkspaceDir)),
+		).rejects.toThrow();
+		expect(result.durationMs).toBeGreaterThanOrEqual(0);
+		const runCall = execaMock.mock.calls.find(
+			([command, args]) =>
+				command === "hermes" && (args as string[]).join(" ") !== "chat --help",
+		);
+		const runArgs = runCall?.[1] as string[];
+		expect(runArgs).toContain("file");
+		const query = runArgs[runArgs.indexOf("--query") + 1];
+		expect(query).toContain("Use the write_file tool to create solution.ts");
+		expect(query).toContain("Do not print a textual write_file(...) call");
+		expect(query).toContain("Write an add function.");
 	});
 
 	it("fails clearly when code-output does not produce solution.ts", async () => {

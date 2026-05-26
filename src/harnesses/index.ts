@@ -56,7 +56,7 @@ export interface HarnessFactoryOptions {
 /**
  * Creates a harness instance by name.
  *
- * @param name - Harness name ("direct", "goose", "opencode", or legacy "ollama")
+ * @param name - Harness name ("direct", "goose", "hermes", "opencode", or legacy "ollama")
  * @param options - Optional adapter settings
  * @returns Harness instance
  * @throws {Error} If harness name is unknown

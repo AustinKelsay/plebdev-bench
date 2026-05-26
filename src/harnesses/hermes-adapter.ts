@@ -209,9 +209,13 @@ function buildHermesFailure(
 }
 
 /**
- * Creates a Hermes harness adapter.
+ * Creates a Hermes harness adapter with validated turn-limit settings.
  *
- * @returns Harness implementation for Hermes CLI mode
+ * @param options - Optional Hermes turn-limit overrides for code-output and
+ * workspace initial/retry attempts
+ * @returns Harness implementation that runs benchmark prompts through Hermes CLI
+ * @throws {z.ZodError} If createHermesAdapter receives invalid option shapes
+ * @throws {TypeError} If retry turn limits are lower than initial turn limits
  */
 export function createHermesAdapter(options?: HermesAdapterOptions): Harness {
 	const parsedOptions = HermesAdapterOptionsSchema.parse(
@@ -272,6 +276,8 @@ export function createHermesAdapter(options?: HermesAdapterOptions): Harness {
 				callerWorkspaceDir !== undefined
 					? await createHermesWorkspaceMirror(callerWorkspaceDir)
 					: undefined;
+			const createdTempWorkDir =
+				workspaceMirrorDir === undefined && opts.workingDirectory === undefined;
 			const workDir =
 				workspaceMirrorDir ??
 				opts.workingDirectory ??
@@ -329,6 +335,38 @@ export function createHermesAdapter(options?: HermesAdapterOptions): Harness {
 						callerWorkspaceDir,
 					);
 				}
+				const durationMs = Math.round(performance.now() - startTime);
+				if (promptMode === "workspace") {
+					return {
+						output: result.stdout,
+						durationMs,
+					};
+				}
+
+				let code: string;
+				try {
+					code = await fs.promises.readFile(solutionPath, "utf-8");
+				} catch {
+					throw buildHermesFailure(
+						`Hermes did not produce required ${SOLUTION_FILENAME}`,
+						durationMs,
+						buildProcessEvidence(result.stdout, result.stderr),
+					);
+				}
+
+				if (code.trim().length < MIN_OUTPUT_LENGTH) {
+					throw buildHermesFailure(
+						`Hermes produced empty or too-short ${SOLUTION_FILENAME}`,
+						durationMs,
+						buildProcessEvidence(result.stdout, result.stderr),
+					);
+				}
+
+				return {
+					output: code,
+					durationMs,
+					...(createdTempWorkDir ? {} : { codeFilePath: solutionPath }),
+				};
 			} finally {
 				await fs.promises.rm(hermesHome, { recursive: true, force: true });
 				if (workspaceMirrorDir !== undefined) {
@@ -337,39 +375,10 @@ export function createHermesAdapter(options?: HermesAdapterOptions): Harness {
 						force: true,
 					});
 				}
+				if (createdTempWorkDir) {
+					await fs.promises.rm(workDir, { recursive: true, force: true });
+				}
 			}
-			const durationMs = Math.round(performance.now() - startTime);
-			if (promptMode === "workspace") {
-				return {
-					output: result.stdout,
-					durationMs,
-				};
-			}
-
-			let code: string;
-			try {
-				code = await fs.promises.readFile(solutionPath, "utf-8");
-			} catch {
-				throw buildHermesFailure(
-					`Hermes did not produce required ${SOLUTION_FILENAME}`,
-					durationMs,
-					buildProcessEvidence(result.stdout, result.stderr),
-				);
-			}
-
-			if (code.trim().length < MIN_OUTPUT_LENGTH) {
-				throw buildHermesFailure(
-					`Hermes produced empty or too-short ${SOLUTION_FILENAME}`,
-					durationMs,
-					buildProcessEvidence(result.stdout, result.stderr),
-				);
-			}
-
-			return {
-				output: code,
-				durationMs,
-				codeFilePath: solutionPath,
-			};
 		},
 	};
 }
