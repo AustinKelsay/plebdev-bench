@@ -178,6 +178,10 @@ _Avoid_: Failed item, skipped item, matrix item
 The interface used to ask a benchmark model to perform a **Benchmark Test**.
 _Avoid_: Runtime, model provider, tool version
 
+**Hermes Harness**:
+The Hermes interface used as a first-class **Harness** for benchmark execution.
+_Avoid_: Hermes runtime, Hermes provider
+
 **Harness Capability**:
 A specific benchmark-relevant affordance a **Harness** provides for representative **Benchmark Test** execution.
 _Avoid_: Tool feature, product capability, requirement
@@ -276,7 +280,10 @@ _Avoid_: Machine profile, hardware profile
 - A **Matrix Item** uses exactly one **Runtime**.
 - A **Matrix Item** uses exactly one **Harness**.
 - A **Harness** names a logical interface, while its concrete tool version belongs to the **Runtime Environment**.
+- The **Hermes Harness** is a **Harness**, not a **Runtime**.
 - A **Harness** provides zero or more **Harness Capabilities**.
+- The **Hermes Harness** provides the full workspace-agent **Harness Capability** set when it can operate non-interactively inside a **Benchmark Workspace**.
+- The **Hermes Harness** uses existing **Runtime Models** exposed by a **Runtime** rather than performing **Model Discovery** itself.
 - A **Matrix Item** executes exactly one **Runtime Model**.
 - A **Matrix Item** may produce one **Generated Output**.
 - **Generated Output** may be represented as inline text, file paths, or workspace state.
@@ -387,6 +394,15 @@ _Avoid_: Machine profile, hardware profile
 > **Dev:** "Is OpenCode a **Runtime** because it can call a model?"
 > **Domain expert:** "No. OpenCode is a **Harness**; concrete tool versions belong to the **Runtime Environment**."
 >
+> **Dev:** "Should Hermes be modeled as a new **Runtime**?"
+> **Domain expert:** "No. The **Hermes Harness** is a first-class **Harness** that targets existing **Runtime Models** through a **Runtime**."
+>
+> **Dev:** "Should the **Hermes Harness** discover models itself?"
+> **Domain expert:** "No. **Model Discovery** belongs to the **Runtime**; the **Hermes Harness** receives the selected **Runtime Model** from the **Matrix Item**."
+>
+> **Dev:** "Should the **Hermes Harness** run workspace benchmarks that require search, directory creation, or deletion?"
+> **Domain expert:** "Yes, if those operations are available non-interactively in the **Benchmark Workspace**; otherwise the missing **Harness Capabilities** should exclude incompatible combinations before execution."
+>
 > **Dev:** "If OpenCode edits files instead of returning text, is that still **Generated Output**?"
 > **Domain expert:** "Yes. **Generated Output** includes model-produced workspace changes, while the **Benchmark Workspace** also contains fixtures and untouched context."
 >
@@ -419,3 +435,4 @@ _Avoid_: Machine profile, hardware profile
 - "benchmark content" was too narrow for **Benchmark Checkpoint**; resolved: **Benchmark Checkpoint** covers benchmark definition plus execution and scoring semantics that affect measured meaning, excluding pure analysis labels like **Benchmark Category**, tags, and descriptions.
 - "deduped row" hid leaderboard selection semantics; resolved: use **Best Observed Item** when a **Leaderboard** selects the strongest duplicate row for capability ranking.
 - "published" could imply public trust; resolved: **Published Run** means shared for analysis, while verification and **Tamper Evidence** remain separate provenance concerns.
+- "Hermes" could mean an inference provider or a benchmark interface; resolved: use **Hermes Harness** for the first-class harness integration and keep model exposure under **Runtime**.

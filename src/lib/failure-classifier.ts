@@ -69,6 +69,8 @@ export function classifyGenerationError(
 		lower.includes("empty output") ||
 		lower.includes("output too short") ||
 		lower.includes("no output") ||
+		lower.includes("did not produce required solution.ts") ||
+		lower.includes("textual tool-call syntax") ||
 		lower.includes("not recognized") ||
 		lower.includes("command failed") ||
 		lower.includes("exit code") ||

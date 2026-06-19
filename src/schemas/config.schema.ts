@@ -154,6 +154,18 @@ const BenchConfigObjectSchema = z
 		/** Goose retry-attempt max turns for workspace-scored benchmarks. */
 		gooseWorkspaceRetryMaxTurns: z.number().int().positive().default(12),
 
+		/** Hermes first-attempt max turns in headless mode. */
+		hermesMaxTurns: z.number().int().positive().default(1),
+
+		/** Hermes retry-attempt max turns in headless mode. */
+		hermesRetryMaxTurns: z.number().int().positive().default(3),
+
+		/** Hermes first-attempt max turns for workspace-scored benchmarks. */
+		hermesWorkspaceMaxTurns: z.number().int().positive().default(8),
+
+		/** Hermes retry-attempt max turns for workspace-scored benchmarks. */
+		hermesWorkspaceRetryMaxTurns: z.number().int().positive().default(12),
+
 		/** Output directory for results. */
 		outputDir: z.string().default("results"),
 
@@ -233,6 +245,24 @@ const BenchConfigObjectSchema = z
 				path: ["gooseWorkspaceRetryMaxTurns"],
 				message:
 					"gooseWorkspaceRetryMaxTurns must be greater than or equal to gooseWorkspaceMaxTurns",
+			});
+		}
+
+		if (config.hermesRetryMaxTurns < config.hermesMaxTurns) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["hermesRetryMaxTurns"],
+				message:
+					"hermesRetryMaxTurns must be greater than or equal to hermesMaxTurns",
+			});
+		}
+
+		if (config.hermesWorkspaceRetryMaxTurns < config.hermesWorkspaceMaxTurns) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["hermesWorkspaceRetryMaxTurns"],
+				message:
+					"hermesWorkspaceRetryMaxTurns must be greater than or equal to hermesWorkspaceMaxTurns",
 			});
 		}
 	});

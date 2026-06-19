@@ -131,6 +131,10 @@ describe("BenchConfigSchema", () => {
 		expect(config.gooseRetryMaxTurns).toBe(3);
 		expect(config.gooseWorkspaceMaxTurns).toBe(8);
 		expect(config.gooseWorkspaceRetryMaxTurns).toBe(12);
+		expect(config.hermesMaxTurns).toBe(1);
+		expect(config.hermesRetryMaxTurns).toBe(3);
+		expect(config.hermesWorkspaceMaxTurns).toBe(8);
+		expect(config.hermesWorkspaceRetryMaxTurns).toBe(12);
 		expect(config.outputDir).toBe("results");
 	});
 
@@ -146,6 +150,10 @@ describe("BenchConfigSchema", () => {
 			gooseRetryMaxTurns: 4,
 			gooseWorkspaceMaxTurns: 6,
 			gooseWorkspaceRetryMaxTurns: 9,
+			hermesMaxTurns: 2,
+			hermesRetryMaxTurns: 4,
+			hermesWorkspaceMaxTurns: 6,
+			hermesWorkspaceRetryMaxTurns: 9,
 		});
 		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual(["llama3.2:3b"]);
@@ -157,6 +165,10 @@ describe("BenchConfigSchema", () => {
 		expect(config.gooseRetryMaxTurns).toBe(4);
 		expect(config.gooseWorkspaceMaxTurns).toBe(6);
 		expect(config.gooseWorkspaceRetryMaxTurns).toBe(9);
+		expect(config.hermesMaxTurns).toBe(2);
+		expect(config.hermesRetryMaxTurns).toBe(4);
+		expect(config.hermesWorkspaceMaxTurns).toBe(6);
+		expect(config.hermesWorkspaceRetryMaxTurns).toBe(9);
 	});
 
 	it("should reject empty runtime selections", () => {
@@ -187,6 +199,24 @@ describe("BenchConfigSchema", () => {
 				gooseWorkspaceRetryMaxTurns: 4,
 			}),
 		).toThrow(/gooseWorkspaceRetryMaxTurns/);
+	});
+
+	it("should reject hermes retry turns lower than initial turns", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				hermesMaxTurns: 4,
+				hermesRetryMaxTurns: 2,
+			}),
+		).toThrow(/hermesRetryMaxTurns/);
+	});
+
+	it("should reject workspace hermes retry turns lower than initial turns", () => {
+		expect(() =>
+			BenchConfigSchema.parse({
+				hermesWorkspaceMaxTurns: 6,
+				hermesWorkspaceRetryMaxTurns: 4,
+			}),
+		).toThrow(/hermesWorkspaceRetryMaxTurns/);
 	});
 
 	it("should normalize deprecated machine config aliases", () => {

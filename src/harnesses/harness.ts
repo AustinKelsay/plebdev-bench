@@ -21,14 +21,18 @@ import type {
 } from "../schemas/index.js";
 
 /** Supported harness names. "direct" replaces "ollama" for clarity. */
-export const HARNESS_NAMES = ["direct", "goose", "opencode"] as const;
+export const HARNESS_NAMES = ["direct", "goose", "hermes", "opencode"] as const;
 export type HarnessName = (typeof HARNESS_NAMES)[number];
 
 /** Legacy harness name alias for backward compatibility. */
 export const LEGACY_HARNESS_ALIAS = "ollama" as const;
 
 /** Harnesses that require tool-calling to produce output files. */
-export const TOOL_CALLING_HARNESS_NAMES = ["goose", "opencode"] as const;
+export const TOOL_CALLING_HARNESS_NAMES = [
+	"goose",
+	"hermes",
+	"opencode",
+] as const;
 export type ToolCallingHarnessName =
 	(typeof TOOL_CALLING_HARNESS_NAMES)[number];
 
@@ -44,6 +48,13 @@ export const HARNESS_CAPABILITY_MAP: Record<
 > = {
 	direct: [],
 	goose: ["workspace-read", "workspace-write"],
+	hermes: [
+		"workspace-read",
+		"workspace-write",
+		"workspace-mkdir",
+		"workspace-search",
+		"workspace-delete",
+	],
 	opencode: [
 		"workspace-read",
 		"workspace-write",
@@ -67,6 +78,7 @@ export const HARNESS_RUNTIME_COMPATIBILITY: Record<
 > = {
 	direct: ["ollama"],
 	goose: ["ollama"],
+	hermes: ["ollama"],
 	opencode: ["ollama"],
 } as const;
 
@@ -188,7 +200,7 @@ export interface GenerateResult {
  * Harnesses use a Runtime for the actual inference backend.
  */
 export interface Harness {
-	/** Harness identifier (e.g., "direct", "goose", "opencode"). */
+	/** Harness identifier (e.g., "direct", "goose", "hermes", "opencode"). */
 	readonly name: HarnessName;
 
 	/**

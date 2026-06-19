@@ -39,18 +39,24 @@ import {
 // Import adapters
 import type { Harness, HarnessName } from "./harness.js";
 import { LEGACY_HARNESS_ALIAS, normalizeHarnessName } from "./harness.js";
+import {
+	type HermesAdapterOptions,
+	createHermesAdapter,
+} from "./hermes-adapter.js";
 import { createOpenCodeAdapter } from "./opencode-adapter.js";
 
 /** Optional factory settings for harness adapter creation. */
 export interface HarnessFactoryOptions {
 	/** Goose-specific adapter settings. */
 	goose?: GooseAdapterOptions;
+	/** Hermes-specific adapter settings. */
+	hermes?: HermesAdapterOptions;
 }
 
 /**
  * Creates a harness instance by name.
  *
- * @param name - Harness name ("direct", "goose", "opencode", or legacy "ollama")
+ * @param name - Harness name ("direct", "goose", "hermes", "opencode", or legacy "ollama")
  * @param options - Optional adapter settings
  * @returns Harness instance
  * @throws {Error} If harness name is unknown
@@ -75,6 +81,9 @@ export function createHarness(
 
 		case "goose":
 			return createGooseAdapter(options?.goose);
+
+		case "hermes":
+			return createHermesAdapter(options?.hermes);
 
 		case "opencode":
 			return createOpenCodeAdapter();

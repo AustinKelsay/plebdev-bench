@@ -55,6 +55,10 @@ const RUNTIME_CONFIG = {
 	gooseRetryMaxTurns: 3,
 	gooseWorkspaceMaxTurns: 8,
 	gooseWorkspaceRetryMaxTurns: 12,
+	hermesMaxTurns: 2,
+	hermesRetryMaxTurns: 4,
+	hermesWorkspaceMaxTurns: 6,
+	hermesWorkspaceRetryMaxTurns: 9,
 } as const;
 
 const CODE_OUTPUT_ITEM = {
@@ -183,6 +187,34 @@ describe("executeItem", () => {
 			executeItem(CODE_OUTPUT_ITEM, RUNTIME_CONFIG, 5_000),
 		).rejects.toThrow("unknown harness");
 		expect(mocks.runGenerationWithInfraRetry).not.toHaveBeenCalled();
+	});
+
+	it("passes Hermes turn settings into harness construction", async () => {
+		mocks.loadPrompt.mockRejectedValueOnce(new Error("stop before generation"));
+
+		await executeItem(
+			{
+				...CODE_OUTPUT_ITEM,
+				harness: "hermes",
+			},
+			RUNTIME_CONFIG,
+			5_000,
+		);
+
+		expect(mocks.createHarness).toHaveBeenCalledWith("hermes", {
+			goose: {
+				maxTurns: 1,
+				retryMaxTurns: 3,
+				workspaceMaxTurns: 8,
+				workspaceRetryMaxTurns: 12,
+			},
+			hermes: {
+				maxTurns: 2,
+				retryMaxTurns: 4,
+				workspaceMaxTurns: 6,
+				workspaceRetryMaxTurns: 9,
+			},
+		});
 	});
 
 	it("preserves harness metadata from generation failures handled in the inner catch", async () => {
