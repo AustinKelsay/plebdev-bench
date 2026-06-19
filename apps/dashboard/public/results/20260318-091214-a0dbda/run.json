@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "0.5.0",
+  "schemaVersion": "0.5.3",
   "runId": "20260318-091214-a0dbda",
   "machine": {
-    "instanceId": "machine-7a5b70a8293b",
+    "instanceId": "machine-a8648f07719f",
     "instanceIdSource": "legacy_profile_id",
     "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
     "profileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
@@ -5717,7 +5717,11 @@
       "scoringMetrics": {
         "durationMs": 39270,
         "scoringDurationMs": 156,
-        "retryGenerationDurationMs": 39112
+        "retryGenerationDurationMs": 39112,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "missing_export",
@@ -5954,7 +5958,11 @@
       "scoringMetrics": {
         "durationMs": 41293,
         "scoringDurationMs": 140,
-        "retryGenerationDurationMs": 41151
+        "retryGenerationDurationMs": 41151,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -5993,7 +6001,11 @@
       "scoringMetrics": {
         "durationMs": 32230,
         "scoringDurationMs": 158,
-        "retryGenerationDurationMs": 32071
+        "retryGenerationDurationMs": 32071,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -7202,7 +7214,11 @@
       "scoringMetrics": {
         "durationMs": 21276,
         "scoringDurationMs": 154,
-        "retryGenerationDurationMs": 21119
+        "retryGenerationDurationMs": 21119,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -7309,7 +7325,11 @@
       "scoringMetrics": {
         "durationMs": 18656,
         "scoringDurationMs": 158,
-        "retryGenerationDurationMs": 18497
+        "retryGenerationDurationMs": 18497,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -7535,7 +7555,11 @@
       "scoringMetrics": {
         "durationMs": 12834,
         "scoringDurationMs": 141,
-        "retryGenerationDurationMs": 12691
+        "retryGenerationDurationMs": 12691,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "missing_export",
@@ -7646,7 +7670,11 @@
       "scoringMetrics": {
         "durationMs": 491771,
         "scoringDurationMs": 134,
-        "retryGenerationDurationMs": 491635
+        "retryGenerationDurationMs": 491635,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 2,
@@ -7879,7 +7907,11 @@
       "scoringMetrics": {
         "durationMs": 12180,
         "scoringDurationMs": 162,
-        "retryGenerationDurationMs": 12016
+        "retryGenerationDurationMs": 12016,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -7918,7 +7950,11 @@
       "scoringMetrics": {
         "durationMs": 12767,
         "scoringDurationMs": 133,
-        "retryGenerationDurationMs": 12633
+        "retryGenerationDurationMs": 12633,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8148,7 +8184,11 @@
       "scoringMetrics": {
         "durationMs": 5242,
         "scoringDurationMs": 158,
-        "retryGenerationDurationMs": 5083
+        "retryGenerationDurationMs": 5083,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8187,7 +8227,11 @@
       "scoringMetrics": {
         "durationMs": 7880,
         "scoringDurationMs": 158,
-        "retryGenerationDurationMs": 7720
+        "retryGenerationDurationMs": 7720,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "missing_export",
@@ -8226,7 +8270,11 @@
       "scoringMetrics": {
         "durationMs": 14938,
         "scoringDurationMs": 159,
-        "retryGenerationDurationMs": 14777
+        "retryGenerationDurationMs": 14777,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8265,7 +8313,11 @@
       "scoringMetrics": {
         "durationMs": 9417,
         "scoringDurationMs": 158,
-        "retryGenerationDurationMs": 9257
+        "retryGenerationDurationMs": 9257,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 2,
@@ -8300,7 +8352,11 @@
       "scoringMetrics": {
         "durationMs": 7929,
         "scoringDurationMs": 155,
-        "retryGenerationDurationMs": 7773
+        "retryGenerationDurationMs": 7773,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8339,7 +8395,11 @@
       "scoringMetrics": {
         "durationMs": 5891,
         "scoringDurationMs": 156,
-        "retryGenerationDurationMs": 5734
+        "retryGenerationDurationMs": 5734,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8377,7 +8437,11 @@
       "scoringMetrics": {
         "durationMs": 5942,
         "scoringDurationMs": 155,
-        "retryGenerationDurationMs": 5786
+        "retryGenerationDurationMs": 5786,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8416,7 +8480,11 @@
       "scoringMetrics": {
         "durationMs": 12274,
         "scoringDurationMs": 154,
-        "retryGenerationDurationMs": 12120
+        "retryGenerationDurationMs": 12120,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8455,7 +8523,11 @@
       "scoringMetrics": {
         "durationMs": 6295,
         "scoringDurationMs": 145,
-        "retryGenerationDurationMs": 6150
+        "retryGenerationDurationMs": 6150,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "missing_export",
@@ -8494,7 +8566,11 @@
       "scoringMetrics": {
         "durationMs": 6602,
         "scoringDurationMs": 156,
-        "retryGenerationDurationMs": 6445
+        "retryGenerationDurationMs": 6445,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 9,
@@ -8625,7 +8701,11 @@
       "scoringMetrics": {
         "durationMs": 9847,
         "scoringDurationMs": 155,
-        "retryGenerationDurationMs": 9690
+        "retryGenerationDurationMs": 9690,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8663,7 +8743,11 @@
       "scoringMetrics": {
         "durationMs": 6432,
         "scoringDurationMs": 157,
-        "retryGenerationDurationMs": 6274
+        "retryGenerationDurationMs": 6274,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -8702,7 +8786,11 @@
       "scoringMetrics": {
         "durationMs": 6203,
         "scoringDurationMs": 163,
-        "retryGenerationDurationMs": 6039
+        "retryGenerationDurationMs": 6039,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -9102,7 +9190,11 @@
       "scoringMetrics": {
         "durationMs": 27746,
         "scoringDurationMs": 153,
-        "retryGenerationDurationMs": 27593
+        "retryGenerationDurationMs": 27593,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 1,
@@ -9266,7 +9358,11 @@
       "scoringMetrics": {
         "durationMs": 62522,
         "scoringDurationMs": 159,
-        "retryGenerationDurationMs": 62362
+        "retryGenerationDurationMs": 62362,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "missing_export",
@@ -9299,7 +9395,11 @@
       "scoringMetrics": {
         "durationMs": 52056,
         "scoringDurationMs": 159,
-        "retryGenerationDurationMs": 51897
+        "retryGenerationDurationMs": 51897,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "factory_init_failed",
@@ -12357,7 +12457,11 @@
       "scoringMetrics": {
         "durationMs": 67591,
         "scoringDurationMs": 271,
-        "retryGenerationDurationMs": 67319
+        "retryGenerationDurationMs": 67319,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 2,
@@ -12778,7 +12882,11 @@
       "scoringMetrics": {
         "durationMs": 60719,
         "scoringDurationMs": 137,
-        "retryGenerationDurationMs": 60580
+        "retryGenerationDurationMs": 60580,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 4,
@@ -12813,7 +12921,11 @@
       "scoringMetrics": {
         "durationMs": 63248,
         "scoringDurationMs": 942,
-        "retryGenerationDurationMs": 62304
+        "retryGenerationDurationMs": 62304,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -13353,7 +13465,11 @@
       "scoringMetrics": {
         "durationMs": 101050,
         "scoringDurationMs": 184,
-        "retryGenerationDurationMs": 100864
+        "retryGenerationDurationMs": 100864,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 3,
@@ -14289,7 +14405,11 @@
       "scoringMetrics": {
         "durationMs": 30401,
         "scoringDurationMs": 142,
-        "retryGenerationDurationMs": 30258
+        "retryGenerationDurationMs": 30258,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 2,
@@ -15031,7 +15151,11 @@
       "scoringMetrics": {
         "durationMs": 143319,
         "scoringDurationMs": 120,
-        "retryGenerationDurationMs": 143196
+        "retryGenerationDurationMs": 143196,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15166,7 +15290,11 @@
       "scoringMetrics": {
         "durationMs": 158048,
         "scoringDurationMs": 122,
-        "retryGenerationDurationMs": 157923
+        "retryGenerationDurationMs": 157923,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15419,7 +15547,11 @@
       "scoringMetrics": {
         "durationMs": 22604,
         "scoringDurationMs": 122,
-        "retryGenerationDurationMs": 22481
+        "retryGenerationDurationMs": 22481,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15458,7 +15590,11 @@
       "scoringMetrics": {
         "durationMs": 21812,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 21689
+        "retryGenerationDurationMs": 21689,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15531,7 +15667,11 @@
       "scoringMetrics": {
         "durationMs": 283920,
         "scoringDurationMs": 133,
-        "retryGenerationDurationMs": 283785
+        "retryGenerationDurationMs": 283785,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15756,7 +15896,11 @@
       "scoringMetrics": {
         "durationMs": 14508,
         "scoringDurationMs": 119,
-        "retryGenerationDurationMs": 14388
+        "retryGenerationDurationMs": 14388,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15825,7 +15969,11 @@
       "scoringMetrics": {
         "durationMs": 14542,
         "scoringDurationMs": 119,
-        "retryGenerationDurationMs": 14422
+        "retryGenerationDurationMs": 14422,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15864,7 +16012,11 @@
       "scoringMetrics": {
         "durationMs": 15081,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 14959
+        "retryGenerationDurationMs": 14959,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15903,7 +16055,11 @@
       "scoringMetrics": {
         "durationMs": 14432,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 14311
+        "retryGenerationDurationMs": 14311,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15942,7 +16098,11 @@
       "scoringMetrics": {
         "durationMs": 15262,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 15140
+        "retryGenerationDurationMs": 15140,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -15981,7 +16141,11 @@
       "scoringMetrics": {
         "durationMs": 31043,
         "scoringDurationMs": 122,
-        "retryGenerationDurationMs": 30920
+        "retryGenerationDurationMs": 30920,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16019,7 +16183,11 @@
       "scoringMetrics": {
         "durationMs": 15497,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 15376
+        "retryGenerationDurationMs": 15376,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16119,7 +16287,11 @@
       "scoringMetrics": {
         "durationMs": 17037,
         "scoringDurationMs": 123,
-        "retryGenerationDurationMs": 16914
+        "retryGenerationDurationMs": 16914,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16158,7 +16330,11 @@
       "scoringMetrics": {
         "durationMs": 29249,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 29128
+        "retryGenerationDurationMs": 29128,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16259,7 +16435,11 @@
       "scoringMetrics": {
         "durationMs": 14099,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 13977
+        "retryGenerationDurationMs": 13977,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16297,7 +16477,11 @@
       "scoringMetrics": {
         "durationMs": 14410,
         "scoringDurationMs": 119,
-        "retryGenerationDurationMs": 14291
+        "retryGenerationDurationMs": 14291,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16397,7 +16581,11 @@
       "scoringMetrics": {
         "durationMs": 15075,
         "scoringDurationMs": 118,
-        "retryGenerationDurationMs": 14955
+        "retryGenerationDurationMs": 14955,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16435,7 +16623,11 @@
       "scoringMetrics": {
         "durationMs": 21310,
         "scoringDurationMs": 130,
-        "retryGenerationDurationMs": 21179
+        "retryGenerationDurationMs": 21179,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16473,7 +16665,11 @@
       "scoringMetrics": {
         "durationMs": 15659,
         "scoringDurationMs": 123,
-        "retryGenerationDurationMs": 15535
+        "retryGenerationDurationMs": 15535,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16512,7 +16708,11 @@
       "scoringMetrics": {
         "durationMs": 30761,
         "scoringDurationMs": 120,
-        "retryGenerationDurationMs": 30641
+        "retryGenerationDurationMs": 30641,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16869,7 +17069,11 @@
       "scoringMetrics": {
         "durationMs": 42337,
         "scoringDurationMs": 117,
-        "retryGenerationDurationMs": 42220
+        "retryGenerationDurationMs": 42220,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -16941,7 +17145,11 @@
       "scoringMetrics": {
         "durationMs": 23343,
         "scoringDurationMs": 120,
-        "retryGenerationDurationMs": 23223
+        "retryGenerationDurationMs": 23223,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -17080,7 +17288,11 @@
       "scoringMetrics": {
         "durationMs": 19202,
         "scoringDurationMs": 122,
-        "retryGenerationDurationMs": 19079
+        "retryGenerationDurationMs": 19079,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 2,
@@ -17245,7 +17457,11 @@
       "scoringMetrics": {
         "durationMs": 12318,
         "scoringDurationMs": 118,
-        "retryGenerationDurationMs": 12199
+        "retryGenerationDurationMs": 12199,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 10,
@@ -17342,7 +17558,11 @@
       "scoringMetrics": {
         "durationMs": 23727,
         "scoringDurationMs": 123,
-        "retryGenerationDurationMs": 23603
+        "retryGenerationDurationMs": 23603,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 7,
@@ -17377,7 +17597,11 @@
       "scoringMetrics": {
         "durationMs": 23960,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 23839
+        "retryGenerationDurationMs": 23839,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -17415,7 +17639,11 @@
       "scoringMetrics": {
         "durationMs": 24822,
         "scoringDurationMs": 120,
-        "retryGenerationDurationMs": 24701
+        "retryGenerationDurationMs": 24701,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -17454,7 +17682,11 @@
       "scoringMetrics": {
         "durationMs": 209459,
         "scoringDurationMs": 125,
-        "retryGenerationDurationMs": 209334
+        "retryGenerationDurationMs": 209334,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 3,
@@ -17796,7 +18028,11 @@
       "scoringMetrics": {
         "durationMs": 84906,
         "scoringDurationMs": 119,
-        "retryGenerationDurationMs": 84787
+        "retryGenerationDurationMs": 84787,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 6,
@@ -18025,7 +18261,11 @@
       "scoringMetrics": {
         "durationMs": 85003,
         "scoringDurationMs": 118,
-        "retryGenerationDurationMs": 84885
+        "retryGenerationDurationMs": 84885,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 9,
@@ -19145,7 +19385,11 @@
       "scoringMetrics": {
         "durationMs": 91123,
         "scoringDurationMs": 134,
-        "retryGenerationDurationMs": 90988
+        "retryGenerationDurationMs": 90988,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 8,
@@ -19180,7 +19424,11 @@
       "scoringMetrics": {
         "durationMs": 86427,
         "scoringDurationMs": 122,
-        "retryGenerationDurationMs": 86304
+        "retryGenerationDurationMs": 86304,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 9,
@@ -19249,7 +19497,11 @@
       "scoringMetrics": {
         "durationMs": 127084,
         "scoringDurationMs": 124,
-        "retryGenerationDurationMs": 126959
+        "retryGenerationDurationMs": 126959,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 6,

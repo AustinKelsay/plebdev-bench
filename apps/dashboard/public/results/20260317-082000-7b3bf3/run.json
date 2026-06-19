@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "0.5.0",
+  "schemaVersion": "0.5.3",
   "runId": "20260317-082000-7b3bf3",
   "machine": {
-    "instanceId": "machine-7a5b70a8293b",
+    "instanceId": "machine-a8648f07719f",
     "instanceIdSource": "legacy_profile_id",
     "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
     "profileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
@@ -802,7 +802,11 @@
       "scoringMetrics": {
         "durationMs": 169653,
         "scoringDurationMs": 138,
-        "retryGenerationDurationMs": 169514
+        "retryGenerationDurationMs": 169514,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -1073,7 +1077,11 @@
       "scoringMetrics": {
         "durationMs": 162979,
         "scoringDurationMs": 150,
-        "retryGenerationDurationMs": 162827
+        "retryGenerationDurationMs": 162827,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "scoringFailure": {
         "type": "import",
@@ -1146,7 +1154,11 @@
       "scoringMetrics": {
         "durationMs": 138744,
         "scoringDurationMs": 160,
-        "retryGenerationDurationMs": 138583
+        "retryGenerationDurationMs": 138583,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 8,
@@ -1692,7 +1704,11 @@
       "scoringMetrics": {
         "durationMs": 84648,
         "scoringDurationMs": 121,
-        "retryGenerationDurationMs": 84526
+        "retryGenerationDurationMs": 84526,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 4,

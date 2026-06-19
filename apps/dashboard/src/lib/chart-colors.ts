@@ -31,6 +31,7 @@ export const CHART_COLORS = {
 export const HARNESS_COLORS = {
 	direct: "hsl(215, 70%, 62%)", // steel blue
 	goose: "hsl(142, 60%, 49%)", // brand green
+	hermes: "hsl(335, 55%, 58%)", // muted rose
 	opencode: "hsl(38, 80%, 58%)", // warm amber
 } as const;
 

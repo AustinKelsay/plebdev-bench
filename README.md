@@ -161,6 +161,29 @@ bun pb --categories computer-use --harnesses goose opencode
 bun pb --runtimes ollama --harnesses direct
 ```
 
+### CI and Optional Harnesses
+
+Hermes is optional for generic CI. Generic CI must run without Hermes installed, without Ollama running, and without real model execution. The default CI-quality gates are:
+
+```bash
+bun run test
+bun run typecheck
+bun run lint
+```
+
+Hermes availability is detected by feature probing. A missing Hermes binary is expected to be logged as `Hermes CLI not installed` and omitted from default harness discovery; an installed but incompatible Hermes CLI is expected to be logged as `Hermes probe failed`. Neither condition should fail generic unit/type/lint CI unless a test explicitly selects Hermes and asserts availability.
+
+Optional Hermes smoke validation is an integration job, not a generic CI prerequisite. It intentionally provisions Hermes, Ollama, and at least one local model, then runs a minimal matrix such as:
+
+```bash
+bun run src/index.ts run \
+  --runtimes ollama \
+  --models qwen3.6:35b \
+  --harnesses hermes \
+  --tests smoke workspace-tool-smoke \
+  --pass-types blind
+```
+
 ## Dashboard: publish runs for hosting
 
 The dashboard is a static Vite app under `apps/dashboard/`. It loads runs from static JSON at `/results/*`.

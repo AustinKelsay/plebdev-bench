@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "0.5.0",
+  "schemaVersion": "0.5.3",
   "runId": "20260305-135118-b11d08",
   "machine": {
-    "instanceId": "machine-7a5b70a8293b",
+    "instanceId": "machine-a8648f07719f",
     "instanceIdSource": "legacy_profile_id",
     "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
     "profileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",

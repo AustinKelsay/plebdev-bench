@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "0.5.0",
+  "schemaVersion": "0.5.3",
   "runId": "20260317-170728-697a9a",
   "machine": {
-    "instanceId": "machine-7a5b70a8293b",
+    "instanceId": "machine-a8648f07719f",
     "instanceIdSource": "legacy_profile_id",
     "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_unknown_na_xunknown",
     "profileLabel": "Apple M4 Pro / 64GB / Accelerator unknown",
@@ -1315,7 +1315,11 @@
       "scoringMetrics": {
         "durationMs": 437159,
         "scoringDurationMs": 164,
-        "retryGenerationDurationMs": 436994
+        "retryGenerationDurationMs": 436994,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 4,
@@ -1927,7 +1931,11 @@
       "scoringMetrics": {
         "durationMs": 99547,
         "scoringDurationMs": 156,
-        "retryGenerationDurationMs": 99390
+        "retryGenerationDurationMs": 99390,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 8,
@@ -2292,7 +2300,11 @@
       "scoringMetrics": {
         "durationMs": 155547,
         "scoringDurationMs": 156,
-        "retryGenerationDurationMs": 155390
+        "retryGenerationDurationMs": 155390,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 7,
@@ -4021,7 +4033,11 @@
       "scoringMetrics": {
         "durationMs": 47943,
         "scoringDurationMs": 119,
-        "retryGenerationDurationMs": 47822
+        "retryGenerationDurationMs": 47822,
+        "retryKind": "compile-feedback",
+        "retryReason": "legacy artifact recorded retryGenerationDurationMs",
+        "retryAttempted": true,
+        "retryPromoted": false
       },
       "frontierEval": {
         "score": 8,

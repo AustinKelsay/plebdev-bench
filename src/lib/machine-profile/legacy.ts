@@ -333,6 +333,44 @@ export function normalizeKnownPlanPayload(raw: unknown): unknown {
 	);
 }
 
+function migrateLegacyScoringMetrics(rawMetrics: unknown): unknown {
+	if (!isRecord(rawMetrics)) {
+		return rawMetrics;
+	}
+	const hasLegacyRetryDuration =
+		typeof rawMetrics.retryGenerationDurationMs === "number";
+	const hasCurrentRetryFields =
+		rawMetrics.retryKind !== undefined ||
+		rawMetrics.retryReason !== undefined ||
+		rawMetrics.retryAttempted !== undefined ||
+		rawMetrics.retryPromoted !== undefined;
+	if (!hasLegacyRetryDuration || hasCurrentRetryFields) {
+		return rawMetrics;
+	}
+	return {
+		...rawMetrics,
+		retryKind: "compile-feedback",
+		retryReason: "legacy artifact recorded retryGenerationDurationMs",
+		retryAttempted: true,
+		retryPromoted: false,
+	};
+}
+
+function migrateLegacyRunItems(rawItems: unknown): unknown {
+	if (!Array.isArray(rawItems)) {
+		return rawItems;
+	}
+	return rawItems.map((item) => {
+		if (!isRecord(item) || !isRecord(item.scoringMetrics)) {
+			return item;
+		}
+		return {
+			...item,
+			scoringMetrics: migrateLegacyScoringMetrics(item.scoringMetrics),
+		};
+	});
+}
+
 /**
  * Migrates a legacy run payload to the current schema shape.
  *
@@ -350,6 +388,7 @@ export function migrateLegacyRunPayload(raw: unknown): unknown {
 		...raw,
 		schemaVersion: SCHEMA_VERSION,
 		...(machine ? { machine } : {}),
+		items: migrateLegacyRunItems(raw.items),
 	};
 }
 
