@@ -79,4 +79,21 @@ describe("Hermes harness registration", () => {
 		expect(harnesses).toContain("hermes");
 		expect(harnesses).toContain("opencode");
 	});
+
+	it("omits missing Hermes installs from discovery without failing generic CI", async () => {
+		execaMock.mockImplementation(async (command: string, args: string[]) => {
+			if (command === "which" && args[0] === "goose") {
+				return { stdout: "goose", stderr: "", exitCode: 0 };
+			}
+			throw Object.assign(new Error(`${command} not found`), {
+				code: "ENOENT",
+			});
+		});
+		const { discoverHarnesses, isHarnessAvailable } = await import(
+			"../src/harnesses/index.js"
+		);
+
+		await expect(isHarnessAvailable("hermes")).resolves.toBe(false);
+		await expect(discoverHarnesses()).resolves.toEqual(["direct", "goose"]);
+	});
 });

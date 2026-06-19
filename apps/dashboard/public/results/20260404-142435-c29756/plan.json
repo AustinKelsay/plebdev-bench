@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "0.5.0",
+  "schemaVersion": "0.5.3",
   "runId": "20260404-142435-c29756",
   "createdAt": "2026-04-04T21:24:35.982Z",
   "runtimeEnvironment": {
@@ -59,7 +59,6 @@
   },
   "config": {
     "ollamaBaseUrl": "http://localhost:11434",
-    "vllmBaseUrl": "http://localhost:8000",
     "generateTimeoutMs": 300000,
     "gooseMaxTurns": 1,
     "gooseRetryMaxTurns": 3,

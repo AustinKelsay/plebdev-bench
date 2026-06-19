@@ -1,0 +1,175 @@
+{
+  "schemaVersion": "0.5.3",
+  "runId": "20260619-075023-35fca1",
+  "machine": {
+    "instanceId": "machine-9d0b160db20d",
+    "instanceIdSource": "config",
+    "displayLabel": "Hermes Post-Merge M4 Pro",
+    "profileKey": "macos_arm64_apple-m4-pro_12c_64gb_apple-m4-pro:x1_na_x1",
+    "profileLabel": "Apple M4 Pro / 64GB / Apple M4 Pro",
+    "normalizedProfile": {
+      "platformFamily": "macos",
+      "arch": "arm64",
+      "cpuVendor": "apple",
+      "cpuModelKey": "m4-pro",
+      "physicalCores": 12,
+      "logicalCores": 12,
+      "memoryGiB": 64,
+      "acceleratorKey": "apple/m4-pro",
+      "acceleratorSummary": [
+        "apple/m4-pro:x1"
+      ],
+      "acceleratorCount": 1
+    },
+    "observedHardware": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "osRelease": "25.5.0",
+      "cpuModelRaw": "Apple M4 Pro",
+      "physicalCores": 12,
+      "logicalCores": 12,
+      "totalMemoryBytes": 68719476736,
+      "accelerators": [
+        {
+          "vendor": "sppci_vendor_Apple",
+          "modelRaw": "Apple M4 Pro",
+          "backend": "metal",
+          "kind": "discrete"
+        }
+      ],
+      "acceleratorDetection": {
+        "status": "detected"
+      }
+    }
+  },
+  "benchmarkCheckpoint": {
+    "checkpointId": "chk_sha256v1_1480436b03dc",
+    "algorithm": "sha256v1",
+    "manifestHash": "1480436b03dc6cab9657be58dddda453f7217c5a4fb2b9698e0968d83cc7cfc1",
+    "assetCount": 132,
+    "computedAt": "2026-06-19T14:50:23.065Z"
+  },
+  "provenance": {
+    "verificationStatus": "self_reported",
+    "source": "local_cli"
+  },
+  "runtimeEnvironment": {
+    "platform": "darwin",
+    "bunVersion": "1.3.3",
+    "toolVersions": {
+      "ollama": {
+        "status": "detected",
+        "version": "0.30.8"
+      },
+      "hermes": {
+        "status": "detected",
+        "version": "0.14.0"
+      }
+    }
+  },
+  "startedAt": "2026-06-19T14:50:23.050Z",
+  "completedAt": "2026-06-19T14:51:10.971Z",
+  "durationMs": 47920,
+  "summary": {
+    "total": 2,
+    "completed": 2,
+    "failed": 0,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "01",
+      "runtime": "ollama",
+      "model": "qwen3.6:35b",
+      "modelProfile": {
+        "canonical": {
+          "profileKey": "qwen3-6-35b",
+          "profileLabel": "Qwen3 6 35B",
+          "family": "qwen3-6",
+          "parametersBillions": 35,
+          "parameterScaleLabel": "35B"
+        },
+        "variant": {
+          "variantKey": "ollama-qwen3-6-35b",
+          "variantLabel": "qwen3.6:35b",
+          "runtime": "ollama",
+          "runtimeModelName": "qwen3.6:35b"
+        },
+        "resolutionSource": "runtime_name"
+      },
+      "harness": "hermes",
+      "test": "workspace-tool-smoke",
+      "category": "computer-use",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-06-19T14:50:24.302Z",
+      "completedAt": "2026-06-19T14:50:51.062Z",
+      "generation": {
+        "success": true,
+        "output": "  ┊ review diff\r\na/checklist/steps.txt → b/checklist/steps.txt\r\n@@ -1 +1,2 @@\r\n bootstrap\r\n+processed\r\n  ┊ review diff\r\na/reports/status.txt → b/reports/status.txt\r\n@@ -0,0 +1,2 @@\r\n+phase=queued\r\n+status=processed\r\nDONE",
+        "durationMs": 26656
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 7,
+        "failed": 0,
+        "total": 7
+      },
+      "scoringMetrics": {
+        "durationMs": 67,
+        "scoringDurationMs": 67
+      },
+      "signalAssessment": {
+        "classification": "trustworthy",
+        "reasons": []
+      }
+    },
+    {
+      "id": "02",
+      "runtime": "ollama",
+      "model": "qwen3.6:35b",
+      "modelProfile": {
+        "canonical": {
+          "profileKey": "qwen3-6-35b",
+          "profileLabel": "Qwen3 6 35B",
+          "family": "qwen3-6",
+          "parametersBillions": 35,
+          "parameterScaleLabel": "35B"
+        },
+        "variant": {
+          "variantKey": "ollama-qwen3-6-35b",
+          "variantLabel": "qwen3.6:35b",
+          "runtime": "ollama",
+          "runtimeModelName": "qwen3.6:35b"
+        },
+        "resolutionSource": "runtime_name"
+      },
+      "harness": "hermes",
+      "test": "smoke",
+      "category": "coding",
+      "passType": "blind",
+      "status": "completed",
+      "startedAt": "2026-06-19T14:50:51.064Z",
+      "completedAt": "2026-06-19T14:51:10.404Z",
+      "generation": {
+        "success": true,
+        "output": "export function add(a: number, b: number): number {\n  return a + b;\n}\n",
+        "durationMs": 19242
+      },
+      "generationAttempts": 1,
+      "automatedScore": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      },
+      "scoringMetrics": {
+        "durationMs": 66,
+        "scoringDurationMs": 66
+      },
+      "signalAssessment": {
+        "classification": "trustworthy",
+        "reasons": []
+      }
+    }
+  ]
+}
