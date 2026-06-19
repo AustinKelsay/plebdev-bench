@@ -35,6 +35,8 @@ const _LEGACY_ARTIFACT_SCHEMA_VERSIONS = new Set([
 	"0.3.0",
 	"0.4.0",
 	"0.5.0",
+	"0.5.1",
+	"0.5.2",
 ]);
 
 export const LEGACY_ARTIFACT_SCHEMA_VERSIONS: ReadonlySet<string> =

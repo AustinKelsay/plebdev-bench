@@ -118,45 +118,48 @@ describe("schema regressions", () => {
 		);
 	});
 
-	it("migrates legacy retry generation metrics into a coherent retry record", () => {
-		const result = parseKnownRunPayload({
-			schemaVersion: "0.5.0",
-			runId: "legacy-retry-run",
-			startedAt: "2026-03-25T15:00:00.000Z",
-			completedAt: "2026-03-25T15:01:00.000Z",
-			durationMs: 60_000,
-			summary: { total: 1, completed: 1, failed: 0, pending: 0 },
-			items: [
-				{
-					id: "01",
-					runtime: "ollama",
-					model: "qwen3.6:35b",
-					harness: "goose",
-					test: "smoke",
-					passType: "blind",
-					status: "completed",
-					generation: {
-						success: true,
-						output:
-							"export function add(a: number, b: number) { return a + b; }",
-						durationMs: 42,
+	it.each(["0.5.0", "0.5.1", "0.5.2"])(
+		"migrates legacy retry generation metrics for schema %s into a coherent retry record",
+		(schemaVersion) => {
+			const result = parseKnownRunPayload({
+				schemaVersion,
+				runId: "legacy-retry-run",
+				startedAt: "2026-03-25T15:00:00.000Z",
+				completedAt: "2026-03-25T15:01:00.000Z",
+				durationMs: 60_000,
+				summary: { total: 1, completed: 1, failed: 0, pending: 0 },
+				items: [
+					{
+						id: "01",
+						runtime: "ollama",
+						model: "qwen3.6:35b",
+						harness: "goose",
+						test: "smoke",
+						passType: "blind",
+						status: "completed",
+						generation: {
+							success: true,
+							output:
+								"export function add(a: number, b: number) { return a + b; }",
+							durationMs: 42,
+						},
+						automatedScore: { passed: 6, failed: 0, total: 6 },
+						scoringMetrics: {
+							durationMs: 100,
+							scoringDurationMs: 58,
+							retryGenerationDurationMs: 42,
+						},
 					},
-					automatedScore: { passed: 6, failed: 0, total: 6 },
-					scoringMetrics: {
-						durationMs: 100,
-						scoringDurationMs: 58,
-						retryGenerationDurationMs: 42,
-					},
-				},
-			],
-		});
+				],
+			});
 
-		expect(result.items[0]?.scoringMetrics).toMatchObject({
-			retryAttempted: true,
-			retryKind: "compile-feedback",
-			retryReason: "legacy artifact recorded retryGenerationDurationMs",
-			retryPromoted: false,
-			retryGenerationDurationMs: 42,
-		});
-	});
+			expect(result.items[0]?.scoringMetrics).toMatchObject({
+				retryAttempted: true,
+				retryKind: "compile-feedback",
+				retryReason: "legacy artifact recorded retryGenerationDurationMs",
+				retryPromoted: false,
+				retryGenerationDurationMs: 42,
+			});
+		},
+	);
 });
