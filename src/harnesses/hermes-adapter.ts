@@ -5,7 +5,8 @@
  * Invariants:
  * - Hermes runs through `hermes chat` with an isolated HERMES_HOME per item.
  * - Model discovery remains owned by Runtime adapters.
- * - Code-output mode trusts `solution.ts`, not Hermes stdout salvage.
+ * - Code-output mode prefers `solution.ts`; Hermes review diffs are salvaged as
+ *   tainted code output only when they target `solution.ts`.
  * - Workspace mode runs in a Hermes-safe mirror and syncs changes back.
  */
 
@@ -14,7 +15,12 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { execa } from "execa";
 import { z } from "zod";
-import { hasRetryMarker, stripRetryMarker } from "./code-output-policy.js";
+import { createTaintedSignalAssessment } from "../lib/signal-assessment.js";
+import {
+	evaluateCodeOnlyOutput,
+	hasRetryMarker,
+	stripRetryMarker,
+} from "./code-output-policy.js";
 import type { GenerateOpts, GenerateResult, Harness } from "./harness.js";
 import {
 	buildHermesRunArgs,
@@ -184,6 +190,49 @@ function hasTextualToolCallOutput(output: string): boolean {
 	);
 }
 
+function extractHermesReviewDiffSolution(output: string): string | undefined {
+	const normalized = output.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+	if (!normalized.includes(SOLUTION_FILENAME) || !/^@@\s/m.test(normalized)) {
+		return undefined;
+	}
+
+	const addedLines: string[] = [];
+	let isInSolutionDiff = false;
+	let isInHunk = false;
+	for (const line of normalized.split("\n")) {
+		if (line.includes(SOLUTION_FILENAME)) {
+			isInSolutionDiff = true;
+			isInHunk = false;
+			continue;
+		}
+		if (!isInSolutionDiff) continue;
+		if (line.startsWith("@@")) {
+			isInHunk = true;
+			continue;
+		}
+		if (!isInHunk) continue;
+		if (line.startsWith("diff --git ") || line.startsWith("--- ")) {
+			break;
+		}
+		if (line.startsWith("+++") || line.startsWith("\\ No newline")) {
+			continue;
+		}
+		if (line.startsWith("+")) {
+			addedLines.push(line.slice(1));
+		}
+	}
+
+	const candidate = addedLines.join("\n").trim();
+	if (candidate.length < MIN_OUTPUT_LENGTH) {
+		return undefined;
+	}
+	const decision = evaluateCodeOnlyOutput(candidate, MIN_OUTPUT_LENGTH);
+	if (decision.shouldRetry || decision.code.length < MIN_OUTPUT_LENGTH) {
+		return undefined;
+	}
+	return decision.code;
+}
+
 /**
  * Creates a structured Hermes generation failure for runner serialization.
  *
@@ -347,6 +396,19 @@ export function createHermesAdapter(options?: HermesAdapterOptions): Harness {
 				try {
 					code = await fs.promises.readFile(solutionPath, "utf-8");
 				} catch {
+					const salvagedCode = extractHermesReviewDiffSolution(result.stdout);
+					if (salvagedCode !== undefined) {
+						await fs.promises.writeFile(solutionPath, salvagedCode, "utf-8");
+						return {
+							output: salvagedCode,
+							durationMs,
+							...(createdTempWorkDir ? {} : { codeFilePath: solutionPath }),
+							signalAssessment: createTaintedSignalAssessment([
+								"output_contract_violation",
+								"mixed_prose_salvaged",
+							]),
+						};
+					}
 					throw buildHermesFailure(
 						`Hermes did not produce required ${SOLUTION_FILENAME}`,
 						durationMs,

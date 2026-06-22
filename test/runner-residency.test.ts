@@ -237,9 +237,9 @@ describe("runBenchmark Ollama residency guard", () => {
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
 		).toEqual([
 			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
-			{ baseUrl: CONFIG.ollamaBaseUrl },
+			{ baseUrl: CONFIG.ollamaBaseUrl, settleTimeoutMs: 1_200_000 },
 			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-b" },
-			{ baseUrl: CONFIG.ollamaBaseUrl },
+			{ baseUrl: CONFIG.ollamaBaseUrl, settleTimeoutMs: 1_200_000 },
 		]);
 		expect(mocks.executeItem).toHaveBeenCalledTimes(2);
 		expect(mocks.executeItem.mock.calls[0][3]).toBe(true);
@@ -259,7 +259,7 @@ describe("runBenchmark Ollama residency guard", () => {
 		).toEqual([
 			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
 			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
-			{ baseUrl: CONFIG.ollamaBaseUrl },
+			{ baseUrl: CONFIG.ollamaBaseUrl, settleTimeoutMs: 1_200_000 },
 		]);
 		expect(mocks.executeItem.mock.calls[0][3]).toBe(false);
 		expect(mocks.executeItem.mock.calls[1][3]).toBe(true);
@@ -300,7 +300,7 @@ describe("runBenchmark Ollama residency guard", () => {
 			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
 		).toEqual([
 			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
-			{ baseUrl: CONFIG.ollamaBaseUrl },
+			{ baseUrl: CONFIG.ollamaBaseUrl, settleTimeoutMs: 1_200_000 },
 		]);
 		const [, runResult] = mocks.writeResult.mock.calls[0] as [
 			string,
@@ -316,8 +316,8 @@ describe("runBenchmark Ollama residency guard", () => {
 				durationMs: 0,
 			},
 			signalAssessment: {
-				classification: "trustworthy",
-				reasons: [],
+				classification: "tainted",
+				reasons: ["preflight_skip"],
 			},
 		});
 	});
@@ -352,9 +352,56 @@ describe("runBenchmark Ollama residency guard", () => {
 				message: expect.stringContaining("residency failed"),
 			},
 			signalAssessment: {
-				classification: "trustworthy",
-				reasons: [],
+				classification: "tainted",
+				reasons: ["residency_guard_failure"],
 			},
+		});
+	});
+
+	it("drains stale loaded models and retries a pre-item residency timeout once", async () => {
+		const item = createItem("01", "model-b");
+		mocks.buildRunPlan.mockResolvedValueOnce(createPlan([item]));
+		mocks.ensureOnlyOllamaModelLoaded
+			.mockRejectedValueOnce(
+				new Error(
+					"Timed out waiting for Ollama model residency; allowed=model-b stillLoaded=model-a",
+				),
+			)
+			.mockResolvedValueOnce({
+				loadedModels: [],
+				unloadedModels: ["model-a"],
+			})
+			.mockResolvedValueOnce({
+				allowedModel: "model-b",
+				loadedModels: ["model-b"],
+				unloadedModels: [],
+			})
+			.mockResolvedValueOnce({
+				loadedModels: [],
+				unloadedModels: ["model-b"],
+			});
+		const { runBenchmark } = await import("../src/runner/index.js");
+
+		await runBenchmark(CONFIG);
+
+		expect(
+			mocks.ensureOnlyOllamaModelLoaded.mock.calls.map(([config]) => config),
+		).toEqual([
+			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-b" },
+			{ baseUrl: CONFIG.ollamaBaseUrl, settleTimeoutMs: 1_200_000 },
+			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-b" },
+			{ baseUrl: CONFIG.ollamaBaseUrl, settleTimeoutMs: 1_200_000 },
+		]);
+		expect(mocks.executeItem).toHaveBeenCalledTimes(1);
+		expect(mocks.writeResult).toHaveBeenCalledTimes(1);
+		const [, runResult] = mocks.writeResult.mock.calls[0] as [
+			string,
+			{ items: MatrixItemResult[] },
+		];
+		expect(runResult.items).toHaveLength(1);
+		expect(runResult.items[0]).toMatchObject({
+			id: item.id,
+			status: "completed",
 		});
 	});
 

@@ -17,7 +17,8 @@ describe("computeOpenCodeStaleOutputTimeoutMs", () => {
 
 	it("scales with half the overall timeout up to the maximum", () => {
 		expect(computeOpenCodeStaleOutputTimeoutMs(400_000)).toBe(200_000);
-		expect(computeOpenCodeStaleOutputTimeoutMs(900_000)).toBe(300_000);
+		expect(computeOpenCodeStaleOutputTimeoutMs(900_000)).toBe(450_000);
+		expect(computeOpenCodeStaleOutputTimeoutMs(1_800_000)).toBe(600_000);
 	});
 
 	it("rejects invalid timeout values", () => {

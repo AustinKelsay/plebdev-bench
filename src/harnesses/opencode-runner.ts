@@ -15,7 +15,7 @@ import { runExecFile } from "../lib/exec.js";
 
 const STALE_CHECK_INTERVAL_MS = 30_000;
 const MIN_STALE_OUTPUT_TIMEOUT_MS = 120_000;
-const MAX_STALE_OUTPUT_TIMEOUT_MS = 300_000;
+const MAX_STALE_OUTPUT_TIMEOUT_MS = 600_000;
 const FORCE_KILL_DELAY_MS = 2_000;
 
 function killOpenCodeProcess(

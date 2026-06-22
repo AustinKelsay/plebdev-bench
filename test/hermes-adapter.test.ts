@@ -156,6 +156,61 @@ describe("createHermesAdapter", () => {
 		}
 	});
 
+	it("salvages code-output solution.ts from Hermes review diff output", async () => {
+		const solution =
+			"export function add(a: number, b: number) {\n\treturn a + b;\n}";
+		let generatedWorkspaceDir: string | undefined;
+		execaMock.mockImplementation(
+			async (command: string, args: string[], options: { cwd?: string }) => {
+				if (command === "hermes" && args.join(" ") === "chat --help") {
+					return {
+						stdout:
+							"--query --model --provider --toolsets --quiet --yolo --accept-hooks --max-turns",
+						stderr: "",
+						exitCode: 0,
+					};
+				}
+				if (command === "hermes") {
+					generatedWorkspaceDir = options.cwd;
+					return {
+						stdout: [
+							"review diff",
+							"a/private/tmp/plebdev-bench-hermes/solution.ts -> b/private/tmp/plebdev-bench-hermes/solution.ts",
+							"@@ -0,0 +1,3 @@",
+							"+export function add(a: number, b: number) {",
+							"+\treturn a + b;",
+							"+}",
+						].join("\n"),
+						stderr: "",
+						exitCode: 0,
+					};
+				}
+				throw new Error(`Unexpected command: ${command}`);
+			},
+		);
+
+		const { createHermesAdapter } = await import(
+			"../src/harnesses/hermes-adapter.js"
+		);
+		const adapter = createHermesAdapter();
+		const result = await adapter.generate({
+			model: "qwen3.5:4b",
+			prompt: "Write an add function.",
+			timeoutMs: 5_000,
+			runtime: createRuntime(),
+		});
+
+		expect(result.output).toBe(solution);
+		expect(result.codeFilePath).toBeUndefined();
+		expect(result.signalAssessment).toEqual({
+			classification: "tainted",
+			reasons: ["output_contract_violation", "mixed_prose_salvaged"],
+		});
+		await expect(
+			fs.promises.access(String(generatedWorkspaceDir)),
+		).rejects.toThrow();
+	});
+
 	it("runs workspace mode from the caller-supplied Benchmark Workspace", async () => {
 		const workspaceDir = await fs.promises.mkdtemp(
 			path.join(os.tmpdir(), "plebdev-hermes-workspace-"),
