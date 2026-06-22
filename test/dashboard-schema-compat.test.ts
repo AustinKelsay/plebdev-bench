@@ -271,7 +271,7 @@ describe("RunResultSchema", () => {
 		).toThrow("trustworthy signal assessments must not include taint reasons");
 	});
 
-	it("accepts newly added transcript/input taint reasons", () => {
+	it("accepts newly added transcript/input and infrastructure taint reasons", () => {
 		const parsed = RunResultSchema.parse({
 			schemaVersion: SCHEMA_VERSION,
 			runId: "run-test",
@@ -295,7 +295,12 @@ describe("RunResultSchema", () => {
 					status: "completed",
 					signalAssessment: {
 						classification: "tainted",
-						reasons: ["internal_tool_transcript", "agent_requested_input"],
+						reasons: [
+							"internal_tool_transcript",
+							"agent_requested_input",
+							"residency_guard_failure",
+							"preflight_skip",
+						],
 					},
 				},
 			],
@@ -304,6 +309,8 @@ describe("RunResultSchema", () => {
 		expect(parsed.items[0]?.signalAssessment?.reasons).toEqual([
 			"internal_tool_transcript",
 			"agent_requested_input",
+			"residency_guard_failure",
+			"preflight_skip",
 		]);
 	});
 });

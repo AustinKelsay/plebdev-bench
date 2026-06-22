@@ -49,6 +49,11 @@ import {
 
 /** Warn if run.json exceeds this size (bytes). */
 const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
+/**
+ * Long model-boundary drain used after harnesses that can leave Ollama working
+ * after their CLI process has been killed.
+ */
+const MODEL_BOUNDARY_RESIDENCY_SETTLE_TIMEOUT_MS = 20 * 60 * 1000;
 /** Generation failures that indicate a tool harness/model should stop early. */
 const PREFLIGHT_SKIP_FAILURE_TYPES = new Set<GenerationFailureType>([
 	"api_error",
@@ -68,6 +73,13 @@ function shouldSkipRemainingToolItems(result: MatrixItemResult): boolean {
 		result.generation?.success === false &&
 		failureType !== undefined &&
 		PREFLIGHT_SKIP_FAILURE_TYPES.has(failureType)
+	);
+}
+
+function isResidencySettleTimeout(message: string): boolean {
+	return (
+		message.includes("Timed out waiting for Ollama model residency") &&
+		message.includes("stillLoaded=")
 	);
 }
 
@@ -192,6 +204,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		try {
 			const postItemResidencyReport = await ensureOnlyOllamaModelLoaded({
 				baseUrl: config.ollamaBaseUrl,
+				settleTimeoutMs: MODEL_BOUNDARY_RESIDENCY_SETTLE_TIMEOUT_MS,
 			});
 			printModelGuardReport(postItemResidencyReport, log);
 		} catch (error) {
@@ -199,6 +212,35 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 				{ itemId: item.id, error: readErrorMessage(error) },
 				"Ollama residency guard failed after item; continuing",
 			);
+		}
+	};
+
+	const runPreItemResidencyGuard = async (item: MatrixItem): Promise<void> => {
+		try {
+			const preItemResidencyReport = await ensureOnlyOllamaModelLoaded({
+				baseUrl: config.ollamaBaseUrl,
+				allowedModel: item.model,
+			});
+			printModelGuardReport(preItemResidencyReport, log);
+		} catch (error) {
+			const errorMessage = readErrorMessage(error);
+			if (!isResidencySettleTimeout(errorMessage)) {
+				throw error;
+			}
+			log.warn(
+				{ itemId: item.id, error: errorMessage },
+				"Ollama residency guard timed out before item; draining loaded models before retry",
+			);
+			const drainReport = await ensureOnlyOllamaModelLoaded({
+				baseUrl: config.ollamaBaseUrl,
+				settleTimeoutMs: MODEL_BOUNDARY_RESIDENCY_SETTLE_TIMEOUT_MS,
+			});
+			printModelGuardReport(drainReport, log);
+			const retryReport = await ensureOnlyOllamaModelLoaded({
+				baseUrl: config.ollamaBaseUrl,
+				allowedModel: item.model,
+			});
+			printModelGuardReport(retryReport, log);
 		}
 	};
 
@@ -272,11 +314,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 		);
 
 		try {
-			const preItemResidencyReport = await ensureOnlyOllamaModelLoaded({
-				baseUrl: config.ollamaBaseUrl,
-				allowedModel: item.model,
-			});
-			printModelGuardReport(preItemResidencyReport, log);
+			await runPreItemResidencyGuard(item);
 		} catch (error) {
 			const errorMessage = readErrorMessage(error);
 			if (isToolHarness && isPreflight) {

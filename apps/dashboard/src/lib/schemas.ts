@@ -73,6 +73,8 @@ const SignalAssessmentReasonSchema = z.enum([
 	"confirmation_without_artifact",
 	"internal_tool_transcript",
 	"agent_requested_input",
+	"residency_guard_failure",
+	"preflight_skip",
 ]);
 
 /** Signal assessment schema. */

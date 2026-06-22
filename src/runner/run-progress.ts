@@ -12,7 +12,7 @@
 
 import * as path from "node:path";
 import type { Logger } from "pino";
-import { createTrustworthySignalAssessment } from "../lib/signal-assessment.js";
+import { createTaintedSignalAssessment } from "../lib/signal-assessment.js";
 import { writePartialResult } from "../results/writer.js";
 import type { OllamaResidencyReport } from "../runtimes/ollama-residency.js";
 import type {
@@ -158,7 +158,9 @@ export function buildResidencyGuardFailureResult(
 			type: "api_error",
 			message: `Residency guard failed: ${message}`,
 		},
-		signalAssessment: createTrustworthySignalAssessment(),
+		signalAssessment: createTaintedSignalAssessment([
+			"residency_guard_failure",
+		]),
 	};
 }
 
@@ -201,7 +203,7 @@ export function buildPreflightSkipResult(
 			type: failureType,
 			message: errorMessage,
 		},
-		signalAssessment: createTrustworthySignalAssessment(),
+		signalAssessment: createTaintedSignalAssessment(["preflight_skip"]),
 	};
 }
 

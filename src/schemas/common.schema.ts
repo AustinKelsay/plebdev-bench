@@ -157,6 +157,8 @@ export const signalAssessmentReasonTypes = [
 	"confirmation_without_artifact",
 	"internal_tool_transcript",
 	"agent_requested_input",
+	"residency_guard_failure",
+	"preflight_skip",
 ] as const;
 
 /** Zod schema for signal assessment reasons. */
