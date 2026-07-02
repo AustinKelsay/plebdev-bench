@@ -9,6 +9,7 @@
  */
 
 import { z } from "zod";
+import { DEFAULT_MIN_FREE_DISK_BYTES } from "../lib/disk-space.js";
 import {
 	PassTypeSchema,
 	SCHEMA_VERSION,
@@ -168,6 +169,12 @@ const BenchConfigObjectSchema = z
 
 		/** Output directory for results. */
 		outputDir: z.string().default("results"),
+
+		/** Minimum free bytes required on benchmark write roots. */
+		minFreeDiskBytes: z
+			.number()
+			.nonnegative()
+			.default(DEFAULT_MIN_FREE_DISK_BYTES),
 
 		/** Optional explicit machine instance identifier. */
 		machineInstanceId: z.string().trim().min(1).optional(),

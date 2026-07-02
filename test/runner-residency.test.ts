@@ -125,6 +125,7 @@ const CONFIG = {
 	hermesWorkspaceMaxTurns: 8,
 	hermesWorkspaceRetryMaxTurns: 12,
 	outputDir: "results",
+	minFreeDiskBytes: 0,
 	modelProfiles: {},
 } satisfies BenchConfig;
 
@@ -230,7 +231,6 @@ describe("runBenchmark Ollama residency guard", () => {
 		const second = createItem("02", "model-b");
 		mocks.buildRunPlan.mockResolvedValueOnce(createPlan([first, second]));
 		const { runBenchmark } = await import("../src/runner/index.js");
-
 		await runBenchmark(CONFIG);
 
 		expect(
@@ -291,9 +291,7 @@ describe("runBenchmark Ollama residency guard", () => {
 			},
 		});
 		const { runBenchmark } = await import("../src/runner/index.js");
-
 		await runBenchmark(CONFIG);
-
 		expect(mocks.executeItem).toHaveBeenCalledTimes(1);
 		expect(mocks.writePartialResult).toHaveBeenCalledTimes(1);
 		expect(
@@ -302,10 +300,9 @@ describe("runBenchmark Ollama residency guard", () => {
 			{ baseUrl: CONFIG.ollamaBaseUrl, allowedModel: "model-a" },
 			{ baseUrl: CONFIG.ollamaBaseUrl, settleTimeoutMs: 1_200_000 },
 		]);
-		const [, runResult] = mocks.writeResult.mock.calls[0] as [
-			string,
-			{ items: MatrixItemResult[] },
-		];
+		const runResult = mocks.writeResult.mock.calls[0]?.[1] as {
+			items: MatrixItemResult[];
+		};
 		expect(runResult.items[1]).toMatchObject({
 			id: skipped.id,
 			status: "failed",
@@ -319,6 +316,49 @@ describe("runBenchmark Ollama residency guard", () => {
 				classification: "tainted",
 				reasons: ["preflight_skip"],
 			},
+		});
+	});
+
+	it("continues after model-behavior preflight harness errors", async () => {
+		const preflight = {
+			...createItem("01", "model-a"),
+			harness: "hermes",
+			tags: ["preflight"],
+		} satisfies MatrixItem;
+		const nextItem = {
+			...createItem("02", "model-a"),
+			harness: "hermes",
+		} satisfies MatrixItem;
+		mocks.buildRunPlan.mockResolvedValueOnce(createPlan([preflight, nextItem]));
+		mocks.executeItem
+			.mockResolvedValueOnce({
+				...createResult(preflight),
+				status: "failed",
+				generation: {
+					success: false,
+					error:
+						"Hermes printed textual tool-call syntax instead of invoking workspace tools",
+					failureType: "harness_error",
+					durationMs: 11,
+				},
+				generationFailure: {
+					type: "harness_error",
+					message:
+						"Hermes printed textual tool-call syntax instead of invoking workspace tools",
+				},
+			})
+			.mockResolvedValueOnce(createResult(nextItem));
+		const { runBenchmark } = await import("../src/runner/index.js");
+		await runBenchmark(CONFIG);
+		expect(mocks.executeItem).toHaveBeenCalledTimes(2);
+		expect(mocks.writePartialResult).toHaveBeenCalledTimes(1);
+		const [, runResult] = mocks.writeResult.mock.calls[0] as [
+			string,
+			{ items: MatrixItemResult[] },
+		];
+		expect(runResult.items[1]).toMatchObject({
+			id: nextItem.id,
+			status: "completed",
 		});
 	});
 

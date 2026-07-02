@@ -105,6 +105,7 @@ describe("buildOpenCodeEnv", () => {
 		vi.stubEnv("OPENCODE_CONFIG", "/tmp/user-opencode.json");
 		vi.stubEnv("OPENCODE_DISABLE_WEBSEARCH", "false");
 		vi.stubEnv("OPENCODE_USER_SETTING", "leak");
+		vi.stubEnv("XDG_CONFIG_HOME", "/tmp/user-opencode-config");
 		const env = buildOpenCodeEnv({
 			configDir: "/tmp/opencode-config",
 			configPath: "/tmp/opencode-config/opencode.json",
@@ -114,6 +115,7 @@ describe("buildOpenCodeEnv", () => {
 		expect(env.OPENCODE_CONFIG_DIR).toBe("/tmp/opencode-config");
 		expect(env.OPENCODE_CONFIG).toBe("/tmp/opencode-config/opencode.json");
 		expect(env.OPENCODE_CONFIG_CONTENT).toBe('{"permission":{"*":"allow"}}');
+		expect(env.XDG_CONFIG_HOME).toBe("/tmp/opencode-config");
 		expect(env.OPENCODE_DISABLE_AUTOUPDATE).toBe("true");
 		expect(env.OPENCODE_DISABLE_DEFAULT_PLUGINS).toBe("true");
 		expect(env.OPENCODE_DISABLE_WEBSEARCH).toBe("true");

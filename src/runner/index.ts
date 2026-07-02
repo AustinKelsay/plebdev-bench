@@ -13,6 +13,10 @@
 
 import type { HarnessName } from "../harnesses/harness.js";
 import { TOOL_CALLING_HARNESS_NAMES } from "../harnesses/harness.js";
+import {
+	assertFreeDiskSpace,
+	getBenchmarkWriteRoots,
+} from "../lib/disk-space.js";
 import { logger } from "../lib/logger.js";
 import { hasOpenRouterKey } from "../lib/openrouter-client.js";
 import { calculateRunStats, formatRunStats } from "../lib/stats.js";
@@ -56,8 +60,6 @@ const RUN_JSON_WARN_BYTES = 5 * 1024 * 1024;
 const MODEL_BOUNDARY_RESIDENCY_SETTLE_TIMEOUT_MS = 20 * 60 * 1000;
 /** Generation failures that indicate a tool harness/model should stop early. */
 const PREFLIGHT_SKIP_FAILURE_TYPES = new Set<GenerationFailureType>([
-	"api_error",
-	"harness_error",
 	"tool_missing",
 ]);
 
@@ -94,6 +96,15 @@ function isResidencySettleTimeout(message: string): boolean {
 export async function runBenchmark(config: BenchConfig): Promise<void> {
 	const startedAt = new Date().toISOString();
 	const startTime = performance.now();
+	const benchmarkWriteRoots = getBenchmarkWriteRoots(config.outputDir);
+	const assertRunDiskSpace = (action: string): Promise<void> =>
+		assertFreeDiskSpace({
+			paths: benchmarkWriteRoots,
+			minFreeBytes: config.minFreeDiskBytes,
+			action,
+		});
+
+	await assertRunDiskSpace("benchmark run startup");
 
 	// Build plan
 	const plan = await buildRunPlan(config);
@@ -260,6 +271,8 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 			item.harness as (typeof TOOL_CALLING_HARNESS_NAMES)[number],
 		);
 		const isPreflight = isPreflightTest(item.tags);
+
+		await assertRunDiskSpace(`item ${item.id} setup`);
 
 		if (isToolHarness) {
 			const status = preflightStatus.get(preflightKey);
@@ -458,6 +471,7 @@ export async function runBenchmark(config: BenchConfig): Promise<void> {
 
 	// Write run.json
 	log.info("Writing run.json...");
+	await assertRunDiskSpace("final run artifact write");
 	await writeResult(config.outputDir, runResult);
 	deletePartialResult(config.outputDir, plan.runId);
 	log.info(

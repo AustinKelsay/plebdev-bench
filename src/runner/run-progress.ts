@@ -12,6 +12,10 @@
 
 import * as path from "node:path";
 import type { Logger } from "pino";
+import {
+	assertFreeDiskSpace,
+	getBenchmarkWriteRoots,
+} from "../lib/disk-space.js";
 import { createTaintedSignalAssessment } from "../lib/signal-assessment.js";
 import { writePartialResult } from "../results/writer.js";
 import type { OllamaResidencyReport } from "../runtimes/ollama-residency.js";
@@ -250,6 +254,11 @@ export async function writeProgressCheckpoint(input: {
 		input.total,
 		input.results,
 	);
+	await assertFreeDiskSpace({
+		paths: getBenchmarkWriteRoots(input.config.outputDir),
+		minFreeBytes: input.config.minFreeDiskBytes,
+		action: "progress checkpoint write",
+	});
 	await writePartialResult(input.config.outputDir, partialSnapshot);
 	input.log.info(
 		{

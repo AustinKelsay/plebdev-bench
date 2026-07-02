@@ -123,6 +123,7 @@ export function buildOpenCodeEnv(opts: {
 		OPENCODE_CONFIG_DIR: parsed.configDir,
 		OPENCODE_CONFIG: parsed.configPath,
 		OPENCODE_CONFIG_CONTENT: parsed.configJson,
+		XDG_CONFIG_HOME: parsed.configDir,
 		OPENCODE_DISABLE_AUTOUPDATE: "true",
 		OPENCODE_DISABLE_DEFAULT_PLUGINS: "true",
 		OPENCODE_DISABLE_LSP_DOWNLOAD: "true",

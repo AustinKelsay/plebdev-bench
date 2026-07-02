@@ -11,6 +11,7 @@
  */
 
 import { Command } from "commander";
+import { DEFAULT_MIN_FREE_DISK_BYTES } from "../lib/disk-space.js";
 import { logger } from "../lib/logger.js";
 import {
 	loadModelProfiles,
@@ -50,6 +51,31 @@ function parseStrictIntegerOption(
 	if (parsed < 1) {
 		throw new Error(
 			`${optionName} must be greater than zero, received "${String(rawValue)}"`,
+		);
+	}
+	return parsed;
+}
+
+/**
+ * Parses a CLI number option using finite non-negative validation.
+ *
+ * @param optionName - Human-readable option label for error messages
+ * @param rawValue - Raw CLI value
+ * @returns Parsed non-negative number
+ * @throws {Error} If value is not finite or is negative
+ */
+function parseNonNegativeNumberOption(
+	optionName: string,
+	rawValue: unknown,
+): number {
+	const normalized = String(rawValue).trim();
+	if (normalized.length === 0) {
+		throw new Error(`${optionName} must not be empty`);
+	}
+	const parsed = Number(normalized);
+	if (!Number.isFinite(parsed) || parsed < 0) {
+		throw new Error(
+			`${optionName} must be a non-negative number, received "${String(rawValue)}"`,
 		);
 	}
 	return parsed;
@@ -143,6 +169,11 @@ export const runCommand = new Command("run")
 		"12",
 	)
 	.option("-o, --output <dir>", "Output directory", "results")
+	.option(
+		"--min-free-disk-gb <gb>",
+		"Minimum free disk space required on benchmark write roots before/during a run; 0 disables",
+		String(DEFAULT_MIN_FREE_DISK_BYTES / 1024 ** 3),
+	)
 	.option(
 		"--machine-instance-id <id>",
 		"Stable machine instance ID (default: BENCH_MACHINE_INSTANCE_ID env or generated local ID)",
@@ -302,6 +333,12 @@ export const runCommand = new Command("run")
 					options.hermesWorkspaceRetryMaxTurns,
 				),
 				outputDir: options.output,
+				minFreeDiskBytes:
+					parseNonNegativeNumberOption(
+						"--min-free-disk-gb",
+						options.minFreeDiskGb,
+					) *
+					1024 ** 3,
 				machineInstanceId: resolvedMachineId,
 				machineDisplayLabel: resolvedMachineLabel,
 				modelProfiles,
@@ -341,7 +378,9 @@ export const runCommand = new Command("run")
 			await runBenchmark(parseResult.data);
 		} catch (error) {
 			// Crash errors exit non-zero
-			logger.error({ error }, "Benchmark run crashed");
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			logger.error({ error, errorMessage }, "Benchmark run crashed");
 			process.exit(1);
 		}
 	});
