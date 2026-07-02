@@ -122,6 +122,7 @@ function createBenchConfig(overrides: Partial<BenchConfig> = {}): BenchConfig {
 		hermesWorkspaceMaxTurns: 8,
 		hermesWorkspaceRetryMaxTurns: 12,
 		outputDir: "results",
+		minFreeDiskBytes: 0,
 		modelProfiles: {},
 		...overrides,
 	};

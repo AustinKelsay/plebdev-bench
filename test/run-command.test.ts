@@ -8,6 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_MIN_FREE_DISK_BYTES } from "../src/lib/disk-space.js";
 
 const mocks = vi.hoisted(() => ({
 	loggerError: vi.fn(),
@@ -28,11 +29,22 @@ vi.mock("../src/runner/index.js", () => ({
 
 import { runCommand } from "../src/cli/run-command.js";
 
+function resetRunCommandOptions(): void {
+	for (const option of runCommand.options) {
+		runCommand.setOptionValueWithSource(
+			option.attributeName(),
+			option.defaultValue,
+			"default",
+		);
+	}
+}
+
 describe("runCommand", () => {
 	let exitSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		resetRunCommandOptions();
 		exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
 			throw new Error(`process.exit(${code})`);
 		}) as unknown as ReturnType<typeof vi.spyOn>;
@@ -62,7 +74,10 @@ describe("runCommand", () => {
 		expect((loggedError as Error).message).toContain("--ollama-url");
 		expect((loggedError as Error).message).toContain("--vllm-url");
 		expect(mocks.loggerError).toHaveBeenCalledWith(
-			{ error: expect.any(Error) },
+			{
+				error: expect.any(Error),
+				errorMessage: expect.stringContaining("--ollama-url"),
+			},
 			"Benchmark run crashed",
 		);
 	});
@@ -71,9 +86,32 @@ describe("runCommand", () => {
 		const helpText = runCommand.helpInformation();
 
 		expect(helpText).toContain("direct, goose, hermes, opencode");
+		expect(helpText).toContain("--min-free-disk-gb");
 		expect(helpText).toContain("--hermes-max-turns");
 		expect(helpText).toContain("--hermes-retry-max-turns");
 		expect(helpText).toContain("--hermes-workspace-max-turns");
 		expect(helpText).toContain("--hermes-workspace-retry-max-turns");
+	});
+
+	it("passes custom disk threshold to the runner in bytes", async () => {
+		await runCommand.parseAsync(["--min-free-disk-gb", "1.5"], {
+			from: "user",
+		});
+
+		expect(mocks.runBenchmark).toHaveBeenCalledWith(
+			expect.objectContaining({
+				minFreeDiskBytes: 1.5 * 1024 ** 3,
+			}),
+		);
+	});
+
+	it("uses the official-run default disk threshold", async () => {
+		await runCommand.parseAsync([], { from: "user" });
+
+		expect(mocks.runBenchmark).toHaveBeenCalledWith(
+			expect.objectContaining({
+				minFreeDiskBytes: DEFAULT_MIN_FREE_DISK_BYTES,
+			}),
+		);
 	});
 });

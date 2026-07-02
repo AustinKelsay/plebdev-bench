@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { DEFAULT_MIN_FREE_DISK_BYTES } from "../src/lib/disk-space.js";
 import {
 	buildMachineProfileKey,
 	buildMachineProfileLabel,
@@ -136,6 +137,7 @@ describe("BenchConfigSchema", () => {
 		expect(config.hermesWorkspaceMaxTurns).toBe(8);
 		expect(config.hermesWorkspaceRetryMaxTurns).toBe(12);
 		expect(config.outputDir).toBe("results");
+		expect(config.minFreeDiskBytes).toBe(DEFAULT_MIN_FREE_DISK_BYTES);
 	});
 
 	it("should parse custom values", () => {
@@ -154,6 +156,7 @@ describe("BenchConfigSchema", () => {
 			hermesRetryMaxTurns: 4,
 			hermesWorkspaceMaxTurns: 6,
 			hermesWorkspaceRetryMaxTurns: 9,
+			minFreeDiskBytes: 1234,
 		});
 		expect(config.runtimes).toEqual(["ollama"]);
 		expect(config.models).toEqual(["llama3.2:3b"]);
@@ -169,6 +172,7 @@ describe("BenchConfigSchema", () => {
 		expect(config.hermesRetryMaxTurns).toBe(4);
 		expect(config.hermesWorkspaceMaxTurns).toBe(6);
 		expect(config.hermesWorkspaceRetryMaxTurns).toBe(9);
+		expect(config.minFreeDiskBytes).toBe(1234);
 	});
 
 	it("should reject empty runtime selections", () => {
