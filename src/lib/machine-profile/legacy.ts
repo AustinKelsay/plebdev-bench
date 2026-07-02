@@ -110,6 +110,9 @@ function migrateLegacyObservedHardware(
  * @returns Namespaced legacy instance identifier
  */
 function buildLegacyInstanceId(legacyProfileId: string): string {
+	if (/^machine-[0-9a-f]{12}$/i.test(legacyProfileId)) {
+		return legacyProfileId;
+	}
 	return legacyProfileId.startsWith("legacy_profile:")
 		? legacyProfileId
 		: `legacy_profile:${legacyProfileId}`;

@@ -39,8 +39,9 @@ describe("published Hermes artifact", () => {
 		expect(doc).toContain("--machine-instance-id hermes-post-merge-m4-pro");
 	});
 
-	it("publishes Hermes run, plan, index, and latest aggregate coordinates", () => {
+	it("publishes Hermes run, plan, index, and checkpoint aggregate coordinates", () => {
 		const run = readJson<{
+			benchmarkCheckpoint?: { checkpointId: string };
 			summary: { total: number; completed: number; failed: number };
 			items: Array<{
 				harness: string;
@@ -61,7 +62,9 @@ describe("published Hermes artifact", () => {
 				summary: { total: number; completed: number };
 			}>;
 		}>("apps/dashboard/public/results/index.json");
-		const latest = readJson<{
+		const checkpointId = run.benchmarkCheckpoint?.checkpointId;
+		expect(checkpointId).toBeDefined();
+		const aggregate = readJson<{
 			items: Array<{
 				sourceRunId: string;
 				harness: string;
@@ -70,7 +73,7 @@ describe("published Hermes artifact", () => {
 				test: string;
 				passType: string;
 			}>;
-		}>("apps/dashboard/public/results/aggregates/latest.json");
+		}>(`apps/dashboard/public/results/aggregates/${checkpointId}.json`);
 
 		expect(run.summary).toMatchObject({ total: 2, completed: 2, failed: 0 });
 		expect(
@@ -105,7 +108,7 @@ describe("published Hermes artifact", () => {
 				?.summary,
 		).toMatchObject({ total: 2, completed: 2 });
 		expect(
-			latest.items
+			aggregate.items
 				.filter((item) => item.sourceRunId === PUBLISHED_HERMES_RUN_ID)
 				.map((item) => [item.harness, item.runtime, item.model, item.test]),
 		).toEqual([

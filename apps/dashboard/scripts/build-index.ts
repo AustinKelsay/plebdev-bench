@@ -35,6 +35,7 @@ import {
 	sanitizePublishedPlan,
 	sanitizePublishedRun,
 } from "./publication-safety.js";
+import { hydratePublishedCodeArtifactOutputs } from "./published-code-artifacts.js";
 
 const SCRIPT_DIR = fileURLToPath(new URL(".", import.meta.url));
 const DEFAULT_SOURCE_RESULTS_DIR = resolve(SCRIPT_DIR, "../../../results");
@@ -175,6 +176,7 @@ async function readRunBundle(
 	try {
 		run = parseKnownRunPayload(JSON.parse(runContent) as unknown);
 		assertPublishableRun(run);
+		run = await hydratePublishedCodeArtifactOutputs(run);
 		run = sanitizePublishedRun(run);
 	} catch (error) {
 		throw new Error(
