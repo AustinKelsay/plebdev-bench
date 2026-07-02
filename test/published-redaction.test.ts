@@ -323,4 +323,129 @@ describe("Published Redaction", () => {
 			"[path:out.ts]",
 		);
 	});
+
+	it("publishes tool-written code file contents before dropping local paths", async () => {
+		const root = createTempRoot();
+		const sourceResultsDir = path.join(root, "results");
+		const outputResultsDir = path.join(root, "published-results");
+		const runDir = path.join(sourceResultsDir, "run-code-artifact");
+		const codePath = path.join(root, "tool-output", "solution.ts");
+		const checkpoint = {
+			checkpointId: "chk_code_artifact",
+			algorithm: "sha256v1",
+			manifestHash: "def456",
+			assetCount: 1,
+			computedAt: "2026-06-19T10:00:00.000Z",
+		};
+
+		fs.mkdirSync(path.dirname(codePath), { recursive: true });
+		fs.writeFileSync(
+			codePath,
+			"export function add(left: number, right: number): number {\n\treturn left + right;\n}\n",
+		);
+		writeJson(path.join(runDir, "run.json"), {
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-code-artifact",
+			benchmarkCheckpoint: checkpoint,
+			startedAt: "2026-06-19T10:00:00.000Z",
+			completedAt: "2026-06-19T10:01:00.000Z",
+			durationMs: 60_000,
+			summary: { total: 1, completed: 1, failed: 0, pending: 0 },
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "gpt-oss:20b",
+					harness: "opencode",
+					test: "calculator-basic",
+					passType: "blind",
+					status: "completed",
+					generation: {
+						success: true,
+						output: "DONE",
+						durationMs: 1000,
+						codeFilePath: codePath,
+					},
+					automatedScore: { passed: 20, failed: 0, total: 20 },
+				},
+			],
+		});
+		writeJson(path.join(runDir, "plan.json"), {
+			schemaVersion: SCHEMA_VERSION,
+			runId: "run-code-artifact",
+			createdAt: "2026-06-19T10:00:00.000Z",
+			benchmarkCheckpoint: checkpoint,
+			config: {
+				ollamaBaseUrl: "http://localhost:11434",
+				generateTimeoutMs: 120_000,
+				passTypes: ["blind"],
+			},
+			items: [
+				{
+					id: "01",
+					runtime: "ollama",
+					model: "gpt-oss:20b",
+					harness: "opencode",
+					test: "calculator-basic",
+					passType: "blind",
+				},
+			],
+			summary: {
+				totalItems: 1,
+				runtimes: 1,
+				models: 1,
+				harnesses: 1,
+				tests: 1,
+			},
+		});
+
+		await buildDashboardIndexArtifacts({
+			sourceResultsDir,
+			outputResultsDir,
+			projectRoot: root,
+			latestCheckpointId: checkpoint.checkpointId,
+		});
+
+		const publishedRun = JSON.parse(
+			fs.readFileSync(
+				path.join(outputResultsDir, "run-code-artifact", "run.json"),
+				"utf-8",
+			),
+		) as {
+			items: Array<{
+				generation?: {
+					codeFilePath?: string;
+					sourcePathToken?: string;
+					output?: string;
+				};
+			}>;
+		};
+		const latestAggregate = JSON.parse(
+			fs.readFileSync(
+				path.join(outputResultsDir, "aggregates", "latest.json"),
+				"utf-8",
+			),
+		) as {
+			items: Array<{
+				generation?: {
+					codeFilePath?: string;
+					sourcePathToken?: string;
+					output?: string;
+				};
+			}>;
+		};
+
+		expect(publishedRun.items[0]?.generation?.codeFilePath).toBeUndefined();
+		expect(publishedRun.items[0]?.generation?.sourcePathToken).toBe(
+			"[path:solution.ts]",
+		);
+		expect(publishedRun.items[0]?.generation?.output).toContain(
+			"export function add",
+		);
+		expect(publishedRun.items[0]?.generation?.output).not.toBe("DONE");
+		expect(latestAggregate.items[0]?.generation?.output).toContain(
+			"export function add",
+		);
+		expect(latestAggregate.items[0]?.generation?.codeFilePath).toBeUndefined();
+	});
 });

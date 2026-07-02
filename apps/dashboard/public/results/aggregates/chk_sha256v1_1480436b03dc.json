@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-06-19T14:53:00.972Z",
+  "generatedAt": "2026-07-02T19:01:15.304Z",
   "checkpointId": "chk_sha256v1_1480436b03dc",
   "selectionPolicy": {
     "itemSelection": "best_observed_item",
     "tieBreaker": "latest_item"
   },
   "summary": {
-    "runsConsidered": 14,
+    "runsConsidered": 15,
     "runsMatched": 1,
     "rawItems": 2,
     "dedupedItems": 2,
@@ -119,7 +119,7 @@
       "completedAt": "2026-06-19T14:50:51.062Z",
       "generation": {
         "success": true,
-        "output": "  ┊ review diff\r\na/checklist/steps.txt → b/checklist/steps.txt\r\n@@ -1 +1,2 @@\r\n bootstrap\r\n+processed\r\n  ┊ review diff\r\na/reports/status.txt → b/reports/status.txt\r\n@@ -0,0 +1,2 @@\r\n+phase=queued\r\n+status=processed\r\nDONE",
+        "output": "[redacted internal tool transcript]",
         "durationMs": 26656
       },
       "generationAttempts": 1,

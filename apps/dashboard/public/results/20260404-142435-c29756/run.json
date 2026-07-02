@@ -10653,7 +10653,7 @@
       "completedAt": "2026-04-05T04:24:56.549Z",
       "generation": {
         "success": true,
-        "output": "Ran into this error: Server error: HTTP 500: {\"error\":{\"code\":null,\"message\":\"error parsing tool call: raw='{\\\"command\\\":\\\"insert\\\",\\\"insert_line\\\":$(($(rg -l checklist/steps.txt | wc -l)+0)),\\\"new_str\\\":\\\"archive-results\\\",\\\"path\\\":\\\"checklist/steps.txt\\\"}', err=invalid character '$' looking for beginning of value\",\"param\":null,\"type\":\"api_error\"}}.\n\nPlease retry if you think this is a transient or recoverable error.",
+        "output": "[redacted internal tool transcript]",
         "durationMs": 47818
       },
       "generationAttempts": 1,

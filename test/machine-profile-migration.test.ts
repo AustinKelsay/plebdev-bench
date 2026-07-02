@@ -176,6 +176,54 @@ describe("legacy machine-profile migration", () => {
 		expect(parsedRun.schemaVersion).toBe(SCHEMA_VERSION);
 		expect(parsedRun.machine?.profileKey).toBe(LEGACY_PROFILE_KEY);
 	});
+
+	it("keeps already-sanitized published machine IDs stable", () => {
+		const parsedRun = parseKnownRunPayload({
+			schemaVersion: SCHEMA_VERSION,
+			runId: "published-run",
+			machine: {
+				instanceId: "machine-a8648f07719f",
+				instanceIdSource: "legacy_profile_id",
+				profileKey: LEGACY_PROFILE_KEY,
+				profileLabel: "Apple M4 Pro / 64GB / Accelerator unknown",
+				normalizedProfile: {
+					platformFamily: "macos",
+					arch: "arm64",
+					cpuVendor: "apple",
+					cpuModelKey: "m4-pro",
+					logicalCores: 12,
+					memoryGiB: 64,
+					acceleratorKey: "unknown",
+				},
+				observedHardware: {
+					platform: "darwin",
+					arch: "arm64",
+					osRelease: "25.3.0",
+					cpuModelRaw: "Apple M4 Pro",
+					logicalCores: 12,
+					totalMemoryBytes: 68_719_476_736,
+					accelerators: [],
+					acceleratorDetection: {
+						status: "unavailable",
+						detail: "published legacy artifact",
+					},
+				},
+			},
+			startedAt: "2026-03-05T21:51:18.583Z",
+			completedAt: "2026-03-05T21:52:18.583Z",
+			durationMs: 60_000,
+			summary: {
+				total: 0,
+				completed: 0,
+				failed: 0,
+				pending: 0,
+			},
+			items: [],
+		});
+
+		expect(parsedRun.machine?.instanceId).toBe("machine-a8648f07719f");
+		expect(parsedRun.machine?.instanceIdSource).toBe("legacy_profile_id");
+	});
 });
 
 describe("migrate-machine-profiles command", () => {
